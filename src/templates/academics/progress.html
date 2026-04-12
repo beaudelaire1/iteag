@@ -1,0 +1,119 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mon parcours ECTS — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='progress' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='progress' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Progression</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mon parcours</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ profil.parcours }} — {{ profil.parcours.ects_requis }} ECTS requis</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{# ── Barre de progression globale ── #}
+<div class="card-elevated mb-10">
+    <div class="flex items-end justify-between mb-4">
+        <div>
+            <p class="text-sm font-medium" style="color: var(--color-warm-600);">Progression globale</p>
+            <p class="stat-number mt-1">{{ profil.total_ects_acquis }} <span class="text-lg font-normal" style="color: var(--color-warm-400);">/ {{ profil.parcours.ects_requis }} ECTS</span></p>
+        </div>
+        <p class="text-sm" style="color: var(--color-warm-500);">Reste {{ profil.ects_restants }} ECTS</p>
+    </div>
+    <div class="progress-bar" style="height: 8px;">
+        <div class="progress-bar-fill" data-progress="{% widthratio profil.total_ects_acquis profil.parcours.ects_requis 100 %}"></div>
+    </div>
+    <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+        <div class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-full" style="background: var(--color-navy-600);"></span>
+            <span style="color: var(--color-warm-600);">ITEAG : {{ credits_iteag.count }} crédits</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-full" style="background: #059669;"></span>
+            <span style="color: var(--color-warm-600);">FLTE : {{ credits_flte.count }} crédits</span>
+        </div>
+    </div>
+</div>
+
+{# ── Liste des crédits validés ── #}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-base font-semibold text-gray-900">Crédits ECTS validés</h2>
+    </div>
+    {% if credits %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cours</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+                    <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">ECTS</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for credit in credits %}
+                <tr>
+                    <td class="px-5 py-3 text-sm font-medium text-gray-900">{{ credit.cours }}</td>
+                    <td class="px-5 py-3 text-sm text-gray-600">{{ credit.session }}</td>
+                    <td class="px-5 py-3 text-sm"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {% if credit.source == 'iteag' %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">{{ credit.get_source_display }}</span></td>
+                    <td class="px-5 py-3 text-sm text-right font-semibold text-gray-900">{{ credit.ects_obtenus }}</td>
+                    <td class="px-5 py-3 text-sm text-gray-600">{{ credit.date_validation|date:"d/m/Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucun crédit ECTS validé pour le moment.</p>
+    {% endif %}
+</div>
+
+{# ── Stages ── #}
+{% if stages %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-base font-semibold text-gray-900">Stages</h2>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for stage in stages %}
+        <div class="px-5 py-3">
+            <p class="text-sm font-medium text-gray-900">{{ stage.get_type_stage_display }} — {{ stage.lieu }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ stage.date_debut|date:"d/m/Y" }} → {{ stage.date_fin|date:"d/m/Y" }} · {{ stage.ects_stage }} ECTS{% if stage.tuteur %} · Tuteur : {{ stage.tuteur }}{% endif %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Documents ── #}
+{% if documents %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-base font-semibold text-gray-900">Documents récents</h2>
+        <a href="{% url 'documents:list' %}" class="text-sm text-blue-700 hover:underline">Tout voir</a>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for doc in documents %}
+        <div class="px-5 py-3 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-900">{{ doc.get_type_document_display }}</p>
+                <p class="text-xs text-gray-500">{{ doc.date_generation|date:"d/m/Y H:i" }}</p>
+            </div>
+            {% if doc.fichier_pdf %}
+            <a href="{% url 'documents:download' doc.pk %}" class="text-sm text-blue-700 hover:underline">Télécharger</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nos enseignants — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Découvrez l'équipe enseignante de l'ITEAG : théologiens, pasteurs et formateurs qualifiés.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide">
+        <header class="text-center mb-16 reveal">
+            <p class="overline mb-3">Équipe</p>
+            <h1>Nos enseignants</h1>
+            <p class="mt-5 text-lg max-w-2xl mx-auto" style="color: var(--color-warm-600);">
+                Une équipe de théologiens et pasteurs engagés dans la formation des serviteurs de Dieu aux Antilles-Guyane.
+            </p>
+            <hr class="divider-gold mx-auto mt-8">
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" data-motion-stagger>
+            {% for prof in professeurs %}
+            <article class="card-elevated text-center reveal">
+                <div class="pt-2 pb-4">
+                    {% if prof.photo %}
+                    <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-28 w-28 rounded-full object-cover" width="112" height="112" loading="lazy" style="box-shadow: var(--shadow-card);">
+                    {% else %}
+                    <div class="mx-auto h-28 w-28 rounded-full flex items-center justify-center" style="background: var(--color-navy-100);">
+                        <span class="text-3xl font-bold" style="color: var(--color-navy-600);">{{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <h2 class="text-lg font-semibold" style="color: var(--color-navy-900);">{{ prof.nom_complet }}</h2>
+                {% if prof.specialite %}
+                <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ prof.specialite }}</p>
+                {% endif %}
+                {% if prof.disciplines.all %}
+                <div class="mt-3 flex flex-wrap justify-center gap-1.5">
+                    {% for d in prof.disciplines.all %}
+                    <span class="badge badge-gold" style="font-size: 0.625rem;">{{ d.nom }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if prof.biographie %}
+                <p class="mt-3 text-sm line-clamp-3" style="color: var(--color-warm-600);">{{ prof.biographie|truncatewords:25 }}</p>
+                {% endif %}
+            </article>
+            {% empty %}
+            <p class="col-span-full text-center py-12" style="color: var(--color-warm-500);">Aucun enseignant référencé pour le moment.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

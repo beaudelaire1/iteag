@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Parcours de formation — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Découvrez les parcours de formation de l'ITEAG : diplômant, Bachelor FLTE, libre et professionnel.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide">
+        <header class="text-center mb-16 reveal">
+            <p class="overline mb-3">Se former à l'ITEAG</p>
+            <h1>Nos parcours de formation</h1>
+            <p class="mt-5 text-lg max-w-2xl mx-auto" style="color: var(--color-warm-600);">
+                L'ITEAG propose plusieurs parcours adaptés à votre projet : formation diplômante, bachelor, cours libres ou formation professionnelle.
+            </p>
+            <hr class="divider-gold mx-auto mt-8">
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8" data-motion-stagger>
+            {% for parcours in parcours_list %}
+            <article class="card group relative reveal reveal-delay-{{ forloop.counter }}">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="badge badge-gold">
+                        {{ parcours.get_type_parcours_display }}
+                    </span>
+                    {% if parcours.ects_requis %}
+                    <span class="text-sm" style="color: var(--color-warm-500);">{{ parcours.ects_requis }} ECTS</span>
+                    {% endif %}
+                </div>
+                <h2 class="text-2xl font-bold group-hover:text-gold transition-colors duration-200" style="color: var(--color-navy-900);">
+                    <a href="{{ parcours.get_absolute_url }}" class="stretched-link">{{ parcours.nom }}</a>
+                </h2>
+                {% if parcours.description %}
+                <p class="mt-3 line-clamp-3" style="color: var(--color-warm-600);">{{ parcours.description|truncatewords:40 }}</p>
+                {% endif %}
+                {% if parcours.duree_annees %}
+                <p class="mt-4 flex items-center text-sm" style="color: var(--color-warm-500);">
+                    <svg class="h-4 w-4 mr-1.5" style="color: var(--color-gold-400);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {{ parcours.duree_annees }} ans
+                </p>
+                {% endif %}
+            </article>
+            {% empty %}
+            <p class="col-span-2 text-center py-12" style="color: var(--color-warm-500);">Aucun parcours disponible pour le moment.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

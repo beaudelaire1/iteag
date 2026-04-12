@@ -1,0 +1,21 @@
+{% if page_obj.has_other_pages %}
+<nav aria-label="Pagination" class="mt-14 flex items-center justify-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="btn-ghost" style="padding: 0.5rem 1.25rem; font-size: 0.75rem;">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+        Précédent
+    </a>
+    {% endif %}
+
+    <span class="text-sm px-4" style="color: var(--color-warm-500);">
+        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="btn-ghost" style="padding: 0.5rem 1.25rem; font-size: 0.75rem;">
+        Suivant
+        <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+    </a>
+    {% endif %}
+</nav>
+{% endif %}

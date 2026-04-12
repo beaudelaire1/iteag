@@ -1,0 +1,71 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mes cours — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='courses' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='courses' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Académique</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Cours auxquels vous êtes inscrit(e) et ressources associées</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{% for insc in inscriptions %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6" x-data="{ open: {{ forloop.first|yesno:'true,false' }} }">
+    <button @click="open = !open" class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+        <div>
+            <h2 class="text-base font-semibold text-gray-900">{{ insc.cours_session.cours.titre }}</h2>
+            <p class="text-sm text-gray-500 mt-0.5">{{ insc.cours_session.session.nom }} · {{ insc.cours_session.enseignant|default:"Enseignant à confirmer" }} · {{ insc.cours_session.cours.ects }} ECTS</p>
+        </div>
+        <svg class="h-5 w-5 text-gray-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+    </button>
+
+    <div x-show="open" x-cloak x-collapse>
+        {# ── Annonces ── #}
+        {% if insc.cours_session.annonces.all %}
+        <div class="border-t border-gray-100 px-5 py-3 bg-yellow-50">
+            <p class="text-xs font-semibold text-yellow-800 uppercase tracking-wider mb-2">Annonces</p>
+            {% for annonce in insc.cours_session.annonces.all %}
+            <div class="{% if not forloop.first %}mt-2 pt-2 border-t border-yellow-100{% endif %}">
+                <p class="text-sm font-medium text-gray-900">{{ annonce.titre }}</p>
+                <p class="text-sm text-gray-600 mt-0.5">{{ annonce.contenu|truncatewords:40 }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── Ressources ── #}
+        <div class="border-t border-gray-100 px-5 py-3">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ressources pédagogiques</p>
+            {% for res in insc.cours_session.ressources.all %}
+            <div class="flex items-center justify-between py-2 {% if not forloop.first %}border-t border-gray-50{% endif %}">
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">{{ res.type_fichier|default:"?" }}</span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ res.titre }}</p>
+                        {% if res.description %}<p class="text-xs text-gray-500">{{ res.description|truncatewords:15 }}</p>{% endif %}
+                    </div>
+                </div>
+                <a href="{{ res.fichier.url }}" class="text-sm text-blue-700 hover:underline" download>Télécharger</a>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-400 py-2">Aucune ressource disponible.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+    <p class="text-gray-500">Vous n'êtes inscrit(e) à aucun cours pour le moment.</p>
+</div>
+{% endfor %}
+{% endblock %}

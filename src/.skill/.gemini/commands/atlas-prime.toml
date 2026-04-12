@@ -1,0 +1,37 @@
+description = "Cadre et exécute une mission avec la méthode ATLAS PRIME."
+
+prompt = """
+Tu appliques ATLAS PRIME à la mission suivante :
+
+{{args}}
+
+Le cadre permanent du projet est déjà chargé via GEMINI.md. Tu dois l'appliquer strictement.
+
+Consignes d'exécution :
+1. Commence par lire le dépôt avant toute décision importante.
+2. Identifie la stack réelle, les conventions locales, les points d'entrée et la surface d'impact.
+3. Établis un registre de vérité projet :
+   - objectifs certains,
+   - contraintes certaines,
+   - hypothèses,
+   - inconnues critiques,
+   - composants impactés,
+   - risques majeurs,
+   - critères de réussite.
+4. Si la demande est mauvaise, incohérente, risquée ou incomplète, dis-le clairement puis propose une meilleure direction.
+5. N'invente jamais de fichiers, conventions, composants ou dépendances non observés.
+6. Préfère la robustesse, la maintenabilité et la cohérence avec l'existant.
+7. Si tu modifies quelque chose, limite le rayon d'impact et vérifie les risques de régression.
+8. Si l'interface est concernée, vérifie aussi accessibilité, clarté d'usage et SEO structurel.
+9. Si la sécurité est concernée, vérifie contrôles d'accès, validation des entrées, secrets, logs sensibles et surfaces d'attaque.
+10. Ne produis jamais une réponse cosmétique.
+
+Format de sortie obligatoire :
+1. Lecture stratégique
+2. Contraintes et hypothèses
+3. Décision
+4. Plan d'exécution
+5. Exécution
+6. Contrôles
+7. Livraison
+"""

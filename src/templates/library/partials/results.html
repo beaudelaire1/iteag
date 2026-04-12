@@ -1,0 +1,42 @@
+{# HTMX partial — catalogue results · swappable #}
+{% load static %}
+{% if notices %}
+<div class="overflow-x-auto rounded border htmx-swap-fade" style="border-color: var(--color-warm-200);">
+    <table class="table-premium">
+        <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Auteur</th>
+                <th>Cote</th>
+                <th>Disponible</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for notice in notices %}
+            <tr>
+                <td class="font-medium" style="color: var(--color-navy-800);">{{ notice.titre }}</td>
+                <td>{{ notice.auteur|default:"—" }}</td>
+                <td>{{ notice.cote|default:"—" }}</td>
+                <td>
+                    {% if notice.disponible %}
+                    <span class="badge badge-success">Oui</span>
+                    {% else %}
+                    <span class="badge badge-danger">Non</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+<div class="text-center py-16 htmx-swap-fade">
+    <svg class="mx-auto h-12 w-12 mb-4" style="color: var(--color-warm-300);" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+    <p style="color: var(--color-warm-500);">
+        {% if query %}Aucun résultat pour « {{ query }} ».{% else %}Le catalogue sera bientôt disponible.{% endif %}
+    </p>
+</div>
+{% endif %}

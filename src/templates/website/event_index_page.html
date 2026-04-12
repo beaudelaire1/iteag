@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}Événements — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Découvrez les événements de l'ITEAG : sessions, conférences, séminaires et portes ouvertes.{% endblock %}
+
+{% block content %}
+<section class="py-16 lg:py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-12">
+            <h1 class="text-4xl font-bold tracking-tight text-gray-900">{{ page.title }}</h1>
+        </header>
+
+        {% if events %}
+        <div class="space-y-6">
+            {% for event in events %}
+            <article class="group flex flex-col sm:flex-row gap-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                <div class="flex-shrink-0 flex flex-col items-center justify-center bg-blue-50 rounded-lg px-4 py-3 min-w-[5rem] text-center">
+                    <span class="text-2xl font-bold text-blue-700">{{ event.date_debut|date:"d" }}</span>
+                    <span class="text-sm font-medium text-blue-600 uppercase">{{ event.date_debut|date:"M" }}</span>
+                    <span class="text-xs text-blue-500">{{ event.date_debut|date:"Y" }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-xl font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                        <a href="{% pageurl event %}" class="stretched-link">{{ event.title }}</a>
+                    </h2>
+                    {% if event.lieu %}
+                    <p class="mt-1 flex items-center text-sm text-gray-500">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                        {{ event.lieu }}
+                    </p>
+                    {% endif %}
+                    {% if event.chapeau %}
+                    <p class="mt-2 text-gray-600 line-clamp-2">{{ event.chapeau }}</p>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% include "partials/pagination.html" with page_obj=events %}
+
+        {% else %}
+        <p class="text-gray-500 text-center py-12">Aucun événement programmé pour le moment.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

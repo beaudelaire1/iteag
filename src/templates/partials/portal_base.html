@@ -1,0 +1,32 @@
+{# Portail privé — layout sidebar + contenu · Standard TUS #}
+{% extends "base.html" %}
+
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-4rem)]" style="background: var(--color-warm-100);">
+    <div class="container-wide py-8 lg:py-12">
+        <div class="lg:grid lg:grid-cols-[16rem_1fr] lg:gap-10">
+            {# Sidebar #}
+            <aside class="hidden lg:block">
+                <nav class="sticky top-24 space-y-1">
+                    {% block portal_nav %}{% endblock %}
+                </nav>
+            </aside>
+
+            {# Mobile nav bar #}
+            <div class="lg:hidden mb-6 -mx-4 px-4 overflow-x-auto">
+                <div class="flex gap-2 min-w-max pb-2">
+                    {% block portal_nav_mobile %}{% endblock %}
+                </div>
+            </div>
+
+            {# Main content #}
+            <div class="min-w-0">
+                {% block portal_header %}{% endblock %}
+                {% block portal_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

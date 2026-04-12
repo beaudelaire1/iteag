@@ -1,0 +1,10 @@
+{# Sidebar nav items for student portal #}
+{% load static %}
+
+{% macro_nav item_url item_name item_icon item_label %}
+
+<a href="{{ item_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
+    {% if active_nav == item_name %}bg-blue-50 text-blue-700{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+    {{ item_icon|safe }}
+    {{ item_label }}
+</a>

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block title %}{{ page.title }} — Événements — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.chapeau|default:page.title }}{% endblock %}
+
+{% block content %}
+<article class="py-16 lg:py-24">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-10">
+            <a href="{{ page.get_parent.url }}" class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-4">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                Retour aux événements
+            </a>
+            <h1 class="text-4xl font-bold tracking-tight text-gray-900">{{ page.title }}</h1>
+            {% if page.chapeau %}
+            <p class="mt-4 text-xl text-gray-600 leading-relaxed">{{ page.chapeau }}</p>
+            {% endif %}
+        </header>
+
+        <div class="flex flex-wrap gap-4 mb-8 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
+            <div class="flex items-center gap-2">
+                <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                <time datetime="{{ page.date_debut|date:'Y-m-d' }}">{{ page.date_debut|date:"d F Y" }}</time>
+                {% if page.date_fin %}
+                <span>→</span>
+                <time datetime="{{ page.date_fin|date:'Y-m-d' }}">{{ page.date_fin|date:"d F Y" }}</time>
+                {% endif %}
+            </div>
+            {% if page.lieu %}
+            <div class="flex items-center gap-2">
+                <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                {{ page.lieu }}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if page.image %}
+        <figure class="mb-10 -mx-4 sm:mx-0">
+            {% image page.image width-960 as event_img %}
+            <img src="{{ event_img.url }}" alt="{{ page.title }}" class="w-full rounded-lg shadow-sm" width="{{ event_img.width }}" height="{{ event_img.height }}" loading="eager">
+        </figure>
+        {% endif %}
+
+        <div class="prose prose-lg prose-blue max-w-none">
+            {{ page.body|richtext }}
+        </div>
+    </div>
+</article>
+{% endblock %}

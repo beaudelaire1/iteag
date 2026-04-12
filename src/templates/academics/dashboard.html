@@ -1,0 +1,128 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mon espace — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='dashboard' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='dashboard' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Tableau de bord</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Bonjour {{ user.first_name|default:user.username }}</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ profil.parcours }} — {{ profil.promotion }}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{# ── Stats cards ── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+    <div class="card-elevated">
+        <p class="stat-label">ECTS acquis</p>
+        <p class="stat-number mt-2">{{ profil.total_ects_acquis }}<span class="text-base font-normal" style="color: var(--color-warm-400);">/{{ profil.parcours.ects_requis }}</span></p>
+        <div class="progress-bar mt-3">
+            <div class="progress-bar-fill" data-progress="{{ progress_percent }}"></div>
+        </div>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Session en cours</p>
+        <p class="mt-2 text-lg font-semibold" style="color: var(--color-navy-900);">
+            {% if current_session %}{{ current_session.nom }}{% else %}<span style="color: var(--color-warm-400);">—</span>{% endif %}
+        </p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Évaluations en attente</p>
+        <p class="stat-number mt-2" data-counter>{{ pending_evaluations|length }}</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Documents</p>
+        <p class="stat-number mt-2" data-counter>{{ documents_count }}</p>
+    </div>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-8">
+    {# ── Cours inscrits ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 border-b" style="border-color: var(--color-warm-100);">
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Mes cours</h2>
+        </div>
+        <div class="divide-y" style="border-color: var(--color-warm-100);">
+            {% for insc in inscriptions %}
+            <div class="px-5 py-3">
+                <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ insc.cours_session.cours.titre }}</p>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ insc.cours_session.session.nom }} — {{ insc.cours_session.enseignant }}</p>
+            </div>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune inscription en cours.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Évaluations en attente ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 border-b" style="border-color: var(--color-warm-100);">
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Évaluations récentes</h2>
+        </div>
+        <div class="divide-y" style="border-color: var(--color-warm-100);">
+            {% for eval in pending_evaluations %}
+            <div class="px-5 py-3 flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ eval.cours_session.cours.titre }}</p>
+                    <p class="text-xs" style="color: var(--color-warm-500);">{{ eval.get_type_evaluation_display }}</p>
+                </div>
+                <span class="badge
+                    {% if eval.statut == 'en_attente' %}badge-info
+                    {% elif eval.statut == 'soumis' %}badge-info
+                    {% elif eval.statut == 'en_correction' %}badge-warning
+                    {% elif eval.statut == 'note' %}badge-success
+                    {% else %}badge-gold{% endif %}">
+                    {{ eval.get_statut_display }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune évaluation en cours.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Annonces ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 border-b" style="border-color: var(--color-warm-100);">
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Annonces</h2>
+        </div>
+        <div class="divide-y" style="border-color: var(--color-warm-100);">
+            {% for annonce in recent_annonces %}
+            <div class="px-5 py-3">
+                <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
+            </div>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune annonce récente.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Paiements ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 border-b" style="border-color: var(--color-warm-100);">
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Derniers paiements</h2>
+        </div>
+        <div class="divide-y" style="border-color: var(--color-warm-100);">
+            {% for p in latest_payments %}
+            <div class="px-5 py-3 flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ p.session }}</p>
+                    <p class="text-xs" style="color: var(--color-warm-500);">{{ p.get_mode_display }} — {{ p.date_paiement|date:"d/m/Y" }}</p>
+                </div>
+                <span class="text-sm font-semibold" style="color: var(--color-navy-800);">{{ p.montant }} €</span>
+            </div>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucun paiement enregistré.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

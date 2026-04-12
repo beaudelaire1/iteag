@@ -1,0 +1,98 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Espace enseignant — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='dashboard' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='dashboard' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Espace enseignant</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Tableau de bord</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{% if professeur %}{{ professeur.prenom }} {{ professeur.nom }}{% else %}{{ user.get_full_name }}{% endif %}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{# ── Stats ── #}
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+    <div class="card-elevated">
+        <p class="stat-label">Cours assignés</p>
+        <p class="stat-number mt-2" data-counter>{{ cours_assignes|length }}</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Évaluations à corriger</p>
+        <p class="stat-number mt-2" data-counter>{{ pending_evaluations|length }}</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Annonces récentes</p>
+        <p class="stat-number mt-2" data-counter>{{ recent_annonces|length }}</p>
+    </div>
+</div>
+
+{# ── Cours assignés ── #}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-base font-semibold text-gray-900">Mes cours</h2>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for cs in cours_assignes %}
+        <a href="{% url 'lms:course_detail' cs.pk %}" class="block px-5 py-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-900">{{ cs.cours.titre }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ cs.session.nom }} · {{ cs.get_statut_display }}</p>
+                </div>
+                <svg class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            </div>
+        </a>
+        {% empty %}
+        <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucun cours assigné pour le moment.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── Évaluations à corriger ── #}
+{% if pending_evaluations %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-base font-semibold text-gray-900">Évaluations à corriger</h2>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for eval in pending_evaluations %}
+        <div class="px-5 py-3 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-900">{{ eval.etudiant.utilisateur.get_full_name }}</p>
+                <p class="text-xs text-gray-500">{{ eval.cours_session.cours.titre }} — {{ eval.get_type_evaluation_display }}</p>
+            </div>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                {% if eval.statut == 'soumis' %}bg-blue-100 text-blue-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                {{ eval.get_statut_display }}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Annonces récentes ── #}
+{% if recent_annonces %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-base font-semibold text-gray-900">Mes annonces</h2>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for annonce in recent_annonces %}
+        <div class="px-5 py-3">
+            <p class="text-sm font-medium text-gray-900">{{ annonce.titre }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

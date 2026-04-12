@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block title %}{{ page.title }} — Actualités — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.chapeau|default:page.title }}{% endblock %}
+
+{% block content %}
+<article class="py-16 lg:py-24">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-10">
+            <a href="{{ page.get_parent.url }}" class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-4">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                Retour aux actualités
+            </a>
+            <time datetime="{{ page.date|date:'Y-m-d' }}" class="block text-sm font-medium text-blue-600 uppercase tracking-wide">
+                {{ page.date|date:"d F Y" }}
+            </time>
+            <h1 class="mt-2 text-4xl font-bold tracking-tight text-gray-900">{{ page.title }}</h1>
+            {% if page.chapeau %}
+            <p class="mt-4 text-xl text-gray-600 leading-relaxed">{{ page.chapeau }}</p>
+            {% endif %}
+        </header>
+
+        {% if page.image %}
+        <figure class="mb-10 -mx-4 sm:mx-0">
+            {% image page.image width-960 as hero_img %}
+            <img src="{{ hero_img.url }}" alt="{{ page.title }}" class="w-full rounded-lg shadow-sm" width="{{ hero_img.width }}" height="{{ hero_img.height }}" loading="eager">
+        </figure>
+        {% endif %}
+
+        <div class="prose prose-lg prose-blue max-w-none">
+            {{ page.body|richtext }}
+        </div>
+    </div>
+</article>
+{% endblock %}

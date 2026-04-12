@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Suivi de candidature — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow" style="max-width: 40rem;">
+        <div class="mb-10 reveal">
+            <p class="overline mb-3">Admissions</p>
+            <h1>Suivi de votre candidature</h1>
+            <hr class="divider-gold mt-6">
+        </div>
+
+        <div class="card-elevated reveal reveal-delay-1">
+            <dl class="space-y-4 text-sm">
+                <div class="flex justify-between pb-3 border-b" style="border-color: var(--color-warm-100);">
+                    <dt style="color: var(--color-warm-500);">Candidat</dt>
+                    <dd class="font-medium" style="color: var(--color-navy-900);">{{ dossier.nom }} {{ dossier.prenom }}</dd>
+                </div>
+                <div class="flex justify-between pb-3 border-b" style="border-color: var(--color-warm-100);">
+                    <dt style="color: var(--color-warm-500);">Parcours</dt>
+                    <dd class="font-medium" style="color: var(--color-navy-900);">{{ dossier.parcours_souhaite }}</dd>
+                </div>
+                <div class="flex justify-between pb-3 border-b" style="border-color: var(--color-warm-100);">
+                    <dt style="color: var(--color-warm-500);">Date de dépôt</dt>
+                    <dd class="font-medium" style="color: var(--color-navy-900);">{{ dossier.created|date:"d/m/Y" }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt style="color: var(--color-warm-500);">Statut actuel</dt>
+                    <dd>
+                        <span class="badge
+                            {% if dossier.statut == 'accepte' %}badge-success
+                            {% elif dossier.statut == 'refuse' %}badge-danger
+                            {% elif dossier.statut == 'en_examen' %}badge-warning
+                            {% else %}badge-info{% endif %}">
+                            {{ dossier.get_statut_display }}
+                        </span>
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{
+  "name": "iteag-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "css:build": "npx @tailwindcss/cli -i ./static/src/css/input.css -o ./static/css/main.css --minify",
+    "css:watch": "npx @tailwindcss/cli -i ./static/src/css/input.css -o ./static/css/main.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "@tailwindcss/typography": "^0.5.19",
+    "alpinejs": "^3.14.8",
+    "tailwindcss": "^4.2.2"
+  }
+}

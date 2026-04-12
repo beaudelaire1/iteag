@@ -1,0 +1,26 @@
+{# Fil d'Ariane — Composant réutilisable · Standard TUS #}
+{# Usage: {% include "partials/breadcrumb.html" with items=breadcrumb_items %} #}
+{# items = [{"label": "Accueil", "url": "/"}, {"label": "Formations", "url": "/formations/"}, {"label": "Page courante"}] #}
+
+{% if items %}
+<nav class="container-wide py-3" aria-label="Fil d'Ariane">
+    <ol class="flex flex-wrap items-center gap-1.5 text-xs text-warm-500" itemscope itemtype="https://schema.org/BreadcrumbList">
+        {% for item in items %}
+        <li class="flex items-center gap-1.5" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            {% if item.url %}
+            <a href="{{ item.url }}" class="hover:text-navy-700 transition-colors duration-200" itemprop="item">
+                <span itemprop="name">{{ item.label }}</span>
+            </a>
+            <meta itemprop="position" content="{{ forloop.counter }}">
+            <svg class="h-3 w-3 text-warm-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+            {% else %}
+            <span class="font-medium text-navy-800" itemprop="name" aria-current="page">{{ item.label }}</span>
+            <meta itemprop="position" content="{{ forloop.counter }}">
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}

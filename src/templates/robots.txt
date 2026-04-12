@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://iteag.org/sitemap.xml
+
+# Disallow admin
+User-agent: *
+Disallow: /admin/
+Disallow: /django-admin/

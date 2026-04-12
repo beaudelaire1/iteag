@@ -1,0 +1,169 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ cours_session.cours.titre }} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='course' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='course' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:dashboard' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au tableau de bord</a>
+    <p class="overline mb-2">Cours</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ cours_session.cours.titre }}</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.session.nom }} · {{ cours_session.get_statut_display }} · {{ cours_session.cours.ects }} ECTS</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div x-data="{ tab: 'students' }" class="space-y-6">
+    {# ── Tabs ── #}
+    <div class="border-b" style="border-color: var(--color-warm-200);">
+        <nav class="flex gap-6 -mb-px">
+            <button @click="tab = 'students'" :class="tab === 'students' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+                Étudiants ({{ inscriptions|length }})
+            </button>
+            <button @click="tab = 'resources'" :class="tab === 'resources' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+                Ressources ({{ ressources|length }})
+            </button>
+            <button @click="tab = 'evaluations'" :class="tab === 'evaluations' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+                Évaluations ({{ evaluations|length }})
+            </button>
+            <button @click="tab = 'announcements'" :class="tab === 'announcements' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+                Annonces ({{ annonces|length }})
+            </button>
+        </nav>
+    </div>
+
+    {# ── Étudiants ── #}
+    <div x-show="tab === 'students'" x-cloak>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {% if inscriptions %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Étudiant</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° étudiant</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parcours</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for insc in inscriptions %}
+                        <tr>
+                            <td class="px-5 py-3 text-sm font-medium text-gray-900">{{ insc.etudiant.utilisateur.get_full_name }}</td>
+                            <td class="px-5 py-3 text-sm text-gray-600">{{ insc.etudiant.numero_etudiant }}</td>
+                            <td class="px-5 py-3 text-sm text-gray-600">{{ insc.etudiant.parcours }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucun étudiant inscrit.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Ressources ── #}
+    <div x-show="tab === 'resources'" x-cloak>
+        <div class="mb-4 flex justify-end">
+            <a href="{% url 'lms:resource_upload' cours_session.pk %}" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                Ajouter une ressource
+            </a>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="divide-y divide-gray-100">
+                {% for res in ressources %}
+                <div class="px-5 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">{{ res.type_fichier|default:"?" }}</span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ res.titre }}</p>
+                            <p class="text-xs text-gray-500">{{ res.created_at|date:"d/m/Y" }} · {% if res.visible_etudiants %}Visible{% else %}Masqué{% endif %}</p>
+                        </div>
+                    </div>
+                    <a href="{{ res.fichier.url }}" class="text-sm text-blue-700 hover:underline" download>Télécharger</a>
+                </div>
+                {% empty %}
+                <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucune ressource. Ajoutez-en une !</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Évaluations ── #}
+    <div x-show="tab === 'evaluations'" x-cloak>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {% if evaluations %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Étudiant</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Note</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for eval in evaluations %}
+                        <tr>
+                            <td class="px-5 py-3 text-sm font-medium text-gray-900">{{ eval.etudiant.utilisateur.get_full_name }}</td>
+                            <td class="px-5 py-3 text-sm text-gray-600">{{ eval.get_type_evaluation_display }}</td>
+                            <td class="px-5 py-3 text-sm">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                    {% if eval.statut == 'soumis' %}bg-blue-100 text-blue-700
+                                    {% elif eval.statut == 'en_correction' %}bg-yellow-100 text-yellow-700
+                                    {% elif eval.statut == 'note' %}bg-green-100 text-green-700
+                                    {% elif eval.statut == 'publie' %}bg-purple-100 text-purple-700
+                                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                    {{ eval.get_statut_display }}
+                                </span>
+                            </td>
+                            <td class="px-5 py-3 text-sm text-right font-semibold">{% if eval.note is not None %}{{ eval.note }}/20{% else %}—{% endif %}</td>
+                            <td class="px-5 py-3 text-sm">
+                                {% if eval.statut == 'soumis' or eval.statut == 'en_correction' %}
+                                <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="text-blue-700 hover:underline">Noter</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucune évaluation.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Annonces ── #}
+    <div x-show="tab === 'announcements'" x-cloak>
+        <div class="mb-4 flex justify-end">
+            <a href="{% url 'lms:announcement_create' cours_session.pk %}" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                Publier une annonce
+            </a>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="divide-y divide-gray-100">
+                {% for annonce in annonces %}
+                <div class="px-5 py-4">
+                    <p class="text-sm font-semibold text-gray-900">{{ annonce.titre }}</p>
+                    <p class="text-sm text-gray-600 mt-1">{{ annonce.contenu }}</p>
+                    <p class="text-xs text-gray-400 mt-2">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                {% empty %}
+                <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucune annonce publiée.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}Actualités — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Suivez les actualités de l'ITEAG : événements, publications et vie de l'institut.{% endblock %}
+
+{% block content %}
+<section class="py-16 lg:py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-12">
+            <h1 class="text-4xl font-bold tracking-tight text-gray-900">{{ page.title }}</h1>
+            {% if page.introduction %}
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl">{{ page.introduction }}</p>
+            {% endif %}
+        </header>
+
+        {% if articles %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for article in articles %}
+            <article class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                {% if article.image %}
+                {% load wagtailimages_tags %}
+                {% image article.image fill-600x340 as article_img %}
+                <img src="{{ article_img.url }}" alt="{{ article.title }}" class="w-full h-48 object-cover" width="600" height="340" loading="lazy">
+                {% else %}
+                <div class="w-full h-48 bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                    <svg class="h-12 w-12 text-blue-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z"/></svg>
+                </div>
+                {% endif %}
+                <div class="p-5">
+                    <time datetime="{{ article.date|date:'Y-m-d' }}" class="text-xs font-medium text-blue-600 uppercase tracking-wide">
+                        {{ article.date|date:"d F Y" }}
+                    </time>
+                    <h2 class="mt-2 text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                        <a href="{% pageurl article %}" class="stretched-link">{{ article.title }}</a>
+                    </h2>
+                    {% if article.chapeau %}
+                    <p class="mt-2 text-sm text-gray-600 line-clamp-3">{{ article.chapeau }}</p>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% include "partials/pagination.html" with page_obj=articles %}
+
+        {% else %}
+        <p class="text-gray-500 text-center py-12">Aucun article pour le moment.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

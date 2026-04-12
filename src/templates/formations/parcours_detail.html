@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ parcours.nom }} — Formations — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ parcours.description|truncatewords:30 }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide">
+        <header class="mb-14 reveal">
+            <a href="{% url 'formations:parcours-list' %}" class="inline-flex items-center text-sm font-medium mb-5 transition-colors duration-200" style="color: var(--color-navy-600);">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                Tous les parcours
+            </a>
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+                <span class="badge badge-gold">
+                    {{ parcours.get_type_parcours_display }}
+                </span>
+                {% if parcours.ects_requis %}
+                <span class="text-sm" style="color: var(--color-warm-500);">{{ parcours.ects_requis }} ECTS</span>
+                {% endif %}
+            </div>
+            <h1>{{ parcours.nom }}</h1>
+            {% if parcours.description %}
+            <div class="mt-5 prose prose-lg max-w-3xl" style="color: var(--color-warm-700);">
+                {{ parcours.description|linebreaks }}
+            </div>
+            {% endif %}
+            <hr class="divider-gold mt-8">
+        </header>
+
+        {# Programme #}
+        {% if cours %}
+        <div class="reveal">
+            <p class="overline mb-2">Programme</p>
+            <h2 class="mb-8">
+                Cours proposés
+                <span class="text-base font-normal" style="color: var(--color-warm-500);">({{ cours|length }} cours)</span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-motion-stagger>
+                {% for c in cours %}
+                <article class="card group reveal">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="badge badge-info">{{ c.code }}</span>
+                        <span class="text-xs font-semibold" style="color: var(--color-gold-500);">{{ c.ects }} ECTS</span>
+                    </div>
+                    <h3 class="text-lg font-semibold group-hover:text-gold transition-colors duration-200" style="color: var(--color-navy-900);">
+                        <a href="{{ c.get_absolute_url }}" class="stretched-link">{{ c.titre }}</a>
+                    </h3>
+                    {% if c.discipline %}
+                    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">{{ c.discipline.nom }}</p>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Tarifs #}
+        {% if tarifs %}
+        <div class="mt-20 reveal">
+            <p class="overline mb-2">Investissement</p>
+            <h2 class="mb-8">Tarifs</h2>
+            <div class="overflow-x-auto rounded border" style="border-color: var(--color-warm-200);">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th>Formule</th>
+                            <th>Type de membre</th>
+                            <th class="text-right">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tarif in tarifs %}
+                        <tr>
+                            <td class="font-medium" style="color: var(--color-navy-800);">{{ tarif.get_formule_display }}</td>
+                            <td>{{ tarif.get_type_membre_display }}</td>
+                            <td class="text-right font-semibold" style="color: var(--color-navy-800);">{{ tarif.montant_session|floatformat:0 }} €</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

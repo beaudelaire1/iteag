@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Catalogue — Bibliothèque {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Explorez les ouvrages de la bibliothèque de l'ITEAG.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide" style="max-width: 72rem;">
+        <header class="mb-12 reveal">
+            <p class="overline mb-3">Bibliothèque</p>
+            <h1>Catalogue</h1>
+            <hr class="divider-gold mt-6">
+        </header>
+
+        {# Barre de recherche HTMX live #}
+        <form method="get" action="{% url 'library:catalogue' %}"
+              hx-get="{% url 'library:catalogue' %}"
+              hx-target="#catalogue-results"
+              hx-trigger="submit, input changed delay:400ms from:find input[name='q']"
+              hx-push-url="true"
+              hx-indicator="#search-indicator"
+              class="mb-10 reveal reveal-delay-1">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Rechercher par titre, auteur, mot-clé…"
+                           class="form-input" style="padding-left: 2.75rem;">
+                    <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--color-warm-400);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                </div>
+                <div class="flex gap-3">
+                    <select name="discipline" class="form-select" style="min-width: 10rem;">
+                        <option value="">Toutes disciplines</option>
+                        {% for d in disciplines %}
+                        <option value="{{ d.slug }}" {% if current_discipline == d.slug %}selected{% endif %}>{{ d.nom }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;">
+                        Rechercher
+                    </button>
+                </div>
+            </div>
+            <div id="search-indicator" class="htmx-indicator mt-3">
+                <div class="skeleton" style="height: 2px; width: 100%;"></div>
+            </div>
+        </form>
+
+        {# Résultats #}
+        <div id="catalogue-results">
+            {% include "library/partials/results.html" %}
+        </div>
+    </div>
+</section>
+{% endblock %}
