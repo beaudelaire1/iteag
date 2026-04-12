@@ -17,13 +17,15 @@
         }
       });
     },
-    { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
+    { threshold: 0.06, rootMargin: "0px 0px -60px 0px" }
   );
 
   function initReveals() {
-    document.querySelectorAll(".reveal:not(.revealed)").forEach((el) => {
-      revealObserver.observe(el);
-    });
+    document
+      .querySelectorAll(".reveal:not(.revealed), .reveal-left:not(.revealed), .reveal-right:not(.revealed)")
+      .forEach((el) => {
+        revealObserver.observe(el);
+      });
   }
 
   /* ── 2. Navigation scroll effect ── */
@@ -49,8 +51,10 @@
           const el = entry.target;
           const target = parseInt(el.dataset.counter, 10);
           const suffix = el.dataset.counterSuffix || "";
-          const duration = 1800;
+          const duration = 2000;
           const start = performance.now();
+
+          el.classList.add("counted");
 
           function step(now) {
             const progress = Math.min((now - start) / duration, 1);
@@ -114,20 +118,28 @@
     });
   }
 
-  /* ── 6. Stagger reveal (remplace Motion One — CSS natif) ── */
+  /* ── 6. Stagger reveal (CSS natif — échelonnement progressif) ── */
   function initStagger() {
     document.querySelectorAll("[data-motion-stagger]").forEach((container) => {
       const children = Array.from(container.children);
       children.forEach((child, i) => {
-        child.classList.add("reveal");
-        child.style.transitionDelay = (i * 100) + "ms";
+        if (!child.classList.contains("reveal") &&
+            !child.classList.contains("reveal-left") &&
+            !child.classList.contains("reveal-right")) {
+          child.classList.add("reveal");
+        }
+        child.style.transitionDelay = (i * 120) + "ms";
       });
     });
 
-    // Hero entrance — CSS animation
+    // Hero entrance — progressive reveal with cinematic delay
     const hero = document.querySelector("[data-motion-hero]");
     if (hero) {
       hero.classList.add("reveal");
+      // Force immediate reveal for hero (above fold)
+      requestAnimationFrame(() => {
+        hero.classList.add("revealed");
+      });
     }
   }
 

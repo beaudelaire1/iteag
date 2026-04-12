@@ -11,17 +11,17 @@
 <section class="relative overflow-hidden" style="background: linear-gradient(135deg, var(--color-navy-900) 0%, var(--color-navy-800) 50%, var(--color-navy-700) 100%);">
     <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;0.08&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
     <div class="container-wide section-hero relative">
-        <div class="max-w-3xl">
-            <p class="overline-light mb-5">{{ SITE_TAGLINE }}</p>
-            <h1 class="text-white" style="font-size: clamp(2.5rem, 6vw, 4.25rem); line-height: 1.08; letter-spacing: -0.03em;">
+        <div class="max-w-3xl" data-motion-hero>
+            <p class="overline-light mb-5 reveal">{{ SITE_TAGLINE }}</p>
+            <h1 class="text-white reveal reveal-delay-1" style="font-size: clamp(2.5rem, 6vw, 4.25rem); line-height: 1.08; letter-spacing: -0.03em;">
                 {{ SITE_FULL_NAME }}
             </h1>
             {% if page.sous_titre %}
-            <p class="mt-6 text-lg sm:text-xl leading-relaxed" style="color: var(--color-navy-200);">
+            <p class="mt-6 text-lg sm:text-xl leading-relaxed reveal reveal-delay-2" style="color: var(--color-navy-200);">
                 {{ page.sous_titre }}
             </p>
             {% endif %}
-            <div class="mt-10 flex flex-wrap gap-4">
+            <div class="mt-10 flex flex-wrap gap-4 reveal reveal-delay-3">
                 <a href="/formations/" class="btn-gold">
                     Découvrir nos formations
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
@@ -42,42 +42,42 @@
 {# ═══════════════  À PROPOS  ═══════════════ #}
 <section class="section">
     <div class="container-narrow text-center">
-        <hr class="divider-gold mx-auto mb-6">
-        <p class="overline mb-3">Qui sommes-nous</p>
-        <h2 class="mb-8">ITEAG, qu'est-ce que c'est ?</h2>
-        <p class="text-lg leading-relaxed mb-6" style="color: var(--color-warm-700);">
+        <hr class="divider-gold mx-auto mb-6 reveal">
+        <p class="overline mb-3 reveal reveal-delay-1">Qui sommes-nous</p>
+        <h2 class="mb-8 reveal reveal-delay-1">ITEAG, qu'est-ce que c'est ?</h2>
+        <p class="text-lg leading-relaxed mb-6 reveal reveal-delay-2" style="color: var(--color-warm-700);">
             Un centre de formation en théologie évangélique, qui s'adresse à tous ceux qui souhaitent
             librement développer leurs connaissances théologiques ou obtenir un diplôme qui leur
             permettra de mieux exercer un ministère au sein de leur assemblée.
         </p>
-        <p class="leading-relaxed mb-10" style="color: var(--color-warm-600);">
-            Situé en Guadeloupe, l'ITEAG propose des parcours diplômants et libres, adaptés à chaque
-            profil : étudiants, pasteurs, responsables d'église et toute personne désireuse d'approfondir
-            sa connaissance de la Bible et de la théologie.
+        <p class="leading-relaxed mb-10 reveal reveal-delay-2" style="color: var(--color-warm-600);">
+            Association loi 1905, l'ITEAG est un projet fédérateur œuvrant à l'unité évangélique.
+            Situé en Guadeloupe, il rayonne sur les Antilles et la Guyane avec des parcours diplômants
+            et libres, adaptés à chaque profil.
         </p>
-        <a href="/presentation/" class="btn-primary">Découvrir l'ITEAG</a>
+        <a href="/presentation/" class="btn-primary reveal reveal-delay-3">Découvrir l'ITEAG</a>
     </div>
 </section>
 
 {# ═══════════════  CHIFFRES CLÉS  ═══════════════ #}
-<section style="background: var(--color-navy-800);" class="py-16">
+<section style="background: var(--color-navy-800);" class="py-16 overflow-hidden">
     <div class="container-wide">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-                <p class="stat-number text-white" data-count-to="20">20+</p>
-                <p class="stat-label" style="color: var(--color-navy-200);">Années d'expérience</p>
-            </div>
-            <div>
-                <p class="stat-number text-white" data-count-to="4">4</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center" data-motion-stagger>
+            <div class="reveal">
+                <p class="stat-number text-white" data-counter="3" data-counter-suffix="">3</p>
                 <p class="stat-label" style="color: var(--color-navy-200);">Parcours de formation</p>
             </div>
-            <div>
-                <p class="stat-number text-white" data-count-to="200">200+</p>
-                <p class="stat-label" style="color: var(--color-navy-200);">Étudiants formés</p>
-            </div>
-            <div>
-                <p class="stat-number text-white" data-count-to="15">15+</p>
+            <div class="reveal">
+                <p class="stat-number text-white" data-counter="7" data-counter-suffix="">7</p>
                 <p class="stat-label" style="color: var(--color-navy-200);">Professeurs qualifiés</p>
+            </div>
+            <div class="reveal">
+                <p class="stat-number text-white" data-counter="3000" data-counter-suffix="+">3000+</p>
+                <p class="stat-label" style="color: var(--color-navy-200);">Ouvrages en bibliothèque</p>
+            </div>
+            <div class="reveal">
+                <p class="stat-number text-white" data-counter="3" data-counter-suffix="">3</p>
+                <p class="stat-label" style="color: var(--color-navy-200);">Territoires (Gpe, Mq, Gy)</p>
             </div>
         </div>
     </div>
@@ -87,13 +87,13 @@
 {% if featured_parcours %}
 <section class="section">
     <div class="container-wide">
-        <div class="text-center mb-14">
+        <div class="text-center mb-14 reveal">
             <p class="overline mb-3">Nos formations</p>
             <h2>Se former à l'ITEAG</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-{{ featured_parcours|length|default:4 }} gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-{{ featured_parcours|length|default:4 }} gap-8" data-motion-stagger>
             {% for parcours in featured_parcours %}
-            <article class="card relative group">
+            <article class="card relative group reveal">
                 <div class="mb-4">
                     <span class="badge badge-gold">{{ parcours.get_niveau_display|default:"Formation" }}</span>
                 </div>
@@ -107,7 +107,7 @@
             </article>
             {% endfor %}
         </div>
-        <div class="text-center mt-12">
+        <div class="text-center mt-12 reveal">
             <a href="/formations/" class="btn-ghost">Voir toutes les formations</a>
         </div>
     </div>
@@ -115,33 +115,33 @@
 {% else %}
 <section class="section">
     <div class="container-wide">
-        <div class="text-center mb-14">
+        <div class="text-center mb-14 reveal">
             <p class="overline mb-3">Nos formations</p>
             <h2>Se former à l'ITEAG</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <article class="card">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" data-motion-stagger>
+            <article class="card reveal">
                 <span class="badge badge-gold mb-4">Diplôme ITEAG</span>
                 <h3 class="text-lg mb-3" style="color: var(--color-navy-900);">Parcours diplômant</h3>
                 <p class="text-sm leading-relaxed" style="color: var(--color-warm-600);">Formation complète en théologie évangélique sanctionnée par un diplôme reconnu.</p>
             </article>
-            <article class="card">
+            <article class="card reveal">
                 <span class="badge badge-gold mb-4">Bachelor</span>
                 <h3 class="text-lg mb-3" style="color: var(--color-navy-900);">Bachelor FLTE</h3>
                 <p class="text-sm leading-relaxed" style="color: var(--color-warm-600);">Cursus universitaire en partenariat avec la Faculté Libre de Théologie Évangélique.</p>
             </article>
-            <article class="card">
+            <article class="card reveal">
                 <span class="badge badge-gold mb-4">Libre</span>
                 <h3 class="text-lg mb-3" style="color: var(--color-navy-900);">Parcours libre</h3>
                 <p class="text-sm leading-relaxed" style="color: var(--color-warm-600);">Suivez les cours de votre choix à votre rythme, sans engagement diplômant.</p>
             </article>
-            <article class="card">
+            <article class="card reveal">
                 <span class="badge badge-gold mb-4">Pro</span>
                 <h3 class="text-lg mb-3" style="color: var(--color-navy-900);">ITEAG Pro</h3>
                 <p class="text-sm leading-relaxed" style="color: var(--color-warm-600);">Formation continue pour les ministères en activité dans les Antilles-Guyane.</p>
             </article>
         </div>
-        <div class="text-center mt-12">
+        <div class="text-center mt-12 reveal">
             <a href="/formations/" class="btn-ghost">Voir toutes les formations</a>
         </div>
     </div>
@@ -152,13 +152,13 @@
 {% if featured_professeurs %}
 <section class="section" style="background: var(--color-warm-100);">
     <div class="container-wide">
-        <div class="text-center mb-14">
+        <div class="text-center mb-14 reveal">
             <p class="overline mb-3">Notre équipe</p>
             <h2>Équipe professorale</h2>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-motion-stagger>
             {% for prof in featured_professeurs %}
-            <article class="text-center">
+            <article class="text-center reveal">
                 <div class="h-24 w-24 mx-auto mb-4 rounded-full flex items-center justify-center font-bold text-xl" style="background: var(--color-navy-100); color: var(--color-navy-700);">
                     {{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}
                 </div>
@@ -167,7 +167,7 @@
             </article>
             {% endfor %}
         </div>
-        <div class="text-center mt-12">
+        <div class="text-center mt-12 reveal">
             <a href="{% url 'formations:professeur_list' %}" class="btn-ghost">Voir toute l'équipe</a>
         </div>
     </div>
@@ -178,13 +178,13 @@
 {% if latest_news %}
 <section class="section">
     <div class="container-wide">
-        <div class="text-center mb-14">
+        <div class="text-center mb-14 reveal">
             <p class="overline mb-3">Actualités</p>
             <h2>Nos dernières nouvelles</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
             {% for news in latest_news %}
-            <article class="card relative group">
+            <article class="card relative group reveal">
                 <time class="text-xs font-medium uppercase tracking-wider" style="color: var(--color-warm-500);" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
                 <h3 class="text-lg mt-3 mb-3" style="color: var(--color-navy-900);">{{ news.title }}</h3>
                 {% if news.excerpt %}
@@ -196,7 +196,7 @@
             </article>
             {% endfor %}
         </div>
-        <div class="text-center mt-12">
+        <div class="text-center mt-12 reveal">
             <a href="/actualites/" class="btn-ghost">Toutes les actualités</a>
         </div>
     </div>
@@ -205,7 +205,7 @@
 
 {# ═══════════════  CTA INSCRIPTION  ═══════════════ #}
 <section class="section" style="background: var(--color-navy-800);">
-    <div class="container-narrow text-center">
+    <div class="container-narrow text-center reveal">
         <p class="overline-light mb-4">Rejoignez-nous</p>
         <h2 class="text-white mb-5">Prêt à vous former ?</h2>
         <p class="text-lg leading-relaxed mb-10" style="color: var(--color-navy-200);">

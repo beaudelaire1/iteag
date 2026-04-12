@@ -645,24 +645,174 @@
 }
 
 /* ═══════════════════════════════════════════
-   ANIMATIONS — Motion premium
+   ANIMATIONS — Motion premium Trait d'Union Studio
    ═══════════════════════════════════════════ */
 
-/* Scroll reveal */
+/* Scroll reveal — cinématique douce */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity var(--duration-slow) var(--ease-out-expo),
-              transform var(--duration-slow) var(--ease-out-expo);
+  transform: translateY(32px) scale(0.98);
+  transition: opacity 800ms var(--ease-out-expo),
+              transform 800ms var(--ease-out-expo);
+  will-change: opacity, transform;
 }
 .reveal.revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
-.reveal-delay-1 { transition-delay: 100ms; }
-.reveal-delay-2 { transition-delay: 200ms; }
-.reveal-delay-3 { transition-delay: 300ms; }
-.reveal-delay-4 { transition-delay: 400ms; }
+.reveal-delay-1 { transition-delay: 150ms; }
+.reveal-delay-2 { transition-delay: 300ms; }
+.reveal-delay-3 { transition-delay: 450ms; }
+.reveal-delay-4 { transition-delay: 600ms; }
+
+/* Reveal variants */
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 800ms var(--ease-out-expo),
+              transform 800ms var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+.reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+.reveal-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 800ms var(--ease-out-expo),
+              transform 800ms var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+.reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Divider gold — animated width */
+.divider-gold {
+  width: 0;
+  transition: width 600ms var(--ease-out-expo);
+}
+.revealed .divider-gold,
+.divider-gold.revealed {
+  width: 3rem;
+}
+
+/* Overline — subtle letter-spacing animation */
+.overline.revealed,
+.reveal.revealed .overline {
+  animation: overline-enter 800ms var(--ease-out-expo) forwards;
+}
+@keyframes overline-enter {
+  from { letter-spacing: 0.3em; opacity: 0; }
+  to   { letter-spacing: 0.15em; opacity: 1; }
+}
+
+/* Button hover micro-interactions premium */
+.btn-primary,
+.btn-gold,
+.btn-ghost,
+.btn-ghost-white {
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after,
+.btn-gold::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 500ms var(--ease-out-expo), height 500ms var(--ease-out-expo);
+}
+.btn-primary:hover::after,
+.btn-gold:hover::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Card hover — luxe lift avec bordure dorée subtile */
+.card {
+  transition: all 500ms var(--ease-out-expo);
+}
+.card:hover {
+  border-color: var(--color-gold-200);
+  box-shadow: var(--shadow-elevated), 0 0 0 1px var(--color-gold-100);
+  transform: translateY(-4px);
+}
+.card-elevated:hover {
+  transform: translateY(-4px);
+}
+
+/* Stat number — count entrance */
+.stat-number {
+  transition: transform 600ms var(--ease-out-expo);
+}
+.stat-number.counted {
+  animation: stat-pop 600ms var(--ease-out-expo);
+}
+@keyframes stat-pop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Nav premium — smooth backdrop on scroll */
+.nav-premium {
+  transition: background 400ms var(--ease-premium),
+              box-shadow 400ms var(--ease-premium),
+              border-color 400ms var(--ease-premium);
+}
+.nav-premium.scrolled {
+  background: rgba(42, 71, 65, 0.98);
+  box-shadow: 0 4px 20px rgba(26, 45, 41, 0.15);
+  border-bottom-color: transparent;
+}
+
+/* Hero parallax-like entrance */
+[data-motion-hero] .reveal {
+  transform: translateY(48px) scale(0.96);
+}
+[data-motion-hero] .reveal.revealed {
+  transform: translateY(0) scale(1);
+}
+
+/* Image subtle zoom on visible */
+.img-reveal {
+  overflow: hidden;
+  border-radius: 4px;
+}
+.img-reveal img {
+  transition: transform 1.2s var(--ease-out-expo);
+}
+.img-reveal:hover img {
+  transform: scale(1.04);
+}
+
+/* Smooth section transitions — parallax-lite */
+.section {
+  position: relative;
+}
+
+/* Gold accent line animation */
+@keyframes gold-line-expand {
+  from { width: 0; opacity: 0; }
+  to   { width: 100%; opacity: 1; }
+}
+
+/* Badge subtle entrance */
+.badge {
+  transition: all 300ms var(--ease-premium);
+}
+.card:hover .badge {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
 
 /* Fade-in for HTMX swaps */
 .htmx-swap-fade {
