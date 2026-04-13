@@ -31,4 +31,10 @@ urlpatterns = [
     path("utilisateurs/ajouter/", views.AdminUserCreateView.as_view(), name="user_create"),
     path("utilisateurs/<int:pk>/modifier/", views.AdminUserUpdateView.as_view(), name="user_update"),
     path("utilisateurs/<int:pk>/supprimer/", views.AdminUserDeleteView.as_view(), name="user_delete"),
+    # Exports CSV
+    path("export/candidatures/", views.ExportCandidaturesCsvView.as_view(), name="export_candidatures"),
+    path("export/etudiants/", views.ExportEtudiantsCsvView.as_view(), name="export_etudiants"),
+    path("export/paiements/", views.ExportPaiementsCsvView.as_view(), name="export_paiements"),
+    # Actions groupées
+    path("candidatures/bulk-status/", views.BulkCandidatureStatusView.as_view(), name="candidatures_bulk_status"),
 ]

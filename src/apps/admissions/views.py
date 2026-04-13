@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.formations.models import Parcours
 
+from .emails import send_candidature_confirmation
 from .forms import CandidatureForm
 from .models import DossierCandidature
 
@@ -13,6 +14,7 @@ def candidature_form(request):
         form = CandidatureForm(request.POST, request.FILES)
         if form.is_valid():
             dossier = form.save()
+            send_candidature_confirmation(dossier)
             messages.success(request, "Votre candidature a bien été enregistrée.")
             return redirect("admissions:candidature_confirmation", token=dossier.token_suivi)
     else:

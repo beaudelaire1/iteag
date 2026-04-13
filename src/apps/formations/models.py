@@ -112,6 +112,36 @@ class Professeur(TimeStampedModel):
     specialite = models.CharField(max_length=200, blank=True, verbose_name="Spécialité")
     photo = models.ImageField(upload_to="professeurs/", blank=True)
     disciplines = models.ManyToManyField(Discipline, blank=True, related_name="professeurs")
+
+    # Sections détaillées (structure iteag.org)
+    parcours_academique = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Parcours académique",
+        help_text='Liste de {"annee": "2008", "description": "Doctorat en …"}',
+    )
+    expertises = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Expertises académiques",
+        help_text="Liste de chaînes, ex: [\"Ecclésiologie\", \"Éthique\"]",
+    )
+    autres_engagements = models.TextField(
+        blank=True, verbose_name="Autres engagements"
+    )
+    publications_ouvrages = models.TextField(
+        blank=True, verbose_name="Publications — Ouvrages"
+    )
+    publications_articles = models.TextField(
+        blank=True, verbose_name="Publications — Articles"
+    )
+    cours_enseignes = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Cours enseignés à l'ITEAG",
+        help_text="Liste de chaînes, ex: [\"La christologie\", \"L'herméneutique\"]",
+    )
+
     ordre = models.PositiveSmallIntegerField(default=0)
     actif = models.BooleanField(default=True)
 
@@ -122,6 +152,9 @@ class Professeur(TimeStampedModel):
 
     def __str__(self):
         return f"{self.prenom} {self.nom}"
+
+    def get_absolute_url(self):
+        return reverse("formations:professeur_detail", kwargs={"slug": self.slug})
 
     @property
     def nom_complet(self):

@@ -79,6 +79,11 @@
 
                     <form action="{% pageurl page %}" method="POST" class="space-y-5 contact-form">
                         {% csrf_token %}
+                        {# Honeypot anti-spam — champ invisible pour les humains #}
+                        <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                            <label for="id_hp_field">Ne pas remplir</label>
+                            <input type="text" name="honeypot" id="id_hp_field" tabindex="-1" autocomplete="off">
+                        </div>
                         {% for field in form %}
                         <div>
                             <label for="{{ field.id_for_label }}" class="form-label">

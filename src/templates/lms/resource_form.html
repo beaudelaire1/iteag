@@ -1,0 +1,40 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Ajouter une ressource — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='course' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='course' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:course_detail' cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au cours</a>
+    <p class="overline mb-2">Ressources</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Ajouter une ressource</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.cours.titre }} — {{ cours_session.session.nom }}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card-elevated max-w-2xl">
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--color-navy-800);">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <p class="text-xs mt-1 text-red-600">{{ field.errors.0 }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="btn-primary">Ajouter la ressource</button>
+            <a href="{% url 'lms:course_detail' cours_session.pk %}" class="btn-ghost">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

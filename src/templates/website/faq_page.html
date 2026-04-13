@@ -4,31 +4,37 @@
 {% block title %}FAQ — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}Retrouvez les réponses aux questions fréquentes sur l'ITEAG, les formations et les admissions.{% endblock %}
 
+{% block extra_head %}
+{% include "partials/jsonld_faq.html" with questions=page.questions %}
+{% endblock %}
+
 {% block content %}
 <section class="py-16 lg:py-24">
     <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold tracking-tight text-gray-900">{{ page.title }}</h1>
+        <header class="text-center mb-12 hero-entrance">
+            <p class="hero-el hero-el-1 overline mb-3">Foire aux questions</p>
+            <h1 class="hero-el hero-el-2 text-4xl font-bold tracking-tight text-navy-900">{{ page.title }}</h1>
             {% if page.introduction %}
-            <p class="mt-4 text-lg text-gray-600">{{ page.introduction }}</p>
+            <p class="hero-el hero-el-3 mt-4 text-lg text-warm-600">{{ page.introduction }}</p>
             {% endif %}
+            <hr class="hero-el hero-el-3 divider-gold mt-6 mx-auto">
         </header>
 
-        <div class="space-y-4" x-data="{ open: null }">
-            {% for block in page.body %}
+        <div class="space-y-4" x-data="{ open: null }" data-motion-stagger>
+            {% for block in page.questions %}
                 {% if block.block_type == "faq" %}
                 {% for item in block.value %}
-                <div class="border border-gray-200 rounded-lg">
+                <div class="reveal faq-item border border-warm-200 rounded-lg">
                     <button
                         type="button"
-                        class="flex w-full items-center justify-between px-5 py-4 text-left text-base font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                        class="flex w-full items-center justify-between px-5 py-4 text-left text-base font-medium text-navy-900 hover:bg-warm-50 transition-colors"
                         @click="open = open === '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}' ? null : '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}'"
                         :aria-expanded="open === '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}'"
                     >
                         <span>{{ item.question }}</span>
-                        <svg class="h-5 w-5 shrink-0 text-gray-500 transition-transform duration-200" :class="{ 'rotate-180': open === '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}' }" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                        <svg class="h-5 w-5 shrink-0 text-warm-500 transition-transform duration-200" :class="{ 'rotate-180': open === '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}' }" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                     </button>
-                    <div x-show="open === '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}'" x-cloak x-collapse class="px-5 pb-4 prose prose-sm text-gray-600">
+                    <div x-show="open === '{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}'" x-cloak x-collapse class="px-5 pb-4 prose prose-sm text-warm-600">
                         {{ item.reponse|richtext }}
                     </div>
                 </div>

@@ -2,14 +2,14 @@
 
 <footer class="mt-auto bg-navy-950 text-warm-400">
 
-    {# Bande dorée subtile #}
-    <div style="height: 2px; background: linear-gradient(90deg, transparent, var(--color-gold-400), transparent);"></div>
+    {# Bande dorée subtile animée #}
+    <div class="shimmer-gold" style="height: 2px; background: linear-gradient(90deg, transparent, var(--color-gold-400), transparent);"></div>
 
     <div class="container-wide section" style="padding-top: clamp(3rem, 6vw, 5rem); padding-bottom: clamp(3rem, 6vw, 5rem);">
         <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
 
             {# Col 1 — Marque #}
-            <div>
+            <div class="reveal">
                 <a href="/" class="flex items-center gap-3 mb-5 group">
                     <img src="{% static 'img/logo.png' %}" alt="{{ SITE_NAME }}" class="h-12 w-auto" width="48" height="48">
                     <span class="text-base font-bold text-white">{{ SITE_NAME }}</span>
@@ -22,7 +22,7 @@
             </div>
 
             {# Col 2 — Institut #}
-            <div>
+            <div class="reveal" style="transition-delay: 100ms;">
                 <h3 class="overline-light mb-5">Institut</h3>
                 <ul class="space-y-2.5 text-sm">
                     <li><a href="/" class="hover:text-white transition-colors duration-200">Accueil</a></li>
@@ -35,7 +35,7 @@
             </div>
 
             {# Col 3 — Formation #}
-            <div>
+            <div class="reveal" style="transition-delay: 200ms;">
                 <h3 class="overline-light mb-5">Formation</h3>
                 <ul class="space-y-2.5 text-sm">
                     <li><a href="{% url 'formations:parcours_list' %}" class="hover:text-white transition-colors duration-200">Se former à l'ITEAG</a></li>
@@ -48,7 +48,7 @@
             </div>
 
             {# Col 4 — Contact #}
-            <div>
+            <div class="reveal" style="transition-delay: 300ms;">
                 <h3 class="overline-light mb-5">Contact</h3>
                 <ul class="space-y-3 text-sm">
                     <li>

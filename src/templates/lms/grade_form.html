@@ -1,0 +1,67 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Noter — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='evaluations' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='evaluations' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:course_detail' evaluation.cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au cours</a>
+    <p class="overline mb-2">Notation</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Noter {{ evaluation.etudiant.utilisateur.get_full_name }}</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ evaluation.cours_session.cours.titre }} — {{ evaluation.get_type_evaluation_display }}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{# ── Informations étudiant ── #}
+<div class="card-elevated mb-6 max-w-2xl">
+    <div class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+            <p class="font-medium" style="color: var(--color-warm-500);">Étudiant</p>
+            <p style="color: var(--color-navy-900);">{{ evaluation.etudiant.utilisateur.get_full_name }}</p>
+        </div>
+        <div>
+            <p class="font-medium" style="color: var(--color-warm-500);">Statut actuel</p>
+            <p>
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                    {% if evaluation.statut == 'soumis' %}bg-blue-100 text-blue-700
+                    {% elif evaluation.statut == 'en_correction' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {{ evaluation.get_statut_display }}
+                </span>
+            </p>
+        </div>
+        {% if evaluation.fichier_soumis %}
+        <div class="col-span-2">
+            <p class="font-medium" style="color: var(--color-warm-500);">Fichier remis</p>
+            <a href="{{ evaluation.fichier_soumis.url }}" class="hover:underline" style="color: var(--color-navy-600);" download>Télécharger le fichier</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Formulaire de notation ── #}
+<div class="card-elevated max-w-2xl">
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--color-navy-800);">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs mt-1" style="color: var(--color-warm-400);">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<p class="text-xs mt-1 text-red-600">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="btn-primary">Enregistrer la note</button>
+            <a href="{% url 'lms:course_detail' evaluation.cours_session.pk %}" class="btn-ghost">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

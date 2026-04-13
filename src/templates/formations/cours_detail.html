@@ -4,6 +4,10 @@
 {% block title %}{{ cours.titre }} — Formations — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ cours.description|truncatewords:30 }}{% endblock %}
 
+{% block extra_head %}
+{% include "partials/jsonld_course.html" with course=cours %}
+{% endblock %}
+
 {% block content %}
 
 {# ─── HERO ─── #}

@@ -1,0 +1,45 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mes cours — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='courses' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='courses' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Enseignement</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Tous les cours qui vous sont assignés</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    {% for cs in cours_list %}
+    <a href="{% url 'lms:course_detail' cs.pk %}" class="card-elevated block group hover:shadow-lg transition-shadow" style="padding: 0;">
+        <div class="px-5 py-5">
+            <h3 class="text-base font-semibold group-hover:underline" style="color: var(--color-navy-900);">{{ cs.cours.titre }}</h3>
+            <p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ cs.session.nom }}</p>
+            <div class="mt-4 flex items-center justify-between text-xs" style="color: var(--color-warm-500);">
+                <span>{{ cs.cours.ects }} ECTS</span>
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                    {% if cs.statut == 'en_cours' %}bg-green-100 text-green-700
+                    {% elif cs.statut == 'planifie' %}bg-blue-100 text-blue-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {{ cs.get_statut_display }}
+                </span>
+            </div>
+            <p class="text-xs mt-2" style="color: var(--color-warm-400);">{{ cs.inscriptions.count }} étudiant{{ cs.inscriptions.count|pluralize }}</p>
+        </div>
+    </a>
+    {% empty %}
+    <div class="sm:col-span-2 lg:col-span-3 card-elevated text-center py-12">
+        <p style="color: var(--color-warm-400);">Aucun cours assigné pour le moment.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -842,6 +842,312 @@
 }
 
 /* ═══════════════════════════════════════════
+   Hero Entrance — cascade cinématique
+   ═══════════════════════════════════════════ */
+.hero-entrance {
+  --hero-stagger: 120ms;
+}
+.hero-el {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: hero-el-in 900ms var(--ease-out-expo) forwards;
+}
+.hero-el-1 { animation-delay: calc(var(--hero-stagger) * 0); }
+.hero-el-2 { animation-delay: calc(var(--hero-stagger) * 1); }
+.hero-el-3 { animation-delay: calc(var(--hero-stagger) * 2); }
+.hero-el-4 { animation-delay: calc(var(--hero-stagger) * 3); }
+.hero-el-5 { animation-delay: calc(var(--hero-stagger) * 4); }
+
+@keyframes hero-el-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Reveal variants supplémentaires
+   ═══════════════════════════════════════════ */
+
+/* Scale-up reveal */
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 700ms var(--ease-out-expo),
+              transform 700ms var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+.reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Fade-only reveal (plus subtil, pour portails) */
+.reveal-fade {
+  opacity: 0;
+  transition: opacity 600ms var(--ease-out-expo);
+  will-change: opacity;
+}
+.reveal-fade.revealed {
+  opacity: 1;
+}
+
+/* Reveal with blur (premium entrance) */
+.reveal-blur {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(16px);
+  transition: opacity 800ms var(--ease-out-expo),
+              filter 800ms var(--ease-out-expo),
+              transform 800ms var(--ease-out-expo);
+  will-change: opacity, filter, transform;
+}
+.reveal-blur.revealed {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+/* Delay classes étendues */
+.reveal-delay-5 { transition-delay: 750ms; }
+.reveal-delay-6 { transition-delay: 900ms; }
+
+/* ═══════════════════════════════════════════
+   Stagger children (JS-free via CSS)
+   ═══════════════════════════════════════════ */
+[data-motion-stagger] > .reveal:nth-child(1)  { transition-delay: 0ms; }
+[data-motion-stagger] > .reveal:nth-child(2)  { transition-delay: 100ms; }
+[data-motion-stagger] > .reveal:nth-child(3)  { transition-delay: 200ms; }
+[data-motion-stagger] > .reveal:nth-child(4)  { transition-delay: 300ms; }
+[data-motion-stagger] > .reveal:nth-child(5)  { transition-delay: 400ms; }
+[data-motion-stagger] > .reveal:nth-child(6)  { transition-delay: 500ms; }
+[data-motion-stagger] > .reveal:nth-child(7)  { transition-delay: 600ms; }
+[data-motion-stagger] > .reveal:nth-child(8)  { transition-delay: 700ms; }
+[data-motion-stagger] > .reveal:nth-child(9)  { transition-delay: 800ms; }
+[data-motion-stagger] > .reveal:nth-child(10) { transition-delay: 900ms; }
+[data-motion-stagger] > .reveal:nth-child(11) { transition-delay: 1000ms; }
+[data-motion-stagger] > .reveal:nth-child(12) { transition-delay: 1100ms; }
+
+/* ═══════════════════════════════════════════
+   Floating / breathing — éléments décoratifs
+   ═══════════════════════════════════════════ */
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+.float-slow {
+  animation: float 10s ease-in-out infinite;
+}
+.float-delay {
+  animation: float 6s ease-in-out 3s infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+/* Pulse doré subtil */
+.pulse-gold {
+  animation: pulse-gold 3s ease-in-out infinite;
+}
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(234, 182, 62, 0.25); }
+  50%      { box-shadow: 0 0 20px 4px rgba(234, 182, 62, 0.12); }
+}
+
+/* Shimmer doré — reflet glissant */
+.shimmer-gold {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-gold::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(234, 182, 62, 0.08),
+    transparent
+  );
+  animation: shimmer-slide 4s var(--ease-premium) infinite;
+}
+@keyframes shimmer-slide {
+  0%   { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ═══════════════════════════════════════════
+   Parallax-lite — scroll depth subtil
+   ═══════════════════════════════════════════ */
+[data-parallax] {
+  will-change: transform;
+  transition: transform 100ms linear;
+}
+
+/* ═══════════════════════════════════════════
+   Text reveal — mot par mot / ligne par ligne
+   ═══════════════════════════════════════════ */
+.text-reveal-line {
+  overflow: hidden;
+}
+.text-reveal-line > span {
+  display: inline-block;
+  transform: translateY(105%);
+  transition: transform 700ms var(--ease-out-expo);
+}
+.text-reveal-line.revealed > span {
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════
+   Underline reveal — liens luxe
+   ═══════════════════════════════════════════ */
+.link-reveal {
+  position: relative;
+  display: inline;
+}
+.link-reveal::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-gold-400);
+  transition: width 400ms var(--ease-out-expo);
+}
+.link-reveal:hover::after {
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════
+   Image Ken Burns — zoom lent cinématique
+   ═══════════════════════════════════════════ */
+.img-kenburns {
+  overflow: hidden;
+}
+.img-kenburns img {
+  transition: transform 8s ease-out;
+  will-change: transform;
+}
+.img-kenburns.revealed img,
+.img-kenburns:hover img {
+  transform: scale(1.06);
+}
+
+/* ═══════════════════════════════════════════
+   FAQ accordion — transition fluide
+   ═══════════════════════════════════════════ */
+.faq-item {
+  transition: all var(--duration-base) var(--ease-premium);
+}
+.faq-item:hover {
+  background-color: var(--color-warm-100);
+}
+.faq-icon {
+  transition: transform var(--duration-base) var(--ease-premium);
+}
+.faq-item[aria-expanded="true"] .faq-icon,
+.faq-open .faq-icon {
+  transform: rotate(45deg);
+}
+
+/* ═══════════════════════════════════════════
+   Timeline — parcours académique
+   ═══════════════════════════════════════════ */
+.timeline-dot {
+  transition: all var(--duration-base) var(--ease-out-expo);
+}
+.timeline-dot.revealed {
+  animation: timeline-pop 500ms var(--ease-out-expo) forwards;
+}
+@keyframes timeline-pop {
+  0%   { transform: scale(0); }
+  70%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* ═══════════════════════════════════════════
+   Progress circle — completion ring
+   ═══════════════════════════════════════════ */
+.progress-ring-circle {
+  transition: stroke-dashoffset 1.5s var(--ease-out-expo);
+}
+
+/* ═══════════════════════════════════════════
+   Tag cloud — stagger entrance
+   ═══════════════════════════════════════════ */
+.tag-cloud > * {
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  animation: tag-pop 400ms var(--ease-out-expo) forwards;
+}
+.tag-cloud > *:nth-child(1)  { animation-delay: 0ms; }
+.tag-cloud > *:nth-child(2)  { animation-delay: 60ms; }
+.tag-cloud > *:nth-child(3)  { animation-delay: 120ms; }
+.tag-cloud > *:nth-child(4)  { animation-delay: 180ms; }
+.tag-cloud > *:nth-child(5)  { animation-delay: 240ms; }
+.tag-cloud > *:nth-child(6)  { animation-delay: 300ms; }
+.tag-cloud > *:nth-child(7)  { animation-delay: 360ms; }
+.tag-cloud > *:nth-child(8)  { animation-delay: 420ms; }
+
+@keyframes tag-pop {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ═══════════════════════════════════════════
+   Scroll indicator — flèche hero
+   ═══════════════════════════════════════════ */
+.scroll-indicator {
+  animation: scroll-bounce 2s ease-in-out infinite;
+}
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50%      { transform: translateY(8px); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════
+   Gradient shift — fond hero animé
+   ═══════════════════════════════════════════ */
+.gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-move 12s ease infinite;
+}
+@keyframes gradient-move {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ═══════════════════════════════════════════
+   Border draw — trace dorée
+   ═══════════════════════════════════════════ */
+.border-draw {
+  position: relative;
+}
+.border-draw::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-gold-400);
+  transition: width 800ms var(--ease-out-expo);
+}
+.border-draw.revealed::after,
+.border-draw:hover::after {
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════
    Alpine.js cloak
    ═══════════════════════════════════════════ */
 [x-cloak] { display: none !important; }

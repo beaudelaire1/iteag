@@ -1,0 +1,37 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Annonces — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='annonces' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='annonces' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Communication</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes annonces</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Toutes vos annonces publiées</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card-elevated" style="padding: 0;">
+    <div class="divide-y" style="border-color: var(--color-warm-100);">
+        {% for annonce in annonces %}
+        <div class="px-5 py-4 flex items-start justify-between gap-4">
+            <div>
+                <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y H:i" }}</p>
+                <p class="text-sm mt-2" style="color: var(--color-warm-600);">{{ annonce.contenu|truncatewords:30 }}</p>
+            </div>
+            <a href="{% url 'lms:announcement_update' annonce.pk %}" class="shrink-0 text-xs font-medium hover:underline" style="color: var(--color-navy-600);">Modifier</a>
+        </div>
+        {% empty %}
+        <p class="px-5 py-12 text-sm text-center" style="color: var(--color-warm-400);">Aucune annonce publiée.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

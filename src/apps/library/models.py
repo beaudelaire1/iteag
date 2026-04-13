@@ -1,4 +1,5 @@
-from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.db import models
 
 from apps.core.models import TimeStampedModel
@@ -38,9 +39,31 @@ class NoticeBibliographique(TimeStampedModel):
             models.Index(fields=["titre"]),
             models.Index(fields=["auteur"]),
             models.Index(fields=["cote"]),
+            GinIndex(fields=["search_vector"], name="library_search_gin"),
         ]
 
     def __str__(self):
         if self.auteur:
             return f"{self.titre} — {self.auteur}"
         return self.titre
+
+    @property
+    def mots_cles_list(self):
+        if self.mots_cles:
+            return [kw.strip() for kw in self.mots_cles.split(",") if kw.strip()]
+        return []
+
+    def save(self, *args, **kwargs):
+        from django.db import connection
+
+        super().save(*args, **kwargs)
+        # Mise à jour du search_vector via SQL pour bénéficier de la config 'french'
+        if connection.vendor == "postgresql":
+            NoticeBibliographique.objects.filter(pk=self.pk).update(
+                search_vector=(
+                    SearchVector("titre", weight="A", config="french")
+                    + SearchVector("auteur", weight="A", config="french")
+                    + SearchVector("mots_cles", weight="B", config="french")
+                    + SearchVector("description", weight="C", config="french")
+                )
+            )

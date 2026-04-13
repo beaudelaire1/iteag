@@ -21,6 +21,10 @@ MIDDLEWARE.append("django_browser_reload.middleware.BrowserReloadMiddleware")  #
 
 INTERNAL_IPS = ["127.0.0.1"]
 
+DEBUG_TOOLBAR_CONFIG = {
+    "INTERCEPT_REDIRECTS": False,
+}
+
 # ──────────────────────────────────────────────
 # Database — SQLite for fast local dev
 # ──────────────────────────────────────────────
@@ -54,4 +58,5 @@ AXES_ENABLED = False
 # CSP — report only in dev
 # ──────────────────────────────────────────────
 
-CSP_REPORT_ONLY = True
+CONTENT_SECURITY_POLICY = None
+CONTENT_SECURITY_POLICY_REPORT_ONLY = None

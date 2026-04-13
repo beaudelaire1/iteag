@@ -1,0 +1,13 @@
+{% if parcours %}
+<div class="p-4 border border-iteag-gold/30 rounded-xl bg-iteag-warm/50">
+    <h4 class="font-display text-lg font-semibold text-iteag-navy">{{ parcours.nom }}</h4>
+    <p class="text-sm text-iteag-navy/70 mt-1">{{ parcours.get_type_parcours_display }}</p>
+    {% if parcours.description %}
+    <p class="text-sm mt-2">{{ parcours.description|truncatewords:40 }}</p>
+    {% endif %}
+    <div class="flex gap-4 mt-2 text-xs text-iteag-navy/60">
+        <span>{{ parcours.ects_requis }} ECTS</span>
+        <span>{{ parcours.duree_annees }} ans</span>
+    </div>
+</div>
+{% endif %}

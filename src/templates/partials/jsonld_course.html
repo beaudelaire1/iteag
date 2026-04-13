@@ -1,0 +1,16 @@
+{# JSON-LD Course — Schema.org · PUB-013 #}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "{{ course.titre|escapejs }}",
+    "description": "{{ course.description|striptags|truncatewords:50|escapejs }}",
+    "provider": {
+        "@type": "Organization",
+        "name": "ITEAG",
+        "url": "https://iteag.org"
+    },
+    "educationalCredentialAwarded": "{{ course.ects|default:'2.5' }} ECTS",
+    "inLanguage": "fr"
+}
+</script>

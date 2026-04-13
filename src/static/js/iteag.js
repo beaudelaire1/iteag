@@ -22,7 +22,7 @@
 
   function initReveals() {
     document
-      .querySelectorAll(".reveal:not(.revealed), .reveal-left:not(.revealed), .reveal-right:not(.revealed)")
+      .querySelectorAll(".reveal:not(.revealed), .reveal-left:not(.revealed), .reveal-right:not(.revealed), .reveal-scale:not(.revealed), .reveal-fade:not(.revealed), .reveal-blur:not(.revealed), .text-reveal-line:not(.revealed), .border-draw:not(.revealed)")
       .forEach((el) => {
         revealObserver.observe(el);
       });
@@ -125,22 +125,27 @@
       children.forEach((child, i) => {
         if (!child.classList.contains("reveal") &&
             !child.classList.contains("reveal-left") &&
-            !child.classList.contains("reveal-right")) {
+            !child.classList.contains("reveal-right") &&
+            !child.classList.contains("reveal-scale") &&
+            !child.classList.contains("reveal-blur")) {
           child.classList.add("reveal");
         }
-        child.style.transitionDelay = (i * 120) + "ms";
+        // Only set delay if not already set via CSS nth-child or inline
+        if (!child.style.transitionDelay) {
+          child.style.transitionDelay = (i * 120) + "ms";
+        }
       });
     });
 
     // Hero entrance — progressive reveal with cinematic delay
-    const hero = document.querySelector("[data-motion-hero]");
-    if (hero) {
+    const heroes = document.querySelectorAll("[data-motion-hero]");
+    heroes.forEach((hero) => {
       hero.classList.add("reveal");
       // Force immediate reveal for hero (above fold)
       requestAnimationFrame(() => {
         hero.classList.add("revealed");
       });
-    }
+    });
   }
 
   /* ── 7. Progress bar animation ── */
@@ -163,15 +168,61 @@
     });
   }
 
+  /* ── 8. Parallax-lite (scroll depth subtil) ── */
+  function initParallax() {
+    const elements = document.querySelectorAll("[data-parallax]");
+    if (!elements.length) return;
+
+    function updateParallax() {
+      const scrollY = window.scrollY;
+      elements.forEach((el) => {
+        const speed = parseFloat(el.dataset.parallax) || 0.1;
+        const rect = el.getBoundingClientRect();
+        const center = rect.top + rect.height / 2;
+        const offset = (center - window.innerHeight / 2) * speed;
+        el.style.transform = "translateY(" + offset + "px)";
+      });
+    }
+
+    // Use rAF throttle for performance
+    let ticking = false;
+    window.addEventListener("scroll", () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateParallax();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+    updateParallax();
+  }
+
+  /* ── 9. Text reveal — line-by-line entrance ── */
+  function initTextReveal() {
+    document.querySelectorAll(".text-reveal-line").forEach((el) => {
+      // Wrap inner text in span if not already wrapped
+      if (!el.querySelector("span")) {
+        const span = document.createElement("span");
+        span.textContent = el.textContent;
+        el.textContent = "";
+        el.appendChild(span);
+      }
+    });
+    // The .revealed class is added by the standard revealObserver
+  }
+
   /* ── Boot ── */
   function boot() {
     initNavScroll();
+    initTextReveal();
     initReveals();
     animateCounters();
     initHTMX();
     initSmoothAnchors();
     initProgressBars();
     initStagger();
+    initParallax();
   }
 
   if (document.readyState === "loading") {

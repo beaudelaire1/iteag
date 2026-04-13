@@ -1,0 +1,48 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if annonce %}Modifier l'annonce{% else %}Publier une annonce{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='annonces' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='annonces' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    {% if cours_session %}
+    <a href="{% url 'lms:course_detail' cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au cours</a>
+    {% else %}
+    <a href="{% url 'lms:annonces_list' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour aux annonces</a>
+    {% endif %}
+    <p class="overline mb-2">Annonces</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{% if annonce %}Modifier l'annonce{% else %}Publier une annonce{% endif %}</h1>
+    {% if cours_session %}
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.cours.titre }} — {{ cours_session.session.nom }}</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card-elevated max-w-2xl">
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--color-navy-800);">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="text-xs mt-1 text-red-600">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="btn-primary">{% if annonce %}Enregistrer{% else %}Publier l'annonce{% endif %}</button>
+            {% if cours_session %}
+            <a href="{% url 'lms:course_detail' cours_session.pk %}" class="btn-ghost">Annuler</a>
+            {% else %}
+            <a href="{% url 'lms:annonces_list' %}" class="btn-ghost">Annuler</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

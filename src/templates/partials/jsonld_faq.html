@@ -1,0 +1,22 @@
+{# JSON-LD FAQPage — Schema.org · PUB-013 #}
+{% load wagtailcore_tags %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {% for block in questions %}
+        {% if block.block_type == "faq" %}
+        {
+            "@type": "Question",
+            "name": "{{ block.value.question|escapejs }}",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ block.value.reponse|striptags|escapejs }}"
+            }
+        }{% if not forloop.last %},{% endif %}
+        {% endif %}
+        {% endfor %}
+    ]
+}
+</script>

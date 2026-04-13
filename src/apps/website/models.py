@@ -170,6 +170,12 @@ class NewsIndexPage(Page):
     parent_page_types = ["website.HomePage"]
     subpage_types = ["website.NewsPage"]
 
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        articles = NewsPage.objects.child_of(self).live().public().order_by("-date")
+        context["articles"] = articles
+        return context
+
 
 class NewsPage(Page):
     """Article d'actualité — PUB-006."""
@@ -220,6 +226,12 @@ class EventIndexPage(Page):
 
     parent_page_types = ["website.HomePage"]
     subpage_types = ["website.EventPage"]
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        events = EventPage.objects.child_of(self).live().public().order_by("-date_debut")
+        context["events"] = events
+        return context
 
 
 class EventPage(Page):
@@ -290,10 +302,16 @@ class ContactPage(AbstractForm):
     introduction = RichTextField(blank=True)
     thank_you_text = RichTextField(blank=True, verbose_name="Message de confirmation")
     meta_description = models.CharField(max_length=300, blank=True)
+    destinataire = models.EmailField(
+        default="secretariat@iteag.org",
+        verbose_name="Email destinataire",
+        help_text="Adresse qui recevra les messages du formulaire.",
+    )
 
     content_panels = AbstractForm.content_panels + [
         FieldPanel("introduction"),
         FieldPanel("thank_you_text"),
+        FieldPanel("destinataire"),
     ]
 
     promote_panels = Page.promote_panels + [
@@ -304,3 +322,50 @@ class ContactPage(AbstractForm):
         verbose_name = "Page de contact"
 
     parent_page_types = ["website.HomePage"]
+
+    def process_form_submission(self, form):
+        # Honeypot anti-spam : si le champ caché est rempli, on ignore la soumission
+        if form.data.get("honeypot"):
+            return None
+        submission = super().process_form_submission(form)
+        self._send_notification_email(form)
+        self._send_confirmation_email(form)
+        return submission
+
+    def _send_notification_email(self, form):
+        """Envoie le message au secrétariat."""
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        data = form.cleaned_data
+        lines = [f"{key}: {value}" for key, value in data.items() if key != "honeypot"]
+        body = "\n".join(lines)
+
+        send_mail(
+            subject=f"[ITEAG Contact] Nouveau message via le site",
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[self.destinataire],
+            fail_silently=True,
+        )
+
+    def _send_confirmation_email(self, form):
+        """Envoie un accusé de réception au visiteur."""
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        email = form.cleaned_data.get("email") or form.cleaned_data.get("e-mail") or form.cleaned_data.get("courriel")
+        if not email:
+            return
+        send_mail(
+            subject="ITEAG — Nous avons bien reçu votre message",
+            message=(
+                "Bonjour,\n\n"
+                "Nous avons bien reçu votre message et nous vous répondrons dans les meilleurs délais.\n\n"
+                "Cordialement,\n"
+                "Le secrétariat de l'ITEAG"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )

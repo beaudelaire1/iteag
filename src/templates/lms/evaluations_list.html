@@ -1,0 +1,66 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Évaluations — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='evaluations' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='evaluations' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-10">
+    <p class="overline mb-2">Notation</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Évaluations</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Toutes les évaluations de vos étudiants</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card-elevated" style="padding: 0;">
+    {% if evaluations %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y" style="border-color: var(--color-warm-200);">
+            <thead style="background: var(--color-warm-50);">
+                <tr>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase" style="color: var(--color-warm-500);">Étudiant</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase" style="color: var(--color-warm-500);">Cours</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase" style="color: var(--color-warm-500);">Type</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase" style="color: var(--color-warm-500);">Statut</th>
+                    <th class="px-5 py-3 text-right text-xs font-medium uppercase" style="color: var(--color-warm-500);">Note</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase" style="color: var(--color-warm-500);">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--color-warm-100);">
+                {% for eval in evaluations %}
+                <tr>
+                    <td class="px-5 py-3 text-sm font-medium" style="color: var(--color-navy-900);">{{ eval.etudiant.utilisateur.get_full_name }}</td>
+                    <td class="px-5 py-3 text-sm" style="color: var(--color-warm-600);">{{ eval.cours_session.cours.titre }}</td>
+                    <td class="px-5 py-3 text-sm" style="color: var(--color-warm-600);">{{ eval.get_type_evaluation_display }}</td>
+                    <td class="px-5 py-3 text-sm">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                            {% if eval.statut == 'soumis' %}bg-blue-100 text-blue-700
+                            {% elif eval.statut == 'en_correction' %}bg-yellow-100 text-yellow-700
+                            {% elif eval.statut == 'note' %}bg-green-100 text-green-700
+                            {% elif eval.statut == 'publie' %}bg-purple-100 text-purple-700
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ eval.get_statut_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 text-sm text-right font-semibold" style="color: var(--color-navy-900);">{% if eval.note is not None %}{{ eval.note }}/20{% else %}—{% endif %}</td>
+                    <td class="px-5 py-3 text-sm">
+                        {% if eval.statut == 'soumis' or eval.statut == 'en_correction' %}
+                        <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="font-medium hover:underline" style="color: var(--color-navy-600);">Noter</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="px-5 py-12 text-sm text-center" style="color: var(--color-warm-400);">Aucune évaluation pour le moment.</p>
+    {% endif %}
+</div>
+{% endblock %}

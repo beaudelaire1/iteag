@@ -27,12 +27,7 @@ class CatalogueView(ListView):
         ordering = self.request.GET.get("sort", "titre")
 
         if q:
-            qs = qs.filter(
-                Q(titre__icontains=q)
-                | Q(auteur__icontains=q)
-                | Q(mots_cles__icontains=q)
-                | Q(cote__icontains=q)
-            )
+            qs = self._apply_search(qs, q)
         if discipline:
             qs = qs.filter(discipline__slug=discipline)
         if author:
@@ -44,7 +39,31 @@ class CatalogueView(ListView):
             qs = qs.order_by("auteur", "titre")
         elif ordering == "recent":
             qs = qs.order_by("-date_publication", "titre")
+        elif ordering == "pertinence" and q:
+            pass  # Déjà trié par rank dans _apply_search
 
+        return qs
+
+    def _apply_search(self, qs, q):
+        """Full-text PostgreSQL search avec fallback icontains pour SQLite."""
+        from django.db import connection
+
+        if connection.vendor == "postgresql":
+            from django.contrib.postgres.search import SearchQuery, SearchRank
+
+            search_query = SearchQuery(q, config="french")
+            qs = (
+                qs.filter(search_vector=search_query)
+                .annotate(rank=SearchRank("search_vector", search_query))
+                .order_by("-rank")
+            )
+        else:
+            qs = qs.filter(
+                Q(titre__icontains=q)
+                | Q(auteur__icontains=q)
+                | Q(mots_cles__icontains=q)
+                | Q(cote__icontains=q)
+            )
         return qs
 
     def get_context_data(self, **kwargs):

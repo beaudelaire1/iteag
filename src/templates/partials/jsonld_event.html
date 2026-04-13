@@ -1,0 +1,23 @@
+{# JSON-LD Event — Schema.org · PUB-013 #}
+{% load wagtailimages_tags %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": "{{ event.title|escapejs }}",
+    "description": "{{ event.search_description|default:event.title|escapejs }}",
+    "startDate": "{{ event.date_debut|date:'c' }}",
+    {% if event.date_fin %}"endDate": "{{ event.date_fin|date:'c' }}",{% endif %}
+    {% if event.lieu %}"location": {
+        "@type": "Place",
+        "name": "{{ event.lieu|escapejs }}"
+    },{% endif %}
+    "organizer": {
+        "@type": "Organization",
+        "name": "ITEAG",
+        "url": "https://iteag.org"
+    },
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"
+}
+</script>

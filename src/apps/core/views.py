@@ -1,8 +1,12 @@
+import csv
+
 from django.contrib import messages
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
 from .forms import (
@@ -111,6 +115,7 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
 
         if new_statut and new_statut != self.object.statut:
             from apps.admissions.models import HistoriqueStatut
+            from apps.admissions.emails import send_statut_change_email
 
             HistoriqueStatut.objects.create(
                 dossier=self.object,
@@ -121,6 +126,7 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
             )
             self.object.statut = new_statut
             self.object.save(update_fields=["statut"])
+            send_statut_change_email(self.object)
             messages.success(request, f"Statut mis à jour : {self.object.get_statut_display()}")
         return redirect("administration:candidature_detail", pk=self.object.pk)
 
@@ -137,7 +143,9 @@ class AdminEtudiantListView(StaffRoleRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = ProfilEtudiant.objects.select_related("utilisateur", "parcours", "promotion")
+        qs = ProfilEtudiant.objects.select_related("utilisateur", "parcours", "promotion").order_by(
+            "utilisateur__last_name", "utilisateur__first_name"
+        )
         q = self.request.GET.get("q", "").strip()
         statut = self.request.GET.get("statut")
         if q:
@@ -454,3 +462,141 @@ class AdminEtudiantDeleteView(StaffRoleRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, f"Profil étudiant « {self.object} » supprimé.")
         return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# Exports CSV — CDC ADM-010
+# ══════════════════════════════════════════════
+
+
+class ExportCandidaturesCsvView(StaffRoleRequiredMixin, View):
+    """Export CSV des candidatures avec filtrage optionnel par statut."""
+
+    def get(self, request):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="candidatures.csv"'
+        response.write("\ufeff")  # BOM UTF-8 pour Excel
+
+        writer = csv.writer(response, delimiter=";")
+        writer.writerow([
+            "Nom", "Prénom", "Email", "Téléphone", "Parcours souhaité",
+            "Statut", "Église", "Église fondatrice", "Date soumission",
+        ])
+
+        qs = DossierCandidature.objects.select_related("parcours_souhaite")
+        statut = request.GET.get("statut")
+        if statut:
+            qs = qs.filter(statut=statut)
+
+        for d in qs.iterator():
+            writer.writerow([
+                d.nom, d.prenom, d.email, d.telephone,
+                str(d.parcours_souhaite) if d.parcours_souhaite else "",
+                d.get_statut_display(), d.eglise,
+                "Oui" if d.eglise_fondatrice else "Non",
+                d.date_soumission.strftime("%d/%m/%Y"),
+            ])
+        return response
+
+
+class ExportEtudiantsCsvView(StaffRoleRequiredMixin, View):
+    """Export CSV des étudiants."""
+
+    def get(self, request):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="etudiants.csv"'
+        response.write("\ufeff")
+
+        writer = csv.writer(response, delimiter=";")
+        writer.writerow([
+            "Numéro étudiant", "Nom", "Prénom", "Email", "Parcours",
+            "Promotion", "Statut", "ECTS acquis", "Église fondatrice",
+        ])
+
+        qs = ProfilEtudiant.objects.select_related(
+            "utilisateur", "parcours", "promotion",
+        )
+        statut = request.GET.get("statut")
+        if statut:
+            qs = qs.filter(statut_inscription=statut)
+
+        for e in qs.iterator():
+            writer.writerow([
+                e.numero_etudiant,
+                e.utilisateur.last_name, e.utilisateur.first_name,
+                e.utilisateur.email, str(e.parcours),
+                e.promotion.nom if e.promotion else "",
+                e.get_statut_inscription_display(),
+                e.total_ects_acquis,
+                "Oui" if e.eglise_fondatrice else "Non",
+            ])
+        return response
+
+
+class ExportPaiementsCsvView(StaffRoleRequiredMixin, View):
+    """Export CSV des paiements."""
+
+    def get(self, request):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="paiements.csv"'
+        response.write("\ufeff")
+
+        writer = csv.writer(response, delimiter=";")
+        writer.writerow([
+            "Étudiant", "Numéro étudiant", "Session", "Montant",
+            "Date", "Mode", "Statut", "Référence",
+        ])
+
+        qs = Paiement.objects.select_related("etudiant__utilisateur", "session")
+
+        for p in qs.iterator():
+            writer.writerow([
+                p.etudiant.utilisateur.get_full_name(),
+                p.etudiant.numero_etudiant,
+                str(p.session) if p.session else "",
+                str(p.montant), p.date_paiement.strftime("%d/%m/%Y"),
+                p.get_mode_display(), p.get_statut_display(),
+                p.reference,
+            ])
+        return response
+
+
+# ══════════════════════════════════════════════
+# Actions groupées — Candidatures
+# ══════════════════════════════════════════════
+
+
+class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
+    """Changement de statut en masse pour les candidatures sélectionnées."""
+
+    def post(self, request):
+        ids = request.POST.getlist("selected")
+        new_statut = request.POST.get("bulk_statut")
+
+        if not ids or not new_statut:
+            messages.warning(request, "Sélectionnez des dossiers et un statut.")
+            return redirect("administration:candidatures")
+
+        valid_statuts = {s[0] for s in DossierCandidature.Statut.choices}
+        if new_statut not in valid_statuts:
+            messages.error(request, "Statut invalide.")
+            return redirect("administration:candidatures")
+
+        from apps.admissions.models import HistoriqueStatut
+
+        dossiers = DossierCandidature.objects.filter(pk__in=ids).exclude(statut=new_statut)
+        count = 0
+        for dossier in dossiers:
+            HistoriqueStatut.objects.create(
+                dossier=dossier,
+                ancien_statut=dossier.statut,
+                nouveau_statut=new_statut,
+                modifie_par=request.user,
+                commentaire="Action groupée",
+            )
+            dossier.statut = new_statut
+            dossier.save(update_fields=["statut"])
+            count += 1
+
+        messages.success(request, f"{count} dossier(s) mis à jour → {DossierCandidature.Statut(new_statut).label}.")
+        return redirect("administration:candidatures")

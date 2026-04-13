@@ -1,9 +1,12 @@
 from django.db.models import Q
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django.views.generic import DetailView, ListView
 
 from .models import Cours, Discipline, Parcours, Professeur, Tarif
 
 
+@method_decorator(cache_page(300), name="dispatch")  # 5 min
 class ParcoursListView(ListView):
     model = Parcours
     template_name = "formations/parcours_list.html"
@@ -56,8 +59,25 @@ class CoursDetailView(DetailView):
     queryset = Cours.objects.filter(actif=True).select_related("discipline")
 
 
+@method_decorator(cache_page(600), name="dispatch")  # 10 min
 class ProfesseurListView(ListView):
     model = Professeur
     template_name = "formations/professeur_list.html"
     context_object_name = "professeurs"
     queryset = Professeur.objects.filter(actif=True).prefetch_related("disciplines")
+
+
+class ProfesseurDetailView(DetailView):
+    model = Professeur
+    template_name = "formations/professeur_detail.html"
+    context_object_name = "professeur"
+    queryset = Professeur.objects.filter(actif=True).prefetch_related("disciplines")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["autres_professeurs"] = (
+            Professeur.objects.filter(actif=True)
+            .exclude(pk=self.object.pk)
+            .prefetch_related("disciplines")[:4]
+        )
+        return context
