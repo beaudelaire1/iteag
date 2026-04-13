@@ -1,0 +1,87 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Sessions académiques — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='sessions' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='sessions' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Sessions académiques</h1>
+        <p class="text-sm mt-1" style="color: var(--color-warm-500);">{{ sessions.paginator.count }} session{{ sessions.paginator.count|pluralize }}</p>
+    </div>
+    <a href="{% url 'administration:session_create' %}" class="btn-primary text-sm">+ Nouvelle session</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{% if sessions %}
+<div class="space-y-4">
+    {% for s in sessions %}
+    <div class="card-elevated flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            {# Icône période #}
+            <div class="h-12 w-12 rounded-lg flex items-center justify-center shrink-0 text-lg"
+                style="background: var(--color-warm-100); color: var(--color-navy-700);">
+                {% if s.periode == 'carnaval' %}🎭
+                {% elif s.periode == 'paques' %}✝️
+                {% elif s.periode == 'juillet' %}☀️
+                {% else %}🍂{% endif %}
+            </div>
+            <div>
+                <h3 class="font-semibold" style="color: var(--color-navy-900);">{{ s.nom }}</h3>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                    {{ s.get_periode_display }} — {{ s.annee_academique }}
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+            <div class="text-right">
+                <span class="block text-xs" style="color: var(--color-warm-400);">Début</span>
+                <span class="font-medium" style="color: var(--color-navy-800);">{{ s.date_debut|date:"d/m/Y" }}</span>
+            </div>
+            <div class="text-right">
+                <span class="block text-xs" style="color: var(--color-warm-400);">Fin</span>
+                <span class="font-medium" style="color: var(--color-navy-800);">{{ s.date_fin|date:"d/m/Y" }}</span>
+            </div>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                {% if s.statut == 'en_cours' %}bg-emerald-50 text-emerald-700
+                {% elif s.statut == 'planifiee' %}bg-blue-50 text-blue-700
+                {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {{ s.get_statut_display }}
+            </span>
+            <a href="{% url 'administration:session_update' s.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>
+            <a href="{% url 'administration:session_delete' s.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# ── Pagination ── #}
+{% if sessions.has_other_pages %}
+<nav class="flex justify-center mt-8 gap-1">
+    {% if sessions.has_previous %}
+    <a href="?page={{ sessions.previous_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium" style="color: var(--color-navy-600); background: var(--color-warm-100);">‹</a>
+    {% endif %}
+    {% for num in sessions.paginator.page_range %}
+    <a href="?page={{ num }}" class="px-3 py-1.5 rounded text-sm font-medium {% if sessions.number == num %}text-white{% endif %}"
+       style="{% if sessions.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if sessions.has_next %}
+    <a href="?page={{ sessions.next_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium" style="color: var(--color-navy-600); background: var(--color-warm-100);">›</a>
+    {% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card-elevated py-12 text-center">
+    <p style="color: var(--color-warm-400);">Aucune session académique créée.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ dossier.nom_complet }} — Candidature — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='candidatures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='candidatures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'administration:candidatures' %}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Retour aux candidatures
+    </a>
+    <div class="flex flex-wrap items-center gap-3">
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ dossier.nom_complet }}</h1>
+        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+            {% if dossier.statut == 'soumis' %}bg-blue-50 text-blue-700
+            {% elif dossier.statut == 'en_examen' %}bg-amber-50 text-amber-700
+            {% elif dossier.statut == 'accepte' %}bg-emerald-50 text-emerald-700
+            {% elif dossier.statut == 'refuse' %}bg-red-50 text-red-700
+            {% else %}bg-orange-50 text-orange-700{% endif %}">
+            {{ dossier.get_statut_display }}
+        </span>
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid lg:grid-cols-3 gap-8">
+    {# ── Infos principales ── #}
+    <div class="lg:col-span-2 space-y-6">
+        {# Identité #}
+        <div class="card-elevated">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Identité</h2>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <dt style="color: var(--color-warm-500);">Nom complet</dt>
+                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.nom_complet }}</dd>
+                </div>
+                <div>
+                    <dt style="color: var(--color-warm-500);">Email</dt>
+                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.email }}</dd>
+                </div>
+                {% if dossier.telephone %}
+                <div>
+                    <dt style="color: var(--color-warm-500);">Téléphone</dt>
+                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.telephone }}</dd>
+                </div>
+                {% endif %}
+                {% if dossier.date_naissance %}
+                <div>
+                    <dt style="color: var(--color-warm-500);">Date de naissance</dt>
+                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.date_naissance|date:"d/m/Y" }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+
+        {# Candidature #}
+        <div class="card-elevated">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Candidature</h2>
+            <dl class="space-y-4 text-sm">
+                <div>
+                    <dt style="color: var(--color-warm-500);">Parcours souhaité</dt>
+                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.parcours_souhaite }}</dd>
+                </div>
+                {% if dossier.eglise %}
+                <div>
+                    <dt style="color: var(--color-warm-500);">Église</dt>
+                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.eglise }} {% if dossier.eglise_fondatrice %}<span class="badge badge-gold ml-2" style="font-size: 0.625rem;">Fondatrice</span>{% endif %}</dd>
+                </div>
+                {% endif %}
+                <div>
+                    <dt style="color: var(--color-warm-500);">Motivations</dt>
+                    <dd class="mt-1 leading-relaxed" style="color: var(--color-warm-700);">{{ dossier.motivations|linebreaks }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        {# Pièces jointes #}
+        {% if dossier.piece_identite or dossier.diplomes or dossier.autre_document %}
+        <div class="card-elevated">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Pièces jointes</h2>
+            <div class="space-y-3">
+                {% if dossier.piece_identite %}
+                <a href="{{ dossier.piece_identite.url }}" target="_blank" class="flex items-center gap-3 p-3 rounded border hover:bg-warm-50 transition-colors" style="border-color: var(--color-warm-200);">
+                    <svg class="h-5 w-5 shrink-0" style="color: var(--color-navy-600);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    <span class="text-sm font-medium" style="color: var(--color-navy-800);">Pièce d'identité</span>
+                </a>
+                {% endif %}
+                {% if dossier.diplomes %}
+                <a href="{{ dossier.diplomes.url }}" target="_blank" class="flex items-center gap-3 p-3 rounded border hover:bg-warm-50 transition-colors" style="border-color: var(--color-warm-200);">
+                    <svg class="h-5 w-5 shrink-0" style="color: var(--color-navy-600);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    <span class="text-sm font-medium" style="color: var(--color-navy-800);">Diplômes</span>
+                </a>
+                {% endif %}
+                {% if dossier.autre_document %}
+                <a href="{{ dossier.autre_document.url }}" target="_blank" class="flex items-center gap-3 p-3 rounded border hover:bg-warm-50 transition-colors" style="border-color: var(--color-warm-200);">
+                    <svg class="h-5 w-5 shrink-0" style="color: var(--color-navy-600);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    <span class="text-sm font-medium" style="color: var(--color-navy-800);">Autre document</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Historique #}
+        {% if historique %}
+        <div class="card-elevated">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Historique</h2>
+            <div class="space-y-3">
+                {% for h in historique %}
+                <div class="flex items-start gap-3 text-sm p-3 rounded" style="background: var(--color-warm-50);">
+                    <div class="h-2 w-2 rounded-full mt-1.5 shrink-0" style="background: var(--color-navy-400);"></div>
+                    <div>
+                        <p style="color: var(--color-navy-800);">
+                            <span class="font-semibold">{{ h.get_ancien_statut_display }}</span>
+                            →
+                            <span class="font-semibold">{{ h.get_nouveau_statut_display }}</span>
+                        </p>
+                        <p class="text-xs mt-0.5" style="color: var(--color-warm-400);">
+                            {{ h.created_at|date:"d/m/Y H:i" }}{% if h.modifie_par %} — {{ h.modifie_par.get_full_name|default:h.modifie_par.username }}{% endif %}
+                        </p>
+                        {% if h.commentaire %}<p class="mt-1" style="color: var(--color-warm-600);">{{ h.commentaire }}</p>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── Sidebar : Actions ── #}
+    <div class="space-y-6">
+        {# Changer le statut #}
+        <div class="card-elevated">
+            <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Changer le statut</h3>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label" for="id_statut">Nouveau statut</label>
+                    <select name="statut" id="id_statut" class="form-input">
+                        {% for value, label in statut_choices %}
+                        <option value="{{ value }}" {% if value == dossier.statut %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="id_commentaire">Commentaire (optionnel)</label>
+                    <textarea name="commentaire" id="id_commentaire" rows="3" class="form-input" placeholder="Note sur le changement de statut…"></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-full justify-center">Mettre à jour</button>
+            </form>
+        </div>
+
+        {# Résumé #}
+        <div class="card-elevated">
+            <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Résumé</h3>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt style="color: var(--color-warm-500);">Soumis le</dt>
+                    <dd class="font-medium" style="color: var(--color-navy-800);">{{ dossier.date_soumission|date:"d/m/Y" }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt style="color: var(--color-warm-500);">Dernière MAJ</dt>
+                    <dd class="font-medium" style="color: var(--color-navy-800);">{{ dossier.date_derniere_maj|date:"d/m/Y" }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt style="color: var(--color-warm-500);">Église fondatrice</dt>
+                    <dd class="font-medium" style="color: var(--color-navy-800);">{% if dossier.eglise_fondatrice %}Oui{% else %}Non{% endif %}</dd>
+                </div>
+            </dl>
+        </div>
+
+        {# Notes internes #}
+        {% if dossier.notes_internes %}
+        <div class="card-elevated" style="background: var(--color-warm-100);">
+            <h3 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">Notes internes</h3>
+            <p class="text-sm leading-relaxed" style="color: var(--color-warm-700);">{{ dossier.notes_internes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

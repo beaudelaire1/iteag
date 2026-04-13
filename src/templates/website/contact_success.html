@@ -1,19 +1,25 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Message envoyé — {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
-<section class="py-24 lg:py-32">
-    <div class="mx-auto max-w-xl px-4 sm:px-6 lg:px-8 text-center">
-        <div class="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-green-100 mb-6">
-            <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+<section class="relative overflow-hidden" style="background: linear-gradient(160deg, var(--color-navy-950) 0%, var(--color-navy-800) 40%, var(--color-navy-700) 100%); padding: clamp(6rem, 14vw, 11rem) 0;">
+    <div class="absolute inset-0 opacity-[0.04]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;80&quot; height=&quot;80&quot; viewBox=&quot;0 0 80 80&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Ccircle cx=&quot;40&quot; cy=&quot;40&quot; r=&quot;1.5&quot;/%3E%3C/g%3E%3C/svg%3E');"></div>
+    <div class="container-narrow text-center relative hero-entrance">
+        <div class="mx-auto h-20 w-20 flex items-center justify-center rounded-full mb-8 hero-el hero-el-1" style="background: rgba(234, 182, 62, 0.15); border: 2px solid var(--color-gold-400);">
+            <svg class="h-9 w-9" style="color: var(--color-gold-400);" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
         </div>
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Message envoyé !</h1>
-        <p class="mt-4 text-lg text-gray-600">Merci pour votre message. Nous reviendrons vers vous dans les meilleurs délais.</p>
-        <div class="mt-8">
-            <a href="/" class="inline-flex items-center rounded-lg bg-blue-700 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-800 transition-colors">
+        <h1 class="text-white mb-5 hero-el hero-el-2" style="font-size: clamp(1.75rem, 3.5vw, 2.75rem);">Message envoyé !</h1>
+        <p class="text-lg leading-relaxed mb-10 mx-auto hero-el hero-el-3" style="color: var(--color-navy-200); max-width: 28rem;">
+            Merci pour votre message. Notre équipe vous répondra dans les meilleurs délais.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4 hero-el hero-el-4">
+            <a href="/" class="btn-gold">
                 Retour à l'accueil
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
             </a>
+            <a href="/formations/" class="btn-ghost-white">Découvrir nos formations</a>
         </div>
     </div>
 </section>

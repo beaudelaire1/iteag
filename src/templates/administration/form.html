@@ -1,0 +1,73 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ form_title }} — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav=nav %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav=nav %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="javascript:history.back()" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Retour
+    </a>
+    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">{{ form_title }}</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl">
+    <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="rounded-lg p-4 text-sm font-medium" style="background: #fef2f2; color: #991b1b;">
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% for field in form %}
+        <div>
+            <label class="form-label {% if field.field.required %}after:content-['*'] after:text-red-500 after:ml-0.5{% endif %}" for="{{ field.id_for_label }}">
+                {{ field.label }}
+            </label>
+
+            {% if field.field.widget.input_type == 'checkbox' and not field.field.widget.attrs.allow_multiple_selected %}
+            <div class="flex items-center gap-2 mt-1">
+                {{ field }}
+                <span class="text-sm" style="color: var(--color-warm-600);">{{ field.help_text }}</span>
+            </div>
+            {% elif field.name == 'disciplines' %}
+            <div class="flex flex-wrap gap-3 mt-1">
+                {% for choice in field %}
+                <label class="inline-flex items-center gap-2 text-sm cursor-pointer" style="color: var(--color-navy-800);">
+                    {{ choice.tag }} {{ choice.choice_label }}
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            {{ field }}
+            {% if field.help_text %}
+            <p class="text-xs mt-1" style="color: var(--color-warm-400);">{{ field.help_text }}</p>
+            {% endif %}
+            {% endif %}
+
+            {% if field.errors %}
+            <p class="text-xs mt-1 font-medium" style="color: #dc2626;">{{ field.errors.0 }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="flex items-center gap-4 pt-2">
+            <button type="submit" class="btn-primary">Enregistrer</button>
+            <a href="javascript:history.back()" class="text-sm font-medium" style="color: var(--color-warm-500);">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -56,10 +56,10 @@
                         <a href="{% url 'lms:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
                         {% endif %}
                         {% if user.is_staff %}
-                        <a href="/admin/" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Administration Wagtail</a>
+                        <a href="{% url 'administration:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Administration</a>
                         {% endif %}
                         <hr class="my-1 border-warm-100">
-                        <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 text-sm font-medium text-danger">Déconnexion</a>
+                        <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left px-4 py-2 text-sm font-medium text-danger hover:bg-gray-50">Déconnexion</button></form>
                     </div>
                 </div>
                 {% else %}
@@ -115,7 +115,7 @@
                 {% elif user.is_enseignant %}
                 <a href="{% url 'lms:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
                 {% endif %}
-                <a href="{% url 'accounts:logout' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-red-300">Déconnexion</a>
+                <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left rounded px-4 py-2.5 text-sm font-medium text-red-300 hover:text-white">Déconnexion</button></form>
                 {% else %}
                 <hr class="my-3 border-white/15">
                 <a href="{% url 'accounts:login' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Connexion</a>

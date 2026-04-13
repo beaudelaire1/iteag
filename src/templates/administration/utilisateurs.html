@@ -1,0 +1,122 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Utilisateurs — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='utilisateurs' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='utilisateurs' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Utilisateurs</h1>
+        <p class="text-sm mt-1" style="color: var(--color-warm-500);">{{ users.paginator.count }} utilisateur{{ users.paginator.count|pluralize }}</p>
+    </div>
+    <a href="{% url 'administration:user_create' %}" class="btn-primary text-sm">+ Nouvel utilisateur</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{# ── Filtres ── #}
+<div class="card-elevated mb-6">
+    <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher (nom, email, username)…"
+            class="form-input flex-1 text-sm">
+        <select name="role" class="form-input text-sm sm:w-48">
+            <option value="">— Tous les rôles —</option>
+            {% for value, label in role_choices %}
+            <option value="{{ value }}" {% if value == current_role %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary text-sm">Filtrer</button>
+        {% if query or current_role %}
+        <a href="{% url 'administration:utilisateurs' %}" class="text-sm font-medium" style="color: var(--color-navy-600);">Réinitialiser</a>
+        {% endif %}
+    </form>
+</div>
+
+{# ── Table ── #}
+<div class="card-elevated overflow-hidden">
+    {% if users %}
+    <div class="overflow-x-auto -mx-6 -my-6">
+        <table class="w-full text-sm">
+            <thead>
+                <tr style="background: var(--color-warm-50);">
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Utilisateur</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--color-warm-500);">Email</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Rôle</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--color-warm-500);">Téléphone</th>
+                    <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Actif</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--color-warm-500);">Dernière connexion</th>
+                    <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--color-warm-100);">
+                {% for u in users %}
+                <tr class="hover:bg-warm-50 transition-colors">
+                    <td class="px-6 py-3">
+                        <span class="font-medium" style="color: var(--color-navy-900);">{{ u.get_full_name|default:u.username }}</span>
+                        <span class="block text-xs mt-0.5 md:hidden" style="color: var(--color-warm-400);">{{ u.email }}</span>
+                    </td>
+                    <td class="px-6 py-3 hidden md:table-cell" style="color: var(--color-warm-600);">{{ u.email }}</td>
+                    <td class="px-6 py-3">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                            {% if u.role == 'admin' %}bg-purple-50 text-purple-700
+                            {% elif u.role == 'secretariat' %}bg-indigo-50 text-indigo-700
+                            {% elif u.role == 'enseignant' %}bg-amber-50 text-amber-700
+                            {% else %}bg-blue-50 text-blue-700{% endif %}">
+                            {{ u.get_role_display }}
+                        </span>
+                        {% if u.is_superuser %}
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-50 text-red-600 ml-1">Super</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-3 hidden lg:table-cell" style="color: var(--color-warm-600);">{{ u.phone|default:"—" }}</td>
+                    <td class="px-6 py-3 text-center">
+                        {% if u.is_active %}
+                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 text-xs">✓</span>
+                        {% else %}
+                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-50 text-red-400 text-xs">✕</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-3 hidden lg:table-cell text-xs" style="color: var(--color-warm-400);">
+                        {% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-right">
+                        <a href="{% url 'administration:user_update' u.pk %}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Modifier</a>
+                        <a href="{% url 'administration:user_delete' u.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="py-12 text-center">
+        <p style="color: var(--color-warm-400);">Aucun utilisateur trouvé.</p>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Pagination ── #}
+{% if users.has_other_pages %}
+<nav class="flex justify-center mt-8 gap-1">
+    {% if users.has_previous %}
+    <a href="?page={{ users.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
+       class="px-3 py-1.5 rounded text-sm font-medium" style="color: var(--color-navy-600); background: var(--color-warm-100);">‹</a>
+    {% endif %}
+    {% for num in users.paginator.page_range %}
+    <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
+       class="px-3 py-1.5 rounded text-sm font-medium {% if users.number == num %}text-white{% endif %}"
+       style="{% if users.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if users.has_next %}
+    <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
+       class="px-3 py-1.5 rounded text-sm font-medium" style="color: var(--color-navy-600); background: var(--color-warm-100);">›</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Étudiants — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='etudiants' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='etudiants' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Étudiants</h1>
+        <p class="text-sm mt-1" style="color: var(--color-warm-500);">{{ etudiants.paginator.count }} profil{{ etudiants.paginator.count|pluralize }} étudiant{{ etudiants.paginator.count|pluralize }}</p>
+    </div>
+    <a href="{% url 'administration:etudiant_create' %}" class="btn-primary text-sm">+ Nouveau profil</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{# ── Filtres ── #}
+<div class="card-elevated mb-6">
+    <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher (nom, prénom, n° étudiant)…"
+            class="form-input flex-1 text-sm">
+        <select name="statut" class="form-input text-sm sm:w-52">
+            <option value="">— Tous les statuts —</option>
+            {% for value, label in statut_choices %}
+            <option value="{{ value }}" {% if value == current_statut %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary text-sm">Filtrer</button>
+        {% if query or current_statut %}
+        <a href="{% url 'administration:etudiants' %}" class="text-sm font-medium" style="color: var(--color-navy-600);">Réinitialiser</a>
+        {% endif %}
+    </form>
+</div>
+
+{# ── Table ── #}
+<div class="card-elevated overflow-hidden">
+    {% if etudiants %}
+    <div class="overflow-x-auto -mx-6 -my-6">
+        <table class="w-full text-sm">
+            <thead>
+                <tr style="background: var(--color-warm-50);">
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Étudiant</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">N° Étudiant</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--color-warm-500);">Parcours</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--color-warm-500);">Promotion</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Statut</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--color-warm-500);">ECTS</th>
+                    <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--color-warm-100);">
+                {% for e in etudiants %}
+                <tr class="hover:bg-warm-50 transition-colors">
+                    <td class="px-6 py-3">
+                        <span class="font-medium" style="color: var(--color-navy-900);">{{ e.utilisateur.get_full_name|default:e.utilisateur.username }}</span>
+                        <span class="block text-xs mt-0.5" style="color: var(--color-warm-400);">{{ e.utilisateur.email }}</span>
+                    </td>
+                    <td class="px-6 py-3 font-mono text-xs" style="color: var(--color-navy-700);">{{ e.numero_etudiant }}</td>
+                    <td class="px-6 py-3 hidden md:table-cell" style="color: var(--color-warm-600);">{{ e.parcours }}</td>
+                    <td class="px-6 py-3 hidden lg:table-cell" style="color: var(--color-warm-600);">{{ e.promotion }}</td>
+                    <td class="px-6 py-3">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                            {% if e.statut_inscription == 'actif' %}bg-emerald-50 text-emerald-700
+                            {% elif e.statut_inscription == 'inscrit' %}bg-blue-50 text-blue-700
+                            {% elif e.statut_inscription == 'suspendu' %}bg-red-50 text-red-700
+                            {% elif e.statut_inscription == 'diplome' %}bg-amber-50 text-amber-700
+                            {% else %}bg-gray-50 text-gray-600{% endif %}">
+                            {{ e.get_statut_inscription_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3 hidden lg:table-cell">
+                        <span class="text-xs font-semibold" style="color: var(--color-navy-700);">{{ e.total_ects_acquis }}/{{ e.parcours.ects_requis }}</span>
+                    </td>
+                    <td class="px-6 py-3 text-right">
+                        <a href="{% url 'administration:etudiant_update' e.pk %}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Modifier</a>
+                        <a href="{% url 'administration:etudiant_delete' e.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="py-12 text-center">
+        <p style="color: var(--color-warm-400);">Aucun étudiant trouvé.</p>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Pagination ── #}
+{% if etudiants.has_other_pages %}
+<nav class="flex justify-center mt-8 gap-1">
+    {% if etudiants.has_previous %}
+    <a href="?page={{ etudiants.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
+       class="px-3 py-1.5 rounded text-sm font-medium transition-colors" style="color: var(--color-navy-600); background: var(--color-warm-100);">‹</a>
+    {% endif %}
+    {% for num in etudiants.paginator.page_range %}
+    <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
+       class="px-3 py-1.5 rounded text-sm font-medium transition-colors {% if etudiants.number == num %}text-white{% endif %}"
+       style="{% if etudiants.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if etudiants.has_next %}
+    <a href="?page={{ etudiants.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
+       class="px-3 py-1.5 rounded text-sm font-medium transition-colors" style="color: var(--color-navy-600); background: var(--color-warm-100);">›</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

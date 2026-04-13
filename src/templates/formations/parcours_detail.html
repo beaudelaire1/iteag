@@ -1,87 +1,154 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ parcours.nom }} — Formations — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ parcours.description|truncatewords:30 }}{% endblock %}
 
 {% block content %}
-<section class="section">
-    <div class="container-wide">
-        <header class="mb-14 reveal">
-            <a href="{% url 'formations:parcours-list' %}" class="inline-flex items-center text-sm font-medium mb-5 transition-colors duration-200" style="color: var(--color-navy-600);">
-                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-                Tous les parcours
-            </a>
-            <div class="flex flex-wrap items-center gap-3 mb-3">
-                <span class="badge badge-gold">
-                    {{ parcours.get_type_parcours_display }}
-                </span>
+
+{# ─── HERO ─── #}
+<section class="relative overflow-hidden" style="background: linear-gradient(160deg, var(--color-navy-950) 0%, var(--color-navy-800) 40%, var(--color-navy-700) 100%);">
+    <div class="absolute inset-0 opacity-[0.04]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;80&quot; height=&quot;80&quot; viewBox=&quot;0 0 80 80&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Ccircle cx=&quot;40&quot; cy=&quot;40&quot; r=&quot;1.5&quot;/%3E%3C/g%3E%3C/svg%3E');"></div>
+    <div class="container-wide relative" style="padding-top: clamp(4rem, 8vw, 6rem); padding-bottom: clamp(5rem, 10vw, 8rem);">
+        <a href="{% url 'formations:parcours_list' %}" class="inline-flex items-center text-sm font-medium mb-6 transition-colors duration-200 hero-entrance" style="color: var(--color-navy-200);">
+            <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            Tous les parcours
+        </a>
+        <div class="max-w-3xl hero-entrance">
+            <div class="flex flex-wrap items-center gap-3 mb-4 hero-el hero-el-1">
+                <span class="badge badge-gold">{{ parcours.get_type_parcours_display }}</span>
                 {% if parcours.ects_requis %}
-                <span class="text-sm" style="color: var(--color-warm-500);">{{ parcours.ects_requis }} ECTS</span>
+                <span class="text-sm font-semibold uppercase tracking-wider" style="color: var(--color-gold-400);">{{ parcours.ects_requis }} ECTS</span>
+                {% endif %}
+                {% if parcours.duree_annees %}
+                <span class="text-sm" style="color: var(--color-navy-300);">{{ parcours.duree_annees }} ans</span>
                 {% endif %}
             </div>
-            <h1>{{ parcours.nom }}</h1>
+            <h1 class="text-white hero-el hero-el-2" style="font-size: clamp(1.75rem, 4vw, 2.75rem); line-height: 1.15;">{{ parcours.nom }}</h1>
             {% if parcours.description %}
-            <div class="mt-5 prose prose-lg max-w-3xl" style="color: var(--color-warm-700);">
-                {{ parcours.description|linebreaks }}
-            </div>
+            <p class="mt-5 text-base leading-relaxed hero-el hero-el-3" style="color: var(--color-navy-200); max-width: 36rem;">{{ parcours.description|truncatewords:40 }}</p>
             {% endif %}
-            <hr class="divider-gold mt-8">
-        </header>
-
-        {# Programme #}
-        {% if cours %}
-        <div class="reveal">
-            <p class="overline mb-2">Programme</p>
-            <h2 class="mb-8">
-                Cours proposés
-                <span class="text-base font-normal" style="color: var(--color-warm-500);">({{ cours|length }} cours)</span>
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-motion-stagger>
-                {% for c in cours %}
-                <article class="card group reveal">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="badge badge-info">{{ c.code }}</span>
-                        <span class="text-xs font-semibold" style="color: var(--color-gold-500);">{{ c.ects }} ECTS</span>
-                    </div>
-                    <h3 class="text-lg font-semibold group-hover:text-gold transition-colors duration-200" style="color: var(--color-navy-900);">
-                        <a href="{{ c.get_absolute_url }}" class="stretched-link">{{ c.titre }}</a>
-                    </h3>
-                    {% if c.discipline %}
-                    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">{{ c.discipline.nom }}</p>
-                    {% endif %}
-                </article>
-                {% endfor %}
-            </div>
         </div>
-        {% endif %}
-
-        {# Tarifs #}
-        {% if tarifs %}
-        <div class="mt-20 reveal">
-            <p class="overline mb-2">Investissement</p>
-            <h2 class="mb-8">Tarifs</h2>
-            <div class="overflow-x-auto rounded border" style="border-color: var(--color-warm-200);">
-                <table class="table-premium">
-                    <thead>
-                        <tr>
-                            <th>Formule</th>
-                            <th>Type de membre</th>
-                            <th class="text-right">Montant</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for tarif in tarifs %}
-                        <tr>
-                            <td class="font-medium" style="color: var(--color-navy-800);">{{ tarif.get_formule_display }}</td>
-                            <td>{{ tarif.get_type_membre_display }}</td>
-                            <td class="text-right font-semibold" style="color: var(--color-navy-800);">{{ tarif.montant_session|floatformat:0 }} €</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endif %}
+    </div>
+    <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full" style="height: clamp(2rem, 4vw, 4.5rem);">
+            <path d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z" style="fill: var(--color-warm-50);"/>
+        </svg>
     </div>
 </section>
+
+{# ─── DESCRIPTION COMPLÈTE + CONDITIONS ─── #}
+<section class="section">
+    <div class="container-wide">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {# Colonne principale #}
+            <div class="lg:col-span-2">
+                {% if parcours.description %}
+                <div class="prose prose-lg max-w-none mb-14 reveal" style="color: var(--color-warm-700);">
+                    {{ parcours.description|linebreaks }}
+                </div>
+                {% endif %}
+
+                {# Programme — cours #}
+                {% if cours %}
+                <div class="reveal">
+                    <hr class="divider-gold mb-6">
+                    <p class="overline mb-2">Programme</p>
+                    <h2 class="mb-8">
+                        Cours proposés
+                        <span class="text-base font-normal" style="color: var(--color-warm-500);">({{ cours|length }} cours)</span>
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {% for c in cours %}
+                        <article class="card group relative reveal" style="transition-delay: {{ forloop.counter0 }}0ms;">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="badge badge-info">{{ c.code }}</span>
+                                <span class="text-xs font-semibold" style="color: var(--color-gold-500);">{{ c.ects }} ECTS</span>
+                            </div>
+                            <h3 class="text-base font-semibold" style="color: var(--color-navy-900);">
+                                <a href="{{ c.get_absolute_url }}" class="stretched-link">{{ c.titre }}</a>
+                            </h3>
+                            {% if c.discipline %}
+                            <p class="mt-2 text-xs" style="color: var(--color-warm-500);">{{ c.discipline.nom }}</p>
+                            {% endif %}
+                        </article>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {# Sidebar #}
+            <aside class="lg:col-span-1 space-y-6">
+                {# Résumé #}
+                <div class="card-elevated p-6 reveal">
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">En bref</h3>
+                    <dl class="space-y-3 text-sm">
+                        {% if parcours.ects_requis %}
+                        <div class="flex justify-between" style="border-bottom: 1px solid var(--color-warm-150); padding-bottom: 8px;">
+                            <dt style="color: var(--color-warm-500);">Crédits ECTS</dt>
+                            <dd class="font-semibold" style="color: var(--color-navy-800);">{{ parcours.ects_requis }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if parcours.duree_annees %}
+                        <div class="flex justify-between" style="border-bottom: 1px solid var(--color-warm-150); padding-bottom: 8px;">
+                            <dt style="color: var(--color-warm-500);">Durée</dt>
+                            <dd class="font-semibold" style="color: var(--color-navy-800);">{{ parcours.duree_annees }} ans</dd>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between" style="border-bottom: 1px solid var(--color-warm-150); padding-bottom: 8px;">
+                            <dt style="color: var(--color-warm-500);">Sessions</dt>
+                            <dd class="font-semibold" style="color: var(--color-navy-800);">4 / an</dd>
+                        </div>
+                        {% if cours %}
+                        <div class="flex justify-between">
+                            <dt style="color: var(--color-warm-500);">Cours</dt>
+                            <dd class="font-semibold" style="color: var(--color-navy-800);">{{ cours|length }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+
+                {# Conditions d'entrée #}
+                {% if parcours.conditions_entree %}
+                <div class="card-elevated p-6 reveal" style="transition-delay: 100ms;">
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Conditions d'entrée</h3>
+                    <div class="text-sm leading-relaxed" style="color: var(--color-warm-600);">
+                        {{ parcours.conditions_entree|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Tarifs #}
+                {% if tarifs %}
+                <div class="card-elevated p-6 reveal" style="transition-delay: 200ms;">
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Tarifs</h3>
+                    <div class="space-y-3">
+                        {% for tarif in tarifs %}
+                        <div class="flex justify-between items-center text-sm" style="{% if not forloop.last %}border-bottom: 1px solid var(--color-warm-150); padding-bottom: 8px;{% endif %}">
+                            <div>
+                                <p class="font-medium" style="color: var(--color-navy-800);">{{ tarif.get_formule_display }}</p>
+                                <p class="text-xs" style="color: var(--color-warm-500);">{{ tarif.get_type_membre_display }}</p>
+                            </div>
+                            <span class="font-bold" style="color: var(--color-navy-800);">{{ tarif.montant_session|floatformat:0 }}&nbsp;€</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-3 text-xs" style="color: var(--color-warm-400);">* tarif par session</p>
+                </div>
+                {% endif %}
+
+                {# CTA #}
+                <div class="card-elevated p-6 text-center reveal" style="background: var(--color-navy-700); transition-delay: 300ms;">
+                    <p class="text-sm mb-4" style="color: var(--color-navy-200);">Ce parcours vous intéresse ?</p>
+                    <a href="{% url 'admissions:candidature_form' %}" class="btn-gold w-full justify-center">
+                        S'inscrire
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                    </a>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+
 {% endblock %}

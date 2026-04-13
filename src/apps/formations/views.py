@@ -1,6 +1,7 @@
+from django.db.models import Q
 from django.views.generic import DetailView, ListView
 
-from .models import Cours, Parcours, Professeur, Tarif
+from .models import Cours, Discipline, Parcours, Professeur, Tarif
 
 
 class ParcoursListView(ListView):
@@ -15,7 +16,7 @@ class ParcoursListView(ListView):
         current_type = self.request.GET.get("type", "").strip()
 
         if query:
-            queryset = queryset.filter(models.Q(nom__icontains=query) | models.Q(description__icontains=query))
+            queryset = queryset.filter(Q(nom__icontains=query) | Q(description__icontains=query))
         if current_type:
             queryset = queryset.filter(type_parcours=current_type)
         return queryset
@@ -30,6 +31,8 @@ class ParcoursListView(ListView):
         context["query"] = self.request.GET.get("q", "")
         context["current_type"] = self.request.GET.get("type", "")
         context["type_choices"] = Parcours.TypeParcours.choices
+        context["tarifs"] = Tarif.objects.filter(actif=True)
+        context["disciplines"] = Discipline.objects.all()
         return context
 
 

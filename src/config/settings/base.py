@@ -29,6 +29,7 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 # ──────────────────────────────────────────────
 
 DJANGO_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -179,6 +180,83 @@ STATICFILES_DIRS = [
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# ──────────────────────────────────────────────
+# Jazzmin (Django Admin theme)
+# ──────────────────────────────────────────────
+
+JAZZMIN_SETTINGS = {
+    "site_title": "ITEAG Admin",
+    "site_header": "ITEAG",
+    "site_brand": "ITEAG",
+    "site_logo": None,
+    "login_logo": None,
+    "welcome_sign": "Administration ITEAG",
+    "copyright": "ITEAG — Institut de Théologie Évangélique des Antilles et de la Guyane",
+    "search_model": ["accounts.User"],
+    "topmenu_links": [
+        {"name": "Accueil site", "url": "/", "new_window": True},
+        {"name": "Portail admin", "url": "/espace-admin/"},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "accounts.User": "fas fa-user",
+        "formations.Parcours": "fas fa-graduation-cap",
+        "formations.Cours": "fas fa-book",
+        "formations.Professeur": "fas fa-chalkboard-teacher",
+        "formations.Discipline": "fas fa-layer-group",
+        "formations.Tarif": "fas fa-euro-sign",
+        "academics.SessionAcademique": "fas fa-calendar-alt",
+        "academics.ProfilEtudiant": "fas fa-user-graduate",
+        "academics.Promotion": "fas fa-users",
+        "academics.Paiement": "fas fa-credit-card",
+        "admissions.DossierCandidature": "fas fa-file-alt",
+        "library.NoticeBibliographique": "fas fa-book-open",
+        "documents.DocumentAdministratif": "fas fa-folder-open",
+    },
+    "default_icon_parents": "fas fa-folder",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": False,
+    "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-navy",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
 
 # ──────────────────────────────────────────────
 # Wagtail

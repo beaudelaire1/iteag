@@ -1,0 +1,16 @@
+{# Admin mobile navigation #}
+{% url 'administration:dashboard' as url_dashboard %}
+{% url 'administration:candidatures' as url_candidatures %}
+{% url 'administration:etudiants' as url_etudiants %}
+{% url 'administration:professeurs' as url_professeurs %}
+{% url 'administration:formations' as url_formations %}
+{% url 'administration:sessions' as url_sessions %}
+{% url 'administration:utilisateurs' as url_utilisateurs %}
+
+<a href="{{ url_dashboard }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'dashboard' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Tableau de bord</a>
+<a href="{{ url_candidatures }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'candidatures' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Candidatures</a>
+<a href="{{ url_etudiants }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'etudiants' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Étudiants</a>
+<a href="{{ url_professeurs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'professeurs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Professeurs</a>
+<a href="{{ url_formations }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'formations' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Formations</a>
+<a href="{{ url_sessions }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'sessions' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Sessions</a>
+<a href="{{ url_utilisateurs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'utilisateurs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Utilisateurs</a>

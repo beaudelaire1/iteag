@@ -1,0 +1,95 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Formations — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='formations' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='formations' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Formations</h1>
+    <p class="text-sm mt-1" style="color: var(--color-warm-500);">Parcours, disciplines et tarifs</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="space-y-10">
+    {# ── Parcours ── #}
+    <section>
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+            Parcours <span class="font-normal text-xs" style="color: var(--color-warm-400);">({{ parcours_list|length }})</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for p in parcours_list %}
+            <div class="card-elevated flex items-center justify-between">
+                <div>
+                    <h3 class="font-semibold" style="color: var(--color-navy-900);">{{ p.nom }}</h3>
+                    <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                        {{ p.get_type_parcours_display }} — {{ p.ects_requis }} ECTS — {{ p.duree_annees }} ans
+                    </p>
+                </div>
+                <div class="text-right">
+                    <span class="text-2xl font-bold" style="color: var(--color-navy-800);">{{ p.nb_cours }}</span>
+                    <span class="block text-xs" style="color: var(--color-warm-400);">cours</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ── Disciplines ── #}
+    <section>
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+            Disciplines <span class="font-normal text-xs" style="color: var(--color-warm-400);">({{ disciplines|length }})</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for d in disciplines %}
+            <div class="card-elevated">
+                <h3 class="font-semibold" style="color: var(--color-navy-900);">{{ d.nom }}</h3>
+                <p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ d.nb_cours }} cours</p>
+                {% if d.description %}
+                <p class="text-sm mt-2 line-clamp-2" style="color: var(--color-warm-600);">{{ d.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ── Tarifs ── #}
+    <section>
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+            Grille tarifaire
+        </h2>
+        {% if tarifs %}
+        <div class="card-elevated overflow-hidden">
+            <div class="overflow-x-auto -mx-6 -my-6">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="background: var(--color-warm-50);">
+                            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Formule</th>
+                            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Type de membre</th>
+                            <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">Montant / session</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y" style="border-color: var(--color-warm-100);">
+                        {% for t in tarifs %}
+                        <tr class="hover:bg-warm-50 transition-colors">
+                            <td class="px-6 py-3 font-medium" style="color: var(--color-navy-900);">{{ t.get_formule_display }}</td>
+                            <td class="px-6 py-3" style="color: var(--color-warm-600);">{{ t.get_type_membre_display }}</td>
+                            <td class="px-6 py-3 text-right font-semibold" style="color: var(--color-navy-800);">{{ t.montant_session }} €</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-sm" style="color: var(--color-warm-400);">Aucun tarif configuré.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

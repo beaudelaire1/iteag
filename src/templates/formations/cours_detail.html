@@ -1,37 +1,50 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ cours.titre }} — Formations — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ cours.description|truncatewords:30 }}{% endblock %}
 
 {% block content %}
-<section class="section">
-    <div class="container-narrow">
-        <header class="mb-12 reveal">
-            {% if cours.parcours.all %}
-            <a href="{{ cours.parcours.first.get_absolute_url }}" class="inline-flex items-center text-sm font-medium mb-5 transition-colors duration-200" style="color: var(--color-navy-600);">
-                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-                Retour au parcours
-            </a>
-            {% endif %}
-            <div class="flex flex-wrap items-center gap-3 mb-3">
+
+{# ─── HERO ─── #}
+<section class="relative overflow-hidden" style="background: linear-gradient(160deg, var(--color-navy-950) 0%, var(--color-navy-800) 60%, var(--color-navy-700) 100%);">
+    <div class="container-narrow relative" style="padding-top: clamp(3.5rem, 7vw, 5rem); padding-bottom: clamp(4.5rem, 9vw, 7rem);">
+        {% if cours.parcours.all %}
+        <a href="{{ cours.parcours.first.get_absolute_url }}" class="inline-flex items-center text-sm font-medium mb-6 transition-colors duration-200 hero-entrance" style="color: var(--color-navy-200);">
+            <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            Retour au parcours
+        </a>
+        {% endif %}
+        <div class="hero-entrance">
+            <div class="flex flex-wrap items-center gap-3 mb-4 hero-el hero-el-1">
                 <span class="badge badge-info">{{ cours.code }}</span>
-                <span class="text-sm font-semibold" style="color: var(--color-gold-500);">{{ cours.ects }} ECTS</span>
+                <span class="text-sm font-semibold" style="color: var(--color-gold-400);">{{ cours.ects }} ECTS</span>
                 {% if cours.discipline %}
                 <span class="badge badge-gold">{{ cours.discipline.nom }}</span>
                 {% endif %}
             </div>
-            <h1>{{ cours.titre }}</h1>
-            <hr class="divider-gold mt-6">
-        </header>
+            <h1 class="text-white hero-el hero-el-2" style="font-size: clamp(1.5rem, 3.5vw, 2.25rem); line-height: 1.2;">{{ cours.titre }}</h1>
+        </div>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full" style="height: clamp(1.5rem, 3vw, 3.5rem);">
+            <path d="M0 60V20C240 40 480 5 720 15C960 25 1200 10 1440 20V60H0Z" style="fill: var(--color-warm-50);"/>
+        </svg>
+    </div>
+</section>
 
+{# ─── CONTENU ─── #}
+<section class="section">
+    <div class="container-narrow">
         {% if cours.description %}
-        <div class="prose prose-lg max-w-none mb-14 reveal reveal-delay-1" style="color: var(--color-warm-700);">
+        <div class="prose prose-lg max-w-none mb-14 reveal" style="color: var(--color-warm-700);">
             {{ cours.description|linebreaks }}
         </div>
         {% endif %}
 
         {% if cours.objectifs %}
         <div class="mb-14 reveal">
+            <hr class="divider-gold mb-6">
             <p class="overline mb-2">Pédagogie</p>
             <h2 class="mb-5">Objectifs pédagogiques</h2>
             <div class="prose max-w-none" style="color: var(--color-warm-700);">
@@ -42,20 +55,25 @@
 
         {% if cours.parcours.all %}
         <div class="mb-14 reveal">
+            <hr class="divider-gold mb-6">
             <p class="overline mb-2">Rattachement</p>
             <h2 class="mb-5">Parcours concernés</h2>
-            <ul class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {% for p in cours.parcours.all %}
-                <li>
-                    <a href="{{ p.get_absolute_url }}" class="inline-flex items-center gap-2 font-medium transition-colors duration-200" style="color: var(--color-navy-600);">
-                        <svg class="h-4 w-4" style="color: var(--color-gold-400);" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342"/></svg>
-                        {{ p.nom }} ({{ p.get_type_display }})
-                    </a>
-                </li>
+                <a href="{{ p.get_absolute_url }}" class="card group flex items-center gap-4 transition-colors duration-200">
+                    <div class="h-10 w-10 rounded flex items-center justify-center shrink-0" style="background: var(--color-navy-700);">
+                        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342"/></svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm" style="color: var(--color-navy-800);">{{ p.nom }}</p>
+                        <p class="text-xs" style="color: var(--color-warm-500);">{{ p.get_type_parcours_display }}</p>
+                    </div>
+                </a>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
         {% endif %}
     </div>
 </section>
+
 {% endblock %}

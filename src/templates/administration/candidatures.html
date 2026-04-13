@@ -1,0 +1,108 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Candidatures — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='candidatures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='candidatures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <p class="overline mb-2">Administration</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Candidatures</h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{# ── Filtres par statut ── #}
+<div class="flex flex-wrap gap-2 mb-6">
+    <a href="{% url 'administration:candidatures' %}"
+       class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors
+              {% if not current_statut %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200 hover:bg-warm-50{% endif %}">
+        Toutes <span class="ml-1 opacity-60">{{ total_candidatures|default:"0" }}</span>
+    </a>
+    {% for value, label in statut_choices %}
+    <a href="{% url 'administration:candidatures' %}?statut={{ value }}"
+       class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors
+              {% if current_statut == value %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200 hover:bg-warm-50{% endif %}">
+        {{ label }} <span class="ml-1 opacity-60">{{ counts|dictsort:value }}</span>
+    </a>
+    {% endfor %}
+</div>
+
+{# ── Recherche ── #}
+<div class="mb-6">
+    <form method="get" class="flex gap-3">
+        {% if current_statut %}<input type="hidden" name="statut" value="{{ current_statut }}">{% endif %}
+        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher un nom, prénom ou email…"
+               class="form-input flex-1" style="max-width: 24rem;">
+        <button type="submit" class="btn-primary" style="padding: 0.5rem 1.25rem;">Rechercher</button>
+        {% if query %}<a href="{% url 'administration:candidatures' %}{% if current_statut %}?statut={{ current_statut }}{% endif %}" class="btn-ghost self-center text-xs">Effacer</a>{% endif %}
+    </form>
+</div>
+
+{# ── Tableau ── #}
+<div class="card-elevated overflow-hidden" style="padding: 0;">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr style="background: var(--color-warm-50);">
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Candidat</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Parcours</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Date</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Statut</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--color-warm-100);">
+                {% for d in dossiers %}
+                <tr class="hover:bg-warm-50 transition-colors">
+                    <td class="px-5 py-3">
+                        <p class="font-medium" style="color: var(--color-navy-900);">{{ d.nom_complet }}</p>
+                        <p class="text-xs" style="color: var(--color-warm-400);">{{ d.email }}</p>
+                    </td>
+                    <td class="px-5 py-3" style="color: var(--color-warm-600);">{{ d.parcours_souhaite }}</td>
+                    <td class="px-5 py-3" style="color: var(--color-warm-500);">{{ d.date_soumission|date:"d/m/Y" }}</td>
+                    <td class="px-5 py-3">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                            {% if d.statut == 'soumis' %}bg-blue-50 text-blue-700
+                            {% elif d.statut == 'en_examen' %}bg-amber-50 text-amber-700
+                            {% elif d.statut == 'accepte' %}bg-emerald-50 text-emerald-700
+                            {% elif d.statut == 'refuse' %}bg-red-50 text-red-700
+                            {% else %}bg-orange-50 text-orange-700{% endif %}">
+                            {{ d.get_statut_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 text-right">
+                        <a href="{% url 'administration:candidature_detail' d.pk %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Voir →</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-5 py-10 text-center" style="color: var(--color-warm-400);">Aucune candidature trouvée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Pagination ── #}
+{% if is_paginated %}
+<div class="mt-6 flex justify-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn-ghost text-xs">← Précédent</a>
+    {% endif %}
+    <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold" style="color: var(--color-warm-500);">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn-ghost text-xs">Suivant →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

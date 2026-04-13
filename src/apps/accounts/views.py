@@ -16,7 +16,7 @@ class IteagLoginView(LoginView):
         if user.is_enseignant:
             return reverse("lms:dashboard")
         if user.is_admin or user.is_secretariat:
-            return reverse("wagtailadmin_home")
+            return reverse("administration:dashboard")
         return super().get_success_url()
 
 

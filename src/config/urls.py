@@ -29,6 +29,7 @@ urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     # Local apps
     path("", include("apps.accounts.urls", namespace="accounts")),
+    path("espace-admin/", include("apps.core.urls", namespace="administration")),
     path("formations/", include("apps.formations.urls", namespace="formations")),
     path("admissions/", include("apps.admissions.urls", namespace="admissions")),
     path("bibliotheque/", include("apps.library.urls", namespace="library")),

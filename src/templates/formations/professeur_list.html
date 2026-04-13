@@ -2,29 +2,56 @@
 {% load static %}
 
 {% block title %}Nos enseignants — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}Découvrez l'équipe enseignante de l'ITEAG : théologiens, pasteurs et formateurs qualifiés.{% endblock %}
+{% block meta_description %}Découvrez l'équipe enseignante de l'ITEAG : théologiens, pasteurs et formateurs qualifiés d'Hexagone et de la Caraïbe.{% endblock %}
 
 {% block content %}
+
+{# ─── HERO ─── #}
+<section class="relative overflow-hidden" style="background: linear-gradient(160deg, var(--color-navy-950) 0%, var(--color-navy-800) 40%, var(--color-navy-700) 100%);">
+    <div class="absolute inset-0 opacity-[0.04]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;80&quot; height=&quot;80&quot; viewBox=&quot;0 0 80 80&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Ccircle cx=&quot;40&quot; cy=&quot;40&quot; r=&quot;1.5&quot;/%3E%3C/g%3E%3C/svg%3E');"></div>
+    <div class="container-wide relative" style="padding-top: clamp(5rem, 10vw, 8rem); padding-bottom: clamp(5rem, 10vw, 8rem);">
+        <div class="text-center max-w-3xl mx-auto hero-entrance">
+            <p class="overline-light mb-4 hero-el hero-el-1">Équipe pédagogique</p>
+            <h1 class="text-white hero-el hero-el-2" style="font-size: clamp(2rem, 4.5vw, 3.25rem); line-height: 1.12;">Nos enseignants</h1>
+            <p class="mt-5 text-lg leading-relaxed hero-el hero-el-3" style="color: var(--color-navy-200); max-width: 34rem; margin: 0 auto;">
+                Des théologiens et pasteurs reconnus d'Hexagone et de la Caraïbe, engagés dans la formation
+                des serviteurs de Dieu aux Antilles-Guyane.
+            </p>
+        </div>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full" style="height: clamp(2rem, 4vw, 4.5rem);">
+            <path d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z" style="fill: var(--color-warm-50);"/>
+        </svg>
+    </div>
+</section>
+
+{# ─── CHIFFRE ─── #}
+<section class="overflow-hidden" style="background: var(--color-warm-100); border-bottom: 1px solid var(--color-warm-200); padding: clamp(1.5rem, 3vw, 2.5rem) 0;">
+    <div class="container-wide text-center reveal">
+        <p class="stat-number" style="color: var(--color-navy-800); font-size: clamp(1.5rem, 3vw, 2.5rem);" data-counter="{{ professeurs|length }}" data-counter-suffix="">{{ professeurs|length }}</p>
+        <p class="stat-label">Enseignants qualifiés</p>
+    </div>
+</section>
+
+{# ─── GRILLE PROFESSEURS ─── #}
 <section class="section">
     <div class="container-wide">
-        <header class="text-center mb-16 reveal">
-            <p class="overline mb-3">Équipe</p>
-            <h1>Nos enseignants</h1>
-            <p class="mt-5 text-lg max-w-2xl mx-auto" style="color: var(--color-warm-600);">
-                Une équipe de théologiens et pasteurs engagés dans la formation des serviteurs de Dieu aux Antilles-Guyane.
-            </p>
-            <hr class="divider-gold mx-auto mt-8">
-        </header>
+        <div class="text-center mb-14 reveal">
+            <hr class="divider-gold mx-auto mb-6">
+            <p class="overline mb-3">Corps enseignant</p>
+            <h2>Rencontrez l'équipe</h2>
+        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" data-motion-stagger>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {% for prof in professeurs %}
-            <article class="card-elevated text-center reveal">
+            <article class="card-elevated text-center reveal" style="transition-delay: {{ forloop.counter0 }}00ms;">
                 <div class="pt-2 pb-4">
                     {% if prof.photo %}
                     <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-28 w-28 rounded-full object-cover" width="112" height="112" loading="lazy" style="box-shadow: var(--shadow-card);">
                     {% else %}
-                    <div class="mx-auto h-28 w-28 rounded-full flex items-center justify-center" style="background: var(--color-navy-100);">
-                        <span class="text-3xl font-bold" style="color: var(--color-navy-600);">{{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}</span>
+                    <div class="mx-auto h-28 w-28 rounded-full flex items-center justify-center" style="background: var(--color-navy-700);">
+                        <span class="text-3xl font-bold text-white">{{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -49,4 +76,24 @@
         </div>
     </div>
 </section>
+
+{# ─── CTA ─── #}
+<section class="relative overflow-hidden" style="background: var(--color-navy-800); padding: clamp(3.5rem, 7vw, 6rem) 0;">
+    <div class="absolute inset-0" style="background: radial-gradient(ellipse 50% 80% at 80% 50%, rgba(234,182,62,0.06) 0%, transparent 70%);"></div>
+    <div class="container-narrow text-center relative reveal">
+        <p class="overline-light mb-4">Rejoignez-nous</p>
+        <h2 class="text-white mb-5" style="font-size: clamp(1.5rem, 3vw, 2.25rem);">Formez-vous avec les meilleurs</h2>
+        <p class="text-base leading-relaxed mb-8 mx-auto" style="color: var(--color-navy-200); max-width: 30rem;">
+            Rejoignez l'ITEAG et bénéficiez d'un enseignement de qualité dispensé par des théologiens reconnus.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="{% url 'formations:parcours_list' %}" class="btn-gold">
+                Voir les formations
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+            </a>
+            <a href="{% url 'admissions:candidature_form' %}" class="btn-ghost-white">S'inscrire</a>
+        </div>
+    </div>
+</section>
+
 {% endblock %}
