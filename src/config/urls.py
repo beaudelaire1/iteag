@@ -13,6 +13,8 @@ from wagtail.admin import urls as wagtailadmin_urls
 from wagtail.contrib.sitemaps.sitemap_generator import Sitemap as WagtailSitemap
 from wagtail.documents import urls as wagtaildocs_urls
 
+from apps.core import views as views_core
+
 sitemaps = {
     "wagtail": WagtailSitemap,
 }
@@ -23,10 +25,13 @@ urlpatterns = [
     # SEO
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
     path("robots.txt", TemplateView.as_view(template_name="robots.txt", content_type="text/plain")),
+    # Sonde de santé (supervision et HEALTHCHECK du conteneur)
+    path("healthz", views_core.HealthzView.as_view(), name="healthz"),
     # Wagtail admin
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
     # Local apps
+    path("", include("apps.core.urls", namespace="core")),
     path("", include("apps.accounts.urls", namespace="accounts")),
     path("espace-admin/", include("apps.administration.urls", namespace="administration")),
     path(
@@ -60,3 +65,12 @@ if settings.DEBUG:
         urlpatterns = [path("__reload__/", include("django_browser_reload.urls"))] + urlpatterns
     except ImportError:
         pass
+
+# ──────────────────────────────────────────────
+# Gestionnaires d'erreur — pages à la charte, sans détail technique
+# ──────────────────────────────────────────────
+
+handler400 = "apps.core.views.erreur_400"
+handler403 = "apps.core.views.erreur_403"
+handler404 = "apps.core.views.erreur_404"
+handler500 = "apps.core.views.erreur_500"

@@ -1,0 +1,48 @@
+{% load static %}<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block sujet %}{{ SITE_NAME }}{% endblock %}</title>
+</head>
+{# Styles en ligne : les clients de messagerie ignorent les feuilles externes. #}
+<body style="margin:0;padding:0;background-color:#FEFAEF;font-family:Helvetica,Arial,sans-serif;color:#1A2D29;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FEFAEF;padding:32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                       style="max-width:560px;background-color:#ffffff;border:1px solid #EDE5D0;border-radius:4px;">
+
+                    <tr>
+                        <td style="padding:28px 32px 20px;border-bottom:2px solid #EAB63E;">
+                            <p style="margin:0;font-size:11px;font-weight:bold;letter-spacing:0.15em;text-transform:uppercase;color:#D4990F;">
+                                ITEAG
+                            </p>
+                            <p style="margin:6px 0 0;font-size:13px;color:#736957;">
+                                Institut de Théologie Évangélique des Antilles et de la Guyane
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:32px;font-size:15px;line-height:1.65;color:#373127;">
+                            {% block corps %}{% endblock %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:20px 32px 28px;border-top:1px solid #EDE5D0;font-size:12px;color:#978B72;">
+                            <p style="margin:0 0 6px;">201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe</p>
+                            <p style="margin:0;">
+                                <a href="mailto:secretariat@iteag.org" style="color:#355952;">secretariat@iteag.org</a>
+                            </p>
+                            {% block pied_specifique %}{% endblock %}
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

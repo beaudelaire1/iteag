@@ -75,8 +75,32 @@
             </div>
         </div>
 
+        {# Lettre d'information — PUB-012, double consentement #}
+        <div class="mt-14 pt-10 border-t border-navy-800 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+                <p class="overline-light mb-2">Lettre d'information</p>
+                <p class="text-sm text-warm-400 max-w-md">
+                    Ouvertures de sessions, nouvelles formations et actualités de l'institut.
+                    Un email de confirmation vous sera envoyé.
+                </p>
+            </div>
+            <form method="post" action="{% url 'core:newsletter_inscription' %}"
+                  class="flex flex-col sm:flex-row gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="suivant" value="{{ request.path }}">
+                <label for="newsletter-email" class="sr-only">Votre adresse email</label>
+                <input type="email" name="email" id="newsletter-email" required
+                       autocomplete="email" placeholder="vous@exemple.org"
+                       class="form-input flex-1">
+                {# Piège à robots : masqué visuellement, jamais rempli par un humain #}
+                <input type="text" name="site_web" tabindex="-1" autocomplete="off"
+                       aria-hidden="true" class="sr-only">
+                <button type="submit" class="btn-gold justify-center">S'inscrire</button>
+            </form>
+        </div>
+
         {# Barre basse #}
-        <div class="mt-14 pt-6 border-t border-navy-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="mt-12 pt-6 border-t border-navy-800 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p class="text-xs text-warm-600">&copy; {% now "Y" %} {{ SITE_NAME }}. Tous droits réservés.</p>
             <p class="text-xs text-warm-600">
                 Conçu par <a href="https://www.traitdunion.it" target="_blank" rel="noopener noreferrer" class="font-medium text-warm-500 hover:text-gold-400 transition-colors duration-200">Trait&nbsp;d'Union&nbsp;Studio</a>

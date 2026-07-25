@@ -58,6 +58,9 @@ THIRD_PARTY_APPS = [
     "django_htmx",
     "axes",
     "csp",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
 ]
 
 LOCAL_APPS = [
@@ -86,6 +89,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "apps.accounts.middleware.Force2FAStaffMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
@@ -118,6 +123,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_context",
+                "apps.core.context_processors.notifications_context",
             ],
         },
     },
@@ -153,6 +159,19 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_URL = "/connexion/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+
+# ──────────────────────────────────────────────
+# Axes (brute force protection)
+# ──────────────────────────────────────────────
+
+# ──────────────────────────────────────────────
+# Double authentification (django-otp)
+# ──────────────────────────────────────────────
+
+OTP_TOTP_ISSUER = "ITEAG"
+OTP_ENFORCE = env.bool("DJANGO_OTP_ENFORCE", default=True)
+# Rôles pour lesquels le second facteur est obligatoire (audit du CDC v1 §5).
+ROLES_2FA_OBLIGATOIRE = ["admin", "secretariat"]
 
 # ──────────────────────────────────────────────
 # Axes (brute force protection)
