@@ -1,0 +1,169 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Accès aux modules — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='acces' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='acces' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Formation vidéo</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Accès aux modules</h1>
+    </div>
+    <a href="{% url 'administration:acces_export' %}" class="btn-ghost">Exporter (CSV)</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{# Compteurs par état #}
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+    {% for valeur, libelle in statuts %}
+    <a href="?statut={{ valeur }}" class="card-elevated text-center py-4 {% if statut_courant == valeur %}shadow-gold{% endif %}">
+        <p class="stat-number" style="font-size: 1.5rem;">{% for cle, nb in compteurs.items %}{% if cle == valeur %}{{ nb }}{% endif %}{% endfor %}</p>
+        <p class="stat-label">{{ libelle }}</p>
+    </a>
+    {% endfor %}
+</div>
+
+{# Filtres #}
+<form method="get" class="card-elevated mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+    <div>
+        <label class="form-label" for="q">Rechercher</label>
+        <input type="search" name="q" id="q" value="{{ recherche }}" class="form-input" placeholder="Nom, numéro, module">
+    </div>
+    <div>
+        <label class="form-label" for="module">Module</label>
+        <select name="module" id="module" class="form-select">
+            <option value="">Tous</option>
+            {% for m in modules %}
+            <option value="{{ m.slug }}" {% if m.slug == module_courant %}selected{% endif %}>{{ m.titre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="promotion">Promotion</label>
+        <select name="promotion" id="promotion" class="form-select">
+            <option value="">Toutes</option>
+            {% for p in promotions %}
+            <option value="{{ p.pk }}" {% if promotion_courante == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="statut">État</label>
+        <select name="statut" id="statut" class="form-select">
+            <option value="">Tous</option>
+            {% for valeur, libelle in statuts %}
+            <option value="{{ valeur }}" {% if valeur == statut_courant %}selected{% endif %}>{{ libelle }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-primary justify-center">Filtrer</button>
+</form>
+
+{# Ouverture d'un module à une promotion entière #}
+<details class="accordeon card-elevated mb-6">
+    <summary class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+        <span>Ouvrir un module à une promotion</span>
+        <svg class="chevron h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+    </summary>
+    <form method="post" action="{% url 'administration:acces_octroi_masse' %}"
+          class="mt-5 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+        {% csrf_token %}
+        <div>
+            <label class="form-label" for="octroi-module">Module</label>
+            <select name="module" id="octroi-module" class="form-select" required>
+                {% for m in modules %}<option value="{{ m.pk }}">{{ m.titre }}</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="octroi-promotion">Promotion</label>
+            <select name="promotion" id="octroi-promotion" class="form-select" required>
+                {% for p in promotions %}<option value="{{ p.pk }}">{{ p.nom }}</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="octroi-duree">Durée (jours)</label>
+            <input type="number" name="duree_jours" id="octroi-duree" class="form-input" min="0" placeholder="illimité">
+        </div>
+        <button type="submit" class="btn-primary justify-center">Ouvrir</button>
+    </form>
+</details>
+
+{# Liste et actions de masse #}
+<form method="post" action="{% url 'administration:acces_action' %}">
+    {% csrf_token %}
+    <input type="hidden" name="retour" value="{{ request.get_full_path }}">
+
+    {% if acces %}
+    <div class="card-elevated mb-4 flex flex-wrap items-end gap-4">
+        <div>
+            <label class="form-label" for="action">Action sur la sélection</label>
+            <select name="action" id="action" class="form-select">
+                <option value="suspendre">Suspendre</option>
+                <option value="reactiver">Réactiver</option>
+                <option value="prolonger">Prolonger</option>
+                <option value="revoquer">Révoquer</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="jours">Jours (prolongation)</label>
+            <input type="number" name="jours" id="jours" value="90" min="1" class="form-input" style="width: 8rem;">
+        </div>
+        <div class="flex-1 min-w-48">
+            <label class="form-label" for="motif">Motif (révocation)</label>
+            <input type="text" name="motif" id="motif" class="form-input" placeholder="Impayé, décision…">
+        </div>
+        <button type="submit" class="btn-primary">Appliquer</button>
+    </div>
+
+    <div class="tw overflow-x-auto">
+        <table class="table-premium">
+            <thead>
+                <tr>
+                    <th><span class="sr-only">Sélection</span></th>
+                    <th>Étudiant</th><th>Module</th><th>État</th>
+                    <th>Progression</th><th>Fin d'accès</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inscription in acces %}
+                <tr>
+                    <td>
+                        <label class="sr-only" for="acces-{{ inscription.pk }}">
+                            Sélectionner l'accès de {{ inscription.etudiant }} à {{ inscription.module.titre }}
+                        </label>
+                        <input type="checkbox" name="acces" id="acces-{{ inscription.pk }}" value="{{ inscription.pk }}">
+                    </td>
+                    <td>
+                        <span class="font-medium">{{ inscription.etudiant.utilisateur.get_full_name }}</span>
+                        <span class="block text-xs" style="color: var(--color-warm-400);">
+                            {{ inscription.etudiant.numero_etudiant }} · {{ inscription.etudiant.promotion.nom|default:"—" }}
+                        </span>
+                    </td>
+                    <td>{{ inscription.module.titre }}</td>
+                    <td>
+                        {% if inscription.statut == "actif" %}<span class="badge badge-info">Actif</span>
+                        {% elif inscription.statut == "termine" %}<span class="badge badge-success">Terminé</span>
+                        {% elif inscription.statut == "revoque" %}<span class="badge badge-danger">Révoqué</span>
+                        {% else %}<span class="badge badge-warning">{{ inscription.get_statut_display }}</span>{% endif %}
+                    </td>
+                    <td class="num">{{ inscription.progression_percent }} %</td>
+                    <td class="num">{{ inscription.date_fin_acces|date:"d/m/Y"|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include "partials/pagination.html" %}
+
+    {% else %}
+    <div class="card text-center py-16">
+        <p style="color: var(--color-warm-600);">Aucun accès ne correspond à cette recherche.</p>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

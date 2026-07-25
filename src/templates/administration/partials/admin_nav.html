@@ -49,3 +49,8 @@
     Django Admin (avancé)
 </a>
 {% endif %}
+
+{# Formation vidéo #}
+<a href="{% url 'administration:acces' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100 ">Accès aux modules</a>
+<a href="{% url 'administration:video_statistiques' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100">Statistiques vidéo</a>
+<a href="{% url 'administration:video_journal' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100">Journal des accès</a>
