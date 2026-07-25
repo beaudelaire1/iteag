@@ -15,6 +15,19 @@ from .forms import EmailOrUsernameAuthenticationForm
 from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
 
 
+def tableau_de_bord(utilisateur) -> str:
+    """Espace d'accueil correspondant au rôle. Un seul endroit en décide."""
+    if utilisateur.is_etudiant:
+        return reverse("academics:dashboard")
+    if utilisateur.is_enseignant:
+        return reverse("lms:dashboard")
+    if utilisateur.is_admin:
+        return reverse("administration:dashboard")
+    if utilisateur.is_secretariat:
+        return reverse("secretariat:dashboard")
+    return ""
+
+
 class IteagLoginView(LoginView):
     template_name = "accounts/login.html"
     authentication_form = EmailOrUsernameAuthenticationForm
@@ -34,16 +47,8 @@ class IteagLoginView(LoginView):
         return super().form_invalid(form)
 
     def get_success_url(self):
-        user = self.request.user
-        if user.is_etudiant:
-            return reverse("academics:dashboard")
-        if user.is_enseignant:
-            return reverse("lms:dashboard")
-        if user.is_admin:
-            return reverse("administration:dashboard")
-        if user.is_secretariat:
-            return reverse("secretariat:dashboard")
-        return super().get_success_url()
+        cible = tableau_de_bord(self.request.user)
+        return cible or super().get_success_url()
 
 
 class IteagLogoutView(LogoutView):
@@ -61,7 +66,7 @@ class _BaseOTPView(LoginRequiredMixin, TemplateView):
         # Une redirection ouverte transformerait cette page en tremplin.
         if propose.startswith("/") and not propose.startswith("//"):
             return propose
-        return reverse("administration:dashboard")
+        return tableau_de_bord(self.request.user) or "/"
 
 
 class OTPActivationView(_BaseOTPView):

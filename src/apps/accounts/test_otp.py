@@ -69,14 +69,14 @@ class TestRegleDuSecondFacteur:
 class TestApplicationParLeMiddleware:
     def test_un_compte_sans_appareil_est_dirige_vers_l_activation(self, client, secretaire):
         client.force_login(secretaire)
-        reponse = client.get(reverse("administration:dashboard"))
+        reponse = client.get(reverse("secretariat:dashboard"))
         assert reponse.status_code == 302
         assert reverse("accounts:otp_activation") in reponse.url
 
     def test_un_compte_enrole_mais_non_verifie_est_dirige_vers_la_verification(self, client, secretaire):
         TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
         client.force_login(secretaire)
-        reponse = client.get(reverse("administration:dashboard"))
+        reponse = client.get(reverse("secretariat:dashboard"))
         assert reponse.status_code == 302
         assert reverse("accounts:otp_verification") in reponse.url
 
@@ -141,7 +141,7 @@ class TestEnrolement:
         client.get(reverse("accounts:otp_activation"))
         appareil = TOTPDevice.objects.get(user=secretaire, confirmed=False)
         client.post(reverse("accounts:otp_activation"), {"code": code_valide(appareil)})
-        assert client.get(reverse("administration:dashboard")).status_code == 200
+        assert client.get(reverse("secretariat:dashboard")).status_code == 200
 
 
 @pytest.mark.django_db
@@ -151,10 +151,10 @@ class TestVerification:
         client.force_login(secretaire)
         reponse = client.post(
             reverse("accounts:otp_verification"),
-            {"code": code_valide(appareil), "suivant": "/espace-admin/"},
+            {"code": code_valide(appareil), "suivant": reverse("secretariat:dashboard")},
         )
         assert reponse.status_code == 302
-        assert client.get(reverse("administration:dashboard")).status_code == 200
+        assert client.get(reverse("secretariat:dashboard")).status_code == 200
 
     def test_un_code_faux_est_refuse_et_journalise(self, client, secretaire):
         from apps.core.models import JournalAudit
@@ -173,4 +173,4 @@ class TestVerification:
             reverse("accounts:otp_verification"),
             {"code": code_valide(appareil), "suivant": "//exemple-malveillant.org/"},
         )
-        assert reponse.url == reverse("administration:dashboard")
+        assert reponse.url == reverse("secretariat:dashboard")

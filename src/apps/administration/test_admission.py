@@ -101,6 +101,7 @@ class TestAcceptationDeCandidature:
             email="paul@exemple.org",
             parcours_souhaite=parcours,
             motivations="…",
+            statut=DossierCandidature.Statut.EN_EXAMEN,
         )
         second = accepter_dossier(autre, promotion=promotion)
         assert second.numero_etudiant != ProfilEtudiant.objects.first().numero_etudiant
@@ -113,6 +114,7 @@ class TestAcceptationDeCandidature:
             email="marie2@exemple.org",
             parcours_souhaite=parcours,
             motivations="…",
+            statut=DossierCandidature.Statut.EN_EXAMEN,
         )
         profil = accepter_dossier(homonyme, promotion=promotion)
         assert profil.utilisateur.username != "marie.durand"
