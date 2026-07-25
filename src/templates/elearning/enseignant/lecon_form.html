@@ -1,0 +1,51 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if object %}Modifier une leçon{% else %}Nouvelle leçon{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'elearning:enseignant_structure' chapitre.module.slug %}"
+       class="inline-flex items-center text-sm font-medium mb-4 link-reveal" style="color: var(--color-navy-600);">
+        ← {{ chapitre.module.titre }}
+    </a>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+        {% if object %}Modifier « {{ object.titre }} »{% else %}Nouvelle leçon{% endif %}
+    </h1>
+    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">Chapitre : {{ chapitre.titre }}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="post" enctype="multipart/form-data" class="max-w-2xl card-elevated space-y-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="note alert" style="max-width: none;">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% for champ in form %}
+    <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-start gap-3{% endif %}">
+        {% if champ.field.widget.input_type == 'checkbox' %}
+            {{ champ }}
+            <div>
+                <label for="{{ champ.id_for_label }}" class="text-sm font-medium" style="color: var(--color-navy-900);">{{ champ.label }}</label>
+                {% if champ.help_text %}<p class="text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
+            </div>
+        {% else %}
+            <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+            {{ champ }}
+            {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
+        {% endif %}
+        {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+
+    <div class="flex flex-wrap gap-4 pt-2">
+        <button type="submit" class="btn-primary">Enregistrer</button>
+        <a href="{% url 'elearning:enseignant_structure' chapitre.module.slug %}" class="btn-ghost">Annuler</a>
+    </div>
+</form>
+{% endblock %}

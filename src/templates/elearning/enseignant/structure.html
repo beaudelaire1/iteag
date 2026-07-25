@@ -1,0 +1,122 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ module.titre }} — Structure — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'elearning:enseignant_modules' %}" class="inline-flex items-center text-sm font-medium mb-4 link-reveal" style="color: var(--color-navy-600);">
+        ← Retour aux modules
+    </a>
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+            <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ module.titre }}</h1>
+            {% if module.statut == "publie" %}<span class="badge badge-success">Publié</span>
+            {% else %}<span class="badge badge-warning">{{ module.get_statut_display }}</span>{% endif %}
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'elearning:enseignant_audience' module.slug %}" class="btn-ghost">Audience</a>
+            <a href="{% url 'elearning:enseignant_module_modifier' module.slug %}" class="btn-ghost">Modifier</a>
+            {% if module.statut == "publie" %}
+            <form method="post" action="{% url 'elearning:enseignant_depublier' module.slug %}">
+                {% csrf_token %}<button type="submit" class="btn-ghost">Dépublier</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'elearning:enseignant_publier' module.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary" {% if not publiable %}disabled{% endif %}>Publier</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if not publiable %}
+<div class="note alert mb-8" style="max-width: none;">
+    <span class="lbl">Publication bloquée</span>
+    <p>{{ motif_blocage }}</p>
+</div>
+{% endif %}
+
+{# ── Chapitres et leçons ── #}
+{% for chapitre in chapitres %}
+<section class="card-elevated mb-6">
+    <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">
+            {{ forloop.counter }}. {{ chapitre.titre }}
+        </h2>
+        <div class="flex gap-3">
+            <a href="{% url 'elearning:enseignant_lecon_creer' chapitre.pk %}" class="btn-ghost" style="padding: 0.5rem 1.25rem;">
+                Ajouter une leçon
+            </a>
+            <a href="{% url 'elearning:enseignant_chapitre_supprimer' chapitre.pk %}" class="btn-ghost text-danger" style="padding: 0.5rem 1.25rem;">
+                Supprimer
+            </a>
+        </div>
+    </header>
+
+    {% if chapitre.lecons.all %}
+    <form method="post" action="{% url 'elearning:enseignant_lecons_ordonner' chapitre.pk %}">
+        {% csrf_token %}
+        <ul class="space-y-2" role="list">
+            {% for lecon in chapitre.lecons.all %}
+            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded border" style="border-color: var(--color-warm-200);">
+                <span class="flex items-center gap-3 min-w-0">
+                    <input type="hidden" name="lecon" value="{{ lecon.pk }}">
+                    <span class="badge badge-info shrink-0">{{ lecon.get_type_lecon_display }}</span>
+                    <span class="truncate text-sm" style="color: var(--color-warm-800);">{{ lecon.titre }}</span>
+                    {% if lecon.apercu_gratuit %}<span class="badge badge-gold shrink-0">Aperçu</span>{% endif %}
+                    {% if not lecon.obligatoire %}<span class="badge badge-info shrink-0">Facultative</span>{% endif %}
+                    {% if lecon.type_lecon == "video" %}
+                        {% if not lecon.video %}
+                        <span class="badge badge-danger shrink-0">Sans vidéo</span>
+                        {% elif lecon.video.statut_traitement != "pret" %}
+                        <span class="badge badge-warning shrink-0">{{ lecon.video.get_statut_traitement_display }}</span>
+                        {% endif %}
+                    {% endif %}
+                </span>
+                <span class="flex items-center gap-4 shrink-0">
+                    <label class="sr-only" for="ordre-{{ lecon.pk }}">Position de {{ lecon.titre }}</label>
+                    <span class="text-xs" style="color: var(--color-warm-400);">position {{ lecon.ordre }}</span>
+                    <a href="{% url 'elearning:enseignant_lecon_modifier' lecon.pk %}" class="text-sm link-reveal" style="color: var(--color-navy-700);">Modifier</a>
+                    <a href="{% url 'elearning:enseignant_lecon_supprimer' lecon.pk %}" class="text-sm link-reveal text-danger">Supprimer</a>
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </form>
+    {% else %}
+    <p class="text-sm" style="color: var(--color-warm-500);">Ce chapitre ne contient encore aucune leçon.</p>
+    {% endif %}
+</section>
+{% empty %}
+<div class="card text-center py-10 mb-6">
+    <p class="text-warm-600">Commencez par créer un chapitre.</p>
+</div>
+{% endfor %}
+
+{# ── Ajout d'un chapitre ── #}
+<section class="card-elevated">
+    <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+        Ajouter un chapitre
+    </h2>
+    <form method="post" action="{% url 'elearning:enseignant_chapitre_creer' module.slug %}"
+          class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+        {% csrf_token %}
+        <div class="sm:col-span-2">
+            <label class="form-label" for="{{ form_chapitre.titre.id_for_label }}">Titre</label>
+            {{ form_chapitre.titre }}
+        </div>
+        <div>
+            <label class="form-label" for="{{ form_chapitre.ordre.id_for_label }}">Ordre</label>
+            {{ form_chapitre.ordre }}
+        </div>
+        <button type="submit" class="btn-primary justify-center">Ajouter</button>
+    </form>
+</section>
+{% endblock %}

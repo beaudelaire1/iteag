@@ -1,0 +1,86 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Audience — {{ module.titre }} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'elearning:enseignant_structure' module.slug %}"
+       class="inline-flex items-center text-sm font-medium mb-4 link-reveal" style="color: var(--color-navy-600);">
+        ← {{ module.titre }}
+    </a>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Audience du module</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ total_inscrits }}</p><p class="stat-label">Inscrits</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ actifs }}</p><p class="stat-label">En cours</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ termines }}</p><p class="stat-label">Terminés</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ progression_moyenne }} %</p><p class="stat-label">Avancement moyen</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ jamais_commence }}</p><p class="stat-label">Jamais commencé</p></div>
+</div>
+
+{# Là où la courbe s'effondre se trouve la leçon à retravailler. #}
+<h2 class="text-lg mb-4">Achèvement leçon par leçon</h2>
+{% if detail_lecons %}
+<div class="tw overflow-x-auto mb-10">
+    <table class="table-premium">
+        <thead>
+            <tr><th>Leçon</th><th>Commencée</th><th>Terminée</th><th>Taux</th><th>Avancement moyen</th></tr>
+        </thead>
+        <tbody>
+            {% for ligne in detail_lecons %}
+            <tr>
+                <td class="font-medium">{{ ligne.lecon.titre }}</td>
+                <td class="num">{{ ligne.commencees }}</td>
+                <td class="num">{{ ligne.terminees }}</td>
+                <td>
+                    <span class="flex items-center gap-3">
+                        <span class="progress-bar" style="width: 6rem;">
+                            <span class="progress-bar-fill block" style="width: {{ ligne.taux }}%"></span>
+                        </span>
+                        <span class="num text-xs">{{ ligne.taux }} %</span>
+                    </span>
+                </td>
+                <td class="num">{{ ligne.avancement_moyen }} %</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="mb-10" style="color: var(--color-warm-500);">Le module ne contient encore aucune leçon.</p>
+{% endif %}
+
+<h2 class="text-lg mb-4">Étudiants</h2>
+{% if inscriptions %}
+<div class="tw overflow-x-auto">
+    <table class="table-premium">
+        <thead><tr><th>Étudiant</th><th>État</th><th>Progression</th><th>Dernier accès</th></tr></thead>
+        <tbody>
+            {% for inscription in inscriptions %}
+            <tr>
+                <td class="font-medium">{{ inscription.etudiant.utilisateur.get_full_name|default:inscription.etudiant.numero_etudiant }}</td>
+                <td>
+                    {% if inscription.statut == "termine" %}<span class="badge badge-success">Terminé</span>
+                    {% elif inscription.statut == "actif" %}<span class="badge badge-info">En cours</span>
+                    {% else %}<span class="badge badge-warning">{{ inscription.get_statut_display }}</span>{% endif %}
+                </td>
+                <td class="num">{{ inscription.progression_percent }} %</td>
+                <td class="num">{{ inscription.updated_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card text-center py-10">
+    <p style="color: var(--color-warm-600);">Aucun étudiant n'a encore accès à ce module.</p>
+</div>
+{% endif %}
+{% endblock %}

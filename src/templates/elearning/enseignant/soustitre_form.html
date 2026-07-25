@@ -1,0 +1,65 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Sous-titres — {{ video.titre }} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'elearning:enseignant_videos' %}"
+       class="inline-flex items-center text-sm font-medium mb-4 link-reveal" style="color: var(--color-navy-600);">
+        ← Mes vidéos
+    </a>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Sous-titres</h1>
+    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">{{ video.titre }}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl">
+
+    {% if video.sous_titres.all %}
+    <section class="card-elevated mb-6">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+            Pistes existantes
+        </h2>
+        <ul class="space-y-2" role="list">
+            {% for piste in video.sous_titres.all %}
+            <li class="flex items-center justify-between gap-3 px-4 py-3 rounded border" style="border-color: var(--color-warm-200);">
+                <span class="text-sm">{{ piste.libelle }} <span style="color: var(--color-warm-400);">({{ piste.langue }})</span></span>
+                {% if piste.par_defaut %}<span class="badge badge-gold">Par défaut</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
+        {% csrf_token %}
+        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+            Ajouter une piste
+        </h2>
+
+        {% for champ in form %}
+        <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-center gap-3{% endif %}">
+            {% if champ.field.widget.input_type == 'checkbox' %}
+                {{ champ }}
+                <label for="{{ champ.id_for_label }}" class="text-sm font-medium" style="color: var(--color-navy-900);">{{ champ.label }}</label>
+            {% else %}
+                <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+            {% endif %}
+            {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+
+        <p class="text-xs" style="color: var(--color-warm-500);">
+            Format WebVTT (.vtt). Les sous-titres rendent la vidéo utilisable par les personnes
+            sourdes ou malentendantes, et lisibles en environnement bruyant.
+        </p>
+
+        <button type="submit" class="btn-primary w-full justify-center">Associer</button>
+    </form>
+</div>
+{% endblock %}

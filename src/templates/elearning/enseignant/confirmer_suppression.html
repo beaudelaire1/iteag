@@ -1,0 +1,24 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Confirmer la suppression — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-xl">
+    <div class="card-elevated">
+        <p class="overline mb-3">Suppression</p>
+        <h1 class="text-xl mb-4">Supprimer {{ libelle }} ?</h1>
+
+        <p class="mb-2" style="color: var(--color-warm-700);">{{ consequence }}</p>
+        <p class="mb-6 text-sm" style="color: var(--color-warm-500);">Cette action est irréversible.</p>
+
+        <form method="post" class="flex flex-wrap gap-4">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary" style="background-color: #991B1B;">Supprimer</button>
+            <a href="{{ annuler_url }}" class="btn-ghost">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

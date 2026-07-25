@@ -1,0 +1,86 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mes vidéos — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Formation vidéo</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes vidéos</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    {# Dépôt #}
+    <section class="lg:col-span-1">
+        <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
+            {% csrf_token %}
+            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+                Déposer une vidéo
+            </h2>
+
+            {% for champ in form %}
+            <div>
+                <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
+                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+
+            <p class="text-xs" style="color: var(--color-warm-500);">
+                Formats acceptés : MP4, MOV, WebM. Définition recommandée : 720p, pour rester
+                confortable depuis la Martinique et la Guyane.
+            </p>
+
+            <button type="submit" class="btn-primary w-full justify-center">Déposer</button>
+        </form>
+    </section>
+
+    {# Bibliothèque #}
+    <section class="lg:col-span-2">
+        {% if videos %}
+        <div class="tw overflow-x-auto">
+            <table class="table-premium">
+                <thead>
+                    <tr><th>Vidéo</th><th>État</th><th>Durée</th><th>Utilisée</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for video in videos %}
+                    <tr>
+                        <td class="font-medium">{{ video.titre }}</td>
+                        <td>
+                            {% if video.statut_traitement == "pret" %}<span class="badge badge-success">Prête</span>
+                            {% elif video.statut_traitement == "erreur" %}<span class="badge badge-danger">Erreur</span>
+                            {% else %}<span class="badge badge-warning">{{ video.get_statut_traitement_display }}</span>{% endif %}
+                        </td>
+                        <td class="num">{% if video.duree_secondes %}{{ video.duree_secondes }} s{% else %}—{% endif %}</td>
+                        <td class="num">{{ video.lecons.count }} leçon(s)</td>
+                        <td>
+                            <span class="flex flex-wrap gap-3">
+                                <a href="{% url 'elearning:enseignant_soustitre' video.pk %}"
+                                   class="text-sm link-reveal" style="color: var(--color-navy-700);">Sous-titres</a>
+                                <form method="post" action="{% url 'elearning:enseignant_video_supprimer' video.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-sm text-danger link-reveal">Supprimer</button>
+                                </form>
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card text-center py-16">
+            <p style="color: var(--color-warm-600);">Aucune vidéo déposée pour le moment.</p>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

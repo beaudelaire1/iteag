@@ -1,0 +1,341 @@
+"""
+Tests du portail enseignant.
+
+L'enjeu principal n'est pas l'affichage : c'est le cloisonnement. Un enseignant
+ne doit ni voir ni modifier le module d'un autre, et la publication ne doit pas
+pouvoir livrer un module dont une vidéo n'est pas prête.
+"""
+
+import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
+
+from apps.accounts.models import User
+from apps.elearning.forms import VideoUploadForm
+from apps.elearning.models import Chapitre, Lecon, ModuleFormation, SousTitre, VideoAsset
+from apps.formations.models import Professeur
+
+# En-tête minimal d'un conteneur ISO (MP4) : « ....ftypisom »
+ENTETE_MP4 = b"\x00\x00\x00\x20ftypisom" + b"\x00" * 32
+ENTETE_WEBM = b"\x1aE\xdf\xa3" + b"\x00" * 40
+
+
+@pytest.fixture
+def autre_enseignant(db):
+    utilisateur = User.objects.create_user(
+        username="autreprof",
+        email="autreprof@iteag.org",
+        password="motdepasse-long-12",
+        role=User.Role.ENSEIGNANT,
+    )
+    return Professeur.objects.create(user=utilisateur, nom="Labeth", prenom="Ruth", slug="ruth-labeth")
+
+
+@pytest.mark.django_db
+class TestCloisonnementEntreEnseignants:
+    def test_je_ne_vois_que_mes_modules(self, client, enseignant, autre_enseignant, module, discipline):
+        ModuleFormation.objects.create(
+            titre="Module d'un autre", slug="module-autre", discipline=discipline, responsable=autre_enseignant
+        )
+        client.force_login(enseignant.user)
+        contenu = client.get(reverse("elearning:enseignant_modules")).content.decode()
+        assert module.titre in contenu
+        assert "Module d'un autre" not in contenu
+
+    def test_je_ne_peux_pas_ouvrir_la_structure_d_un_autre(self, client, autre_enseignant, module, enseignant):
+        client.force_login(autre_enseignant.user)
+        reponse = client.get(reverse("elearning:enseignant_structure", kwargs={"slug": module.slug}))
+        assert reponse.status_code == 404
+
+    def test_je_ne_peux_pas_publier_le_module_d_un_autre(self, client, autre_enseignant, module):
+        client.force_login(autre_enseignant.user)
+        reponse = client.post(reverse("elearning:enseignant_publier", kwargs={"slug": module.slug}))
+        assert reponse.status_code == 404
+
+    def test_je_ne_peux_pas_supprimer_la_lecon_d_un_autre(self, client, autre_enseignant, lecon):
+        client.force_login(autre_enseignant.user)
+        reponse = client.post(reverse("elearning:enseignant_lecon_supprimer", kwargs={"pk": lecon.pk}))
+        assert reponse.status_code == 404
+        assert Lecon.objects.filter(pk=lecon.pk).exists()
+
+    def test_un_etudiant_n_accede_pas_au_portail(self, client, utilisateur_etudiant):
+        client.force_login(utilisateur_etudiant)
+        reponse = client.get(reverse("elearning:enseignant_modules"))
+        assert reponse.status_code in (302, 403)
+
+
+@pytest.mark.django_db
+class TestCycleDeVieDUnModule:
+    def test_creation(self, client, enseignant, discipline):
+        client.force_login(enseignant.user)
+        reponse = client.post(
+            reverse("elearning:enseignant_module_creer"),
+            {
+                "titre": "Herméneutique biblique",
+                "description": "Lire le texte avec méthode.",
+                "discipline": discipline.pk,
+                "niveau": ModuleFormation.Niveau.INITIATION,
+                "ects": "2.5",
+                "seuil_completion": 80,
+            },
+        )
+        assert reponse.status_code == 302
+        module = ModuleFormation.objects.get(titre="Herméneutique biblique")
+        assert module.responsable == enseignant
+        assert module.slug == "hermeneutique-biblique"
+        assert module.statut == ModuleFormation.StatutPublication.BROUILLON
+
+    def test_les_titres_identiques_donnent_des_adresses_distinctes(self, client, enseignant, discipline, module):
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_module_creer"),
+            {
+                "titre": module.titre,
+                "discipline": discipline.pk,
+                "niveau": ModuleFormation.Niveau.INITIATION,
+                "ects": "0",
+                "seuil_completion": 80,
+            },
+        )
+        assert ModuleFormation.objects.filter(titre=module.titre).count() == 2
+        assert ModuleFormation.objects.filter(slug=f"{module.slug}-2").exists()
+
+    def test_ajout_d_un_chapitre(self, client, enseignant, module):
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_chapitre_creer", kwargs={"slug": module.slug}),
+            {"titre": "Premiers principes", "ordre": 0},
+        )
+        chapitre = Chapitre.objects.get(module=module, titre="Premiers principes")
+        assert chapitre.ordre == 1  # renseigné automatiquement
+
+    def test_ajout_d_une_lecon_video(self, client, enseignant, chapitre, video_prete):
+        video_prete.uploade_par = enseignant.user
+        video_prete.save(update_fields=["uploade_par"])
+        client.force_login(enseignant.user)
+
+        client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {
+                "titre": "Le contexte historique",
+                "type_lecon": Lecon.TypeLecon.VIDEO,
+                "ordre": 0,
+                "video": video_prete.pk,
+                "duree_secondes": 600,
+                "obligatoire": "on",
+            },
+        )
+        assert Lecon.objects.filter(chapitre=chapitre, titre="Le contexte historique").exists()
+
+    def test_une_lecon_video_sans_fichier_est_refusee(self, client, enseignant, chapitre):
+        client.force_login(enseignant.user)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {"titre": "Sans vidéo", "type_lecon": Lecon.TypeLecon.VIDEO, "ordre": 1},
+        )
+        assert reponse.status_code == 200
+        assert b"doit r" in reponse.content  # « doit référencer un fichier »
+        assert not Lecon.objects.filter(titre="Sans vidéo").exists()
+
+    def test_je_ne_peux_rattacher_que_mes_propres_videos(
+        self, client, enseignant, autre_enseignant, chapitre, video_prete
+    ):
+        video_prete.uploade_par = autre_enseignant.user
+        video_prete.save(update_fields=["uploade_par"])
+        client.force_login(enseignant.user)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {"titre": "Vidéo d'un autre", "type_lecon": Lecon.TypeLecon.VIDEO, "ordre": 1, "video": video_prete.pk},
+        )
+        assert reponse.status_code == 200
+        assert not Lecon.objects.filter(titre="Vidéo d'un autre").exists()
+
+
+@pytest.mark.django_db
+class TestPublicationControlee:
+    def test_un_module_sans_lecon_ne_se_publie_pas(self, client, enseignant, discipline):
+        module = ModuleFormation.objects.create(
+            titre="Vide", slug="vide", discipline=discipline, responsable=enseignant
+        )
+        client.force_login(enseignant.user)
+        client.post(reverse("elearning:enseignant_publier", kwargs={"slug": module.slug}))
+        module.refresh_from_db()
+        assert module.statut == ModuleFormation.StatutPublication.BROUILLON
+
+    def test_une_video_non_prete_bloque_la_publication(self, client, enseignant, module, lecon, video_prete):
+        module.statut = ModuleFormation.StatutPublication.BROUILLON
+        module.save(update_fields=["statut"])
+        video_prete.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video_prete.save(update_fields=["statut_traitement"])
+
+        client.force_login(enseignant.user)
+        reponse = client.post(reverse("elearning:enseignant_publier", kwargs={"slug": module.slug}), follow=True)
+        module.refresh_from_db()
+        assert module.statut == ModuleFormation.StatutPublication.BROUILLON
+        assert "préparation" in reponse.content.decode()
+
+    def test_un_module_complet_se_publie(self, client, enseignant, module, lecon):
+        module.statut = ModuleFormation.StatutPublication.BROUILLON
+        module.save(update_fields=["statut"])
+        client.force_login(enseignant.user)
+
+        client.post(reverse("elearning:enseignant_publier", kwargs={"slug": module.slug}))
+        module.refresh_from_db()
+        assert module.statut == ModuleFormation.StatutPublication.PUBLIE
+        assert module.date_publication is not None
+
+    def test_depublication(self, client, enseignant, module, lecon):
+        client.force_login(enseignant.user)
+        client.post(reverse("elearning:enseignant_depublier", kwargs={"slug": module.slug}))
+        module.refresh_from_db()
+        assert module.statut == ModuleFormation.StatutPublication.BROUILLON
+
+
+@pytest.mark.django_db
+class TestDepotDeVideo:
+    def _deposer(self, client, contenu=ENTETE_MP4, nom="cours.mp4"):
+        return client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Séance 1", "fichier": SimpleUploadedFile(nom, contenu, content_type="video/mp4")},
+        )
+
+    def test_depot_reussi(self, client, enseignant, tmp_path, settings):
+        settings.MEDIA_ROOT = tmp_path
+        client.force_login(enseignant.user)
+        reponse = self._deposer(client)
+        assert reponse.status_code == 302
+
+        video = VideoAsset.objects.get(titre="Séance 1")
+        assert video.uploade_par == enseignant.user
+        assert video.checksum_sha256
+        # La clé de stockage ne reprend pas le nom d'origine : rien n'en est déductible.
+        assert "cours" not in video.cle_stockage
+        assert video.nom_origine == "cours.mp4"
+
+    def test_le_format_webm_est_accepte(self, client, enseignant, tmp_path, settings):
+        settings.MEDIA_ROOT = tmp_path
+        client.force_login(enseignant.user)
+        assert self._deposer(client, ENTETE_WEBM, "cours.webm").status_code == 302
+
+    def test_un_fichier_deguise_en_video_est_refuse(self, client, enseignant, tmp_path, settings):
+        """Renommer un fichier en .mp4 ne suffit pas : l'en-tête réel est lu."""
+        settings.MEDIA_ROOT = tmp_path
+        client.force_login(enseignant.user)
+        reponse = self._deposer(client, b"#!/bin/sh\nrm -rf /\n" + b"\x00" * 20, "piege.mp4")
+        assert reponse.status_code == 200
+        assert VideoAsset.objects.count() == 0
+
+    def test_un_fichier_trop_volumineux_est_refuse(self, client, enseignant, settings, tmp_path):
+        settings.MEDIA_ROOT = tmp_path
+        settings.ELEARNING_TAILLE_VIDEO_MAX = 10
+        client.force_login(enseignant.user)
+        reponse = self._deposer(client)
+        assert reponse.status_code == 200
+        assert VideoAsset.objects.count() == 0
+
+    def test_une_video_utilisee_ne_se_supprime_pas(self, client, enseignant, lecon, video_prete):
+        video_prete.uploade_par = enseignant.user
+        video_prete.save(update_fields=["uploade_par"])
+        client.force_login(enseignant.user)
+
+        client.post(reverse("elearning:enseignant_video_supprimer", kwargs={"pk": video_prete.pk}))
+        assert VideoAsset.objects.filter(pk=video_prete.pk).exists()
+
+    def test_je_ne_supprime_pas_la_video_d_un_autre(self, client, enseignant, autre_enseignant, video_prete):
+        video_prete.uploade_par = autre_enseignant.user
+        video_prete.save(update_fields=["uploade_par"])
+        client.force_login(enseignant.user)
+        assert (
+            client.post(reverse("elearning:enseignant_video_supprimer", kwargs={"pk": video_prete.pk})).status_code
+            == 404
+        )
+
+
+@pytest.mark.django_db
+class TestSousTitres:
+    def test_ajout_d_une_piste_vtt(self, client, enseignant, video_prete, tmp_path, settings):
+        settings.MEDIA_ROOT = tmp_path
+        video_prete.uploade_par = enseignant.user
+        video_prete.save(update_fields=["uploade_par"])
+        client.force_login(enseignant.user)
+
+        client.post(
+            reverse("elearning:enseignant_soustitre", kwargs={"video_pk": video_prete.pk}),
+            {
+                "langue": "fr",
+                "libelle": "Français",
+                "fichier_vtt": SimpleUploadedFile("st.vtt", b"WEBVTT\n\n00:00.000 --> 00:02.000\nBonjour"),
+                "par_defaut": "on",
+            },
+        )
+        assert SousTitre.objects.filter(video=video_prete, langue="fr").exists()
+
+    def test_un_fichier_qui_n_est_pas_du_vtt_est_refuse(self, client, enseignant, video_prete, tmp_path, settings):
+        settings.MEDIA_ROOT = tmp_path
+        video_prete.uploade_par = enseignant.user
+        video_prete.save(update_fields=["uploade_par"])
+        client.force_login(enseignant.user)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_soustitre", kwargs={"video_pk": video_prete.pk}),
+            {"langue": "fr", "libelle": "Français", "fichier_vtt": SimpleUploadedFile("st.vtt", b"pas du vtt")},
+        )
+        assert reponse.status_code == 200
+        assert SousTitre.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestReordonnancement:
+    def test_l_ordre_est_persiste(self, client, enseignant, chapitre, lecon, lecon_apercu):
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_lecons_ordonner", kwargs={"chapitre_pk": chapitre.pk}),
+            {"lecon": [str(lecon_apercu.pk), str(lecon.pk)]},
+        )
+        lecon.refresh_from_db()
+        lecon_apercu.refresh_from_db()
+        assert lecon_apercu.ordre == 1
+        assert lecon.ordre == 2
+
+    def test_l_inversion_ne_heurte_pas_la_contrainte_d_unicite(self, client, enseignant, chapitre, lecon, lecon_apercu):
+        """Deux leçons ne peuvent pas porter le même rang, même transitoirement."""
+        client.force_login(enseignant.user)
+        for ordre in ([lecon_apercu.pk, lecon.pk], [lecon.pk, lecon_apercu.pk]):
+            reponse = client.post(
+                reverse("elearning:enseignant_lecons_ordonner", kwargs={"chapitre_pk": chapitre.pk}),
+                {"lecon": [str(pk) for pk in ordre]},
+            )
+            assert reponse.status_code == 302
+
+
+@pytest.mark.django_db
+class TestAudience:
+    def test_la_page_expose_les_taux_par_lecon(self, client, enseignant, module, lecon, acces):
+        client.force_login(enseignant.user)
+        reponse = client.get(reverse("elearning:enseignant_audience", kwargs={"slug": module.slug}))
+        assert reponse.status_code == 200
+        contenu = reponse.content.decode()
+        assert lecon.titre in contenu
+        assert reponse.context["total_inscrits"] == 1
+        assert reponse.context["jamais_commence"] == 1
+
+    def test_l_audience_d_un_autre_est_inaccessible(self, client, autre_enseignant, module):
+        client.force_login(autre_enseignant.user)
+        assert client.get(reverse("elearning:enseignant_audience", kwargs={"slug": module.slug})).status_code == 404
+
+
+@pytest.mark.django_db
+class TestValidationDuFichierVideo:
+    @pytest.mark.parametrize(
+        "entete,attendu",
+        [
+            (ENTETE_MP4, True),
+            (ENTETE_WEBM, True),
+            (b"%PDF-1.7" + b"\x00" * 20, False),
+            (b"\x89PNG\r\n\x1a\n" + b"\x00" * 20, False),
+            (b"court", False),
+        ],
+    )
+    def test_reconnaissance_des_entetes(self, entete, attendu):
+        assert VideoUploadForm._entete_video(entete) is attendu
