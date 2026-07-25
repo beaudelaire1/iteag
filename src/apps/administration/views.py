@@ -140,9 +140,14 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
     context_object_name = "dossier"
 
     def get_context_data(self, **kwargs):
+        from apps.academics.models import Promotion
+
         ctx = super().get_context_data(**kwargs)
         ctx["statut_choices"] = available_status_choices(self.object)
         ctx["historique"] = self.object.historique.select_related("modifie_par")
+        ctx["promotions"] = Promotion.objects.filter(actif=True, parcours=self.object.parcours_souhaite).order_by(
+            "-annee_debut"
+        )
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -150,18 +155,51 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         new_statut = request.POST.get("statut")
         commentaire = request.POST.get("commentaire", "")
 
-        if new_statut and new_statut != self.object.statut:
-            try:
-                self.object = transition_dossier(
-                    dossier=self.object,
-                    new_status=new_statut,
-                    changed_by=request.user,
-                    comment=commentaire,
-                )
-            except ValidationError as exc:
-                messages.error(request, exc.messages[0])
-            else:
-                messages.success(request, f"Statut mis à jour : {self.object.get_statut_display()}")
+        if not new_statut or new_statut == self.object.statut:
+            return redirect("administration:candidature_detail", pk=self.object.pk)
+
+        # L'acceptation ne se limite pas à un changement de statut : elle crée le
+        # compte, le profil et ouvre les accès aux modules. La transition
+        # elle-même reste gouvernée par la machine à états d'admissions.
+        if new_statut == DossierCandidature.Statut.ACCEPTE:
+            return self._accepter(request, commentaire)
+
+        try:
+            self.object = transition_dossier(
+                dossier=self.object,
+                new_status=new_statut,
+                changed_by=request.user,
+                comment=commentaire,
+            )
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+        else:
+            messages.success(request, f"Statut mis à jour : {self.object.get_statut_display()}")
+        return redirect("administration:candidature_detail", pk=self.object.pk)
+
+    def _accepter(self, request, commentaire):
+        """L'acceptation crée le compte, le profil et ouvre les accès aux modules."""
+        from apps.academics.models import Promotion
+        from apps.administration.services.admission import accepter_dossier
+
+        promotion = Promotion.objects.filter(pk=request.POST.get("promotion"), actif=True).first()
+        if promotion is None:
+            messages.error(
+                request,
+                "Choisissez la promotion d'affectation : elle est nécessaire pour créer le dossier étudiant.",
+            )
+            return redirect("administration:candidature_detail", pk=self.object.pk)
+
+        try:
+            profil = accepter_dossier(self.object, promotion=promotion, par=request.user, request=request)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+        else:
+            messages.success(
+                request,
+                f"Candidature acceptée. Compte {profil.numero_etudiant} créé, "
+                f"{profil.inscriptions_modules.count()} module(s) ouvert(s), email de bienvenue envoyé.",
+            )
         return redirect("administration:candidature_detail", pk=self.object.pk)
 
 

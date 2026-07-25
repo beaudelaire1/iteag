@@ -1,0 +1,72 @@
+{% load static %}<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ attestation.numero }}</title>
+    <style>
+        @page { size: A4 landscape; margin: 0; }
+        body {
+            margin: 0;
+            font-family: "Helvetica", Arial, sans-serif;
+            color: #1A2D29;
+            background: #FEFAEF;
+        }
+        .cadre {
+            margin: 14mm;
+            padding: 18mm 20mm;
+            border: 1.5pt solid #355952;
+            outline: 0.5pt solid #EAB63E;
+            outline-offset: 3mm;
+            height: calc(297mm - 28mm - 6mm);
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .surtitre {
+            font-size: 9pt; font-weight: bold; letter-spacing: 0.22em;
+            text-transform: uppercase; color: #A8790C; margin: 0 0 6mm;
+        }
+        .institut { font-size: 13pt; color: #355952; margin: 0 0 14mm; }
+        h1 { font-size: 30pt; margin: 0 0 4mm; color: #1A2D29; font-weight: normal; }
+        .regle { width: 28mm; height: 2pt; background: #EAB63E; border: 0; margin: 0 auto 12mm; }
+        .mention { font-size: 11pt; color: #544B3D; margin: 0 0 3mm; }
+        .titulaire { font-size: 22pt; font-weight: bold; margin: 0 0 10mm; color: #263F3B; }
+        .module { font-size: 16pt; margin: 0 0 12mm; color: #355952; }
+        .pied {
+            margin-top: 14mm; display: flex; justify-content: space-between;
+            font-size: 8.5pt; color: #736957;
+        }
+        .pied div { text-align: left; }
+        .code { font-family: "Courier New", monospace; }
+    </style>
+</head>
+<body>
+    <div class="cadre">
+        <p class="surtitre">Attestation de suivi</p>
+        <p class="institut">Institut de Théologie Évangélique des Antilles et de la Guyane</p>
+
+        <h1>Attestation</h1>
+        <hr class="regle">
+
+        <p class="mention">Il est attesté que</p>
+        <p class="titulaire">{{ attestation.inscription.etudiant.utilisateur.get_full_name }}</p>
+
+        <p class="mention">a suivi et achevé le module de formation</p>
+        <p class="module">« {{ attestation.inscription.module.titre }} »</p>
+
+        {% if attestation.inscription.module.ects %}
+        <p class="mention">{{ attestation.inscription.module.ects }} crédits ECTS</p>
+        {% endif %}
+
+        <div class="pied">
+            <div>
+                <p>Numéro : <span class="code">{{ attestation.numero }}</span></p>
+                <p>Délivrée le {{ attestation.date_emission|date:"d F Y" }}</p>
+            </div>
+            <div style="text-align: right;">
+                <p>Vérification en ligne</p>
+                <p class="code">{{ attestation.code_verification }}</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

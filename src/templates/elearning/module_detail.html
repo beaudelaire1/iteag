@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ module.titre }} — Formation vidéo — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ module.description|truncatewords:30 }}{% endblock %}
+
+{% block extra_head %}
+{# Données structurées Course — visibilité dans les résultats de recherche #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "{{ module.titre|escapejs }}",
+  "description": "{{ module.description|truncatewords:40|escapejs }}",
+  "provider": {"@type": "Organization", "name": "{{ SITE_FULL_NAME|escapejs }}", "sameAs": "https://www.iteag.org"},
+  "educationalLevel": "{{ module.get_niveau_display|escapejs }}"{% if module.responsable %},
+  "instructor": {"@type": "Person", "name": "{{ module.responsable.nom_complet|escapejs }}"}{% endif %}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="section" style="background: var(--color-warm-100);">
+    <div class="container-wide">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+            <div class="lg:col-span-2">
+                <p class="flex flex-wrap items-center gap-2 mb-4">
+                    <span class="badge badge-info">{{ module.get_niveau_display }}</span>
+                    {% if module.certifiant %}<span class="badge badge-gold">Attestation à la clé</span>{% endif %}
+                    {% if module.discipline %}<span class="badge badge-info">{{ module.discipline.nom }}</span>{% endif %}
+                </p>
+                <h1>{{ module.titre }}</h1>
+                <hr class="divider-gold revealed mt-5">
+
+                {% if module.description %}
+                <p class="mt-6 text-warm-700">{{ module.description|linebreaks }}</p>
+                {% endif %}
+
+                {% if module.objectifs %}
+                <h2 class="text-lg mt-8 mb-3">Objectifs</h2>
+                <div class="prose prose-sm text-warm-700">{{ module.objectifs|linebreaks }}</div>
+                {% endif %}
+
+                {% if module.prerequis.all %}
+                <h2 class="text-lg mt-8 mb-3">À suivre au préalable</h2>
+                <ul class="space-y-2">
+                    {% for prealable in module.prerequis.all %}
+                    <li><a href="{{ prealable.get_absolute_url }}" class="link-reveal">{{ prealable.titre }}</a></li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+
+            {# Encart d'accès #}
+            <aside class="lg:col-span-1">
+                <div class="card-elevated sticky" style="top: 6rem;">
+                    <dl class="space-y-3 text-sm mb-6">
+                        {% if module.duree_totale_secondes %}
+                        <div class="flex justify-between">
+                            <dt class="text-warm-500">Durée</dt>
+                            <dd class="font-medium text-navy-900">{{ module.duree_minutes }} min</dd>
+                        </div>
+                        {% endif %}
+                        {% if module.responsable %}
+                        <div class="flex justify-between">
+                            <dt class="text-warm-500">Enseignant</dt>
+                            <dd class="font-medium text-navy-900">{{ module.responsable.nom_complet }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if module.ects %}
+                        <div class="flex justify-between">
+                            <dt class="text-warm-500">Crédits</dt>
+                            <dd class="font-medium text-navy-900">{{ module.ects }} ECTS</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+
+                    {% if inscription %}
+                        <div class="mb-5">
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-warm-500">Progression</span>
+                                <span class="font-semibold text-navy-900">{{ inscription.progression_percent }} %</span>
+                            </div>
+                            <div class="progress-bar" data-progress="{{ inscription.progression_percent }}">
+                                <div class="progress-bar-fill" style="width: {{ inscription.progression_percent }}%"></div>
+                            </div>
+                        </div>
+
+                        {% if lecon_suivante %}
+                        <a href="{% url 'elearning:lecon_detail' module.slug lecon_suivante.slug %}"
+                           class="btn-primary w-full justify-center">
+                            {% if inscription.progression_percent %}Reprendre{% else %}Commencer{% endif %}
+                        </a>
+                        {% endif %}
+
+                        {% if attestation %}
+                        <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}"
+                           class="btn-gold w-full justify-center mt-3">Télécharger l'attestation</a>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-sm text-warm-600 mb-4">
+                            Ce module est réservé aux étudiants inscrits. Déposez une candidature
+                            ou contactez le secrétariat.
+                        </p>
+                        <a href="{% url 'admissions:candidature_form' %}" class="btn-primary w-full justify-center">
+                            Déposer une candidature
+                        </a>
+                    {% endif %}
+                </div>
+            </aside>
+
+        </div>
+    </div>
+</section>
+
+{# Sommaire #}
+<section class="section">
+    <div class="container-wide">
+        <h2 class="mb-8">Programme</h2>
+
+        {% for chapitre in chapitres %}
+        <div class="mb-8">
+            <h3 class="text-base font-semibold text-navy-900 mb-4">
+                {{ forloop.counter }}. {{ chapitre.titre }}
+            </h3>
+            <ul class="space-y-2" role="list">
+                {% for lecon in chapitre.lecons.all %}
+                <li class="flex items-center justify-between gap-4 px-4 py-3 rounded border border-warm-200 bg-white">
+                    <span class="flex items-center gap-3 min-w-0">
+                        {% if lecon.pk in lecons_terminees %}
+                        <span class="badge badge-success shrink-0" aria-label="Terminée">✓</span>
+                        {% else %}
+                        <span class="badge badge-info shrink-0">{{ lecon.get_type_lecon_display }}</span>
+                        {% endif %}
+                        <span class="truncate text-sm text-warm-800">{{ lecon.titre }}</span>
+                        {% if lecon.apercu_gratuit %}
+                        <span class="badge badge-gold shrink-0">Aperçu libre</span>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center gap-4 shrink-0">
+                        {% if lecon.duree_secondes %}
+                        <span class="text-xs text-warm-400">{{ lecon.duree_secondes|divisibleby:60|yesno:"," }}{{ lecon.duree_secondes }}s</span>
+                        {% endif %}
+                        {% if inscription or lecon.apercu_gratuit %}
+                        <a href="{% url 'elearning:lecon_detail' module.slug lecon.slug %}"
+                           class="text-sm font-medium text-navy-700 link-reveal">Ouvrir</a>
+                        {% endif %}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% empty %}
+        <p class="text-warm-500">Le programme sera publié prochainement.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

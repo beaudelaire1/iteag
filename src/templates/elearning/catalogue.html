@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Formations vidéo — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Modules de formation théologique en vidéo, accessibles à distance depuis la Guadeloupe, la Martinique et la Guyane.{% endblock %}
+
+{% block content %}
+<section class="section-hero" style="background: var(--color-warm-100);">
+    <div class="container-wide text-center">
+        <p class="overline mb-4 hero-el hero-el-1">Formation à distance</p>
+        <h1 class="hero-el hero-el-2">Modules de formation vidéo</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto hero-el hero-el-3">
+        <p class="mt-6 max-w-2xl mx-auto text-warm-600 hero-el hero-el-4">
+            Suivez les enseignements de l'ITEAG où que vous soyez. Chaque module associe
+            vidéos, documents et suivi de progression.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container-wide">
+
+        {# Filtres #}
+        <form method="get" class="flex flex-wrap gap-4 items-end mb-10 pb-8 border-b border-warm-200">
+            <div>
+                <label for="discipline" class="form-label">Discipline</label>
+                <select name="discipline" id="discipline" class="form-select">
+                    <option value="">Toutes</option>
+                    {% for d in disciplines %}
+                    <option value="{{ d.slug }}" {% if d.slug == discipline_courante %}selected{% endif %}>{{ d.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="niveau" class="form-label">Niveau</label>
+                <select name="niveau" id="niveau" class="form-select">
+                    <option value="">Tous</option>
+                    {% for valeur, libelle in niveaux %}
+                    <option value="{{ valeur }}" {% if valeur == niveau_courant %}selected{% endif %}>{{ libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-ghost">Filtrer</button>
+        </form>
+
+        {% if modules %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-motion-stagger>
+            {% for module in modules %}
+            <article class="card reveal relative flex flex-col">
+                {% if module.image_couverture %}
+                <div class="img-reveal -mx-7 -mt-7 mb-5">
+                    <img src="{{ module.image_couverture.url }}" alt="" loading="lazy"
+                         class="w-full h-44 object-cover">
+                </div>
+                {% endif %}
+
+                <p class="flex flex-wrap items-center gap-2 mb-3">
+                    <span class="badge badge-info">{{ module.get_niveau_display }}</span>
+                    {% if module.certifiant %}<span class="badge badge-gold">Attestation</span>{% endif %}
+                </p>
+
+                <h2 class="text-lg font-semibold text-navy-900 mb-2">
+                    <a href="{{ module.get_absolute_url }}" class="stretched-link">{{ module.titre }}</a>
+                </h2>
+
+                {% if module.description %}
+                <p class="text-sm text-warm-600 line-clamp-3 mb-4">{{ module.description }}</p>
+                {% endif %}
+
+                <dl class="mt-auto pt-4 border-t border-warm-100 flex flex-wrap gap-x-6 gap-y-1 text-xs text-warm-500">
+                    {% if module.discipline %}
+                    <div><dt class="inline">Discipline —</dt> <dd class="inline">{{ module.discipline.nom }}</dd></div>
+                    {% endif %}
+                    {% if module.responsable %}
+                    <div><dt class="inline">Enseignant —</dt> <dd class="inline">{{ module.responsable.nom_complet }}</dd></div>
+                    {% endif %}
+                    {% if module.duree_totale_secondes %}
+                    <div><dt class="inline">Durée —</dt> <dd class="inline">{{ module.duree_minutes }} min</dd></div>
+                    {% endif %}
+                </dl>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% include "partials/pagination.html" %}
+
+        {% else %}
+        <div class="card text-center py-16">
+            <p class="text-warm-600">Aucun module ne correspond à cette recherche.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

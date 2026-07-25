@@ -44,6 +44,7 @@ urlpatterns = [
     path("espace-etudiant/", include("apps.academics.urls", namespace="academics")),
     path("espace-enseignant/", include("apps.lms.urls", namespace="lms")),
     path("mes-documents/", include("apps.documents.urls", namespace="documents")),
+    path("formations-video/", include("apps.elearning.urls", namespace="elearning")),
     path("", include("apps.website.urls", namespace="website")),
     # Wagtail catch-all (must be last)
     path("", include(wagtail_urls)),

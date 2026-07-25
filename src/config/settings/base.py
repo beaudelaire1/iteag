@@ -74,6 +74,7 @@ LOCAL_APPS = [
     "apps.lms",
     "apps.library",
     "apps.documents",
+    "apps.elearning",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -329,6 +330,26 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
 # ──────────────────────────────────────────────
+# Formation vidéo (voir ADR-001 et ADR-002)
+# ──────────────────────────────────────────────
+
+# Backend de stockage des vidéos : "local" en développement, "s3" en production.
+ELEARNING_STOCKAGE_VIDEO = env("ELEARNING_STOCKAGE_VIDEO", default="local")
+AWS_STORAGE_BUCKET_NAME_VIDEOS = env("AWS_STORAGE_BUCKET_NAME_VIDEOS", default="iteag-videos")
+
+# Nombre de lectures simultanées tolérées par compte. 1 = un seul appareil à la
+# fois, ce qui rend le partage de compte inconfortable sans gêner un usage normal.
+ELEARNING_FLUX_SIMULTANES_MAX = env.int("ELEARNING_FLUX_SIMULTANES_MAX", default=1)
+ELEARNING_FLUX_TTL = 900
+
+# Intervalle des signaux de progression envoyés par le lecteur (secondes).
+ELEARNING_INTERVALLE_SIGNAL = 15
+
+# Taille maximale d'une vidéo déposée par un enseignant.
+ELEARNING_TAILLE_VIDEO_MAX = 2 * 1024 * 1024 * 1024  # 2 Go
+ELEARNING_TYPES_VIDEO = ["video/mp4", "video/webm", "video/quicktime"]
+
+# ──────────────────────────────────────────────
 # Session
 # ──────────────────────────────────────────────
 
@@ -346,6 +367,7 @@ CONTENT_SECURITY_POLICY = {
         "script-src": ["'self'"],
         "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:"],
+        "media-src": ["'self'", "blob:"],
         "font-src": ["'self'"],
         "connect-src": ["'self'"],
         "frame-src": ["'none'"],
