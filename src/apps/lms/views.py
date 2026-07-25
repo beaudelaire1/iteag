@@ -202,9 +202,13 @@ class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
         prof = _get_professeur(self.request)
         if prof is None:
             return Evaluation.objects.none()
-        return Evaluation.objects.filter(cours_session__enseignant=prof).select_related(
-            "etudiant__utilisateur", "cours_session__cours", "cours_session__session"
-        )
+        return Evaluation.objects.filter(
+            cours_session__enseignant=prof,
+            statut__in=[
+                Evaluation.StatutEvaluation.SOUMIS,
+                Evaluation.StatutEvaluation.EN_CORRECTION,
+            ],
+        ).select_related("etudiant__utilisateur", "cours_session__cours", "cours_session__session")
 
     def form_valid(self, form):
         evaluation = form.save(commit=False)
@@ -239,6 +243,36 @@ class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
         )
         messages.success(request, f"{updated} évaluation(s) publiée(s).")
         return redirect(reverse("lms:course_detail", kwargs={"pk": cours_session.pk}))
+
+
+class TeacherPrepareEvaluationsView(TeacherRoleRequiredMixin, DetailView):
+    """Crée une évaluation à remettre pour chaque étudiant inscrit au cours."""
+
+    model = CoursDeSession
+    http_method_names = ["post"]
+
+    def get_queryset(self):
+        return _teacher_courses(self.request).prefetch_related("inscriptions__etudiant")
+
+    def post(self, request, *args, **kwargs):
+        cours_session = self.get_object()
+        evaluation_type = request.POST.get("type_evaluation")
+        valid_types = {value for value, _ in Evaluation.TypeEvaluation.choices}
+        if evaluation_type not in valid_types:
+            messages.error(request, "Choisissez un type d'évaluation valide.")
+            return redirect("lms:course_detail", pk=cours_session.pk)
+
+        created = 0
+        for inscription in cours_session.inscriptions.all():
+            _, was_created = Evaluation.objects.get_or_create(
+                cours_session=cours_session,
+                etudiant=inscription.etudiant,
+                type_evaluation=evaluation_type,
+                defaults={"statut": Evaluation.StatutEvaluation.EN_ATTENTE},
+            )
+            created += int(was_created)
+        messages.success(request, f"{created} évaluation(s) préparée(s) pour les étudiants inscrits.")
+        return redirect("lms:course_detail", pk=cours_session.pk)
 
 
 # ──────────────────────────────────────────────

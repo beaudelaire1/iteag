@@ -131,7 +131,7 @@
                 <div class="text-right">
                     <span class="text-sm font-semibold" style="color: var(--color-navy-800);">{{ p.montant }} €</span>
                     <p class="text-xs mt-0.5
-                        {% if p.statut == 'valide' %}text-emerald-600
+                        {% if p.statut == 'confirme' %}text-emerald-600
                         {% elif p.statut == 'en_attente' %}text-amber-600
                         {% else %}text-red-600{% endif %}">{{ p.get_statut_display }}</p>
                 </div>

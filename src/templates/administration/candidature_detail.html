@@ -139,6 +139,7 @@
         {# Changer le statut #}
         <div class="card-elevated">
             <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Changer le statut</h3>
+            {% if statut_choices %}
             <form method="post" class="space-y-4">
                 {% csrf_token %}
                 <div>
@@ -155,6 +156,9 @@
                 </div>
                 <button type="submit" class="btn-primary w-full justify-center">Mettre à jour</button>
             </form>
+            {% else %}
+            <p class="text-sm text-warm-500">Ce dossier a atteint un statut final. Aucune transition supplémentaire n’est autorisée.</p>
+            {% endif %}
         </div>
 
         {# Résumé #}

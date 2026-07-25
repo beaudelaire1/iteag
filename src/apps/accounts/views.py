@@ -15,8 +15,10 @@ class IteagLoginView(LoginView):
             return reverse("academics:dashboard")
         if user.is_enseignant:
             return reverse("lms:dashboard")
-        if user.is_admin or user.is_secretariat:
+        if user.is_admin:
             return reverse("administration:dashboard")
+        if user.is_secretariat:
+            return reverse("secretariat:dashboard")
         return super().get_success_url()
 
 

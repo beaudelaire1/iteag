@@ -58,8 +58,13 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
-          SECRET_KEY: ci-test-secret-key-not-for-production
+          DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
         run: pytest --cov=apps --cov-report=xml -q
+      - name: Vérifier les migrations
+        env:
+          DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
+          DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+        run: python manage.py makemigrations --check --dry-run
       - uses: codecov/codecov-action@v4
         if: always()
         with:

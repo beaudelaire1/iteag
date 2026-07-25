@@ -26,3 +26,11 @@ class TeacherRoleRequiredMixin(RoleRequiredMixin):
 
 class StaffRoleRequiredMixin(RoleRequiredMixin):
     allowed_roles = ("admin", "secretariat")
+
+
+class AdminRoleRequiredMixin(RoleRequiredMixin):
+    allowed_roles = ("admin",)
+
+
+class SecretariatRoleRequiredMixin(RoleRequiredMixin):
+    allowed_roles = ("secretariat",)

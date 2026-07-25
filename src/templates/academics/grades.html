@@ -65,11 +65,12 @@
     </div>
     <div class="divide-y divide-gray-100">
         {% for eval in pending_grades %}
-        <div class="px-5 py-3 flex items-center justify-between">
+        <div class="px-5 py-3 flex items-center justify-between gap-4">
             <div>
                 <p class="text-sm font-medium text-gray-900">{{ eval.cours_session.cours.titre }}</p>
                 <p class="text-xs text-gray-500">{{ eval.get_type_evaluation_display }} — {{ eval.cours_session.session.nom }}</p>
             </div>
+            <div class="flex items-center gap-3">
             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
                 {% if eval.statut == 'en_attente' %}bg-gray-100 text-gray-700
                 {% elif eval.statut == 'soumis' %}bg-blue-100 text-blue-700
@@ -77,6 +78,10 @@
                 {% else %}bg-purple-100 text-purple-700{% endif %}">
                 {{ eval.get_statut_display }}
             </span>
+            {% if eval.statut == 'en_attente' %}
+            <a href="{% url 'academics:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Remettre</a>
+            {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>

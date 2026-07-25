@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 
 from apps.academics.models import ProfilEtudiant, SessionAcademique
 from apps.accounts.models import User
@@ -34,6 +35,12 @@ class AdminUserForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+    def clean_password1(self):
+        password = self.cleaned_data.get("password1")
+        if password:
+            validate_password(password, self.instance)
+        return password
 
 
 class AdminUserCreateForm(AdminUserForm):

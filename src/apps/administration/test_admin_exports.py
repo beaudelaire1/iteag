@@ -127,6 +127,13 @@ class TestCsvExports:
         assert "Test" in content
         assert "Export" in content
 
+    def test_export_neutralizes_spreadsheet_formulas(self, client: Client, staff_user, dossier):
+        dossier.nom = '=HYPERLINK("https://example.test")'
+        dossier.save(update_fields=["nom"])
+        client.force_login(staff_user)
+        response = client.get(reverse("administration:export_candidatures"))
+        assert b"'=HYPERLINK" in response.content
+
     def test_export_candidatures_filter(self, client: Client, staff_user, dossier):
         client.force_login(staff_user)
         url = reverse("administration:export_candidatures")

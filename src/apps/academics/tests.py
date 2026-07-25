@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
 
@@ -16,6 +17,7 @@ from apps.academics.models import (
 )
 from apps.accounts.models import User
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
+from apps.lms.models import Evaluation
 
 
 @pytest.fixture
@@ -351,4 +353,93 @@ class TestDocumentViews:
         client.force_login(profil_etudiant.utilisateur)
         url = reverse("documents:generate", kwargs={"document_type": "inexistant"})
         response = client.get(url)
+        assert response.status_code == 404
+
+    def test_generate_valid_type_is_post_only(self, client: Client, profil_etudiant):
+        client.force_login(profil_etudiant.utilisateur)
+        url = reverse("documents:generate", kwargs={"document_type": "attestation"})
+        response = client.get(url)
+        assert response.status_code == 405
+
+    def test_transcript_becomes_available_after_grade_publication(
+        self,
+        client: Client,
+        profil_etudiant,
+        cours_session,
+    ):
+        Evaluation.objects.create(
+            etudiant=profil_etudiant,
+            cours_session=cours_session,
+            statut=Evaluation.StatutEvaluation.PUBLIE,
+            note=15,
+            ects_valides=2.5,
+        )
+        client.force_login(profil_etudiant.utilisateur)
+        response = client.get(reverse("documents:list"))
+        transcript = next(
+            option for option in response.context["document_options"] if option["value"] == "releve_notes"
+        )
+        assert transcript["available"] is True
+
+
+@pytest.mark.django_db
+class TestEvaluationWorkflow:
+    def test_teacher_prepares_and_student_submits_evaluation(
+        self,
+        client: Client,
+        professeur,
+        profil_etudiant,
+        cours_session,
+    ):
+        teacher = User.objects.create_user(
+            username="teacher-workflow",
+            password="valid-password-123",
+            role=User.Role.ENSEIGNANT,
+        )
+        professeur.user = teacher
+        professeur.save(update_fields=["user"])
+        InscriptionSession.objects.create(etudiant=profil_etudiant, cours_session=cours_session)
+
+        client.force_login(teacher)
+        response = client.post(
+            reverse("lms:prepare_evaluations", kwargs={"pk": cours_session.pk}),
+            {"type_evaluation": Evaluation.TypeEvaluation.DEVOIR},
+        )
+        assert response.status_code == 302
+        evaluation = Evaluation.objects.get(etudiant=profil_etudiant, cours_session=cours_session)
+        assert evaluation.statut == Evaluation.StatutEvaluation.EN_ATTENTE
+
+        client.force_login(profil_etudiant.utilisateur)
+        response = client.post(
+            reverse("academics:submit_evaluation", kwargs={"pk": evaluation.pk}),
+            {
+                "fichier_soumis": SimpleUploadedFile(
+                    "devoir.pdf",
+                    b"%PDF-1.4 test",
+                    content_type="application/pdf",
+                )
+            },
+        )
+        assert response.status_code == 302
+        evaluation.refresh_from_db()
+        assert evaluation.statut == Evaluation.StatutEvaluation.SOUMIS
+        assert evaluation.date_soumission is not None
+
+    def test_teacher_cannot_grade_unsubmitted_evaluation(
+        self, client: Client, professeur, profil_etudiant, cours_session
+    ):
+        teacher = User.objects.create_user(
+            username="teacher-grade-guard",
+            password="valid-password-123",
+            role=User.Role.ENSEIGNANT,
+        )
+        professeur.user = teacher
+        professeur.save(update_fields=["user"])
+        evaluation = Evaluation.objects.create(
+            etudiant=profil_etudiant,
+            cours_session=cours_session,
+            statut=Evaluation.StatutEvaluation.EN_ATTENTE,
+        )
+        client.force_login(teacher)
+        response = client.get(reverse("lms:grade_evaluation", kwargs={"pk": evaluation.pk}))
         assert response.status_code == 404

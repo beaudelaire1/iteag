@@ -1,11 +1,14 @@
+from django.contrib import messages
 from django.db.models import Prefetch, Q
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, UpdateView
 
 from apps.core.mixins import StudentRoleRequiredMixin
 from apps.documents.models import DocumentAdministratif
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
 
+from .forms import StudentSubmissionForm
 from .models import CreditECTS, InscriptionSession, SessionAcademique
 
 
@@ -125,3 +128,25 @@ class StudentGradesView(StudentRoleRequiredMixin, TemplateView):
         pending = evaluations.exclude(statut=Evaluation.StatutEvaluation.PUBLIE)
         context.update({"profil": profil, "published_grades": published, "pending_grades": pending})
         return context
+
+
+class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
+    form_class = StudentSubmissionForm
+    template_name = "academics/submission_form.html"
+    context_object_name = "evaluation"
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            Evaluation.objects.select_related("cours_session__cours", "cours_session__session"),
+            pk=self.kwargs["pk"],
+            etudiant=self.request.user.profil_etudiant,
+            statut=Evaluation.StatutEvaluation.EN_ATTENTE,
+        )
+
+    def form_valid(self, form):
+        evaluation = form.save(commit=False)
+        evaluation.statut = Evaluation.StatutEvaluation.SOUMIS
+        evaluation.date_soumission = timezone.now()
+        evaluation.save(update_fields=["fichier_soumis", "statut", "date_soumission", "updated_at"])
+        messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
+        return redirect("academics:grades")

@@ -12,7 +12,7 @@
 {% block portal_header %}
 <div class="flex items-center justify-between mb-8">
     <div>
-        <p class="overline mb-2">Administration</p>
+        <p class="overline mb-2">{% if user.is_secretariat %}Secrétariat{% else %}Administration{% endif %}</p>
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Candidatures</h1>
     </div>
 </div>

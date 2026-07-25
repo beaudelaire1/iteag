@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 from apps.core.models import TimeStampedModel
 
@@ -82,12 +84,19 @@ class Evaluation(TimeStampedModel):
     date_soumission = models.DateTimeField(null=True, blank=True)
 
     # Notation enseignant
-    note = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    note = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(20)],
+    )
     appreciation = models.TextField(blank=True, verbose_name="Appréciation")
     ects_valides = models.DecimalField(
         max_digits=4,
         decimal_places=1,
         default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
         verbose_name="ECTS validés",
         help_text="0 ou 2.5",
     )
@@ -97,6 +106,16 @@ class Evaluation(TimeStampedModel):
         verbose_name = "Évaluation"
         verbose_name_plural = "Évaluations"
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(note__isnull=True) | Q(note__gte=0, note__lte=20),
+                name="evaluation_note_between_0_and_20",
+            ),
+            models.CheckConstraint(
+                condition=Q(ects_valides__gte=0, ects_valides__lte=30),
+                name="evaluation_ects_between_0_and_30",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.etudiant} — {self.cours_session} ({self.get_statut_display()})"

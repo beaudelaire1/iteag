@@ -1,6 +1,7 @@
 import csv
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -12,7 +13,8 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, T
 from apps.academics.models import Paiement, ProfilEtudiant, SessionAcademique
 from apps.accounts.models import User
 from apps.admissions.models import DossierCandidature
-from apps.core.mixins import StaffRoleRequiredMixin
+from apps.admissions.services import available_status_choices, transition_dossier
+from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 from apps.library.models import NoticeBibliographique
 
@@ -24,12 +26,19 @@ from .forms import (
     AdminUserForm,
 )
 
+
+def _safe_csv_cell(value):
+    """Neutralise les cellules interprétables comme formules par les tableurs."""
+    text = str(value or "")
+    return f"'{text}" if text.lstrip().startswith(("=", "+", "-", "@")) else text
+
+
 # ──────────────────────────────────────────────
 # Dashboard
 # ──────────────────────────────────────────────
 
 
-class AdminDashboardView(StaffRoleRequiredMixin, TemplateView):
+class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
     template_name = "administration/dashboard.html"
 
     def get_context_data(self, **kwargs):
@@ -59,6 +68,35 @@ class AdminDashboardView(StaffRoleRequiredMixin, TemplateView):
                 .first(),
                 "derniers_dossiers": DossierCandidature.objects.select_related("parcours_souhaite")[:5],
                 "derniers_paiements": Paiement.objects.select_related("etudiant__utilisateur", "session")[:5],
+            }
+        )
+        return ctx
+
+
+class SecretariatDashboardView(SecretariatRoleRequiredMixin, TemplateView):
+    template_name = "administration/secretariat_dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        ctx.update(
+            {
+                "candidatures_a_traiter": DossierCandidature.objects.filter(
+                    statut__in=[
+                        DossierCandidature.Statut.SOUMIS,
+                        DossierCandidature.Statut.EN_EXAMEN,
+                        DossierCandidature.Statut.INCOMPLET,
+                    ]
+                ).count(),
+                "candidatures_nouvelles": DossierCandidature.objects.filter(
+                    statut=DossierCandidature.Statut.SOUMIS
+                ).count(),
+                "etudiants_actifs": ProfilEtudiant.objects.filter(statut_inscription="actif").count(),
+                "paiements_en_attente": Paiement.objects.filter(statut=Paiement.StatutPaiement.EN_ATTENTE).count(),
+                "dossiers_recents": DossierCandidature.objects.select_related("parcours_souhaite")[:8],
+                "session_en_cours": SessionAcademique.objects.filter(
+                    Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
+                ).first(),
             }
         )
         return ctx
@@ -103,7 +141,7 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["statut_choices"] = DossierCandidature.Statut.choices
+        ctx["statut_choices"] = available_status_choices(self.object)
         ctx["historique"] = self.object.historique.select_related("modifie_par")
         return ctx
 
@@ -113,20 +151,17 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         commentaire = request.POST.get("commentaire", "")
 
         if new_statut and new_statut != self.object.statut:
-            from apps.admissions.emails import send_statut_change_email
-            from apps.admissions.models import HistoriqueStatut
-
-            HistoriqueStatut.objects.create(
-                dossier=self.object,
-                ancien_statut=self.object.statut,
-                nouveau_statut=new_statut,
-                modifie_par=request.user,
-                commentaire=commentaire,
-            )
-            self.object.statut = new_statut
-            self.object.save(update_fields=["statut"])
-            send_statut_change_email(self.object)
-            messages.success(request, f"Statut mis à jour : {self.object.get_statut_display()}")
+            try:
+                self.object = transition_dossier(
+                    dossier=self.object,
+                    new_status=new_statut,
+                    changed_by=request.user,
+                    comment=commentaire,
+                )
+            except ValidationError as exc:
+                messages.error(request, exc.messages[0])
+            else:
+                messages.success(request, f"Statut mis à jour : {self.object.get_statut_display()}")
         return redirect("administration:candidature_detail", pk=self.object.pk)
 
 
@@ -170,7 +205,7 @@ class AdminEtudiantListView(StaffRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
-class AdminProfesseurListView(StaffRoleRequiredMixin, ListView):
+class AdminProfesseurListView(AdminRoleRequiredMixin, ListView):
     model = Professeur
     template_name = "administration/professeurs.html"
     context_object_name = "professeurs"
@@ -183,7 +218,7 @@ class AdminProfesseurListView(StaffRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
-class AdminFormationsView(StaffRoleRequiredMixin, TemplateView):
+class AdminFormationsView(AdminRoleRequiredMixin, TemplateView):
     template_name = "administration/formations.html"
 
     def get_context_data(self, **kwargs):
@@ -211,7 +246,7 @@ class AdminSessionListView(StaffRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
-class AdminUserListView(StaffRoleRequiredMixin, ListView):
+class AdminUserListView(AdminRoleRequiredMixin, ListView):
     model = User
     template_name = "administration/utilisateurs.html"
     context_object_name = "users"
@@ -240,7 +275,7 @@ class AdminUserListView(StaffRoleRequiredMixin, ListView):
 # ══════════════════════════════════════════════
 
 
-class AdminUserCreateView(StaffRoleRequiredMixin, CreateView):
+class AdminUserCreateView(AdminRoleRequiredMixin, CreateView):
     model = User
     form_class = AdminUserCreateForm
     template_name = "administration/form.html"
@@ -258,7 +293,7 @@ class AdminUserCreateView(StaffRoleRequiredMixin, CreateView):
         return response
 
 
-class AdminUserUpdateView(StaffRoleRequiredMixin, UpdateView):
+class AdminUserUpdateView(AdminRoleRequiredMixin, UpdateView):
     model = User
     form_class = AdminUserForm
     template_name = "administration/form.html"
@@ -276,7 +311,7 @@ class AdminUserUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminUserDeleteView(StaffRoleRequiredMixin, DeleteView):
+class AdminUserDeleteView(AdminRoleRequiredMixin, DeleteView):
     model = User
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:utilisateurs")
@@ -297,7 +332,7 @@ class AdminUserDeleteView(StaffRoleRequiredMixin, DeleteView):
 # ══════════════════════════════════════════════
 
 
-class AdminSessionCreateView(StaffRoleRequiredMixin, CreateView):
+class AdminSessionCreateView(AdminRoleRequiredMixin, CreateView):
     model = SessionAcademique
     form_class = AdminSessionForm
     template_name = "administration/form.html"
@@ -315,7 +350,7 @@ class AdminSessionCreateView(StaffRoleRequiredMixin, CreateView):
         return response
 
 
-class AdminSessionUpdateView(StaffRoleRequiredMixin, UpdateView):
+class AdminSessionUpdateView(AdminRoleRequiredMixin, UpdateView):
     model = SessionAcademique
     form_class = AdminSessionForm
     template_name = "administration/form.html"
@@ -333,7 +368,7 @@ class AdminSessionUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminSessionDeleteView(StaffRoleRequiredMixin, DeleteView):
+class AdminSessionDeleteView(AdminRoleRequiredMixin, DeleteView):
     model = SessionAcademique
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:sessions")
@@ -354,7 +389,7 @@ class AdminSessionDeleteView(StaffRoleRequiredMixin, DeleteView):
 # ══════════════════════════════════════════════
 
 
-class AdminProfesseurCreateView(StaffRoleRequiredMixin, CreateView):
+class AdminProfesseurCreateView(AdminRoleRequiredMixin, CreateView):
     model = Professeur
     form_class = AdminProfesseurForm
     template_name = "administration/form.html"
@@ -372,7 +407,7 @@ class AdminProfesseurCreateView(StaffRoleRequiredMixin, CreateView):
         return response
 
 
-class AdminProfesseurUpdateView(StaffRoleRequiredMixin, UpdateView):
+class AdminProfesseurUpdateView(AdminRoleRequiredMixin, UpdateView):
     model = Professeur
     form_class = AdminProfesseurForm
     template_name = "administration/form.html"
@@ -390,7 +425,7 @@ class AdminProfesseurUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminProfesseurDeleteView(StaffRoleRequiredMixin, DeleteView):
+class AdminProfesseurDeleteView(AdminRoleRequiredMixin, DeleteView):
     model = Professeur
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:professeurs")
@@ -447,7 +482,7 @@ class AdminEtudiantUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminEtudiantDeleteView(StaffRoleRequiredMixin, DeleteView):
+class AdminEtudiantDeleteView(AdminRoleRequiredMixin, DeleteView):
     model = ProfilEtudiant
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:etudiants")
@@ -499,13 +534,13 @@ class ExportCandidaturesCsvView(StaffRoleRequiredMixin, View):
         for d in qs.iterator():
             writer.writerow(
                 [
-                    d.nom,
-                    d.prenom,
-                    d.email,
-                    d.telephone,
-                    str(d.parcours_souhaite) if d.parcours_souhaite else "",
-                    d.get_statut_display(),
-                    d.eglise,
+                    _safe_csv_cell(d.nom),
+                    _safe_csv_cell(d.prenom),
+                    _safe_csv_cell(d.email),
+                    _safe_csv_cell(d.telephone),
+                    _safe_csv_cell(str(d.parcours_souhaite) if d.parcours_souhaite else ""),
+                    _safe_csv_cell(d.get_statut_display()),
+                    _safe_csv_cell(d.eglise),
                     "Oui" if d.eglise_fondatrice else "Non",
                     d.date_soumission.strftime("%d/%m/%Y"),
                 ]
@@ -548,13 +583,13 @@ class ExportEtudiantsCsvView(StaffRoleRequiredMixin, View):
         for e in qs.iterator():
             writer.writerow(
                 [
-                    e.numero_etudiant,
-                    e.utilisateur.last_name,
-                    e.utilisateur.first_name,
-                    e.utilisateur.email,
-                    str(e.parcours),
-                    e.promotion.nom if e.promotion else "",
-                    e.get_statut_inscription_display(),
+                    _safe_csv_cell(e.numero_etudiant),
+                    _safe_csv_cell(e.utilisateur.last_name),
+                    _safe_csv_cell(e.utilisateur.first_name),
+                    _safe_csv_cell(e.utilisateur.email),
+                    _safe_csv_cell(str(e.parcours)),
+                    _safe_csv_cell(e.promotion.nom if e.promotion else ""),
+                    _safe_csv_cell(e.get_statut_inscription_display()),
                     e.total_ects_acquis,
                     "Oui" if e.eglise_fondatrice else "Non",
                 ]
@@ -589,14 +624,14 @@ class ExportPaiementsCsvView(StaffRoleRequiredMixin, View):
         for p in qs.iterator():
             writer.writerow(
                 [
-                    p.etudiant.utilisateur.get_full_name(),
-                    p.etudiant.numero_etudiant,
-                    str(p.session) if p.session else "",
+                    _safe_csv_cell(p.etudiant.utilisateur.get_full_name()),
+                    _safe_csv_cell(p.etudiant.numero_etudiant),
+                    _safe_csv_cell(str(p.session) if p.session else ""),
                     str(p.montant),
                     p.date_paiement.strftime("%d/%m/%Y"),
-                    p.get_mode_display(),
-                    p.get_statut_display(),
-                    p.reference,
+                    _safe_csv_cell(p.get_mode_display()),
+                    _safe_csv_cell(p.get_statut_display()),
+                    _safe_csv_cell(p.reference),
                 ]
             )
         return response
@@ -623,21 +658,23 @@ class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
             messages.error(request, "Statut invalide.")
             return redirect("administration:candidatures")
 
-        from apps.admissions.models import HistoriqueStatut
-
         dossiers = DossierCandidature.objects.filter(pk__in=ids).exclude(statut=new_statut)
         count = 0
+        skipped = 0
         for dossier in dossiers:
-            HistoriqueStatut.objects.create(
-                dossier=dossier,
-                ancien_statut=dossier.statut,
-                nouveau_statut=new_statut,
-                modifie_par=request.user,
-                commentaire="Action groupée",
-            )
-            dossier.statut = new_statut
-            dossier.save(update_fields=["statut"])
-            count += 1
+            try:
+                transition_dossier(
+                    dossier=dossier,
+                    new_status=new_statut,
+                    changed_by=request.user,
+                    comment="Action groupée",
+                )
+            except ValidationError:
+                skipped += 1
+            else:
+                count += 1
 
         messages.success(request, f"{count} dossier(s) mis à jour → {DossierCandidature.Statut(new_statut).label}.")
+        if skipped:
+            messages.warning(request, f"{skipped} dossier(s) ignoré(s) : transition non autorisée.")
         return redirect("administration:candidatures")

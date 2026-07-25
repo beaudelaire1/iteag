@@ -18,6 +18,35 @@
 {% endblock %}
 
 {% block portal_content %}
+<section class="mb-8">
+    <div class="flex items-end justify-between gap-4 mb-4">
+        <div>
+            <h2 class="text-lg font-semibold text-navy-900">Générer un document</h2>
+            <p class="mt-1 text-sm text-warm-500">Les documents éligibles sont produits immédiatement au format PDF.</p>
+        </div>
+    </div>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {% for option in document_options %}
+        <div class="card flex flex-col">
+            <div class="flex items-start justify-between gap-3">
+                <div class="h-10 w-10 rounded flex items-center justify-center bg-navy-50 text-navy-700" aria-hidden="true">PDF</div>
+                <span class="badge {% if option.available %}badge-success{% else %}badge-warning{% endif %}">
+                    {% if option.available %}Disponible{% else %}Indisponible{% endif %}
+                </span>
+            </div>
+            <h3 class="mt-4 text-sm font-semibold text-navy-900">{{ option.label }}</h3>
+            <p class="mt-1 mb-4 text-xs text-warm-500 flex-1">{{ option.reason }}</p>
+            <form method="post" action="{% url 'documents:generate' option.value %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary w-full justify-center" {% if not option.available %}disabled aria-disabled="true"{% endif %}>
+                    Générer le PDF
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
 <div class="card-elevated" style="padding: 0;">
     <div class="px-5 py-4 border-b" style="border-color: var(--color-warm-100);">
         <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Documents disponibles</h2>

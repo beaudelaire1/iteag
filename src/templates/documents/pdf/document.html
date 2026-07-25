@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 22mm 20mm 20mm;
+            @bottom-center {
+                content: "ITEAG - {{ document_label }} - Page " counter(page) " / " counter(pages);
+                color: #6f6a61;
+                font-size: 8pt;
+            }
+        }
+        * { box-sizing: border-box; }
+        body { color: #15263f; font: 10.5pt/1.55 Arial, sans-serif; }
+        header { border-bottom: 2px solid #d8ad58; padding-bottom: 12px; margin-bottom: 30px; }
+        .brand { font-size: 22pt; font-weight: bold; letter-spacing: 2px; }
+        .institution { color: #6f6a61; font-size: 8.5pt; margin-top: 2px; }
+        h1 { font-size: 19pt; margin: 0 0 24px; text-align: center; text-transform: uppercase; }
+        .meta { background: #f7f3ea; border-left: 4px solid #d8ad58; padding: 13px 16px; margin: 0 0 24px; }
+        .meta p { margin: 2px 0; }
+        .lead { margin: 26px 0; text-align: justify; }
+        table { border-collapse: collapse; margin: 18px 0; width: 100%; }
+        th { background: #15263f; color: white; font-size: 8.5pt; text-align: left; }
+        th, td { border: 1px solid #d8d2c8; padding: 7px 8px; }
+        td.number { text-align: right; white-space: nowrap; }
+        .total { font-size: 12pt; font-weight: bold; margin-top: 18px; text-align: right; }
+        .signature { margin-left: auto; margin-top: 50px; text-align: center; width: 230px; }
+        .signature-line { border-top: 1px solid #15263f; margin-top: 48px; padding-top: 5px; }
+        footer { color: #6f6a61; font-size: 8.5pt; margin-top: 44px; text-align: center; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">ITEAG</div>
+        <div class="institution">{{ SITE_FULL_NAME }}<br>{{ SITE_ADDRESS }} · {{ SITE_EMAIL }} · {{ SITE_PHONE }}</div>
+    </header>
+
+    <h1>{{ document_label }}</h1>
+
+    <div class="meta">
+        <p><strong>Étudiant :</strong> {{ user.get_full_name|default:user.username }}</p>
+        <p><strong>Numéro :</strong> {{ profil.numero_etudiant }}</p>
+        <p><strong>Parcours :</strong> {{ profil.parcours }}</p>
+        <p><strong>Promotion :</strong> {{ profil.promotion }}</p>
+    </div>
+
+    {% if document_type == "attestation" or document_type == "certificat" %}
+    <p class="lead">
+        Je soussigné(e), représentant(e) habilité(e) de l'ITEAG, certifie que
+        <strong>{{ user.get_full_name|default:user.username }}</strong>, numéro étudiant
+        <strong>{{ profil.numero_etudiant }}</strong>, est régulièrement inscrit(e) au parcours
+        <strong>{{ profil.parcours }}</strong> pour la promotion {{ profil.promotion }}.
+    </p>
+    <p>La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</p>
+    {% elif document_type == "releve_notes" %}
+    <table>
+        <thead>
+            <tr><th>Cours</th><th>Session</th><th>Évaluation</th><th>Note</th><th>ECTS</th></tr>
+        </thead>
+        <tbody>
+            {% for evaluation in evaluations %}
+            <tr>
+                <td>{{ evaluation.cours_session.cours.titre }}</td>
+                <td>{{ evaluation.cours_session.session.nom }}</td>
+                <td>{{ evaluation.get_type_evaluation_display }}</td>
+                <td class="number">{{ evaluation.note }}/20</td>
+                <td class="number">{{ evaluation.ects_valides }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="total">Total acquis : {{ profil.total_ects_acquis }} ECTS</p>
+    {% elif document_type == "recu" %}
+    <table>
+        <thead>
+            <tr><th>Date</th><th>Session</th><th>Mode</th><th>Référence</th><th>Montant</th></tr>
+        </thead>
+        <tbody>
+            {% for paiement in paiements %}
+            <tr>
+                <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+                <td>{{ paiement.session|default:"-" }}</td>
+                <td>{{ paiement.get_mode_display }}</td>
+                <td>{{ paiement.reference|default:"-" }}</td>
+                <td class="number">{{ paiement.montant }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="signature">
+        <p>Fait aux Abymes, le {{ generated_at|date:"d/m/Y" }}</p>
+        <div class="signature-line">Le secrétariat de l'ITEAG</div>
+    </div>
+    <footer>Document généré depuis l'espace étudiant ITEAG le {{ generated_at|date:"d/m/Y à H:i" }}.</footer>
+</body>
+</html>

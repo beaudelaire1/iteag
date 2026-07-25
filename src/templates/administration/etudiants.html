@@ -79,7 +79,9 @@
                     </td>
                     <td class="px-6 py-3 text-right">
                         <a href="{% url 'administration:etudiant_update' e.pk %}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Modifier</a>
+                        {% if user.is_admin %}
                         <a href="{% url 'administration:etudiant_delete' e.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

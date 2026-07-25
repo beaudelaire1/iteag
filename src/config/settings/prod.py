@@ -5,6 +5,7 @@ Django settings — Production environment.
 from .base import *  # noqa: F401, F403
 
 DEBUG = False
+SECRET_KEY = env("DJANGO_SECRET_KEY")  # noqa: F405
 
 # ──────────────────────────────────────────────
 # Security — production hardened

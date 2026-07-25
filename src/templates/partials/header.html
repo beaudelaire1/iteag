@@ -37,7 +37,7 @@
                          class="absolute right-0 mt-2 w-56 rounded bg-white shadow-lg ring-1 ring-warm-200 py-1 z-50">
                         <div class="px-4 py-2 border-b border-warm-100">
                             <p class="text-xs font-bold uppercase tracking-wider text-gold-500">
-                                {% if user.is_etudiant %}Étudiant{% elif user.is_enseignant %}Enseignant{% elif user.is_staff %}Administration{% endif %}
+                                {% if user.is_etudiant %}Étudiant{% elif user.is_enseignant %}Enseignant{% elif user.is_admin %}Administration{% elif user.is_secretariat %}Secrétariat{% endif %}
                             </p>
                         </div>
                         {% if user.is_etudiant %}
@@ -48,8 +48,10 @@
                         {% elif user.is_enseignant %}
                         <a href="{% url 'lms:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
                         {% endif %}
-                        {% if user.is_staff %}
+                        {% if user.is_admin %}
                         <a href="{% url 'administration:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Administration</a>
+                        {% elif user.is_secretariat %}
+                        <a href="{% url 'secretariat:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Espace secrétariat</a>
                         {% endif %}
                         <hr class="my-1 border-warm-100">
                         <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left px-4 py-2 text-sm font-medium text-danger hover:bg-gray-50">Déconnexion</button></form>
@@ -100,6 +102,10 @@
                 <a href="{% url 'academics:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace étudiant</a>
                 {% elif user.is_enseignant %}
                 <a href="{% url 'lms:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
+                {% elif user.is_secretariat %}
+                <a href="{% url 'secretariat:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Espace secrétariat</a>
+                {% elif user.is_admin %}
+                <a href="{% url 'administration:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Administration</a>
                 {% endif %}
                 <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left rounded px-4 py-2.5 text-sm font-medium text-red-300 hover:text-white">Déconnexion</button></form>
                 {% else %}

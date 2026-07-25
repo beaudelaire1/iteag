@@ -49,6 +49,12 @@ class GradeForm(forms.ModelForm):
             "ects_valides": forms.NumberInput(attrs={"min": 0, "max": 30, "step": "0.5", "class": INPUT_COURT}),
         }
 
+    def clean_note(self):
+        note = self.cleaned_data.get("note")
+        if note is None:
+            raise forms.ValidationError("La note est obligatoire.")
+        return note
+
 
 class AnnonceForm(forms.ModelForm):
     """ENS-006 — Publication d'annonce."""

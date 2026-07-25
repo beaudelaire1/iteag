@@ -1,4 +1,7 @@
 {# Admin mobile navigation #}
+{% if user.is_secretariat and not user.is_superuser %}
+{% include "administration/partials/secretariat_nav_mobile.html" %}
+{% else %}
 {% url 'administration:dashboard' as url_dashboard %}
 {% url 'administration:candidatures' as url_candidatures %}
 {% url 'administration:etudiants' as url_etudiants %}
@@ -14,3 +17,4 @@
 <a href="{{ url_formations }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'formations' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Formations</a>
 <a href="{{ url_sessions }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'sessions' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Sessions</a>
 <a href="{{ url_utilisateurs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'utilisateurs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Utilisateurs</a>
+{% endif %}

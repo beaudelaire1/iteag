@@ -9,6 +9,7 @@ from .views import (
     TeacherDashboardView,
     TeacherEvaluationsListView,
     TeacherGradeEvaluationView,
+    TeacherPrepareEvaluationsView,
     TeacherPublishGradesView,
     TeacherResourceUploadView,
 )
@@ -22,6 +23,7 @@ urlpatterns = [
     path("cours/<int:cours_pk>/ressource/", TeacherResourceUploadView.as_view(), name="resource_upload"),
     path("cours/<int:cours_pk>/annonce/", TeacherAnnouncementCreateView.as_view(), name="announcement_create"),
     path("cours/<int:pk>/publier-notes/", TeacherPublishGradesView.as_view(), name="publish_grades"),
+    path("cours/<int:pk>/preparer-evaluations/", TeacherPrepareEvaluationsView.as_view(), name="prepare_evaluations"),
     path("evaluations/", TeacherEvaluationsListView.as_view(), name="evaluations_list"),
     path("evaluations/<int:pk>/noter/", TeacherGradeEvaluationView.as_view(), name="grade_evaluation"),
     path("annonces/", TeacherAnnoncesListView.as_view(), name="annonces_list"),

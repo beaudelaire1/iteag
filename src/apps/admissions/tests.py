@@ -6,6 +6,7 @@ from django.urls import reverse
 from apps.accounts.models import User
 from apps.admissions.forms import CandidatureForm
 from apps.admissions.models import DossierCandidature, HistoriqueStatut
+from apps.admissions.services import transition_dossier
 from apps.formations.models import Parcours
 
 
@@ -98,6 +99,34 @@ class TestHistoriqueStatut:
         )
         assert h.pk is not None
         assert dossier.historique.count() == 1
+
+
+@pytest.mark.django_db
+class TestCandidatureWorkflow:
+    def test_valid_transition_is_logged(self, dossier, staff_user):
+        updated = transition_dossier(
+            dossier=dossier,
+            new_status=DossierCandidature.Statut.EN_EXAMEN,
+            changed_by=staff_user,
+            comment="Dossier ouvert",
+        )
+        assert updated.statut == DossierCandidature.Statut.EN_EXAMEN
+        assert updated.historique.filter(
+            ancien_statut=DossierCandidature.Statut.SOUMIS,
+            nouveau_statut=DossierCandidature.Statut.EN_EXAMEN,
+        ).exists()
+
+    def test_invalid_transition_is_rejected(self, dossier, staff_user):
+        from django.core.exceptions import ValidationError
+
+        with pytest.raises(ValidationError):
+            transition_dossier(
+                dossier=dossier,
+                new_status=DossierCandidature.Statut.ACCEPTE,
+                changed_by=staff_user,
+            )
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.SOUMIS
 
 
 # ──────────────────────────────────────────────

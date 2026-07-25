@@ -22,6 +22,11 @@ staticfiles/
 # Node
 node_modules/
 package-lock.json
+.npm-cache/
+.local-prod-deps/
+
+# Local QA artifacts
+/tmp/
 
 # IDE
 .vscode/

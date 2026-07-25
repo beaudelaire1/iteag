@@ -2,7 +2,7 @@ from pathlib import Path
 
 from django.contrib import messages
 from django.core.files.base import ContentFile
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -10,9 +10,46 @@ from django.utils.text import slugify
 from django.views import View
 from django.views.generic import TemplateView
 
+from apps.academics.models import Paiement, ProfilEtudiant
 from apps.core.mixins import StudentRoleRequiredMixin
 
 from .models import DocumentAdministratif
+
+
+def _document_options(profil):
+    enrolled = profil.statut_inscription in {
+        ProfilEtudiant.StatutInscription.INSCRIT,
+        ProfilEtudiant.StatutInscription.ACTIF,
+    }
+    has_published_grades = profil.evaluations.filter(statut="publie").exists()
+    has_confirmed_payment = profil.paiements.filter(statut=Paiement.StatutPaiement.CONFIRME).exists()
+    eligibility = {
+        DocumentAdministratif.TypeDocument.ATTESTATION: (
+            enrolled,
+            "Disponible après validation de votre inscription.",
+        ),
+        DocumentAdministratif.TypeDocument.CERTIFICAT: (
+            enrolled,
+            "Disponible pour les étudiants inscrits ou actifs.",
+        ),
+        DocumentAdministratif.TypeDocument.RELEVE_NOTES: (
+            has_published_grades,
+            "Disponible dès qu'au moins une note est publiée.",
+        ),
+        DocumentAdministratif.TypeDocument.RECU: (
+            has_confirmed_payment,
+            "Disponible après confirmation d'un paiement.",
+        ),
+    }
+    return [
+        {
+            "value": value,
+            "label": label,
+            "available": eligibility[value][0],
+            "reason": eligibility[value][1],
+        }
+        for value, label in DocumentAdministratif.TypeDocument.choices
+    ]
 
 
 class StudentDocumentListView(StudentRoleRequiredMixin, TemplateView):
@@ -25,7 +62,7 @@ class StudentDocumentListView(StudentRoleRequiredMixin, TemplateView):
             {
                 "profil": profil,
                 "documents": self.request.user.documents_administratifs.all(),
-                "document_types": DocumentAdministratif.TypeDocument.choices,
+                "document_options": _document_options(profil),
             }
         )
         return context
@@ -33,6 +70,12 @@ class StudentDocumentListView(StudentRoleRequiredMixin, TemplateView):
 
 class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
     def get(self, request, document_type):
+        allowed_types = {choice[0] for choice in DocumentAdministratif.TypeDocument.choices}
+        if document_type not in allowed_types:
+            raise Http404("Type de document inconnu.")
+        return HttpResponseNotAllowed(["POST"])
+
+    def post(self, request, document_type):
         allowed_types = {choice[0] for choice in DocumentAdministratif.TypeDocument.choices}
         if document_type not in allowed_types:
             raise Http404("Type de document inconnu.")
@@ -44,8 +87,16 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
             return redirect("documents:list")
 
         profil = request.user.profil_etudiant
-        credits = profil.credits_ects.select_related("cours", "session")[:12]
-        paiements = profil.paiements.select_related("session")[:10]
+        option = next((item for item in _document_options(profil) if item["value"] == document_type), None)
+        if option is None or not option["available"]:
+            messages.error(request, option["reason"] if option else "Ce document n'est pas disponible.")
+            return redirect("documents:list")
+
+        evaluations = profil.evaluations.filter(statut="publie").select_related(
+            "cours_session__cours",
+            "cours_session__session",
+        )
+        paiements = profil.paiements.filter(statut=Paiement.StatutPaiement.CONFIRME).select_related("session")
 
         html = render_to_string(
             "documents/pdf/document.html",
@@ -55,7 +106,7 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
                 "document_type": document_type,
                 "document_label": dict(DocumentAdministratif.TypeDocument.choices)[document_type],
                 "generated_at": timezone.now(),
-                "credits": credits,
+                "evaluations": evaluations,
                 "paiements": paiements,
             },
             request=request,
