@@ -291,6 +291,63 @@ class FAQPage(Page):
 
 
 # ──────────────────────────────────────────────
+# Catalogue de formation vidéo — page éditoriale
+# ──────────────────────────────────────────────
+
+
+class ModuleCataloguePage(Page):
+    """
+    Introduction rédigée du catalogue vidéo.
+
+    Le secrétariat écrit l'accroche et les arguments sans développeur ; la liste
+    des modules, elle, reste dynamique et suit les publications des enseignants.
+    """
+
+    accroche = models.CharField(
+        max_length=250,
+        blank=True,
+        help_text="Phrase d'accroche affichée sous le titre.",
+    )
+    introduction = RichTextField(blank=True)
+    arguments = StreamField(
+        [("argument", SectionTexteBlock())],
+        blank=True,
+        use_json_field=True,
+        verbose_name="Arguments",
+        help_text="Ce qui distingue la formation à distance de l'ITEAG.",
+    )
+    texte_appel = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Déposer une candidature",
+        verbose_name="Texte du bouton d'appel",
+    )
+
+    content_panels = Page.content_panels + [
+        FieldPanel("accroche"),
+        FieldPanel("introduction"),
+        FieldPanel("arguments"),
+        FieldPanel("texte_appel"),
+    ]
+
+    class Meta:
+        verbose_name = "Page catalogue vidéo"
+
+    parent_page_types = ["website.HomePage"]
+
+    def get_context(self, request, *args, **kwargs):
+        from apps.elearning.models import ModuleFormation
+
+        contexte = super().get_context(request, *args, **kwargs)
+        contexte["modules"] = (
+            ModuleFormation.objects.filter(statut=ModuleFormation.StatutPublication.PUBLIE)
+            .select_related("discipline", "responsable")
+            .order_by("ordre", "titre")
+        )
+        return contexte
+
+
+# ──────────────────────────────────────────────
 # Contact form — PUB-010
 # ──────────────────────────────────────────────
 

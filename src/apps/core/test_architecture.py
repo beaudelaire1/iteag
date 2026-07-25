@@ -36,7 +36,8 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "elearning": {"core", "accounts", "formations", "academics"},
     "library": {"core", "formations"},
     "documents": {"core", "accounts", "academics"},
-    "website": {"core", "formations"},
+    # website est un portail : comme administration, il agrège des domaines.
+    "website": {"core", "formations", "elearning"},
 }
 
 # ── Dette d'architecture identifiée ──────────────────────────────────────────

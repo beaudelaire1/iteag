@@ -16,6 +16,24 @@
   "instructor": {"@type": "Person", "name": "{{ module.responsable.nom_complet|escapejs }}"}{% endif %}
 }
 </script>
+
+{% if lecon_apercu %}
+{# VideoObject sur l'aperçu gratuit : le seul contenu vidéo public du module #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "{{ lecon_apercu.titre|escapejs }}",
+  "description": "Aperçu du module « {{ module.titre|escapejs }} »",
+  "uploadDate": "{{ lecon_apercu.created_at|date:'c' }}",
+  "duration": "PT{{ lecon_apercu.duree_secondes }}S",
+  "isAccessibleForFree": true,
+  "isFamilyFriendly": true,
+  "publisher": {"@type": "Organization", "name": "{{ SITE_FULL_NAME|escapejs }}"}{% if lecon_apercu.video.poster %},
+  "thumbnailUrl": "{{ request.scheme }}://{{ request.get_host }}{{ lecon_apercu.video.poster.url }}"{% endif %}
+}
+</script>
+{% endif %}
 {% endblock %}
 
 {% block content %}

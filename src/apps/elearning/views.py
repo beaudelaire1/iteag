@@ -113,6 +113,7 @@ class ModuleDetailView(DetailView):
                 "lecons_terminees": faites,
                 "lecon_suivante": service_progression.lecon_suivante(inscription) if inscription else None,
                 "attestation": getattr(inscription, "attestation", None) if inscription else None,
+                "lecon_apercu": module.lecons().filter(apercu_gratuit=True).first(),
             }
         )
         return contexte
