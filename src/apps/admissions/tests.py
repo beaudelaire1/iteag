@@ -65,13 +65,19 @@ class TestDossierCandidatureModel:
         assert "Dupont" in str(dossier)
 
     def test_default_ordering(self, parcours):
-        d1 = DossierCandidature.objects.create(
-            nom="A", prenom="A", email="a@a.org",
-            parcours_souhaite=parcours, motivations=".",
+        DossierCandidature.objects.create(
+            nom="A",
+            prenom="A",
+            email="a@a.org",
+            parcours_souhaite=parcours,
+            motivations=".",
         )
         d2 = DossierCandidature.objects.create(
-            nom="B", prenom="B", email="b@b.org",
-            parcours_souhaite=parcours, motivations=".",
+            nom="B",
+            prenom="B",
+            email="b@b.org",
+            parcours_souhaite=parcours,
+            motivations=".",
         )
         dossiers = list(DossierCandidature.objects.all())
         assert dossiers[0].pk == d2.pk  # most recent first

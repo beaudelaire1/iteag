@@ -4,40 +4,54 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('formations', '0002_cours_code_cours_objectifs_cours_parcours'),
+        ("formations", "0002_cours_code_cours_objectifs_cours_parcours"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='professeur',
-            name='autres_engagements',
-            field=models.TextField(blank=True, verbose_name='Autres engagements'),
+            model_name="professeur",
+            name="autres_engagements",
+            field=models.TextField(blank=True, verbose_name="Autres engagements"),
         ),
         migrations.AddField(
-            model_name='professeur',
-            name='cours_enseignes',
-            field=models.JSONField(blank=True, default=list, help_text='Liste de chaînes, ex: ["La christologie", "L\'herméneutique"]', verbose_name="Cours enseignés à l'ITEAG"),
+            model_name="professeur",
+            name="cours_enseignes",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text='Liste de chaînes, ex: ["La christologie", "L\'herméneutique"]',
+                verbose_name="Cours enseignés à l'ITEAG",
+            ),
         ),
         migrations.AddField(
-            model_name='professeur',
-            name='expertises',
-            field=models.JSONField(blank=True, default=list, help_text='Liste de chaînes, ex: ["Ecclésiologie", "Éthique"]', verbose_name='Expertises académiques'),
+            model_name="professeur",
+            name="expertises",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text='Liste de chaînes, ex: ["Ecclésiologie", "Éthique"]',
+                verbose_name="Expertises académiques",
+            ),
         ),
         migrations.AddField(
-            model_name='professeur',
-            name='parcours_academique',
-            field=models.JSONField(blank=True, default=list, help_text='Liste de {"annee": "2008", "description": "Doctorat en …"}', verbose_name='Parcours académique'),
+            model_name="professeur",
+            name="parcours_academique",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text='Liste de {"annee": "2008", "description": "Doctorat en …"}',
+                verbose_name="Parcours académique",
+            ),
         ),
         migrations.AddField(
-            model_name='professeur',
-            name='publications_articles',
-            field=models.TextField(blank=True, verbose_name='Publications — Articles'),
+            model_name="professeur",
+            name="publications_articles",
+            field=models.TextField(blank=True, verbose_name="Publications — Articles"),
         ),
         migrations.AddField(
-            model_name='professeur',
-            name='publications_ouvrages',
-            field=models.TextField(blank=True, verbose_name='Publications — Ouvrages'),
+            model_name="professeur",
+            name="publications_ouvrages",
+            field=models.TextField(blank=True, verbose_name="Publications — Ouvrages"),
         ),
     ]

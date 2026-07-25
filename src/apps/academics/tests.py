@@ -1,12 +1,10 @@
-import pytest
 from datetime import date, timedelta
 from decimal import Decimal
 
+import pytest
 from django.test import Client
 from django.urls import reverse
 
-from apps.accounts.models import User
-from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.academics.models import (
     CoursDeSession,
     CreditECTS,
@@ -16,6 +14,8 @@ from apps.academics.models import (
     Promotion,
     SessionAcademique,
 )
+from apps.accounts.models import User
+from apps.formations.models import Cours, Discipline, Parcours, Professeur
 
 
 @pytest.fixture
@@ -26,31 +26,39 @@ def discipline(db):
 @pytest.fixture
 def parcours(db):
     return Parcours.objects.create(
-        nom="Diplômant ITEAG", slug="diplomant-iteag",
-        type_parcours="diplomant_iteag", ects_requis=180,
+        nom="Diplômant ITEAG",
+        slug="diplomant-iteag",
+        type_parcours="diplomant_iteag",
+        ects_requis=180,
     )
 
 
 @pytest.fixture
 def promotion(parcours):
     return Promotion.objects.create(
-        nom="Promotion 2024-2030", parcours=parcours,
-        annee_debut=2024, annee_fin=2030,
+        nom="Promotion 2024-2030",
+        parcours=parcours,
+        annee_debut=2024,
+        annee_fin=2030,
     )
 
 
 @pytest.fixture
 def cours(discipline):
     return Cours.objects.create(
-        titre="Évangile de Jean", slug="evangile-de-jean",
-        discipline=discipline, ects=Decimal("2.5"),
+        titre="Évangile de Jean",
+        slug="evangile-de-jean",
+        discipline=discipline,
+        ects=Decimal("2.5"),
     )
 
 
 @pytest.fixture
 def professeur(db):
     return Professeur.objects.create(
-        nom="Martin", prenom="Pierre", slug="pierre-martin",
+        nom="Martin",
+        prenom="Pierre",
+        slug="pierre-martin",
         specialite="Nouveau Testament",
     )
 
@@ -59,17 +67,22 @@ def professeur(db):
 def session_academique(db):
     today = date.today()
     return SessionAcademique.objects.create(
-        nom="Session Pâques 2025", periode="paques",
+        nom="Session Pâques 2025",
+        periode="paques",
         annee_academique="2024-2025",
-        date_debut=today, date_fin=today + timedelta(days=7),
+        date_debut=today,
+        date_fin=today + timedelta(days=7),
     )
 
 
 @pytest.fixture
 def etudiant_user(db):
     return User.objects.create_user(
-        username="etudiant1", email="etudiant@iteag.org",
-        password="pass123!", first_name="Jean", last_name="Petit",
+        username="etudiant1",
+        email="etudiant@iteag.org",
+        password="pass123!",
+        first_name="Jean",
+        last_name="Petit",
         role="etudiant",
     )
 
@@ -77,8 +90,10 @@ def etudiant_user(db):
 @pytest.fixture
 def profil_etudiant(etudiant_user, parcours, promotion):
     return ProfilEtudiant.objects.create(
-        utilisateur=etudiant_user, parcours=parcours,
-        promotion=promotion, numero_etudiant="ETU-001",
+        utilisateur=etudiant_user,
+        parcours=parcours,
+        promotion=promotion,
+        numero_etudiant="ETU-001",
         statut_inscription="actif",
     )
 
@@ -86,8 +101,10 @@ def profil_etudiant(etudiant_user, parcours, promotion):
 @pytest.fixture
 def cours_session(session_academique, cours, professeur):
     return CoursDeSession.objects.create(
-        session=session_academique, cours=cours,
-        enseignant=professeur, salle="A1",
+        session=session_academique,
+        cours=cours,
+        enseignant=professeur,
+        salle="A1",
     )
 
 
@@ -103,8 +120,8 @@ class TestPromotionModel:
         assert "2024" in str(promotion)
 
     def test_ordering(self, parcours):
-        p1 = Promotion.objects.create(nom="P1", parcours=parcours, annee_debut=2020, annee_fin=2026)
-        p2 = Promotion.objects.create(nom="P2", parcours=parcours, annee_debut=2022, annee_fin=2028)
+        Promotion.objects.create(nom="P1", parcours=parcours, annee_debut=2020, annee_fin=2026)
+        Promotion.objects.create(nom="P2", parcours=parcours, annee_debut=2022, annee_fin=2028)
         assert list(Promotion.objects.all())[0].annee_debut >= list(Promotion.objects.all())[1].annee_debut
 
 
@@ -126,8 +143,10 @@ class TestProfilEtudiantModel:
 
     def test_ects_with_credits(self, profil_etudiant, cours, session_academique):
         CreditECTS.objects.create(
-            etudiant=profil_etudiant, cours=cours,
-            session=session_academique, ects_obtenus=Decimal("2.5"),
+            etudiant=profil_etudiant,
+            cours=cours,
+            session=session_academique,
+            ects_obtenus=Decimal("2.5"),
             date_validation=date.today(),
         )
         assert profil_etudiant.total_ects_acquis == Decimal("2.5")
@@ -145,11 +164,14 @@ class TestSessionAcademiqueModel:
 
     def test_unique_together(self, session_academique):
         from django.db import IntegrityError
+
         with pytest.raises(IntegrityError):
             SessionAcademique.objects.create(
-                nom="Doublon", periode="paques",
+                nom="Doublon",
+                periode="paques",
                 annee_academique="2024-2025",
-                date_debut=date.today(), date_fin=date.today(),
+                date_debut=date.today(),
+                date_fin=date.today(),
             )
 
 
@@ -167,18 +189,22 @@ class TestCoursDeSessionModel:
 class TestInscriptionSession:
     def test_create(self, profil_etudiant, cours_session):
         inscription = InscriptionSession.objects.create(
-            etudiant=profil_etudiant, cours_session=cours_session,
+            etudiant=profil_etudiant,
+            cours_session=cours_session,
         )
         assert inscription.pk is not None
 
     def test_unique_together(self, profil_etudiant, cours_session):
         InscriptionSession.objects.create(
-            etudiant=profil_etudiant, cours_session=cours_session,
+            etudiant=profil_etudiant,
+            cours_session=cours_session,
         )
         from django.db import IntegrityError
+
         with pytest.raises(IntegrityError):
             InscriptionSession.objects.create(
-                etudiant=profil_etudiant, cours_session=cours_session,
+                etudiant=profil_etudiant,
+                cours_session=cours_session,
             )
 
 
@@ -186,8 +212,10 @@ class TestInscriptionSession:
 class TestPaiementModel:
     def test_create(self, profil_etudiant, session_academique):
         p = Paiement.objects.create(
-            etudiant=profil_etudiant, session=session_academique,
-            montant=Decimal("250.00"), date_paiement=date.today(),
+            etudiant=profil_etudiant,
+            session=session_academique,
+            montant=Decimal("250.00"),
+            date_paiement=date.today(),
             mode="virement",
         )
         assert p.pk is not None
@@ -195,8 +223,10 @@ class TestPaiementModel:
 
     def test_str(self, profil_etudiant, session_academique):
         p = Paiement.objects.create(
-            etudiant=profil_etudiant, session=session_academique,
-            montant=Decimal("250.00"), date_paiement=date.today(),
+            etudiant=profil_etudiant,
+            session=session_academique,
+            montant=Decimal("250.00"),
+            date_paiement=date.today(),
             mode="virement",
         )
         assert "250" in str(p)
@@ -223,8 +253,10 @@ class TestStudentDashboardAccess:
 
     def test_non_student_denied(self, client: Client, db):
         staff = User.objects.create_user(
-            username="staff_no_student", email="staff@t.org",
-            password="pass!", role="admin",
+            username="staff_no_student",
+            email="staff@t.org",
+            password="pass!",
+            role="admin",
         )
         client.force_login(staff)
         url = reverse("academics:dashboard")
@@ -264,8 +296,10 @@ class TestTeacherPortalAccess:
 
     def test_teacher_access(self, client: Client, professeur):
         teacher_user = User.objects.create_user(
-            username="enseignant1", email="teach@iteag.org",
-            password="pass!", role="enseignant",
+            username="enseignant1",
+            email="teach@iteag.org",
+            password="pass!",
+            role="enseignant",
         )
         professeur.user = teacher_user
         professeur.save()
@@ -282,8 +316,10 @@ class TestTeacherPortalAccess:
 
     def test_courses_list(self, client: Client, professeur):
         teacher_user = User.objects.create_user(
-            username="enseignant2", email="teach2@iteag.org",
-            password="pass!", role="enseignant",
+            username="enseignant2",
+            email="teach2@iteag.org",
+            password="pass!",
+            role="enseignant",
         )
         professeur.user = teacher_user
         professeur.save()

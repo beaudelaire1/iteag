@@ -1,9 +1,25 @@
 # ═══════════════════════════════════════════════════
 # ITEAG — Dockerfile Production (multi-stage)
 # Standard Trait d'Union Studio
+# Voir docs/architecture/adr/ADR-004-pipeline-assets-production.md
 # ═══════════════════════════════════════════════════
 
-# ── Stage 1: Dependencies ──
+# ── Étape 1 : feuilles de style ──
+# Tailwind 4 balaie les templates pour déterminer les classes réellement
+# utilisées : sans eux, la feuille produite serait amputée.
+FROM node:22-alpine AS assets
+
+WORKDIR /app
+COPY package.json ./
+RUN npm install --no-audit --no-fund
+
+COPY assets/ assets/
+COPY static/ static/
+COPY templates/ templates/
+RUN npm run css:build \
+    && test -s static/css/main.css
+
+# ── Étape 2 : dépendances Python ──
 FROM python:3.12-slim AS deps
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -20,7 +36,7 @@ COPY requirements/base.txt requirements/base.txt
 COPY requirements/prod.txt requirements/prod.txt
 RUN pip install --no-cache-dir -r requirements/prod.txt
 
-# ── Stage 2: Runtime ──
+# ── Étape 3 : image d'exécution ──
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -40,17 +56,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy installed packages from deps stage
 COPY --from=deps /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=deps /usr/local/bin /usr/local/bin
 
-# Copy application code
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput 2>/dev/null || true
+# Feuille de style compilée à l'étape 1 (jamais commitée : elle est reproductible)
+COPY --from=assets /app/static/css/main.css static/css/main.css
 
-# Set ownership
+# Collecte des statiques — sans masquage d'erreur : un échec ici doit arrêter
+# le build, pas produire une image qui servira un site sans style.
+RUN python manage.py collectstatic --noinput --clear
+
 RUN chown -R iteag:iteag /app
 
 USER iteag

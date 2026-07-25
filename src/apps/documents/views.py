@@ -62,7 +62,8 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
         )
         pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
 
-        filename = f"{document_type}-{slugify(request.user.get_full_name() or request.user.username)}-{timezone.now():%Y%m%d%H%M%S}.pdf"
+        identite = slugify(request.user.get_full_name() or request.user.username)
+        filename = f"{document_type}-{identite}-{timezone.now():%Y%m%d%H%M%S}.pdf"
         document = DocumentAdministratif(etudiant=request.user, type_document=document_type)
         document.fichier_pdf.save(filename, ContentFile(pdf_bytes), save=False)
         document.save()
@@ -74,4 +75,6 @@ class DownloadStudentDocumentView(StudentRoleRequiredMixin, View):
         document = get_object_or_404(DocumentAdministratif, pk=pk, etudiant=request.user)
         if not document.fichier_pdf:
             raise Http404("Document indisponible.")
-        return FileResponse(document.fichier_pdf.open("rb"), as_attachment=True, filename=Path(document.fichier_pdf.name).name)
+        return FileResponse(
+            document.fichier_pdf.open("rb"), as_attachment=True, filename=Path(document.fichier_pdf.name).name
+        )

@@ -3,11 +3,17 @@ import csv
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
+
+from apps.academics.models import Paiement, ProfilEtudiant, SessionAcademique
+from apps.accounts.models import User
+from apps.admissions.models import DossierCandidature
+from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
+from apps.library.models import NoticeBibliographique
 
 from .forms import (
     AdminEtudiantForm,
@@ -16,14 +22,7 @@ from .forms import (
     AdminUserCreateForm,
     AdminUserForm,
 )
-from .mixins import StaffRoleRequiredMixin
-
-from apps.accounts.models import User
-from apps.academics.models import CoursDeSession, Paiement, ProfilEtudiant, Promotion, SessionAcademique
-from apps.admissions.models import DossierCandidature
-from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
-from apps.library.models import NoticeBibliographique
-
+from apps.core.mixins import StaffRoleRequiredMixin
 
 # ──────────────────────────────────────────────
 # Dashboard
@@ -53,10 +52,11 @@ class AdminDashboardView(StaffRoleRequiredMixin, TemplateView):
                 "total_ouvrages": NoticeBibliographique.objects.count(),
                 "total_users": User.objects.filter(is_active=True).count(),
                 "session_en_cours": SessionAcademique.objects.filter(
-                    Q(date_debut__lte=today, date_fin__gte=today)
-                    | Q(statut=SessionAcademique.StatutSession.EN_COURS)
+                    Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
                 ).first(),
-                "prochaine_session": SessionAcademique.objects.filter(date_debut__gt=today).order_by("date_debut").first(),
+                "prochaine_session": SessionAcademique.objects.filter(date_debut__gt=today)
+                .order_by("date_debut")
+                .first(),
                 "derniers_dossiers": DossierCandidature.objects.select_related("parcours_souhaite")[:5],
                 "derniers_paiements": Paiement.objects.select_related("etudiant__utilisateur", "session")[:5],
             }
@@ -91,8 +91,7 @@ class AdminCandidatureListView(StaffRoleRequiredMixin, ListView):
         ctx["current_statut"] = self.request.GET.get("statut", "")
         ctx["query"] = self.request.GET.get("q", "")
         ctx["counts"] = {
-            s[0]: DossierCandidature.objects.filter(statut=s[0]).count()
-            for s in DossierCandidature.Statut.choices
+            s[0]: DossierCandidature.objects.filter(statut=s[0]).count() for s in DossierCandidature.Statut.choices
         }
         return ctx
 
@@ -114,8 +113,8 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         commentaire = request.POST.get("commentaire", "")
 
         if new_statut and new_statut != self.object.statut:
-            from apps.admissions.models import HistoriqueStatut
             from apps.admissions.emails import send_statut_change_email
+            from apps.admissions.models import HistoriqueStatut
 
             HistoriqueStatut.objects.create(
                 dossier=self.object,
@@ -478,10 +477,19 @@ class ExportCandidaturesCsvView(StaffRoleRequiredMixin, View):
         response.write("\ufeff")  # BOM UTF-8 pour Excel
 
         writer = csv.writer(response, delimiter=";")
-        writer.writerow([
-            "Nom", "Prénom", "Email", "Téléphone", "Parcours souhaité",
-            "Statut", "Église", "Église fondatrice", "Date soumission",
-        ])
+        writer.writerow(
+            [
+                "Nom",
+                "Prénom",
+                "Email",
+                "Téléphone",
+                "Parcours souhaité",
+                "Statut",
+                "Église",
+                "Église fondatrice",
+                "Date soumission",
+            ]
+        )
 
         qs = DossierCandidature.objects.select_related("parcours_souhaite")
         statut = request.GET.get("statut")
@@ -489,13 +497,19 @@ class ExportCandidaturesCsvView(StaffRoleRequiredMixin, View):
             qs = qs.filter(statut=statut)
 
         for d in qs.iterator():
-            writer.writerow([
-                d.nom, d.prenom, d.email, d.telephone,
-                str(d.parcours_souhaite) if d.parcours_souhaite else "",
-                d.get_statut_display(), d.eglise,
-                "Oui" if d.eglise_fondatrice else "Non",
-                d.date_soumission.strftime("%d/%m/%Y"),
-            ])
+            writer.writerow(
+                [
+                    d.nom,
+                    d.prenom,
+                    d.email,
+                    d.telephone,
+                    str(d.parcours_souhaite) if d.parcours_souhaite else "",
+                    d.get_statut_display(),
+                    d.eglise,
+                    "Oui" if d.eglise_fondatrice else "Non",
+                    d.date_soumission.strftime("%d/%m/%Y"),
+                ]
+            )
         return response
 
 
@@ -508,28 +522,43 @@ class ExportEtudiantsCsvView(StaffRoleRequiredMixin, View):
         response.write("\ufeff")
 
         writer = csv.writer(response, delimiter=";")
-        writer.writerow([
-            "Numéro étudiant", "Nom", "Prénom", "Email", "Parcours",
-            "Promotion", "Statut", "ECTS acquis", "Église fondatrice",
-        ])
+        writer.writerow(
+            [
+                "Numéro étudiant",
+                "Nom",
+                "Prénom",
+                "Email",
+                "Parcours",
+                "Promotion",
+                "Statut",
+                "ECTS acquis",
+                "Église fondatrice",
+            ]
+        )
 
         qs = ProfilEtudiant.objects.select_related(
-            "utilisateur", "parcours", "promotion",
+            "utilisateur",
+            "parcours",
+            "promotion",
         )
         statut = request.GET.get("statut")
         if statut:
             qs = qs.filter(statut_inscription=statut)
 
         for e in qs.iterator():
-            writer.writerow([
-                e.numero_etudiant,
-                e.utilisateur.last_name, e.utilisateur.first_name,
-                e.utilisateur.email, str(e.parcours),
-                e.promotion.nom if e.promotion else "",
-                e.get_statut_inscription_display(),
-                e.total_ects_acquis,
-                "Oui" if e.eglise_fondatrice else "Non",
-            ])
+            writer.writerow(
+                [
+                    e.numero_etudiant,
+                    e.utilisateur.last_name,
+                    e.utilisateur.first_name,
+                    e.utilisateur.email,
+                    str(e.parcours),
+                    e.promotion.nom if e.promotion else "",
+                    e.get_statut_inscription_display(),
+                    e.total_ects_acquis,
+                    "Oui" if e.eglise_fondatrice else "Non",
+                ]
+            )
         return response
 
 
@@ -542,22 +571,34 @@ class ExportPaiementsCsvView(StaffRoleRequiredMixin, View):
         response.write("\ufeff")
 
         writer = csv.writer(response, delimiter=";")
-        writer.writerow([
-            "Étudiant", "Numéro étudiant", "Session", "Montant",
-            "Date", "Mode", "Statut", "Référence",
-        ])
+        writer.writerow(
+            [
+                "Étudiant",
+                "Numéro étudiant",
+                "Session",
+                "Montant",
+                "Date",
+                "Mode",
+                "Statut",
+                "Référence",
+            ]
+        )
 
         qs = Paiement.objects.select_related("etudiant__utilisateur", "session")
 
         for p in qs.iterator():
-            writer.writerow([
-                p.etudiant.utilisateur.get_full_name(),
-                p.etudiant.numero_etudiant,
-                str(p.session) if p.session else "",
-                str(p.montant), p.date_paiement.strftime("%d/%m/%Y"),
-                p.get_mode_display(), p.get_statut_display(),
-                p.reference,
-            ])
+            writer.writerow(
+                [
+                    p.etudiant.utilisateur.get_full_name(),
+                    p.etudiant.numero_etudiant,
+                    str(p.session) if p.session else "",
+                    str(p.montant),
+                    p.date_paiement.strftime("%d/%m/%Y"),
+                    p.get_mode_display(),
+                    p.get_statut_display(),
+                    p.reference,
+                ]
+            )
         return response
 
 

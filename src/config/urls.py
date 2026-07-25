@@ -8,7 +8,6 @@ from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 from django.views.generic import TemplateView
-
 from wagtail import urls as wagtail_urls
 from wagtail.admin import urls as wagtailadmin_urls
 from wagtail.contrib.sitemaps.sitemap_generator import Sitemap as WagtailSitemap
@@ -29,7 +28,7 @@ urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     # Local apps
     path("", include("apps.accounts.urls", namespace="accounts")),
-    path("espace-admin/", include("apps.core.urls", namespace="administration")),
+    path("espace-admin/", include("apps.administration.urls", namespace="administration")),
     path("formations/", include("apps.formations.urls", namespace="formations")),
     path("admissions/", include("apps.admissions.urls", namespace="admissions")),
     path("bibliotheque/", include("apps.library.urls", namespace="library")),

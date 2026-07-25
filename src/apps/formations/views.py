@@ -76,8 +76,6 @@ class ProfesseurDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["autres_professeurs"] = (
-            Professeur.objects.filter(actif=True)
-            .exclude(pk=self.object.pk)
-            .prefetch_related("disciplines")[:4]
+            Professeur.objects.filter(actif=True).exclude(pk=self.object.pk).prefetch_related("disciplines")[:4]
         )
         return context

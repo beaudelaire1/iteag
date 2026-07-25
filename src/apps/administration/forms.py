@@ -1,8 +1,8 @@
 from django import forms
 
+from apps.academics.models import ProfilEtudiant, SessionAcademique
 from apps.accounts.models import User
-from apps.academics.models import ProfilEtudiant, Promotion, SessionAcademique
-from apps.formations.models import Professeur, Discipline
+from apps.formations.models import Professeur
 
 
 class AdminUserForm(forms.ModelForm):
@@ -84,7 +84,15 @@ class AdminProfesseurForm(forms.ModelForm):
 class AdminEtudiantForm(forms.ModelForm):
     class Meta:
         model = ProfilEtudiant
-        fields = ["utilisateur", "parcours", "promotion", "numero_etudiant", "statut_inscription", "formule_tarif", "eglise_fondatrice"]
+        fields = [
+            "utilisateur",
+            "parcours",
+            "promotion",
+            "numero_etudiant",
+            "statut_inscription",
+            "formule_tarif",
+            "eglise_fondatrice",
+        ]
         widgets = {
             "utilisateur": forms.Select(attrs={"class": "form-input"}),
             "parcours": forms.Select(attrs={"class": "form-input"}),

@@ -3,8 +3,9 @@ Django settings — ITEAG Platform
 Base configuration shared across all environments.
 """
 
-import environ
 from pathlib import Path
+
+import environ
 
 # ──────────────────────────────────────────────
 # Paths
@@ -62,6 +63,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "apps.core",
     "apps.accounts",
+    "apps.administration",
     "apps.website",
     "apps.formations",
     "apps.admissions",

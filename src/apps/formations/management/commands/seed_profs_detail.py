@@ -7,7 +7,6 @@ from django.core.management.base import BaseCommand
 
 from apps.formations.models import Professeur
 
-
 PROFESSORS_DATA = {
     # ─── Alain NISUS ─────────────────────────────────────────────
     "alain-nisus": {
@@ -20,9 +19,15 @@ PROFESSORS_DATA = {
         ),
         "specialite": "Théologie systématique, Ecclésiologie",
         "parcours_academique": [
-            {"annee": "Depuis 2022", "description": "Professeur associé à l'Université Laval (Canada), en partenariat avec l'ETEQ, et chargé de cours à l'ETEQ"},
+            {
+                "annee": "Depuis 2022",
+                "description": "Professeur associé à l'Université Laval (Canada), en partenariat avec l'ETEQ, et chargé de cours à l'ETEQ",
+            },
             {"annee": "2006 – 2018", "description": "Professeur de théologie systématique à la FLTE"},
-            {"annee": "2008", "description": "Doctorat en Théologie de l'Institut Catholique de Paris et de la Katholieke Universiteit Leuven sous la direction du professeur Hervé Legrand, « L'Église comme communion et comme institution. Une lecture de l'ecclésiologie du cardinal Congar à partir de la tradition des Églises de professants »"},
+            {
+                "annee": "2008",
+                "description": "Doctorat en Théologie de l'Institut Catholique de Paris et de la Katholieke Universiteit Leuven sous la direction du professeur Hervé Legrand, « L'Église comme communion et comme institution. Une lecture de l'ecclésiologie du cardinal Congar à partir de la tradition des Églises de professants »",
+            },
             {"annee": "2003 – 2006", "description": "Professeur assistant en théologie systématique à la FLTE"},
             {"annee": "1998 – 2003", "description": "Pasteur de l'Église Baptiste de Grenoble (FEEBF)"},
             {"annee": "1996", "description": "Capacité doctorale en Théologie : Institut Catholique de Paris"},
@@ -77,7 +82,6 @@ PROFESSORS_DATA = {
             "Introduction à l'éthique",
         ],
     },
-
     # ─── Ruth LABETH ─────────────────────────────────────────────
     "ruth-labeth": {
         "biographie": (
@@ -89,11 +93,26 @@ PROFESSORS_DATA = {
         "specialite": "Théologie pratique, Langues bibliques",
         "parcours_academique": [
             {"annee": "Depuis 2019", "description": "Directrice des études de 1er cycle à l'ETEQ"},
-            {"annee": "2014", "description": "Doctorat en théologie pratique, option musique liturgique, Faculté de théologie Aix-en-Provence (France). Titre de la thèse : « La musique dans le culte évangélique en terrain créole : une lecture anthropo-théologique des pratiques musicales de l'Église évangélique de la Guadeloupe de 1947 à nos jours »"},
-            {"annee": "2005", "description": "Diplôme d'études approfondies en théologie de la Faculté libre de théologie réformée Jean Calvin (Aix-en-Provence, France)"},
-            {"annee": "1993", "description": "Master of Divinity (Maîtrise) au Toronto Baptist Seminary (Toronto, Canada), « The Stranger in the Land of Israël with special attention to the Book of Ruth »"},
-            {"annee": "1989", "description": "Diplôme universitaire du musicien intervenant, Faculté des Arts, Université Marc Bloch de Strasbourg (France)"},
-            {"annee": "1985", "description": "Licence en musicologie, Faculté des Arts, Université Marc Bloch de Strasbourg (France)"},
+            {
+                "annee": "2014",
+                "description": "Doctorat en théologie pratique, option musique liturgique, Faculté de théologie Aix-en-Provence (France). Titre de la thèse : « La musique dans le culte évangélique en terrain créole : une lecture anthropo-théologique des pratiques musicales de l'Église évangélique de la Guadeloupe de 1947 à nos jours »",
+            },
+            {
+                "annee": "2005",
+                "description": "Diplôme d'études approfondies en théologie de la Faculté libre de théologie réformée Jean Calvin (Aix-en-Provence, France)",
+            },
+            {
+                "annee": "1993",
+                "description": "Master of Divinity (Maîtrise) au Toronto Baptist Seminary (Toronto, Canada), « The Stranger in the Land of Israël with special attention to the Book of Ruth »",
+            },
+            {
+                "annee": "1989",
+                "description": "Diplôme universitaire du musicien intervenant, Faculté des Arts, Université Marc Bloch de Strasbourg (France)",
+            },
+            {
+                "annee": "1985",
+                "description": "Licence en musicologie, Faculté des Arts, Université Marc Bloch de Strasbourg (France)",
+            },
         ],
         "expertises": [
             "Interculturalité et culte",
@@ -133,7 +152,6 @@ PROFESSORS_DATA = {
             "La Bible, d'où vient-elle ? Manuscrits, canon, versions de la Bible",
         ],
     },
-
     # ─── Daniel REIVAX ───────────────────────────────────────────
     "daniel-reivax": {
         "biographie": (
@@ -143,9 +161,18 @@ PROFESSORS_DATA = {
         ),
         "specialite": "Histoire des civilisations, Histoire du protestantisme",
         "parcours_academique": [
-            {"annee": "2021", "description": "Doctorat en histoire des civilisations et histoire contemporaine, Université de Picardie Jules Verne. Sujet de thèse : « Raoul Allier (1862-1939), un protestant engagé, une voix du protestantisme français »"},
-            {"annee": "2014", "description": "Master de recherche en Sciences humaines et sociales, Université d'Artois"},
-            {"annee": "1993", "description": "Maîtrise en théologie, Faculté Libre de théologie évangélique de Vaux-sur-Seine"},
+            {
+                "annee": "2021",
+                "description": "Doctorat en histoire des civilisations et histoire contemporaine, Université de Picardie Jules Verne. Sujet de thèse : « Raoul Allier (1862-1939), un protestant engagé, une voix du protestantisme français »",
+            },
+            {
+                "annee": "2014",
+                "description": "Master de recherche en Sciences humaines et sociales, Université d'Artois",
+            },
+            {
+                "annee": "1993",
+                "description": "Maîtrise en théologie, Faculté Libre de théologie évangélique de Vaux-sur-Seine",
+            },
         ],
         "expertises": [
             "Histoire du protestantisme",
@@ -170,7 +197,6 @@ PROFESSORS_DATA = {
             "Histoire des Réformes et des mouvements de réveil",
         ],
     },
-
     # ─── Patrice KAULANJAN ───────────────────────────────────────
     "patrice-kaulanjan": {
         "biographie": (
@@ -181,7 +207,10 @@ PROFESSORS_DATA = {
         "specialite": "Théologie pratique, Relation d'aide",
         "parcours_academique": [
             {"annee": "", "description": "Diplômé de l'Institut Biblique Européen de Lamorlaye"},
-            {"annee": "", "description": "Diplômé de l'IEP d'Aix-en-Provence en Médiation, Gestion des conflits et Coaching"},
+            {
+                "annee": "",
+                "description": "Diplômé de l'IEP d'Aix-en-Provence en Médiation, Gestion des conflits et Coaching",
+            },
             {"annee": "", "description": "Diplômé en Relation d'aide"},
             {"annee": "", "description": "Professeur de Théologie pratique à l'Institut Biblique de Nogent-sur-Marne"},
         ],
@@ -192,8 +221,7 @@ PROFESSORS_DATA = {
             "Coaching",
         ],
         "autres_engagements": (
-            "Pasteur à Versailles.\n"
-            "Président de l'Alliance des Églises Évangéliques Interdépendantes."
+            "Pasteur à Versailles.\nPrésident de l'Alliance des Églises Évangéliques Interdépendantes."
         ),
         "publications_ouvrages": "",
         "publications_articles": "",
@@ -202,7 +230,6 @@ PROFESSORS_DATA = {
             "Théologie et relation d'aide",
         ],
     },
-
     # ─── Cédric EUGÈNE ───────────────────────────────────────────
     # Pas de fiche détaillée sur iteag.org (retourne Undefined).
     "cedric-eugene": {
@@ -215,7 +242,6 @@ PROFESSORS_DATA = {
         "publications_articles": "",
         "cours_enseignes": [],
     },
-
     # ─── Stéphane GUILLET ────────────────────────────────────────
     # Pas de fiche détaillée sur iteag.org (retourne Undefined).
     "stephane-guillet": {
@@ -228,7 +254,6 @@ PROFESSORS_DATA = {
         "publications_articles": "",
         "cours_enseignes": [],
     },
-
     # ─── Jean-Claude GIRONDIN ────────────────────────────────────
     # Pas de fiche détaillée sur iteag.org (retourne Undefined).
     "jean-claude-girondin": {

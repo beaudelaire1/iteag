@@ -4,16 +4,15 @@ Usage: python manage.py setup_initial_pages
 """
 
 from django.core.management.base import BaseCommand
-
 from wagtail.models import Page, Site
 
 from apps.website.models import (
-    HomePage,
+    ContactPage,
     ContentPage,
-    NewsIndexPage,
     EventIndexPage,
     FAQPage,
-    ContactPage,
+    HomePage,
+    NewsIndexPage,
 )
 
 
@@ -43,9 +42,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"HomePage created: '{home.title}'"))
 
         # 3. Remove default "Welcome to Wagtail" page if present
-        Page.objects.filter(depth=2, slug="home").exclude(
-            content_type__model="homepage"
-        ).delete()
+        Page.objects.filter(depth=2, slug="home").exclude(content_type__model="homepage").delete()
 
         # 4. Create or update the default Site
         site, created = Site.objects.get_or_create(
@@ -67,14 +64,25 @@ class Command(BaseCommand):
 
         # 5. Create child pages if they don't exist
         self._create_child_page(home, ContentPage, "Découvrir l'ITEAG", "presentation")
-        self._create_child_page(home, NewsIndexPage, "Actualités", "actualites",
-                                introduction="<p>Retrouvez toutes les actualités de l'ITEAG.</p>")
-        self._create_child_page(home, EventIndexPage, "Événements", "evenements",
-                                introduction="<p>Les prochains événements de l'ITEAG.</p>")
+        self._create_child_page(
+            home,
+            NewsIndexPage,
+            "Actualités",
+            "actualites",
+            introduction="<p>Retrouvez toutes les actualités de l'ITEAG.</p>",
+        )
+        self._create_child_page(
+            home, EventIndexPage, "Événements", "evenements", introduction="<p>Les prochains événements de l'ITEAG.</p>"
+        )
         self._create_child_page(home, FAQPage, "Questions fréquentes", "faq")
-        self._create_child_page(home, ContactPage, "Contact", "contact",
-                                introduction="<p>Vous avez une question ? Contactez-nous.</p>",
-                                thank_you_text="<p>Merci pour votre message. Nous reviendrons vers vous rapidement.</p>")
+        self._create_child_page(
+            home,
+            ContactPage,
+            "Contact",
+            "contact",
+            introduction="<p>Vous avez une question ? Contactez-nous.</p>",
+            thank_you_text="<p>Merci pour votre message. Nous reviendrons vers vous rapidement.</p>",
+        )
 
         self.stdout.write(self.style.SUCCESS("Done — visit http://localhost:8000/ to see the site."))
 

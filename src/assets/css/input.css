@@ -372,6 +372,34 @@
     line-height: 1.6;
   }
 
+  /* Champ de dépôt de fichier — bouton aux couleurs ITEAG */
+  .form-file {
+    display: block;
+    width: 100%;
+    font-size: 0.875rem;
+    color: var(--color-warm-600);
+  }
+  .form-file::file-selector-button {
+    margin-right: 1rem;
+    padding: 0.625rem 1.25rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-navy-700);
+    background-color: var(--color-navy-50);
+    border: 1px solid var(--color-navy-200);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-premium);
+  }
+  .form-file::file-selector-button:hover {
+    color: var(--color-navy-900);
+    background-color: var(--color-navy-100);
+    border-color: var(--color-navy-300);
+  }
+
   /* Wagtail contact form fields */
   .contact-form input[type="text"],
   .contact-form input[type="email"],

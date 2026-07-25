@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    VAE,
     CoursDeSession,
     CreditECTS,
     InscriptionSession,
@@ -9,7 +10,6 @@ from .models import (
     Promotion,
     SessionAcademique,
     Stage,
-    VAE,
 )
 
 

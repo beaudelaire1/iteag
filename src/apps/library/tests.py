@@ -40,7 +40,8 @@ class TestNoticeBibliographique:
 
     def test_str_without_auteur(self, discipline):
         n = NoticeBibliographique.objects.create(
-            titre="Dictionnaire hébreu", discipline=discipline,
+            titre="Dictionnaire hébreu",
+            discipline=discipline,
         )
         assert str(n) == "Dictionnaire hébreu"
 

@@ -5,15 +5,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('formations', '0003_professeur_autres_engagements_and_more'),
-        ('library', '0001_initial'),
+        ("formations", "0003_professeur_autres_engagements_and_more"),
+        ("library", "0001_initial"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='noticebibliographique',
-            index=django.contrib.postgres.indexes.GinIndex(fields=['search_vector'], name='library_search_gin'),
+            model_name="noticebibliographique",
+            index=django.contrib.postgres.indexes.GinIndex(fields=["search_vector"], name="library_search_gin"),
         ),
     ]
