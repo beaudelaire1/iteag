@@ -8,9 +8,5 @@ from .models import User
 class UserAdmin(BaseUserAdmin):
     list_display = ("username", "email", "first_name", "last_name", "role", "is_active")
     list_filter = ("role", "is_active", "is_staff")
-    fieldsets = BaseUserAdmin.fieldsets + (
-        ("ITEAG", {"fields": ("role", "phone")}),
-    )
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ("ITEAG", {"fields": ("role", "phone")}),
-    )
+    fieldsets = BaseUserAdmin.fieldsets + (("ITEAG", {"fields": ("role", "phone")}),)
+    add_fieldsets = BaseUserAdmin.add_fieldsets + (("ITEAG", {"fields": ("role", "phone")}),)

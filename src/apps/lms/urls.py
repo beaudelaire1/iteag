@@ -1,9 +1,9 @@
 from django.urls import path
 
 from .views import (
+    TeacherAnnoncesListView,
     TeacherAnnouncementCreateView,
     TeacherAnnouncementUpdateView,
-    TeacherAnnoncesListView,
     TeacherCourseDetailView,
     TeacherCoursesListView,
     TeacherDashboardView,

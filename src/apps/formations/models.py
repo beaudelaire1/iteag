@@ -124,22 +124,16 @@ class Professeur(TimeStampedModel):
         default=list,
         blank=True,
         verbose_name="Expertises académiques",
-        help_text="Liste de chaînes, ex: [\"Ecclésiologie\", \"Éthique\"]",
+        help_text='Liste de chaînes, ex: ["Ecclésiologie", "Éthique"]',
     )
-    autres_engagements = models.TextField(
-        blank=True, verbose_name="Autres engagements"
-    )
-    publications_ouvrages = models.TextField(
-        blank=True, verbose_name="Publications — Ouvrages"
-    )
-    publications_articles = models.TextField(
-        blank=True, verbose_name="Publications — Articles"
-    )
+    autres_engagements = models.TextField(blank=True, verbose_name="Autres engagements")
+    publications_ouvrages = models.TextField(blank=True, verbose_name="Publications — Ouvrages")
+    publications_articles = models.TextField(blank=True, verbose_name="Publications — Articles")
     cours_enseignes = models.JSONField(
         default=list,
         blank=True,
         verbose_name="Cours enseignés à l'ITEAG",
-        help_text="Liste de chaînes, ex: [\"La christologie\", \"L'herméneutique\"]",
+        help_text='Liste de chaînes, ex: ["La christologie", "L\'herméneutique"]',
     )
 
     ordre = models.PositiveSmallIntegerField(default=0)

@@ -5,7 +5,10 @@ Django settings — Development environment.
 from .base import *  # noqa: F401, F403
 
 DEBUG = True
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+# "0.0.0.0" est nécessaire pour joindre le conteneur de développement depuis l'hôte.
+# Ce réglage est propre à l'environnement de développement ; la production lit
+# DJANGO_ALLOWED_HOSTS depuis l'environnement.
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]  # noqa: S104
 
 # ──────────────────────────────────────────────
 # Debug toolbar & browser reload

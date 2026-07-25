@@ -1,18 +1,17 @@
 from django.db import models
 from django.utils import timezone
-
-from wagtail.admin.panels import FieldPanel, MultiFieldPanel
-from wagtail.fields import RichTextField, StreamField
-from wagtail.models import Page
-from wagtail import blocks
-from wagtail.images.blocks import ImageChooserBlock
-from wagtail.contrib.forms.models import AbstractForm, AbstractFormField
 from modelcluster.fields import ParentalKey
-
+from wagtail import blocks
+from wagtail.admin.panels import FieldPanel, MultiFieldPanel
+from wagtail.contrib.forms.models import AbstractForm, AbstractFormField
+from wagtail.fields import RichTextField, StreamField
+from wagtail.images.blocks import ImageChooserBlock
+from wagtail.models import Page
 
 # ──────────────────────────────────────────────
 # StreamField Blocks
 # ──────────────────────────────────────────────
+
 
 class HeroBlock(blocks.StructBlock):
     titre = blocks.CharBlock(max_length=120)
@@ -71,6 +70,7 @@ class FAQBlock(blocks.StructBlock):
 # Page models
 # ──────────────────────────────────────────────
 
+
 class HomePage(Page):
     """Page d'accueil — PUB-001."""
 
@@ -114,7 +114,9 @@ class HomePage(Page):
         context["featured_parcours"] = Parcours.objects.filter(actif=True)[:4]
         context["featured_professeurs"] = Professeur.objects.filter(actif=True).prefetch_related("disciplines")[:4]
         context["latest_news"] = NewsPage.objects.live().public().order_by("-date")[:3]
-        context["upcoming_events"] = EventPage.objects.live().public().filter(date_debut__gte=timezone.now()).order_by("date_debut")[:3]
+        context["upcoming_events"] = (
+            EventPage.objects.live().public().filter(date_debut__gte=timezone.now()).order_by("date_debut")[:3]
+        )
         context["has_editorial_body"] = bool(self.body)
         return context
 
@@ -292,6 +294,7 @@ class FAQPage(Page):
 # Contact form — PUB-010
 # ──────────────────────────────────────────────
 
+
 class FormField(AbstractFormField):
     page = ParentalKey("ContactPage", on_delete=models.CASCADE, related_name="form_fields")
 
@@ -334,15 +337,15 @@ class ContactPage(AbstractForm):
 
     def _send_notification_email(self, form):
         """Envoie le message au secrétariat."""
-        from django.core.mail import send_mail
         from django.conf import settings
+        from django.core.mail import send_mail
 
         data = form.cleaned_data
         lines = [f"{key}: {value}" for key, value in data.items() if key != "honeypot"]
         body = "\n".join(lines)
 
         send_mail(
-            subject=f"[ITEAG Contact] Nouveau message via le site",
+            subject="[ITEAG Contact] Nouveau message via le site",
             message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[self.destinataire],
@@ -351,8 +354,8 @@ class ContactPage(AbstractForm):
 
     def _send_confirmation_email(self, form):
         """Envoie un accusé de réception au visiteur."""
-        from django.core.mail import send_mail
         from django.conf import settings
+        from django.core.mail import send_mail
 
         email = form.cleaned_data.get("email") or form.cleaned_data.get("e-mail") or form.cleaned_data.get("courriel")
         if not email:

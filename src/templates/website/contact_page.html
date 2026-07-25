@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags static %}
+{% load wagtailcore_tags static iteag_tags %}
 
 {% block title %}Contact — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}Contactez l'ITEAG. Envoyez-nous un message, nous vous répondrons dans les meilleurs délais.{% endblock %}
@@ -32,33 +32,13 @@
 </section>
 
 {# ─── BANDEAU VERSET ALÉATOIRE ─── #}
-<section class="overflow-hidden" style="background: var(--color-warm-100); border-bottom: 1px solid var(--color-warm-200);"
-    x-data="{
-        verses: [
-            { text: 'Le commencement de la sagesse, c\'est la crainte de l\'Éternel ; et la connaissance du Saint, c\'est l\'intelligence.', ref: 'Proverbes 9:10' },
-            { text: 'Car l\'Éternel donne la sagesse ; de sa bouche sortent la connaissance et l\'intelligence.', ref: 'Proverbes 2:6' },
-            { text: 'Mon peuple est détruit, parce qu\'il lui manque la connaissance.', ref: 'Osée 4:6' },
-            { text: 'Acquérir la sagesse vaut mieux que l\'or, et acquérir l\'intelligence est préférable à l\'argent.', ref: 'Proverbes 16:16' },
-            { text: 'Heureux l\'homme qui a trouvé la sagesse, et l\'homme qui possède l\'intelligence !', ref: 'Proverbes 3:13' },
-            { text: 'La crainte de l\'Éternel est le commencement de la science ; les insensés méprisent la sagesse et l\'instruction.', ref: 'Proverbes 1:7' },
-            { text: 'Instruis l\'enfant selon la voie qu\'il doit suivre ; et quand il sera vieux, il ne s\'en détournera pas.', ref: 'Proverbes 22:6' },
-            { text: 'L\'esprit de l\'homme éclairé acquiert la connaissance, et l\'oreille des sages cherche la science.', ref: 'Proverbes 18:15' },
-            { text: 'La sagesse vaut mieux que les perles, et aucun objet précieux ne l\'égale.', ref: 'Proverbes 8:11' },
-            { text: 'Enseigne-moi le bon sens et l\'intelligence, car je crois en tes commandements.', ref: 'Psaume 119:66' },
-            { text: 'Combien tes paroles sont douces à mon palais, plus que le miel à ma bouche !', ref: 'Psaume 119:103' },
-            { text: 'L\'ouverture de tes paroles éclaire, elle donne de l\'intelligence aux simples.', ref: 'Psaume 119:130' },
-            { text: 'Car avec beaucoup de sagesse on a beaucoup de chagrin, et celui qui augmente sa science augmente sa douleur.', ref: 'Ecclésiaste 1:18' },
-            { text: 'Car la sagesse protège comme l\'argent protège ; mais un avantage de la science, c\'est que la sagesse fait vivre ceux qui la possèdent.', ref: 'Ecclésiaste 7:12' },
-            { text: 'Oui, si tu appelles la sagesse, et si tu élèves ta voix vers l\'intelligence… alors tu comprendras la crainte de l\'Éternel.', ref: 'Proverbes 2:3-5' }
-        ],
-        current: {},
-        init() { this.current = this.verses[Math.floor(Math.random() * this.verses.length)]; }
-    }">
+{% verset_aleatoire as verset %}
+<section class="overflow-hidden" style="background: var(--color-warm-100); border-bottom: 1px solid var(--color-warm-200);">
     <div class="container-wide py-5 flex items-center justify-center gap-4 text-center">
         <svg class="h-5 w-5 shrink-0" style="color: var(--color-gold-500);" fill="currentColor" viewBox="0 0 24 24"><path d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>
         <p class="text-sm italic leading-relaxed" style="color: var(--color-warm-700);">
-            «&nbsp;<span x-text="current.text"></span>&nbsp;»
-            <span class="not-italic font-semibold ml-1" style="color: var(--color-navy-700);" x-text="'— ' + current.ref"></span>
+            «&nbsp;{{ verset.texte }}&nbsp;»
+            <span class="not-italic font-semibold ml-1" style="color: var(--color-navy-700);">— {{ verset.reference }}</span>
         </p>
     </div>
 </section>

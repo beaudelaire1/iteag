@@ -84,9 +84,11 @@
     // Fade-in newly swapped content
     document.body.addEventListener("htmx:afterSwap", (e) => {
       e.detail.target.classList.add("htmx-swap-fade");
-      // Re-init reveals on new content
+      // Ré-initialisation sur le contenu fraîchement inséré
       initReveals();
       animateCounters();
+      initMessagesFlash();
+      initOnglets();
     });
 
     // Loading state management
@@ -212,6 +214,131 @@
     // The .revealed class is added by the standard revealObserver
   }
 
+  /* ── 10. Menu mobile ── */
+  function initMenuMobile() {
+    const bouton = document.querySelector("[data-nav-toggle]");
+    const panneau = document.querySelector("[data-nav-panel]");
+    if (!bouton || !panneau) return;
+
+    const iconeOuvrir = bouton.querySelector("[data-nav-icone-ouvrir]");
+    const iconeFermer = bouton.querySelector("[data-nav-icone-fermer]");
+
+    function definir(ouvert) {
+      bouton.setAttribute("aria-expanded", String(ouvert));
+      panneau.hidden = !ouvert;
+      if (iconeOuvrir) iconeOuvrir.hidden = ouvert;
+      if (iconeFermer) iconeFermer.hidden = !ouvert;
+    }
+
+    bouton.addEventListener("click", () => {
+      definir(bouton.getAttribute("aria-expanded") !== "true");
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") definir(false);
+    });
+    // Un lien suivi referme le panneau.
+    panneau.addEventListener("click", (e) => {
+      if (e.target.closest("a")) definir(false);
+    });
+  }
+
+  /* ── 11. Menus déroulants (clic extérieur, Échap) ── */
+  function initMenusDeroulants() {
+    const menus = document.querySelectorAll("[data-dropdown]");
+    if (!menus.length) return;
+
+    function fermerTous(sauf) {
+      menus.forEach((menu) => {
+        if (menu === sauf) return;
+        menu.querySelector("[data-dropdown-toggle]").setAttribute("aria-expanded", "false");
+        menu.querySelector("[data-dropdown-panel]").hidden = true;
+      });
+    }
+
+    menus.forEach((menu) => {
+      const bouton = menu.querySelector("[data-dropdown-toggle]");
+      const panneau = menu.querySelector("[data-dropdown-panel]");
+      if (!bouton || !panneau) return;
+
+      bouton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const ouvrir = bouton.getAttribute("aria-expanded") !== "true";
+        fermerTous(menu);
+        bouton.setAttribute("aria-expanded", String(ouvrir));
+        panneau.hidden = !ouvrir;
+      });
+    });
+
+    document.addEventListener("click", () => fermerTous(null));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") fermerTous(null);
+    });
+  }
+
+  /* ── 12. Messages flash (fermeture manuelle ou automatique) ── */
+  function initMessagesFlash() {
+    document.querySelectorAll("[data-flash]").forEach((flash) => {
+      if (flash.dataset.flashInit) return;
+      flash.dataset.flashInit = "1";
+
+      function masquer() {
+        flash.classList.add("flash-sortant");
+        flash.addEventListener("transitionend", () => flash.remove(), { once: true });
+        // Filet si la transition ne se déclenche pas (mouvement réduit).
+        setTimeout(() => flash.remove(), 400);
+      }
+
+      const fermeture = flash.querySelector("[data-flash-close]");
+      if (fermeture) fermeture.addEventListener("click", masquer);
+
+      const delai = parseInt(flash.dataset.flash, 10);
+      if (delai > 0) setTimeout(masquer, delai);
+    });
+  }
+
+  /* ── 13. Affichage du mot de passe ── */
+  function initRevelationMotDePasse() {
+    document.querySelectorAll("[data-password-toggle]").forEach((bouton) => {
+      const champ = document.getElementById(bouton.dataset.passwordToggle);
+      if (!champ) return;
+      const iconeAffiche = bouton.querySelector("[data-password-icone-affiche]");
+      const iconeMasque = bouton.querySelector("[data-password-icone-masque]");
+
+      bouton.addEventListener("click", () => {
+        const devientVisible = champ.type === "password";
+        champ.type = devientVisible ? "text" : "password";
+        bouton.setAttribute("aria-pressed", String(devientVisible));
+        bouton.setAttribute(
+          "aria-label",
+          devientVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"
+        );
+        if (iconeAffiche) iconeAffiche.hidden = devientVisible;
+        if (iconeMasque) iconeMasque.hidden = !devientVisible;
+      });
+    });
+  }
+
+  /* ── 14. Onglets ── */
+  function initOnglets() {
+    document.querySelectorAll("[data-tabs]").forEach((groupe) => {
+      const boutons = groupe.querySelectorAll("[data-tab]");
+      const panneaux = groupe.querySelectorAll("[data-tab-panel]");
+      if (!boutons.length) return;
+
+      function activer(nom) {
+        boutons.forEach((b) => {
+          b.setAttribute("aria-selected", String(b.dataset.tab === nom));
+        });
+        panneaux.forEach((p) => {
+          p.hidden = p.dataset.tabPanel !== nom;
+        });
+      }
+
+      boutons.forEach((b) => b.addEventListener("click", () => activer(b.dataset.tab)));
+      activer(boutons[0].dataset.tab);
+    });
+  }
+
   /* ── Boot ── */
   function boot() {
     initNavScroll();
@@ -223,6 +350,11 @@
     initProgressBars();
     initStagger();
     initParallax();
+    initMenuMobile();
+    initMenusDeroulants();
+    initMessagesFlash();
+    initRevelationMotDePasse();
+    initOnglets();
   }
 
   if (document.readyState === "loading") {

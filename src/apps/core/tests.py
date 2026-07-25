@@ -1,4 +1,5 @@
 import pytest
+
 from apps.core.models import TimeStampedModel, UUIDModel
 
 

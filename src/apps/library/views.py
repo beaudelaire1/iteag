@@ -2,6 +2,7 @@ from django.db.models import Q
 from django.views.generic import DetailView, ListView
 
 from apps.formations.models import Discipline
+
 from .models import NoticeBibliographique
 
 
@@ -59,10 +60,7 @@ class CatalogueView(ListView):
             )
         else:
             qs = qs.filter(
-                Q(titre__icontains=q)
-                | Q(auteur__icontains=q)
-                | Q(mots_cles__icontains=q)
-                | Q(cote__icontains=q)
+                Q(titre__icontains=q) | Q(auteur__icontains=q) | Q(mots_cles__icontains=q) | Q(cote__icontains=q)
             )
         return qs
 

@@ -4,17 +4,16 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
-from apps.core.mixins import TeacherRoleRequiredMixin
-
 from apps.academics.models import CoursDeSession
+from apps.core.mixins import TeacherRoleRequiredMixin
 
 from .forms import AnnonceForm, GradeForm, RessourceUploadForm
 from .models import Annonce, Evaluation
 
-
 # ──────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────
+
 
 def _get_professeur(request):
     return getattr(request.user, "profil_professeur", None)
@@ -30,6 +29,7 @@ def _teacher_courses(request):
 # ──────────────────────────────────────────────
 # Dashboard
 # ──────────────────────────────────────────────
+
 
 class TeacherDashboardView(TeacherRoleRequiredMixin, TemplateView):
     template_name = "lms/dashboard.html"
@@ -66,6 +66,7 @@ class TeacherDashboardView(TeacherRoleRequiredMixin, TemplateView):
 # Course detail
 # ──────────────────────────────────────────────
 
+
 class TeacherCourseDetailView(TeacherRoleRequiredMixin, DetailView):
     model = CoursDeSession
     template_name = "lms/course_detail.html"
@@ -83,7 +84,9 @@ class TeacherCourseDetailView(TeacherRoleRequiredMixin, DetailView):
         cours_session = self.object
         context.update(
             {
-                "inscriptions": cours_session.inscriptions.select_related("etudiant__utilisateur", "etudiant__parcours"),
+                "inscriptions": cours_session.inscriptions.select_related(
+                    "etudiant__utilisateur", "etudiant__parcours"
+                ),
                 "ressources": cours_session.ressources.all(),
                 "annonces": cours_session.annonces.all(),
                 "evaluations": cours_session.evaluations.select_related("etudiant__utilisateur").all(),
@@ -95,6 +98,7 @@ class TeacherCourseDetailView(TeacherRoleRequiredMixin, DetailView):
 # ──────────────────────────────────────────────
 # Courses list
 # ──────────────────────────────────────────────
+
 
 class TeacherCoursesListView(TeacherRoleRequiredMixin, ListView):
     template_name = "lms/courses_list.html"
@@ -112,6 +116,7 @@ class TeacherCoursesListView(TeacherRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 # Evaluations list (all pending across courses)
 # ──────────────────────────────────────────────
+
 
 class TeacherEvaluationsListView(TeacherRoleRequiredMixin, ListView):
     template_name = "lms/evaluations_list.html"
@@ -137,6 +142,7 @@ class TeacherEvaluationsListView(TeacherRoleRequiredMixin, ListView):
 # Announcements list
 # ──────────────────────────────────────────────
 
+
 class TeacherAnnoncesListView(TeacherRoleRequiredMixin, ListView):
     template_name = "lms/annonces_list.html"
     context_object_name = "annonces"
@@ -156,6 +162,7 @@ class TeacherAnnoncesListView(TeacherRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 # Resource upload
 # ──────────────────────────────────────────────
+
 
 class TeacherResourceUploadView(TeacherRoleRequiredMixin, CreateView):
     model = None  # set via form
@@ -184,6 +191,7 @@ class TeacherResourceUploadView(TeacherRoleRequiredMixin, CreateView):
 # Grade evaluation
 # ──────────────────────────────────────────────
 
+
 class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
     model = Evaluation
     form_class = GradeForm
@@ -211,6 +219,7 @@ class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
 # Publish grades (batch action)
 # ──────────────────────────────────────────────
 
+
 class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
     """POST-only: publish all 'noté' evaluations for a course session."""
 
@@ -235,6 +244,7 @@ class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
 # ──────────────────────────────────────────────
 # Announcement create
 # ──────────────────────────────────────────────
+
 
 class TeacherAnnouncementCreateView(TeacherRoleRequiredMixin, CreateView):
     form_class = AnnonceForm
@@ -261,6 +271,7 @@ class TeacherAnnouncementCreateView(TeacherRoleRequiredMixin, CreateView):
 # ──────────────────────────────────────────────
 # Announcement edit
 # ──────────────────────────────────────────────
+
 
 class TeacherAnnouncementUpdateView(TeacherRoleRequiredMixin, UpdateView):
     model = Annonce

@@ -7,64 +7,137 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('formations', '0002_cours_code_cours_objectifs_cours_parcours'),
+        ("formations", "0002_cours_code_cours_objectifs_cours_parcours"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DossierCandidature',
+            name="DossierCandidature",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=django.utils.timezone.now, editable=False)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('nom', models.CharField(max_length=100)),
-                ('prenom', models.CharField(max_length=100, verbose_name='Prénom')),
-                ('email', models.EmailField(max_length=254)),
-                ('telephone', models.CharField(blank=True, max_length=20, verbose_name='Téléphone')),
-                ('date_naissance', models.DateField(blank=True, null=True, verbose_name='Date de naissance')),
-                ('motivations', models.TextField(verbose_name='Lettre de motivation')),
-                ('eglise', models.CharField(blank=True, max_length=200, verbose_name="Église d'appartenance")),
-                ('eglise_fondatrice', models.BooleanField(default=False, verbose_name="Membre d'une église fondatrice ?")),
-                ('piece_identite', models.FileField(blank=True, upload_to='candidatures/identite/', verbose_name="Pièce d'identité")),
-                ('diplomes', models.FileField(blank=True, upload_to='candidatures/diplomes/', verbose_name='Diplômes')),
-                ('autre_document', models.FileField(blank=True, upload_to='candidatures/autres/', verbose_name='Autre document')),
-                ('statut', models.CharField(choices=[('soumis', 'Soumis'), ('en_examen', 'En examen'), ('incomplet', 'Incomplet'), ('accepte', 'Accepté'), ('refuse', 'Refusé')], default='soumis', max_length=20)),
-                ('date_soumission', models.DateTimeField(default=django.utils.timezone.now)),
-                ('date_derniere_maj', models.DateTimeField(auto_now=True)),
-                ('motif_refus', models.TextField(blank=True, verbose_name='Motif du refus')),
-                ('notes_internes', models.TextField(blank=True, verbose_name='Notes internes (secrétariat)')),
-                ('elements_manquants', models.TextField(blank=True, verbose_name='Éléments manquants')),
-                ('token_suivi', models.CharField(editable=False, max_length=64, unique=True)),
-                ('parcours_souhaite', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='formations.parcours', verbose_name='Parcours souhaité')),
-                ('utilisateur_cree', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='candidature', to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("nom", models.CharField(max_length=100)),
+                ("prenom", models.CharField(max_length=100, verbose_name="Prénom")),
+                ("email", models.EmailField(max_length=254)),
+                ("telephone", models.CharField(blank=True, max_length=20, verbose_name="Téléphone")),
+                ("date_naissance", models.DateField(blank=True, null=True, verbose_name="Date de naissance")),
+                ("motivations", models.TextField(verbose_name="Lettre de motivation")),
+                ("eglise", models.CharField(blank=True, max_length=200, verbose_name="Église d'appartenance")),
+                (
+                    "eglise_fondatrice",
+                    models.BooleanField(default=False, verbose_name="Membre d'une église fondatrice ?"),
+                ),
+                (
+                    "piece_identite",
+                    models.FileField(blank=True, upload_to="candidatures/identite/", verbose_name="Pièce d'identité"),
+                ),
+                ("diplomes", models.FileField(blank=True, upload_to="candidatures/diplomes/", verbose_name="Diplômes")),
+                (
+                    "autre_document",
+                    models.FileField(blank=True, upload_to="candidatures/autres/", verbose_name="Autre document"),
+                ),
+                (
+                    "statut",
+                    models.CharField(
+                        choices=[
+                            ("soumis", "Soumis"),
+                            ("en_examen", "En examen"),
+                            ("incomplet", "Incomplet"),
+                            ("accepte", "Accepté"),
+                            ("refuse", "Refusé"),
+                        ],
+                        default="soumis",
+                        max_length=20,
+                    ),
+                ),
+                ("date_soumission", models.DateTimeField(default=django.utils.timezone.now)),
+                ("date_derniere_maj", models.DateTimeField(auto_now=True)),
+                ("motif_refus", models.TextField(blank=True, verbose_name="Motif du refus")),
+                ("notes_internes", models.TextField(blank=True, verbose_name="Notes internes (secrétariat)")),
+                ("elements_manquants", models.TextField(blank=True, verbose_name="Éléments manquants")),
+                ("token_suivi", models.CharField(editable=False, max_length=64, unique=True)),
+                (
+                    "parcours_souhaite",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="formations.parcours",
+                        verbose_name="Parcours souhaité",
+                    ),
+                ),
+                (
+                    "utilisateur_cree",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="candidature",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Dossier de candidature',
-                'verbose_name_plural': 'Dossiers de candidature',
-                'ordering': ['-date_soumission'],
+                "verbose_name": "Dossier de candidature",
+                "verbose_name_plural": "Dossiers de candidature",
+                "ordering": ["-date_soumission"],
             },
         ),
         migrations.CreateModel(
-            name='HistoriqueStatut',
+            name="HistoriqueStatut",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=django.utils.timezone.now, editable=False)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('ancien_statut', models.CharField(choices=[('soumis', 'Soumis'), ('en_examen', 'En examen'), ('incomplet', 'Incomplet'), ('accepte', 'Accepté'), ('refuse', 'Refusé')], max_length=20)),
-                ('nouveau_statut', models.CharField(choices=[('soumis', 'Soumis'), ('en_examen', 'En examen'), ('incomplet', 'Incomplet'), ('accepte', 'Accepté'), ('refuse', 'Refusé')], max_length=20)),
-                ('commentaire', models.TextField(blank=True)),
-                ('dossier', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='historique', to='admissions.dossiercandidature')),
-                ('modifie_par', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "ancien_statut",
+                    models.CharField(
+                        choices=[
+                            ("soumis", "Soumis"),
+                            ("en_examen", "En examen"),
+                            ("incomplet", "Incomplet"),
+                            ("accepte", "Accepté"),
+                            ("refuse", "Refusé"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "nouveau_statut",
+                    models.CharField(
+                        choices=[
+                            ("soumis", "Soumis"),
+                            ("en_examen", "En examen"),
+                            ("incomplet", "Incomplet"),
+                            ("accepte", "Accepté"),
+                            ("refuse", "Refusé"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("commentaire", models.TextField(blank=True)),
+                (
+                    "dossier",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="historique",
+                        to="admissions.dossiercandidature",
+                    ),
+                ),
+                (
+                    "modifie_par",
+                    models.ForeignKey(
+                        null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Historique de statut',
-                'verbose_name_plural': 'Historique des statuts',
-                'ordering': ['-created_at'],
+                "verbose_name": "Historique de statut",
+                "verbose_name_plural": "Historique des statuts",
+                "ordering": ["-created_at"],
             },
         ),
     ]

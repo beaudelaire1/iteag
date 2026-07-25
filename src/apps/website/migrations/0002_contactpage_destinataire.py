@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('website', '0001_initial'),
+        ("website", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='contactpage',
-            name='destinataire',
-            field=models.EmailField(default='secretariat@iteag.org', help_text='Adresse qui recevra les messages du formulaire.', max_length=254, verbose_name='Email destinataire'),
+            model_name="contactpage",
+            name="destinataire",
+            field=models.EmailField(
+                default="secretariat@iteag.org",
+                help_text="Adresse qui recevra les messages du formulaire.",
+                max_length=254,
+                verbose_name="Email destinataire",
+            ),
         ),
     ]

@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('formations', '0001_initial'),
+        ("formations", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cours',
-            name='code',
-            field=models.CharField(blank=True, max_length=20, verbose_name='Code cours'),
+            model_name="cours",
+            name="code",
+            field=models.CharField(blank=True, max_length=20, verbose_name="Code cours"),
         ),
         migrations.AddField(
-            model_name='cours',
-            name='objectifs',
-            field=models.TextField(blank=True, verbose_name='Objectifs pédagogiques'),
+            model_name="cours",
+            name="objectifs",
+            field=models.TextField(blank=True, verbose_name="Objectifs pédagogiques"),
         ),
         migrations.AddField(
-            model_name='cours',
-            name='parcours',
-            field=models.ManyToManyField(blank=True, related_name='cours', to='formations.parcours'),
+            model_name="cours",
+            name="parcours",
+            field=models.ManyToManyField(blank=True, related_name="cours", to="formations.parcours"),
         ),
     ]

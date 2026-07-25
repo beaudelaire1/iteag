@@ -24,22 +24,19 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
             .order_by("date_debut")
             .first()
         )
-        prochaine_session = (
-            SessionAcademique.objects.filter(date_debut__gt=today)
-            .order_by("date_debut")
-            .first()
-        )
+        prochaine_session = SessionAcademique.objects.filter(date_debut__gt=today).order_by("date_debut").first()
 
         context.update(
             {
                 "profil": profil,
                 "current_session": current_session,
                 "prochaine_session": prochaine_session,
-                "progress_percent": round((profil.total_ects_acquis / profil.parcours.ects_requis) * 100) if profil.parcours.ects_requis else 0,
+                "progress_percent": round((profil.total_ects_acquis / profil.parcours.ects_requis) * 100)
+                if profil.parcours.ects_requis
+                else 0,
                 "pending_evaluations": profil.evaluations.select_related(
                     "cours_session__cours", "cours_session__session"
-                )
-                .exclude(statut=Evaluation.StatutEvaluation.PUBLIE)[:5],
+                ).exclude(statut=Evaluation.StatutEvaluation.PUBLIE)[:5],
                 "recent_resources": RessourcePedagogique.objects.filter(
                     cours_session__inscriptions__etudiant=profil,
                     visible_etudiants=True,
@@ -53,8 +50,7 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                 .distinct()[:5],
                 "inscriptions": profil.inscriptions.select_related(
                     "cours_session__cours", "cours_session__session", "cours_session__enseignant"
-                )
-                .prefetch_related(
+                ).prefetch_related(
                     Prefetch(
                         "cours_session__ressources",
                         queryset=RessourcePedagogique.objects.filter(visible_etudiants=True).order_by("-created_at"),
