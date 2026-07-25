@@ -123,8 +123,8 @@ graph LR
     UC31 -.->|"«include»"| UC32
     UC11 -.->|"«extend»"| UC43
 
-    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px
-    classDef existant fill:#F1F5F9,stroke:#64748B
+    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
+    classDef existant fill:#F1F5F9,stroke:#64748B,color:#1F2937
     class UC2,UC11,UC12,UC20,UC21,UC24,UC32,UC41,UC42,UC43,UC50 nouveau
     class UC1,UC3,UC4,UC5,UC10,UC13,UC14,UC15,UC22,UC23,UC30,UC31,UC33,UC34,UC35,UC36,UC40 existant
 ```
@@ -181,9 +181,9 @@ graph TB
     website --> core & formations
     administration --> core & accounts & formations & admissions & academics & library
 
-    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px
-    classDef etendre fill:#FEF3C7,stroke:#B45309,stroke-width:2px
-    classDef existant fill:#F1F5F9,stroke:#64748B
+    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
+    classDef etendre fill:#FEF3C7,stroke:#B45309,stroke-width:2px,color:#5C3708
+    classDef existant fill:#F1F5F9,stroke:#64748B,color:#1F2937
     class elearning nouveau
     class core,accounts,lms etendre
     class formations,admissions,academics,library,documents,website,administration existant
@@ -1245,7 +1245,7 @@ graph TB
     BEAT --> CEL
     APP --> SEN
 
-    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px
+    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
     class VJS,SACC,SVID,SPROG,BEAT nouveau
 ```
 
@@ -1296,7 +1296,7 @@ graph TB
     S3B -->|versioning| BAK
     GUN --> SENT
 
-    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px
+    classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
     class C3,BAK nouveau
 ```
 
@@ -1322,8 +1322,8 @@ graph LR
     L5 -.->|410| KO
     L6 -.->|429| KO
 
-    classDef layer fill:#F1F5F9,stroke:#475569
-    classDef deny fill:#FEE2E2,stroke:#B91C1C
+    classDef layer fill:#F1F5F9,stroke:#475569,color:#1F2937
+    classDef deny fill:#FEE2E2,stroke:#B91C1C,color:#7A1D14
     class L1,L2,L3,L4,L5,L6 layer
     class KO deny
 ```

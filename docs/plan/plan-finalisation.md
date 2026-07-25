@@ -185,8 +185,8 @@ graph LR
     L6 --> L7
     L7 --> L8["LOT 8<br/>Exploitation"]
 
-    classDef bloquant fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px
-    classDef coeur fill:#DCFCE7,stroke:#15803D,stroke-width:2px
+    classDef bloquant fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,color:#7A1D14
+    classDef coeur fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
     class L0 bloquant
     class L2 coeur
 ```
