@@ -19,27 +19,27 @@
 {% endblock %}
 
 {% block portal_content %}
-<div x-data="{ tab: 'students' }" class="space-y-6">
+<div data-tabs class="space-y-6">
     {# ── Tabs ── #}
     <div class="border-b" style="border-color: var(--color-warm-200);">
-        <nav class="flex gap-6 -mb-px">
-            <button @click="tab = 'students'" :class="tab === 'students' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+        <nav class="flex gap-6 -mb-px" role="tablist">
+            <button type="button" role="tab" data-tab="students" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700);">
                 Étudiants ({{ inscriptions|length }})
             </button>
-            <button @click="tab = 'resources'" :class="tab === 'resources' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+            <button type="button" role="tab" data-tab="resources" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700);">
                 Ressources ({{ ressources|length }})
             </button>
-            <button @click="tab = 'evaluations'" :class="tab === 'evaluations' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+            <button type="button" role="tab" data-tab="evaluations" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700);">
                 Évaluations ({{ evaluations|length }})
             </button>
-            <button @click="tab = 'announcements'" :class="tab === 'announcements' ? 'border-b-2' : 'border-transparent opacity-60 hover:opacity-100'" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider transition-all" style="color: var(--color-navy-700); border-color: var(--color-gold-400);">
+            <button type="button" role="tab" data-tab="announcements" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700);">
                 Annonces ({{ annonces|length }})
             </button>
         </nav>
     </div>
 
     {# ── Étudiants ── #}
-    <div x-show="tab === 'students'" x-cloak>
+    <div role="tabpanel" data-tab-panel="students" hidden>
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {% if inscriptions %}
             <div class="overflow-x-auto">
@@ -69,7 +69,7 @@
     </div>
 
     {# ── Ressources ── #}
-    <div x-show="tab === 'resources'" x-cloak>
+    <div role="tabpanel" data-tab-panel="resources" hidden>
         <div class="mb-4 flex justify-end">
             <a href="{% url 'lms:resource_upload' cours_session.pk %}" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
@@ -97,7 +97,7 @@
     </div>
 
     {# ── Évaluations ── #}
-    <div x-show="tab === 'evaluations'" x-cloak>
+    <div role="tabpanel" data-tab-panel="evaluations" hidden>
         <div class="mb-4 flex justify-end">
             <form method="post" action="{% url 'lms:publish_grades' cours_session.pk %}">
                 {% csrf_token %}
@@ -152,7 +152,7 @@
     </div>
 
     {# ── Annonces ── #}
-    <div x-show="tab === 'announcements'" x-cloak>
+    <div role="tabpanel" data-tab-panel="announcements" hidden>
         <div class="mb-4 flex justify-end">
             <a href="{% url 'lms:announcement_create' cours_session.pk %}" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>

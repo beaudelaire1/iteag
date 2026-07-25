@@ -1,73 +1,85 @@
-# ADR-003 — Politique CSP et build Alpine.js
+# ADR-003 — Politique CSP et suppression d'Alpine.js
 
-- **Statut** : Accepté
-- **Contexte** : `config/settings/base.py` déclare une CSP stricte ; `static/js/alpine.min.js`
-  est le build standard d'Alpine.
+- **Statut** : Accepté — *révisé après mesure de l'usage réel*
+- **Contexte** : `config/settings/base.py` déclarait une CSP stricte tandis que
+  `static/js/alpine.min.js` était le build standard d'Alpine.
 
 ## Problème constaté
 
 La politique de sécurité de contenu déclare `script-src 'self'`. Le build standard
 d'Alpine.js évalue ses expressions (`x-show="open"`, `x-text="…"`) au moyen d'un
 constructeur de fonction, ce qui requiert `'unsafe-eval'`. En production, avec la CSP
-active, **toute l'interactivité Alpine échouerait silencieusement** : menu mobile,
-accordéons FAQ, onglets des portails. Le défaut ne se voit pas en développement, où la
-CSP est désactivée — c'est le pire profil de bug : invisible jusqu'à la mise en ligne.
+active, **toute l'interactivité Alpine aurait échoué silencieusement** : menu mobile,
+accordéons, onglets des portails. Le défaut ne se voyait pas en développement, où la
+CSP est désactivée — le pire profil de bug, invisible jusqu'à la mise en ligne.
 
-Le futur lecteur vidéo aggrave l'enjeu : il manipulera des URL signées et des appels
-authentifiés, exactement le type de code qu'on ne veut pas exécuter sous une CSP relâchée.
+Un second défaut est apparu au même endroit : les gabarits utilisaient `x-collapse`,
+une directive fournie par le plugin `@alpinejs/collapse`, **qui n'était jamais chargé**.
+Les panneaux d'accordéon s'ouvraient donc sans animation, et Alpine émettait un
+avertissement en console à chaque rendu.
 
-## Options
+## Révision de la décision
 
-| Option | Sécurité | Effort | Verdict |
-|--------|---------|--------|---------|
-| A — Ajouter `'unsafe-eval'` à `script-src` | Dégradée sur tout le site | Nul | ❌ |
-| B — **Utiliser le build CSP d'Alpine** (`@alpinejs/csp`) | Conservée | Réécriture des expressions inline | ✅ **Retenue** |
-| C — Supprimer Alpine, tout en HTMX + JS natif | Conservée | Élevé | ⏭ Non justifié |
+La première rédaction de cet ADR retenait le build CSP d'Alpine et écartait la
+suppression pure et simple comme « non justifiée ». **Cette conclusion reposait sur une
+estimation, pas sur une mesure.** Le relevé effectif de l'usage l'a infirmée :
+
+| Élément mesuré | Volume réel |
+|---------------|------------|
+| Gabarits contenant du Alpine | 8 |
+| Directives `x-data` | 10 |
+| Gestionnaires de clic | 12 |
+| Liaisons `x-show` / `x-bind` / `x-text` | 25 |
+
+Surtout, **la nature de ces usages** : sept des dix composants sont des accordéons et
+des panneaux dépliants, c'est-à-dire précisément ce que `<details>` / `<summary>` fait
+nativement, mieux — accessible au clavier, annoncé correctement par les lecteurs
+d'écran, fonctionnel sans JavaScript, et sans aucun coût de chargement.
+
+Le reste (menu mobile, menu déroulant, notification éphémère, révélation du mot de
+passe, onglets) représente une soixantaine de lignes de JavaScript, dans le style du
+fichier `static/js/iteag.js` qui existait déjà et concentrait la logique du site.
 
 ## Décision
 
-Adopter le **build CSP d'Alpine.js**. Ce build n'évalue pas de chaînes : les
-comportements sont déclarés dans des objets JavaScript enregistrés via `Alpine.data()`,
-et le template ne référence que des noms de propriétés et de méthodes.
+**Supprimer Alpine.js.** Les comportements sont repris ainsi :
 
-Conséquence concrète sur les templates :
+| Comportement | Remplacement |
+|-------------|-------------|
+| Accordéons « Mes cours », FAQ (page et accueil) | `<details class="accordeon">` natif |
+| Menu mobile | `initMenuMobile()` — bascule `hidden` et `aria-expanded` |
+| Menu déroulant utilisateur | `initMenusDeroulants()` — clic extérieur et Échap |
+| Notifications éphémères | `initMessagesFlash()` — transition CSS, `role="status"` |
+| Révélation du mot de passe | `initRevelationMotDePasse()` — bascule `type`, `aria-pressed` |
+| Onglets du portail enseignant | `initOnglets()` — `role="tablist"`, `aria-selected` |
+| Bandeau de verset aléatoire | Balise de gabarit `{% verset_aleatoire %}`, tirage serveur |
 
-```html
-<!-- Avant — nécessite 'unsafe-eval' -->
-<div x-data="{ open: false }">
-  <button @click="open = !open">Menu</button>
-  <nav x-show="open">…</nav>
-</div>
-
-<!-- Après — compatible CSP stricte -->
-<div x-data="menuMobile">
-  <button x-on:click="basculer">Menu</button>
-  <nav x-show="ouvert">…</nav>
-</div>
-```
-
-```js
-// static/js/iteag.js
-Alpine.data('menuMobile', () => ({
-  ouvert: false,
-  basculer() { this.ouvert = !this.ouvert; },
-}));
-```
-
-En complément :
-
-- `script-src` reste `'self'` ; aucune balise `<script>` inline sans nonce.
-- Les gabarits qui ont besoin d'un script inline utilisent un **nonce par requête**
-  fourni par `django-csp`.
-- `media-src` est ajouté à la politique pour autoriser le domaine du bucket S3
-  (nécessaire au lecteur vidéo), et lui seul.
-- La CSP est d'abord déployée en **mode report-only** sur l'environnement de recette,
-  le temps de collecter les violations réelles, puis passée en mode bloquant.
+La CSP reste `script-src 'self'`, sans `'unsafe-eval'` ni `'unsafe-inline'`.
+`media-src` sera ajouté au moment du lecteur vidéo, pour le seul domaine du stockage.
 
 ## Conséquences
 
-- Un test d'intégration vérifie qu'aucun template ne contient d'expression Alpine
-  inline complexe (heuristique sur `x-data="{`), pour éviter la régression.
-- Le fichier `static/js/iteag.js` devient le registre unique des composants Alpine :
-  il est versionné, lisible et testable, ce qui vaut mieux que de la logique éparpillée
-  dans les attributs HTML.
+**Positives**
+- La contradiction entre la politique déclarée et le code embarqué disparaît à la
+  racine : il n'y a plus de bibliothèque à rendre compatible.
+- Une dépendance front de 40 Ko en moins sur chaque page.
+- Gain d'accessibilité net : les accordéons deviennent utilisables au clavier et
+  correctement annoncés ; les onglets, les notifications et le bouton de révélation
+  portent désormais les attributs ARIA qui leur manquaient.
+- Le bandeau de verset est rendu côté serveur : il est indexable et s'affiche même
+  sans JavaScript.
+- Toute la logique d'interface tient dans un fichier versionné et relisible, plutôt
+  que dispersée dans des attributs HTML.
+
+**Négatives / limites assumées**
+- Un futur besoin de réactivité fine (liaison bidirectionnelle sur un formulaire
+  complexe) demanderait de réintroduire une bibliothèque. HTMX couvre déjà les
+  échanges serveur ; le cas ne s'est pas présenté à ce jour.
+- Les comportements sont à ré-initialiser après un échange HTMX : c'est fait dans
+  `htmx:afterSwap`, et cela doit le rester pour tout nouveau composant.
+
+## Suivi
+
+Rouvrir cette décision si un écran exige un état client riche et partagé entre
+plusieurs composants — auquel cas le build CSP d'Alpine reste l'option de repli,
+ciblée sur cet écran et non chargée globalement.

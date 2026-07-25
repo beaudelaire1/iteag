@@ -26,9 +26,10 @@ ignore = ["S101", "DJ001"]
 "config/settings/test.py" = ["S105"]
 # Les migrations sont générées : elles ne sont pas soumises au style du projet.
 "**/migrations/*.py" = ["E501"]
-# Les commandes de peuplement portent des données éditoriales (descriptions de
-# cours, biographies). Découper cette prose nuirait à sa relecture par l'ITEAG.
+# Contenus éditoriaux portés par du code (descriptions de cours, biographies,
+# versets). Découper cette prose nuirait à sa relecture par l'ITEAG.
 "**/management/commands/seed_*.py" = ["E501"]
+"apps/core/templatetags/iteag_tags.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]

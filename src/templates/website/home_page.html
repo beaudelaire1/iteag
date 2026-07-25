@@ -335,23 +335,17 @@
                 <p class="overline mb-3">FAQ</p>
                 <h2>Questions fréquentes</h2>
             </div>
-            <div class="space-y-3 reveal reveal-delay-1" x-data="{ open: null }">
+            <div class="space-y-3 reveal reveal-delay-1">
                 {% for item in block.value %}
-                <div class="border rounded" style="border-color: var(--color-warm-200);">
-                    <button
-                        type="button"
-                        class="flex w-full items-center justify-between px-6 py-4 text-left transition-colors"
-                        style="color: var(--color-navy-900);"
-                        @click="open = open === {{ forloop.counter0 }} ? null : {{ forloop.counter0 }}"
-                        :aria-expanded="open === {{ forloop.counter0 }}"
-                    >
+                <details class="accordeon border rounded" style="border-color: var(--color-warm-200);">
+                    <summary class="px-6 py-4" style="color: var(--color-navy-900);">
                         <span class="text-base font-medium pr-4">{{ item.question }}</span>
-                        <svg class="h-4 w-4 shrink-0 transition-transform duration-300" :class="{ 'rotate-180': open === {{ forloop.counter0 }} }" style="color: var(--color-gold-500);" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
-                    </button>
-                    <div x-show="open === {{ forloop.counter0 }}" x-cloak x-collapse class="px-6 pb-5 prose prose-sm" style="color: var(--color-warm-600);">
+                        <svg class="chevron h-4 w-4" style="color: var(--color-gold-500);" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                    </summary>
+                    <div class="px-6 pb-5 prose prose-sm" style="color: var(--color-warm-600);">
                         {{ item.reponse|richtext }}
                     </div>
-                </div>
+                </details>
                 {% endfor %}
             </div>
         </div>

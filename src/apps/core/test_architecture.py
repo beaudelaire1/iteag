@@ -58,11 +58,7 @@ DETTE_ARCHITECTURE: set[tuple[str, str]] = {
 
 
 def _apps_presentes() -> set[str]:
-    return {
-        chemin.name
-        for chemin in APPS_DIR.iterdir()
-        if chemin.is_dir() and (chemin / "apps.py").exists()
-    }
+    return {chemin.name for chemin in APPS_DIR.iterdir() if chemin.is_dir() and (chemin / "apps.py").exists()}
 
 
 def _imports_de_app(app: str) -> set[str]:
@@ -123,24 +119,19 @@ def test_dette_ne_grandit_pas():
     ce qui oblige à la retirer de la déclaration plutôt qu'à l'oublier.
     """
     reelle = {
-        (app, cible)
-        for app, cibles in _graphe().items()
-        for cible in cibles - DEPENDANCES_AUTORISEES.get(app, set())
+        (app, cible) for app, cibles in _graphe().items() for cible in cibles - DEPENDANCES_AUTORISEES.get(app, set())
     }
     apparues = reelle - DETTE_ARCHITECTURE
     resorbees = DETTE_ARCHITECTURE - reelle
     assert not apparues, f"Nouvelles entorses à l'architecture : {sorted(apparues)}"
     assert not resorbees, (
-        f"Entorses résorbées mais toujours déclarées : {sorted(resorbees)}. "
-        "Retirez-les de DETTE_ARCHITECTURE."
+        f"Entorses résorbées mais toujours déclarées : {sorted(resorbees)}. Retirez-les de DETTE_ARCHITECTURE."
     )
 
 
 def test_core_ne_depend_de_rien():
     """core ne contient que de l'abstrait et du transverse."""
-    assert _imports_de_app("core") == set(), (
-        "core doit rester sans dépendance vers les autres applications."
-    )
+    assert _imports_de_app("core") == set(), "core doit rester sans dépendance vers les autres applications."
 
 
 def test_graphe_acyclique():

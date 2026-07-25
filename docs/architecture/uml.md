@@ -163,7 +163,11 @@ graph TB
     subgraph SERVICES["Services"]
         library["library<br/><i>Catalogue biblio</i>"]
         documents["documents<br/><i>PDF administratifs</i>"]
-        website["website<br/><i>CMS Wagtail</i>"]
+    end
+
+    subgraph PORTAILS["Portails (consommateurs)"]
+        website["website<br/><i>CMS Wagtail — public</i>"]
+        administration["administration<br/><i>Portail administratif</i>"]
     end
 
     accounts --> core
@@ -175,13 +179,14 @@ graph TB
     library --> core & formations
     documents --> core & accounts
     website --> core & formations
+    administration --> core & accounts & formations & admissions & academics & library
 
     classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px
     classDef etendre fill:#FEF3C7,stroke:#B45309,stroke-width:2px
     classDef existant fill:#F1F5F9,stroke:#64748B
     class elearning nouveau
     class core,accounts,lms etendre
-    class formations,admissions,academics,library,documents,website existant
+    class formations,admissions,academics,library,documents,website,administration existant
 ```
 
 ### 2.2 Règles de dépendance (invariants d'architecture)
@@ -194,9 +199,17 @@ graph TB
    jamais `elearning`** — le couplage inverse se fait par signaux ou par service applicatif.
 5. **Toute règle métier partagée par plusieurs vues vit dans un service**
    (`apps/<app>/services/`), jamais dupliquée dans les vues.
+6. **Les portails consomment les domaines, jamais l'inverse.** Un portail agrège
+   plusieurs contextes bornés ; aucune app de domaine ne doit importer un portail.
 
-> Ces invariants seront **vérifiés automatiquement** par un test d'architecture
-> (`apps/core/test_architecture.py`) qui inspecte le graphe d'imports.
+> Ces invariants sont **vérifiés automatiquement** par `apps/core/test_architecture.py`,
+> qui inspecte le graphe réel des imports. Les entorses connues sont déclarées dans
+> `DETTE_ARCHITECTURE` et protégées par un cliquet : le test échoue aussi bien si une
+> entorse nouvelle apparaît que si une entorse résorbée reste déclarée.
+>
+> **Dette en cours** : les vues des portails étudiant et enseignant vivent encore dans
+> les apps de domaine `academics` et `lms`, ce qui crée un cycle entre elles. La
+> résorption suit le modèle appliqué à `administration`, extrait de `core`.
 
 ---
 

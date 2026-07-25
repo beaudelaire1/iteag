@@ -12,6 +12,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, T
 from apps.academics.models import Paiement, ProfilEtudiant, SessionAcademique
 from apps.accounts.models import User
 from apps.admissions.models import DossierCandidature
+from apps.core.mixins import StaffRoleRequiredMixin
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 from apps.library.models import NoticeBibliographique
 
@@ -22,7 +23,6 @@ from .forms import (
     AdminUserCreateForm,
     AdminUserForm,
 )
-from apps.core.mixins import StaffRoleRequiredMixin
 
 # ──────────────────────────────────────────────
 # Dashboard

@@ -1176,9 +1176,58 @@
 }
 
 /* ═══════════════════════════════════════════
-   Alpine.js cloak
+   Composants interactifs natifs
+   (aucune dépendance JS d'exécution — voir ADR-003)
    ═══════════════════════════════════════════ */
-[x-cloak] { display: none !important; }
+
+/* ── Accordéons : <details> / <summary> ── */
+.accordeon > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--duration-fast) var(--ease-premium);
+}
+.accordeon > summary::-webkit-details-marker { display: none; }
+.accordeon > summary::marker { content: ""; }
+.accordeon > summary:hover { background-color: var(--color-warm-50); }
+.accordeon > summary .chevron {
+  flex-shrink: 0;
+  transition: transform var(--duration-base) var(--ease-premium);
+}
+.accordeon[open] > summary .chevron { transform: rotate(180deg); }
+
+/* ── Chevron des menus déroulants ── */
+[data-dropdown-toggle] .chevron {
+  transition: transform var(--duration-fast) var(--ease-premium);
+}
+[data-dropdown-toggle][aria-expanded="true"] .chevron { transform: rotate(180deg); }
+[data-dropdown-toggle][aria-expanded="true"] { background-color: rgba(255, 255, 255, 0.1); }
+
+/* ── Panneaux : l'attribut hidden fait foi ── */
+[hidden] { display: none !important; }
+
+/* ── Messages flash ── */
+.flash {
+  transition: opacity var(--duration-base) var(--ease-premium),
+              transform var(--duration-base) var(--ease-premium);
+}
+.flash-sortant { opacity: 0; transform: translateX(2rem); }
+
+/* ── Onglets ── */
+[data-tab] {
+  border-bottom: 2px solid transparent;
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-premium),
+              border-color var(--duration-fast) var(--ease-premium);
+}
+[data-tab]:hover { opacity: 1; }
+[data-tab][aria-selected="true"] {
+  opacity: 1;
+  border-bottom-color: var(--color-gold-400);
+}
 
 /* ═══════════════════════════════════════════
    HTMX swap transition

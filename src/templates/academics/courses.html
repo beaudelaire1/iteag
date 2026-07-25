@@ -19,16 +19,16 @@
 
 {% block portal_content %}
 {% for insc in inscriptions %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6" x-data="{ open: {{ forloop.first|yesno:'true,false' }} }">
-    <button @click="open = !open" class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+<details class="accordeon bg-white rounded-xl border border-gray-200 overflow-hidden mb-6"{% if forloop.first %} open{% endif %}>
+    <summary class="w-full px-5 py-4">
         <div>
             <h2 class="text-base font-semibold text-gray-900">{{ insc.cours_session.cours.titre }}</h2>
             <p class="text-sm text-gray-500 mt-0.5">{{ insc.cours_session.session.nom }} · {{ insc.cours_session.enseignant|default:"Enseignant à confirmer" }} · {{ insc.cours_session.cours.ects }} ECTS</p>
         </div>
-        <svg class="h-5 w-5 text-gray-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
-    </button>
+        <svg class="chevron h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+    </summary>
 
-    <div x-show="open" x-cloak x-collapse>
+    <div>
         {# ── Annonces ── #}
         {% if insc.cours_session.annonces.all %}
         <div class="border-t border-gray-100 px-5 py-3 bg-yellow-50">
