@@ -11,13 +11,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from apps.accounts.models import User
-from apps.elearning.forms import VideoUploadForm
 from apps.elearning.models import Chapitre, Lecon, ModuleFormation, SousTitre, VideoAsset
 from apps.formations.models import Professeur
-
-# En-tête minimal d'un conteneur ISO (MP4) : « ....ftypisom »
-ENTETE_MP4 = b"\x00\x00\x00\x20ftypisom" + b"\x00" * 32
-ENTETE_WEBM = b"\x1aE\xdf\xa3" + b"\x00" * 40
 
 
 @pytest.fixture
@@ -193,46 +188,20 @@ class TestPublicationControlee:
 
 
 @pytest.mark.django_db
-class TestDepotDeVideo:
-    def _deposer(self, client, contenu=ENTETE_MP4, nom="cours.mp4"):
-        return client.post(
+class TestBibliothequeVideo:
+    def test_un_fichier_video_n_est_jamais_accepte(self, client, enseignant, tmp_path, settings):
+        settings.MEDIA_ROOT = tmp_path
+        client.force_login(enseignant.user)
+        reponse = client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Séance 1", "fichier": SimpleUploadedFile(nom, contenu, content_type="video/mp4")},
+            {
+                "titre": "Séance 1",
+                "fichier": SimpleUploadedFile("cours.mp4", b"video", content_type="video/mp4"),
+            },
         )
-
-    def test_depot_reussi(self, client, enseignant, tmp_path, settings):
-        settings.MEDIA_ROOT = tmp_path
-        client.force_login(enseignant.user)
-        reponse = self._deposer(client)
-        assert reponse.status_code == 302
-
-        video = VideoAsset.objects.get(titre="Séance 1")
-        assert video.uploade_par == enseignant.user
-        assert video.checksum_sha256
-        # La clé de stockage ne reprend pas le nom d'origine : rien n'en est déductible.
-        assert "cours" not in video.cle_stockage
-        assert video.nom_origine == "cours.mp4"
-
-    def test_le_format_webm_est_accepte(self, client, enseignant, tmp_path, settings):
-        settings.MEDIA_ROOT = tmp_path
-        client.force_login(enseignant.user)
-        assert self._deposer(client, ENTETE_WEBM, "cours.webm").status_code == 302
-
-    def test_un_fichier_deguise_en_video_est_refuse(self, client, enseignant, tmp_path, settings):
-        """Renommer un fichier en .mp4 ne suffit pas : l'en-tête réel est lu."""
-        settings.MEDIA_ROOT = tmp_path
-        client.force_login(enseignant.user)
-        reponse = self._deposer(client, b"#!/bin/sh\nrm -rf /\n" + b"\x00" * 20, "piege.mp4")
         assert reponse.status_code == 200
         assert VideoAsset.objects.count() == 0
-
-    def test_un_fichier_trop_volumineux_est_refuse(self, client, enseignant, settings, tmp_path):
-        settings.MEDIA_ROOT = tmp_path
-        settings.ELEARNING_TAILLE_VIDEO_MAX = 10
-        client.force_login(enseignant.user)
-        reponse = self._deposer(client)
-        assert reponse.status_code == 200
-        assert VideoAsset.objects.count() == 0
+        assert list(tmp_path.rglob("*")) == []
 
     def test_une_video_utilisee_ne_se_supprime_pas(self, client, enseignant, lecon, video_prete):
         video_prete.uploade_par = enseignant.user
@@ -326,26 +295,10 @@ class TestAudience:
 
 
 @pytest.mark.django_db
-class TestValidationDuFichierVideo:
-    @pytest.mark.parametrize(
-        "entete,attendu",
-        [
-            (ENTETE_MP4, True),
-            (ENTETE_WEBM, True),
-            (b"%PDF-1.7" + b"\x00" * 20, False),
-            (b"\x89PNG\r\n\x1a\n" + b"\x00" * 20, False),
-            (b"court", False),
-        ],
-    )
-    def test_reconnaissance_des_entetes(self, entete, attendu):
-        assert VideoUploadForm._entete_video(entete) is attendu
-
-
-@pytest.mark.django_db
 class TestReferencementVideoExterne:
     """
-    Avec un fournisseur externe, l'enseignant ne téléverse plus : il colle un
-    identifiant. Le geste change, la restriction de propriété non.
+    L'enseignant colle une URL externe. Le média ne transite jamais par notre
+    stockage et la restriction de propriété reste appliquée.
     """
 
     @pytest.fixture(autouse=True)
@@ -359,53 +312,72 @@ class TestReferencementVideoExterne:
         reponse = client.get(reverse("elearning:enseignant_videos"))
         assert reponse.status_code == 200
         assert "Référencer" in reponse.content.decode()
+        assert "Aucun fichier n&#x27;est chargé" in reponse.content.decode()
 
-    def test_un_identifiant_cree_la_video(self, client, enseignant):
+    def test_un_lien_bunny_cree_la_video(self, client, enseignant):
         client.force_login(enseignant.user)
         client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Introduction", "identifiant": "8f2c1e94abcd", "transcription": ""},
+            {
+                "titre": "Introduction",
+                "adresse_video": "https://iframe.mediadelivery.net/embed/1234/8f2c1e94abcd",
+                "transcription": "",
+            },
         )
         video = VideoAsset.objects.get(titre="Introduction")
         assert video.cle_stockage == "8f2c1e94abcd"
         assert video.fournisseur == "bunny"
-        # Rien à préparer chez nous : l'encodage est fait chez le fournisseur.
         assert video.statut_traitement == VideoAsset.StatutTraitement.PRET
 
-    def test_une_adresse_youtube_collee_est_reduite_a_son_identifiant(self, client, enseignant, settings):
-        settings.ELEARNING_DIFFUSION_VIDEO = "youtube"
+    def test_une_adresse_youtube_est_detectee(self, client, enseignant):
         client.force_login(enseignant.user)
         client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Bande-annonce", "identifiant": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+            {
+                "titre": "Bande-annonce",
+                "adresse_video": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            },
         )
-        assert VideoAsset.objects.get(titre="Bande-annonce").cle_stockage == "dQw4w9WgXcQ"
+        video = VideoAsset.objects.get(titre="Bande-annonce")
+        assert video.cle_stockage == "dQw4w9WgXcQ"
+        assert video.fournisseur == "youtube"
 
-    def test_une_adresse_vimeo_collee_est_reduite_a_son_identifiant(self, client, enseignant, settings):
-        settings.ELEARNING_DIFFUSION_VIDEO = "vimeo"
+    def test_une_adresse_vimeo_est_detectee(self, client, enseignant):
         client.force_login(enseignant.user)
         client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Extrait", "identifiant": "https://vimeo.com/123456789"},
+            {"titre": "Extrait", "adresse_video": "https://vimeo.com/123456789"},
         )
-        assert VideoAsset.objects.get(titre="Extrait").cle_stockage == "123456789"
+        video = VideoAsset.objects.get(titre="Extrait")
+        assert video.cle_stockage == "123456789"
+        assert video.fournisseur == "vimeo"
 
-    def test_un_identifiant_fautif_est_refuse(self, client, enseignant):
-        """Sinon l'erreur n'apparaîtrait qu'au moment où un étudiant tente de lire."""
+    @pytest.mark.parametrize(
+        "adresse",
+        [
+            "id-seul-sans-lien",
+            "http://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://videos.example.org/abcdef123456",
+        ],
+    )
+    def test_un_lien_non_securise_ou_inconnu_est_refuse(self, client, enseignant, adresse):
         client.force_login(enseignant.user)
         reponse = client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Cassée", "identifiant": "id avec espaces !"},
+            {"titre": "Cassée", "adresse_video": adresse},
         )
         assert reponse.status_code == 200
         assert not VideoAsset.objects.filter(titre="Cassée").exists()
 
-    def test_un_identifiant_deja_reference_est_refuse(self, client, enseignant):
-        VideoAsset.objects.create(titre="Déjà là", cle_stockage="doublon12345", fournisseur="bunny")
+    def test_un_lien_deja_reference_est_refuse(self, client, enseignant):
+        VideoAsset.objects.create(titre="Déjà là", cle_stockage="dQw4w9WgXcQ", fournisseur="youtube")
         client.force_login(enseignant.user)
         client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Doublon", "identifiant": "doublon12345"},
+            {
+                "titre": "Doublon",
+                "adresse_video": "https://youtu.be/dQw4w9WgXcQ",
+            },
         )
         assert not VideoAsset.objects.filter(titre="Doublon").exists()
 
@@ -413,7 +385,10 @@ class TestReferencementVideoExterne:
         client.force_login(utilisateur_etudiant)
         reponse = client.post(
             reverse("elearning:enseignant_videos"),
-            {"titre": "Intrusion", "identifiant": "abcdef123456"},
+            {
+                "titre": "Intrusion",
+                "adresse_video": "https://youtu.be/dQw4w9WgXcQ",
+            },
         )
         assert reponse.status_code in (302, 403)
         assert not VideoAsset.objects.filter(titre="Intrusion").exists()

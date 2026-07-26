@@ -278,7 +278,7 @@ class Lecon(UUIDModel, TimeStampedModel):
     def clean(self):
         super().clean()
         if self.type_lecon == self.TypeLecon.VIDEO and self.video_id is None:
-            raise ValidationError({"video": "Une leçon de type vidéo doit référencer un fichier vidéo."})
+            raise ValidationError({"video": "Une leçon de type vidéo doit référencer une vidéo externe."})
         if self.type_lecon == self.TypeLecon.LIEN_EXTERNE and not self.lien_externe:
             raise ValidationError({"lien_externe": "Une leçon de type lien doit porter une adresse."})
         self._verifier_protection_video()
@@ -335,7 +335,7 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     )
     fournisseur = models.CharField(
         max_length=20,
-        default="local",
+        default="bunny",
         choices=CHOIX_FOURNISSEUR,
         verbose_name="Fournisseur de diffusion",
     )
@@ -384,9 +384,9 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     @property
     def mode_lecture(self) -> str:
         """Comment le gabarit doit rendre cette vidéo : fichier, hls ou iframe."""
-        from apps.elearning.diffusion import FOURNISSEURS, LocalStockageVideo
+        from apps.elearning.diffusion import FOURNISSEURS, BunnyStreamVideo
 
-        return FOURNISSEURS.get(self.fournisseur, LocalStockageVideo).mode
+        return FOURNISSEURS.get(self.fournisseur, BunnyStreamVideo).mode
 
     def lecture(self, ttl: int = 300, adresse_ip: str = "") -> Lecture:
         """

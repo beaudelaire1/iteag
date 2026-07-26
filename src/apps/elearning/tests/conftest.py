@@ -77,6 +77,9 @@ def video_prete(db):
     return VideoAsset.objects.create(
         titre="Introduction",
         cle_stockage="videos/test-introduction.mp4",
+        # Référence historique explicite : les nouvelles vidéos passent
+        # exclusivement par un fournisseur externe.
+        fournisseur="local",
         duree_secondes=600,
         statut_traitement=VideoAsset.StatutTraitement.PRET,
     )

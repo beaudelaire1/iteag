@@ -9,7 +9,7 @@ from apps.documents.models import DocumentAdministratif
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
 
 from .forms import StudentSubmissionForm
-from .models import CreditECTS, InscriptionSession, SessionAcademique
+from .models import CoursDeSession, CreditECTS, DemandeInscriptionCours, InscriptionSession, SessionAcademique
 
 
 class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
@@ -61,6 +61,24 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                 )[:6],
                 "documents_count": DocumentAdministratif.objects.filter(etudiant=self.request.user).count(),
                 "latest_payments": profil.paiements.select_related("session")[:4],
+                "demandes_en_cours": profil.demandes_inscription.filter(
+                    statut__in=[
+                        DemandeInscriptionCours.Statut.SOUMISE,
+                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
+                    ]
+                ).count(),
+                "demandes_paiement": profil.demandes_inscription.filter(
+                    statut=DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
+                ).count(),
+                "cours_catalogue_count": CoursDeSession.objects.filter(
+                    cours__actif=True,
+                    inscriptions_ouvertes=True,
+                    statut=CoursDeSession.StatutCours.PROGRAMME,
+                    session__date_fin__gte=today,
+                )
+                .filter(Q(cours__parcours=profil.parcours) | Q(cours__parcours__isnull=True))
+                .distinct()
+                .count(),
             }
         )
         return context

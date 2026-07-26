@@ -1,0 +1,78 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mes paiements — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='payments' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='payments' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Situation financière</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes paiements</h1>
+    <p class="mt-1 text-sm text-warm-500">Règlements enregistrés, reçus et inscriptions en attente de validation.</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+{% if demandes_a_payer %}
+<section class="mb-8 rounded border border-amber-200 bg-amber-50 p-6">
+    <h2 class="text-lg font-semibold text-amber-950">Paiements à régulariser</h2>
+    <div class="mt-4 space-y-3">
+        {% for demande in demandes_a_payer %}
+        <div class="flex flex-col justify-between gap-2 rounded bg-white p-4 sm:flex-row sm:items-center">
+            <div>
+                <p class="font-semibold text-navy-900">{{ demande.cours_session.cours.titre }}</p>
+                <p class="text-xs text-warm-500">{{ demande.cours_session.session }}</p>
+            </div>
+            <p class="text-lg font-bold text-navy-900">{{ demande.montant_du }} €</p>
+        </div>
+        {% endfor %}
+    </div>
+    <p class="mt-4 text-sm leading-6 text-amber-900">Effectuez le règlement selon les coordonnées communiquées par l’institut, puis transmettez sa référence depuis la fiche du cours. Le secrétariat confirme ensuite le paiement et l’inscription.</p>
+</section>
+{% endif %}
+
+<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="card-elevated">
+        <p class="stat-label">Total confirmé</p>
+        <p class="stat-number mt-2">{{ total_confirme }} €</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Règlements enregistrés</p>
+        <p class="stat-number mt-2">{{ paiements|length }}</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Demandes à payer</p>
+        <p class="stat-number mt-2">{{ demandes_a_payer|length }}</p>
+    </div>
+</div>
+
+<section class="card-elevated mt-8 overflow-hidden">
+    <h2 class="mb-5 text-lg font-semibold text-navy-900">Historique des règlements</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="border-b border-warm-200 text-xs uppercase tracking-wide text-warm-500">
+                <tr><th class="py-3 pr-4">Date</th><th class="py-3 pr-4">Session</th><th class="py-3 pr-4">Référence</th><th class="py-3 pr-4">Mode</th><th class="py-3 pr-4">Statut</th><th class="py-3 text-right">Montant</th></tr>
+            </thead>
+            <tbody class="divide-y divide-warm-100">
+                {% for paiement in paiements %}
+                <tr>
+                    <td class="py-4 pr-4">{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+                    <td class="py-4 pr-4 font-semibold text-navy-900">{{ paiement.session|default:"Dossier général" }}</td>
+                    <td class="py-4 pr-4 text-warm-500">{{ paiement.reference|default:"—" }}</td>
+                    <td class="py-4 pr-4">{{ paiement.get_mode_display }}</td>
+                    <td class="py-4 pr-4"><span class="badge {% if paiement.statut == 'confirme' %}badge-success{% else %}badge-warning{% endif %}">{{ paiement.get_statut_display }}</span></td>
+                    <td class="py-4 text-right font-bold text-navy-900">{{ paiement.montant }} €</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="py-10 text-center text-warm-400">Aucun paiement enregistré.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

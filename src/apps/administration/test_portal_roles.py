@@ -23,6 +23,8 @@ class TestPortalRoleSeparation:
         assert client.get(reverse("administration:candidatures")).status_code == 200
         assert client.get(reverse("administration:etudiants")).status_code == 200
         assert client.get(reverse("administration:sessions")).status_code == 200
+        assert client.get(reverse("administration:session_create")).status_code == 200
+        assert client.get(reverse("administration:enrollment_requests")).status_code == 200
 
     @pytest.mark.parametrize(
         "route",
@@ -31,7 +33,6 @@ class TestPortalRoleSeparation:
             "administration:utilisateurs",
             "administration:professeurs",
             "administration:formations",
-            "administration:session_create",
         ],
     )
     def test_secretary_cannot_access_governance(self, client, secretary, route):

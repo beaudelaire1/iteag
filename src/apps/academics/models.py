@@ -1,5 +1,9 @@
+from decimal import Decimal
+
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import TimeStampedModel
 
@@ -129,6 +133,11 @@ class CoursDeSession(TimeStampedModel):
         EVALUATION = "evaluation", "Évaluation"
         TERMINE = "termine", "Terminé"
 
+    class Modalite(models.TextChoices):
+        PRESENTIEL = "presentiel", "Présentiel"
+        DISTANCIEL = "distanciel", "À distance"
+        HYBRIDE = "hybride", "Hybride"
+
     session = models.ForeignKey(SessionAcademique, on_delete=models.CASCADE, related_name="cours_de_session")
     cours = models.ForeignKey("formations.Cours", on_delete=models.PROTECT, related_name="sessions")
     enseignant = models.ForeignKey(
@@ -136,17 +145,91 @@ class CoursDeSession(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="cours_de_session",
     )
+    modalite = models.CharField(max_length=20, choices=Modalite.choices, default=Modalite.PRESENTIEL)
     salle = models.CharField(max_length=100, blank=True)
     horaires = models.TextField(blank=True, verbose_name="Horaires indicatifs")
     statut = models.CharField(max_length=20, choices=StatutCours.choices, default=StatutCours.PROGRAMME)
+    capacite = models.PositiveSmallIntegerField(default=30, verbose_name="Capacité")
+    inscriptions_ouvertes = models.BooleanField(default=True, verbose_name="Inscriptions ouvertes")
+    date_limite_inscription = models.DateField(null=True, blank=True, verbose_name="Date limite d'inscription")
+    frais_inscription = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Frais spécifiques",
+        help_text="Vide : appliquer le tarif de l'étudiant. Zéro : cours gratuit.",
+    )
+    informations_pratiques = models.TextField(blank=True)
 
     class Meta:
         verbose_name = "Cours de session"
         verbose_name_plural = "Cours de session"
         unique_together = ["session", "cours"]
+        ordering = ["session__date_debut", "cours__titre"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(capacite__gt=0), name="cours_session_capacite_positive"),
+            models.CheckConstraint(
+                condition=models.Q(frais_inscription__isnull=True) | models.Q(frais_inscription__gte=0),
+                name="cours_session_frais_positifs",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.cours.titre} — {self.session}"
+
+    def clean(self):
+        super().clean()
+        if self.date_limite_inscription and self.date_limite_inscription > self.session.date_fin:
+            raise ValidationError(
+                {"date_limite_inscription": "La date limite ne peut pas dépasser la fin de la session."}
+            )
+
+    @property
+    def places_occupees(self):
+        nombre_annote = getattr(self, "nombre_inscrits", None)
+        return nombre_annote if nombre_annote is not None else self.inscriptions.count()
+
+    @property
+    def places_restantes(self):
+        return max(self.capacite - self.places_occupees, 0)
+
+    @property
+    def est_inscriptible(self):
+        aujourd_hui = timezone.localdate()
+        return (
+            self.inscriptions_ouvertes
+            and self.statut == self.StatutCours.PROGRAMME
+            and self.session.date_fin >= aujourd_hui
+            and (self.date_limite_inscription is None or self.date_limite_inscription >= aujourd_hui)
+            and self.places_restantes > 0
+        )
+
+    def motif_indisponibilite(self, etudiant=None):
+        if not self.inscriptions_ouvertes:
+            return "Les inscriptions sont fermées."
+        if self.statut != self.StatutCours.PROGRAMME:
+            return "Ce cours n'accepte plus de nouvelles inscriptions."
+        if self.session.date_fin < timezone.localdate():
+            return "Cette session est terminée."
+        if self.date_limite_inscription and self.date_limite_inscription < timezone.localdate():
+            return "La date limite d'inscription est dépassée."
+        if self.places_restantes <= 0:
+            return "Ce cours est complet."
+        if (
+            etudiant
+            and self.cours.parcours.exists()
+            and not self.cours.parcours.filter(pk=etudiant.parcours_id).exists()
+        ):
+            return "Ce cours n'est pas ouvert à votre parcours."
+        return ""
+
+    def montant_pour(self, etudiant):
+        if self.frais_inscription is not None:
+            return self.frais_inscription
+        if etudiant.formule_tarif_id and etudiant.formule_tarif.actif:
+            return etudiant.formule_tarif.montant_session
+        return Decimal("0.00")
 
 
 class InscriptionSession(TimeStampedModel):
@@ -154,6 +237,13 @@ class InscriptionSession(TimeStampedModel):
 
     etudiant = models.ForeignKey(ProfilEtudiant, on_delete=models.CASCADE, related_name="inscriptions")
     cours_session = models.ForeignKey(CoursDeSession, on_delete=models.CASCADE, related_name="inscriptions")
+    demande = models.OneToOneField(
+        "DemandeInscriptionCours",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inscription",
+    )
 
     class Meta:
         verbose_name = "Inscription session"
@@ -162,6 +252,95 @@ class InscriptionSession(TimeStampedModel):
 
     def __str__(self):
         return f"{self.etudiant} → {self.cours_session}"
+
+
+class DemandeInscriptionCours(TimeStampedModel):
+    """Demande étudiante pilotant l'inscription et son contrôle de paiement."""
+
+    class Statut(models.TextChoices):
+        SOUMISE = "soumise", "Soumise"
+        PAIEMENT_ATTENTE = "paiement_attente", "Paiement à régulariser"
+        CONFIRMEE = "confirmee", "Inscription confirmée"
+        REFUSEE = "refusee", "Refusée"
+        ANNULEE = "annulee", "Annulée par l'étudiant"
+
+    etudiant = models.ForeignKey(ProfilEtudiant, on_delete=models.CASCADE, related_name="demandes_inscription")
+    cours_session = models.ForeignKey(
+        CoursDeSession,
+        on_delete=models.CASCADE,
+        related_name="demandes_inscription",
+    )
+    statut = models.CharField(max_length=25, choices=Statut.choices, default=Statut.SOUMISE)
+    montant_du = models.DecimalField(max_digits=8, decimal_places=2, default=0, verbose_name="Montant dû")
+    note_etudiant = models.TextField(blank=True, verbose_name="Message de l'étudiant")
+    reference_paiement = models.CharField(max_length=120, blank=True, verbose_name="Référence communiquée")
+    justificatif_paiement = models.FileField(
+        upload_to="paiements/justificatifs/%Y/%m/",
+        blank=True,
+        verbose_name="Justificatif communiqué",
+    )
+    paiement = models.ForeignKey(
+        "Paiement",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="demandes_inscription",
+    )
+    exonere_paiement = models.BooleanField(default=False, verbose_name="Exonération de paiement")
+    traitee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="demandes_inscription_traitees",
+    )
+    date_decision = models.DateTimeField(null=True, blank=True)
+    motif_decision = models.TextField(blank=True, verbose_name="Décision / commentaire interne")
+
+    class Meta:
+        verbose_name = "Demande d'inscription à un cours"
+        verbose_name_plural = "Demandes d'inscription aux cours"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["etudiant", "cours_session"],
+                name="demande_unique_etudiant_cours_session",
+            ),
+            models.CheckConstraint(condition=models.Q(montant_du__gte=0), name="demande_montant_du_positif"),
+        ]
+        indexes = [
+            models.Index(fields=["statut", "-created_at"]),
+            models.Index(fields=["etudiant", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.etudiant} → {self.cours_session} ({self.get_statut_display()})"
+
+    @property
+    def peut_etre_annulee(self):
+        return self.statut in {self.Statut.SOUMISE, self.Statut.PAIEMENT_ATTENTE}
+
+
+class HistoriqueDemandeInscription(TimeStampedModel):
+    """Trace immuable des transitions d'une demande d'inscription."""
+
+    demande = models.ForeignKey(
+        DemandeInscriptionCours,
+        on_delete=models.CASCADE,
+        related_name="historique",
+    )
+    ancien_statut = models.CharField(max_length=25, choices=DemandeInscriptionCours.Statut.choices, blank=True)
+    nouveau_statut = models.CharField(max_length=25, choices=DemandeInscriptionCours.Statut.choices)
+    modifie_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    commentaire = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Historique d'une demande d'inscription"
+        verbose_name_plural = "Historique des demandes d'inscription"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.demande_id}: {self.ancien_statut or 'création'} → {self.nouveau_statut}"
 
 
 class CreditECTS(TimeStampedModel):

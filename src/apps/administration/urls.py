@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_elearning
+from . import views, views_academics, views_elearning
 
 app_name = "administration"
 
@@ -21,11 +21,62 @@ urlpatterns = [
     path("professeurs/<int:pk>/supprimer/", views.AdminProfesseurDeleteView.as_view(), name="professeur_delete"),
     # Formations
     path("formations/", views.AdminFormationsView.as_view(), name="formations"),
+    path("formations/cours/", views_academics.CourseListView.as_view(), name="courses"),
+    path("formations/cours/ajouter/", views_academics.CourseCreateView.as_view(), name="course_create"),
+    path(
+        "formations/cours/<int:pk>/modifier/",
+        views_academics.CourseUpdateView.as_view(),
+        name="course_update",
+    ),
+    path(
+        "formations/cours/<int:pk>/supprimer/",
+        views_academics.CourseDeleteView.as_view(),
+        name="course_delete",
+    ),
     # Sessions
     path("sessions/", views.AdminSessionListView.as_view(), name="sessions"),
     path("sessions/ajouter/", views.AdminSessionCreateView.as_view(), name="session_create"),
     path("sessions/<int:pk>/modifier/", views.AdminSessionUpdateView.as_view(), name="session_update"),
     path("sessions/<int:pk>/supprimer/", views.AdminSessionDeleteView.as_view(), name="session_delete"),
+    # Programmation des cours
+    path("offre-cours/", views_academics.CourseOfferingListView.as_view(), name="course_offerings"),
+    path(
+        "offre-cours/ajouter/",
+        views_academics.CourseOfferingCreateView.as_view(),
+        name="course_offering_create",
+    ),
+    path(
+        "offre-cours/<int:pk>/modifier/",
+        views_academics.CourseOfferingUpdateView.as_view(),
+        name="course_offering_update",
+    ),
+    path(
+        "offre-cours/<int:pk>/supprimer/",
+        views_academics.CourseOfferingDeleteView.as_view(),
+        name="course_offering_delete",
+    ),
+    # Demandes d'inscription aux cours
+    path("inscriptions-cours/", views_academics.EnrollmentRequestListView.as_view(), name="enrollment_requests"),
+    path(
+        "inscriptions-cours/<int:pk>/",
+        views_academics.EnrollmentRequestDetailView.as_view(),
+        name="enrollment_request_detail",
+    ),
+    path(
+        "inscriptions-cours/<int:pk>/action/",
+        views_academics.EnrollmentRequestActionView.as_view(),
+        name="enrollment_request_action",
+    ),
+    path(
+        "inscriptions-cours/<int:pk>/justificatif/",
+        views_academics.EnrollmentProofDownloadView.as_view(),
+        name="enrollment_proof_download",
+    ),
+    # Paiements
+    path("paiements/", views_academics.PaymentListView.as_view(), name="payments"),
+    path("paiements/ajouter/", views_academics.PaymentCreateView.as_view(), name="payment_create"),
+    path("paiements/<int:pk>/modifier/", views_academics.PaymentUpdateView.as_view(), name="payment_update"),
+    path("paiements/<int:pk>/supprimer/", views_academics.PaymentDeleteView.as_view(), name="payment_delete"),
     # Utilisateurs
     path("utilisateurs/", views.AdminUserListView.as_view(), name="utilisateurs"),
     path("utilisateurs/ajouter/", views.AdminUserCreateView.as_view(), name="user_create"),

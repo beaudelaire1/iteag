@@ -341,8 +341,6 @@ FOURNISSEURS: dict[str, type] = {
 PROTECTION_PAR_FOURNISSEUR: dict[str, str] = {nom: classe.protection for nom, classe in FOURNISSEURS.items()}
 
 CHOIX_FOURNISSEUR = [
-    (LocalStockageVideo.nom, "Fichier local (développement)"),
-    (S3StockageVideo.nom, "S3 privé (adresse présignée)"),
     (BunnyStreamVideo.nom, "Bunny Stream (adresse signée)"),
     (VimeoVideo.nom, "Vimeo (contenu public)"),
     (YouTubeVideo.nom, "YouTube (contenu public)"),
@@ -380,16 +378,18 @@ def fournisseur(nom: str = "") -> FournisseurVideo:
     """
     Fournisseur demandé, ou celui du réglage `ELEARNING_DIFFUSION_VIDEO`.
 
-    Un nom inconnu retombe sur le stockage local plutôt que de lever : une
-    valeur de configuration erronée ne doit pas rendre la plateforme muette.
+    Un nom inconnu retombe sur Bunny, le fournisseur externe protégé. Le
+    stockage local reste disponible explicitement pour relire les références
+    historiques, mais il ne constitue plus un chemin de création implicite.
     """
-    choix = nom or getattr(settings, "ELEARNING_DIFFUSION_VIDEO", "local")
-    return FOURNISSEURS.get(choix, LocalStockageVideo)()
+    choix = nom or getattr(settings, "ELEARNING_DIFFUSION_VIDEO", "bunny")
+    return FOURNISSEURS.get(choix, BunnyStreamVideo)()
 
 
 def origines_actives() -> list[str]:
-    """Origines à autoriser dans la CSP, d'après les fournisseurs configurés."""
-    noms = {getattr(settings, "ELEARNING_DIFFUSION_VIDEO", "local")}
+    """Origines des fournisseurs externes acceptés par le formulaire vidéo."""
+    noms = {nom for nom, _libelle in CHOIX_FOURNISSEUR}
+    noms.add(getattr(settings, "ELEARNING_DIFFUSION_VIDEO", "bunny"))
     noms.update(getattr(settings, "ELEARNING_DIFFUSION_PUBLIQUE", []))
     origines = set()
     for nom in noms:

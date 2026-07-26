@@ -1,0 +1,62 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mes demandes d’inscription — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='enrollments' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='enrollments' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Suivi administratif</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes demandes d’inscription</h1>
+        <p class="mt-1 text-sm text-warm-500">Chaque étape, du dépôt jusqu’à l’accès au cours.</p>
+    </div>
+    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary">Voir le catalogue</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="space-y-5">
+    {% for demande in demandes %}
+    <article class="card-elevated">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="mb-2 flex flex-wrap items-center gap-2">
+                    <span class="badge {% if demande.statut == 'confirmee' %}badge-success{% elif demande.statut == 'refusee' or demande.statut == 'annulee' %}badge-gold{% else %}badge-warning{% endif %}">{{ demande.get_statut_display }}</span>
+                    <span class="text-xs text-warm-500">Demandée le {{ demande.created_at|date:"d/m/Y à H:i" }}</span>
+                </div>
+                <h2 class="text-lg font-semibold text-navy-900">{{ demande.cours_session.cours.titre }}</h2>
+                <p class="mt-1 text-sm text-warm-500">{{ demande.cours_session.session }} · {{ demande.cours_session.get_modalite_display }}</p>
+                {% if demande.motif_decision %}<p class="mt-3 rounded bg-warm-50 p-3 text-sm text-warm-700">{{ demande.motif_decision }}</p>{% endif %}
+            </div>
+            <div class="min-w-48 rounded bg-warm-50 p-4 text-sm">
+                <p class="text-xs text-warm-500">Montant associé</p>
+                <p class="mt-1 text-xl font-bold text-navy-900">{% if demande.montant_du %}{{ demande.montant_du }} €{% else %}Sans frais{% endif %}</p>
+                {% if demande.paiement %}<p class="mt-1 text-xs text-emerald-700">Paiement {{ demande.paiement.reference|default:demande.paiement.pk }} confirmé</p>{% endif %}
+            </div>
+        </div>
+        <div class="mt-5 flex flex-wrap items-center gap-3 border-t border-warm-100 pt-4">
+            <a href="{% url 'academics:course_offering_detail' demande.cours_session.pk %}" class="btn-secondary text-sm">Voir le cours</a>
+            {% if demande.statut == 'paiement_attente' %}<a href="{% url 'academics:payments' %}" class="btn-primary text-sm">Consulter les instructions de paiement</a>{% endif %}
+            {% if demande.peut_etre_annulee %}
+            <form method="post" action="{% url 'academics:enrollment_request_cancel' demande.pk %}" onsubmit="return confirm('Annuler cette demande d’inscription ?');">
+                {% csrf_token %}
+                <button type="submit" class="text-sm font-semibold text-red-700">Annuler la demande</button>
+            </form>
+            {% endif %}
+        </div>
+    </article>
+    {% empty %}
+    <div class="card-elevated py-14 text-center">
+        <h2 class="text-lg font-semibold text-navy-900">Aucune demande déposée</h2>
+        <p class="mt-2 text-sm text-warm-500">Le catalogue présente les prochaines sessions ouvertes à votre parcours.</p>
+        <a href="{% url 'academics:course_catalogue' %}" class="btn-primary mt-5">Découvrir les cours</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

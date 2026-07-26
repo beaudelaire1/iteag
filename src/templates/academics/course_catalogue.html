@@ -1,0 +1,109 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Catalogue des cours — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='catalogue' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='catalogue' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+        <p class="overline mb-2">Choisir sa formation</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Catalogue des cours</h1>
+        <p class="mt-2 max-w-2xl text-sm text-warm-500">Consultez le programme, les modalités, les places et le tarif qui s’applique à votre dossier avant de demander votre inscription.</p>
+    </div>
+    <a href="{% url 'academics:enrollment_requests' %}" class="btn-secondary">Suivre mes demandes</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div class="xl:col-span-2">
+        <label class="form-label" for="catalogue-q">Recherche</label>
+        <input id="catalogue-q" class="form-input" type="search" name="q" value="{{ query }}" placeholder="Titre, code, enseignant…">
+    </div>
+    <div>
+        <label class="form-label" for="catalogue-session">Session</label>
+        <select id="catalogue-session" class="form-input" name="session">
+            <option value="">Toutes</option>
+            {% for session in sessions %}
+            <option value="{{ session.pk }}"{% if current_session == session.pk|stringformat:"s" %} selected{% endif %}>{{ session.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="catalogue-discipline">Discipline</label>
+        <select id="catalogue-discipline" class="form-input" name="discipline">
+            <option value="">Toutes</option>
+            {% for discipline in disciplines %}
+            <option value="{{ discipline.pk }}"{% if current_discipline == discipline.pk|stringformat:"s" %} selected{% endif %}>{{ discipline.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="catalogue-modalite">Modalité</label>
+        <select id="catalogue-modalite" class="form-input" name="modalite">
+            <option value="">Toutes</option>
+            {% for value, label in modalites %}
+            <option value="{{ value }}"{% if current_modalite == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="flex items-end gap-3 xl:col-span-5">
+        <button type="submit" class="btn-primary">Filtrer le catalogue</button>
+        <a href="{% url 'academics:course_catalogue' %}" class="text-sm font-semibold text-navy-600">Réinitialiser</a>
+    </div>
+</form>
+
+<div class="grid gap-6 xl:grid-cols-2">
+    {% for offre in offres %}
+    <article class="card-elevated flex h-full flex-col">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <span class="badge badge-info">{{ offre.cours.discipline }}</span>
+            <span class="text-xs font-semibold text-warm-500">{{ offre.cours.code|default:"Cours ITEAG" }}</span>
+        </div>
+        <h2 class="text-xl font-semibold text-navy-900">{{ offre.cours.titre }}</h2>
+        <p class="mt-2 text-sm leading-6 text-warm-600">{{ offre.cours.description|default:"Le programme détaillé sera communiqué par l’enseignant."|truncatewords:32 }}</p>
+
+        <dl class="mt-5 grid grid-cols-2 gap-4 rounded bg-warm-50 p-4 text-sm">
+            <div><dt class="text-xs text-warm-500">Session</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.session.nom }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Enseignant</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.enseignant|default:"À confirmer" }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Modalité</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.get_modalite_display }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Places</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.places_restantes }} / {{ offre.capacite }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Dates</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.session.date_debut|date:"d/m/Y" }}–{{ offre.session.date_fin|date:"d/m/Y" }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Votre tarif</dt><dd class="mt-1 font-semibold text-navy-900">{% if offre.montant_etudiant %}{{ offre.montant_etudiant }} €{% else %}Sans frais{% endif %}</dd></div>
+        </dl>
+
+        <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+            {% if offre.deja_inscrit %}
+            <span class="badge badge-success">Vous êtes inscrit</span>
+            {% elif offre.demande_etudiant and offre.demande_etudiant.statut != 'refusee' and offre.demande_etudiant.statut != 'annulee' %}
+            <span class="badge {% if offre.demande_etudiant.statut == 'confirmee' %}badge-success{% else %}badge-warning{% endif %}">{{ offre.demande_etudiant.get_statut_display }}</span>
+            {% elif offre.motif_blocage %}
+            <span class="text-xs font-medium text-warm-500">{{ offre.motif_blocage }}</span>
+            {% else %}
+            <span class="badge badge-success">Demandes ouvertes</span>
+            {% endif %}
+            <a href="{% url 'academics:course_offering_detail' offre.pk %}" class="btn-secondary text-sm">Voir le cours</a>
+        </div>
+    </article>
+    {% empty %}
+    <div class="card-elevated py-14 text-center xl:col-span-2">
+        <h2 class="text-lg font-semibold text-navy-900">Aucun cours ne correspond aux critères</h2>
+        <p class="mt-2 text-sm text-warm-500">Modifiez les filtres ou revenez lorsque la prochaine programmation sera publiée.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav class="mt-8 flex justify-center gap-2" aria-label="Pagination">
+    {% if page_obj.has_previous %}<a class="btn-secondary text-sm" href="?page={{ page_obj.previous_page_number }}&q={{ query|urlencode }}">Précédent</a>{% endif %}
+    <span class="px-3 py-2 text-sm text-warm-500">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a class="btn-secondary text-sm" href="?page={{ page_obj.next_page_number }}&q={{ query|urlencode }}">Suivant</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

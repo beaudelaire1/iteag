@@ -1,0 +1,90 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ offre.cours.titre }} — Catalogue — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='catalogue' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='catalogue' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'academics:course_catalogue' %}" class="mb-4 inline-flex text-sm font-semibold text-navy-600">← Retour au catalogue</a>
+    <p class="overline mb-2">{{ offre.cours.discipline }} · {{ offre.cours.code|default:"Cours ITEAG" }}</p>
+    <h1 style="font-size: clamp(1.6rem, 4vw, 2.5rem);">{{ offre.cours.titre }}</h1>
+    <p class="mt-2 text-sm text-warm-500">{{ offre.session.nom }} · {{ offre.get_modalite_display }} · {{ offre.cours.ects }} ECTS</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid gap-8 xl:grid-cols-[1.5fr_1fr]">
+    <div class="space-y-6">
+        <section class="card-elevated">
+            <h2 class="text-lg font-semibold text-navy-900">Présentation du cours</h2>
+            <div class="mt-4 whitespace-pre-line text-sm leading-7 text-warm-600">{{ offre.cours.description|default:"La description détaillée sera prochainement publiée." }}</div>
+        </section>
+        <section class="card-elevated">
+            <h2 class="text-lg font-semibold text-navy-900">Objectifs pédagogiques</h2>
+            <div class="mt-4 whitespace-pre-line text-sm leading-7 text-warm-600">{{ offre.cours.objectifs|default:"Les objectifs seront précisés par l’équipe pédagogique." }}</div>
+        </section>
+        {% if offre.informations_pratiques or offre.horaires %}
+        <section class="card-elevated">
+            <h2 class="text-lg font-semibold text-navy-900">Organisation pratique</h2>
+            {% if offre.horaires %}<p class="mt-4 whitespace-pre-line text-sm text-warm-600"><strong>Horaires :</strong> {{ offre.horaires }}</p>{% endif %}
+            {% if offre.informations_pratiques %}<p class="mt-3 whitespace-pre-line text-sm text-warm-600">{{ offre.informations_pratiques }}</p>{% endif %}
+        </section>
+        {% endif %}
+    </div>
+
+    <aside class="space-y-6">
+        <section class="card-elevated">
+            <h2 class="text-base font-semibold text-navy-900">Informations d’inscription</h2>
+            <dl class="mt-4 space-y-3 text-sm">
+                <div class="flex justify-between gap-4"><dt class="text-warm-500">Enseignant</dt><dd class="text-right font-semibold text-navy-900">{{ offre.enseignant|default:"À confirmer" }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-warm-500">Dates</dt><dd class="text-right font-semibold text-navy-900">{{ offre.session.date_debut|date:"d/m/Y" }}–{{ offre.session.date_fin|date:"d/m/Y" }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-warm-500">Lieu</dt><dd class="text-right font-semibold text-navy-900">{{ offre.salle|default:offre.get_modalite_display }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-warm-500">Places restantes</dt><dd class="text-right font-semibold text-navy-900">{{ offre.places_restantes }} / {{ offre.capacite }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-warm-500">Date limite</dt><dd class="text-right font-semibold text-navy-900">{{ offre.date_limite_inscription|date:"d/m/Y"|default:"Non fixée" }}</dd></div>
+                <div class="flex justify-between gap-4 border-t border-warm-100 pt-3"><dt class="text-warm-500">Montant dû</dt><dd class="text-right text-lg font-bold text-navy-900">{% if montant %}{{ montant }} €{% else %}Sans frais{% endif %}</dd></div>
+            </dl>
+        </section>
+
+        {% if deja_inscrit %}
+        <section class="rounded border border-emerald-200 bg-emerald-50 p-5">
+            <p class="font-semibold text-emerald-900">Inscription confirmée</p>
+            <p class="mt-1 text-sm text-emerald-800">Le cours est disponible dans « Mes cours ».</p>
+            <a href="{% url 'academics:courses' %}" class="btn-primary mt-4 text-sm">Accéder au cours</a>
+        </section>
+        {% elif demande and demande.statut != 'refusee' and demande.statut != 'annulee' %}
+        <section class="rounded border border-amber-200 bg-amber-50 p-5">
+            <p class="font-semibold text-amber-900">{{ demande.get_statut_display }}</p>
+            <p class="mt-1 text-sm text-amber-800">Votre demande du {{ demande.created_at|date:"d/m/Y" }} est suivie par le secrétariat.</p>
+            <a href="{% url 'academics:enrollment_requests' %}" class="btn-secondary mt-4 text-sm">Voir le suivi</a>
+        </section>
+        {% elif motif_blocage %}
+        <section class="rounded border border-warm-200 bg-warm-50 p-5">
+            <p class="font-semibold text-navy-900">Inscription indisponible</p>
+            <p class="mt-1 text-sm text-warm-600">{{ motif_blocage }}</p>
+        </section>
+        {% else %}
+        <form method="post" enctype="multipart/form-data" action="{% url 'academics:enrollment_request_create' offre.pk %}" class="card-elevated space-y-4">
+            {% csrf_token %}
+            <div>
+                <h2 class="text-base font-semibold text-navy-900">{% if demande %}Resoumettre ma demande{% else %}Demander mon inscription{% endif %}</h2>
+                <p class="mt-1 text-xs leading-5 text-warm-500">La demande est contrôlée par le secrétariat. Un règlement confirmé sera requis si le montant est supérieur à zéro.</p>
+            </div>
+            {% for field in form %}
+            <div>
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="mt-1 text-xs text-warm-500">{{ field.help_text }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn-primary w-full">Transmettre au secrétariat</button>
+        </form>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}

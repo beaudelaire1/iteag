@@ -19,7 +19,7 @@ from django.views.generic import DetailView, ListView, TemplateView
 
 from apps.core.services.audit import adresse_ip
 from apps.elearning.csp import CspLectureVideoMixin
-from apps.elearning.diffusion import LocalStockageVideo, stockage_video
+from apps.elearning.diffusion import LocalStockageVideo
 from apps.elearning.models import (
     AttestationModule,
     InscriptionModule,
@@ -341,10 +341,9 @@ class FichierVideoView(View):
     """
 
     def get(self, request, jeton):
-        stockage = stockage_video()
-        if not isinstance(stockage, LocalStockageVideo):
-            raise Http404
-
+        # Compatibilité de lecture uniquement pour les anciennes références
+        # locales. Aucun écran ne permet désormais d'en créer de nouvelles.
+        stockage = LocalStockageVideo()
         cle = LocalStockageVideo.cle_depuis_jeton(jeton, ttl=TTL_LECTURE)
         if cle is None or not stockage.existe(cle):
             raise Http404

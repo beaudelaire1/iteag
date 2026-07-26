@@ -10,10 +10,13 @@
 {% endblock %}
 
 {% block portal_header %}
-<div class="mb-10">
-    <p class="overline mb-2">Académique</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Cours auxquels vous êtes inscrit(e) et ressources associées</p>
+<div class="mb-10 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Académique</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
+        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Cours auxquels vous êtes inscrit(e) et ressources associées</p>
+    </div>
+    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary">Choisir un cours</a>
 </div>
 {% endblock %}
 
@@ -66,6 +69,7 @@
 {% empty %}
 <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
     <p class="text-gray-500">Vous n'êtes inscrit(e) à aucun cours pour le moment.</p>
+    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary mt-5">Consulter le catalogue</a>
 </div>
 {% endfor %}
 {% endblock %}

@@ -1,0 +1,23 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Référentiel des cours — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='formations' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='formations' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p class="overline mb-2">Référentiel pédagogique</p><h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Cours</h1><p class="mt-1 text-sm text-warm-500">Contenus de référence ensuite programmés dans les sessions.</p></div><a href="{% url 'administration:course_create' %}" class="btn-primary">+ Créer un cours</a></div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 md:grid-cols-[2fr_1fr_auto]"><div><label class="form-label" for="course-q">Titre ou code</label><input id="course-q" class="form-input" name="q" value="{{ query }}" type="search"></div><div><label class="form-label" for="course-discipline">Discipline</label><select id="course-discipline" class="form-input" name="discipline"><option value="">Toutes</option>{% for discipline in disciplines %}<option value="{{ discipline.pk }}"{% if current_discipline == discipline.pk|stringformat:"s" %} selected{% endif %}>{{ discipline.nom }}</option>{% endfor %}</select></div><div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div></form>
+<div class="grid gap-5 lg:grid-cols-2">
+{% for cours in cours_list %}
+<article class="card-elevated"><div class="flex items-start justify-between gap-4"><div><div class="mb-2 flex items-center gap-2"><span class="badge badge-info">{{ cours.discipline }}</span>{% if not cours.actif %}<span class="badge badge-gold">Inactif</span>{% endif %}</div><h2 class="text-lg font-semibold text-navy-900">{{ cours.titre }}</h2><p class="mt-1 text-xs text-warm-500">{{ cours.code|default:"Sans code" }} · {{ cours.ects }} ECTS · {{ cours.nombre_sessions }} programmation{{ cours.nombre_sessions|pluralize }}</p></div></div><p class="mt-4 text-sm leading-6 text-warm-600">{{ cours.description|default:"Description à compléter."|truncatewords:30 }}</p><div class="mt-5 flex gap-4 border-t border-warm-100 pt-4"><a href="{% url 'administration:course_update' cours.pk %}" class="text-sm font-semibold text-navy-600">Modifier</a><a href="{% url 'administration:course_delete' cours.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a><a href="{% url 'administration:course_offering_create' %}?cours={{ cours.pk }}" class="ml-auto text-sm font-semibold text-navy-600">Programmer →</a></div></article>
+{% empty %}<div class="card-elevated py-12 text-center text-warm-400 lg:col-span-2">Aucun cours.</div>{% endfor %}
+</div>
+{% endblock %}

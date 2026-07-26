@@ -87,7 +87,11 @@
                             <p class="text-xs text-gray-500">{{ res.created_at|date:"d/m/Y" }} · {% if res.visible_etudiants %}Visible{% else %}Masqué{% endif %}</p>
                         </div>
                     </div>
-                    <a href="{{ res.fichier.url }}" class="text-sm text-blue-700 hover:underline" download>Télécharger</a>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ res.fichier.url }}" class="text-sm text-blue-700 hover:underline" download>Télécharger</a>
+                        <a href="{% url 'lms:resource_update' res.pk %}" class="text-sm text-blue-700 hover:underline">Modifier</a>
+                        <a href="{% url 'lms:resource_delete' res.pk %}" class="text-sm text-red-700 hover:underline">Supprimer</a>
+                    </div>
                 </div>
                 {% empty %}
                 <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucune ressource. Ajoutez-en une !</p>
@@ -177,7 +181,13 @@
             <div class="divide-y divide-gray-100">
                 {% for annonce in annonces %}
                 <div class="px-5 py-4">
-                    <p class="text-sm font-semibold text-gray-900">{{ annonce.titre }}</p>
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-gray-900">{{ annonce.titre }}</p>
+                        <div class="flex gap-3">
+                            <a href="{% url 'lms:announcement_update' annonce.pk %}" class="text-xs font-semibold text-blue-700">Modifier</a>
+                            <a href="{% url 'lms:announcement_delete' annonce.pk %}" class="text-xs font-semibold text-red-700">Supprimer</a>
+                        </div>
+                    </div>
                     <p class="text-sm text-gray-600 mt-1">{{ annonce.contenu }}</p>
                     <p class="text-xs text-gray-400 mt-2">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
                 </div>

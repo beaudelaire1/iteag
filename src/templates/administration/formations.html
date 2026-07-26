@@ -10,9 +10,15 @@
 {% endblock %}
 
 {% block portal_header %}
-<div class="mb-8">
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Formations</h1>
-    <p class="text-sm mt-1" style="color: var(--color-warm-500);">Parcours, disciplines et tarifs</p>
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Formations</h1>
+        <p class="text-sm mt-1" style="color: var(--color-warm-500);">Parcours, disciplines, cours et tarifs</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'administration:courses' %}" class="btn-secondary">Référentiel des cours</a>
+        <a href="{% url 'administration:course_create' %}" class="btn-primary">+ Créer un cours</a>
+    </div>
 </div>
 {% endblock %}
 

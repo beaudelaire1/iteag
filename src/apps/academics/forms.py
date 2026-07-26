@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django import forms
 
+from apps.academics.models import DemandeInscriptionCours
 from apps.lms.models import Evaluation
 
 
@@ -21,4 +22,38 @@ class StudentSubmissionForm(forms.ModelForm):
             raise forms.ValidationError("Le fichier ne doit pas dépasser 10 Mo.")
         if Path(uploaded.name).suffix.lower() not in {".pdf", ".doc", ".docx", ".odt"}:
             raise forms.ValidationError("Formats acceptés : PDF, DOC, DOCX ou ODT.")
+        return uploaded
+
+
+class EnrollmentRequestForm(forms.ModelForm):
+    class Meta:
+        model = DemandeInscriptionCours
+        fields = ["note_etudiant", "reference_paiement", "justificatif_paiement"]
+        widgets = {
+            "note_etudiant": forms.Textarea(
+                attrs={
+                    "class": "form-input",
+                    "rows": 4,
+                    "placeholder": "Précisez si nécessaire votre objectif ou une contrainte particulière.",
+                }
+            ),
+            "reference_paiement": forms.TextInput(
+                attrs={
+                    "class": "form-input",
+                    "placeholder": "Référence de virement ou de reçu, si le règlement est déjà effectué",
+                }
+            ),
+            "justificatif_paiement": forms.ClearableFileInput(
+                attrs={"class": "form-file", "accept": ".pdf,.jpg,.jpeg,.png"}
+            ),
+        }
+
+    def clean_justificatif_paiement(self):
+        uploaded = self.cleaned_data.get("justificatif_paiement")
+        if not uploaded:
+            return uploaded
+        if uploaded.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("Le justificatif ne doit pas dépasser 5 Mo.")
+        if Path(uploaded.name).suffix.lower() not in {".pdf", ".jpg", ".jpeg", ".png"}:
+            raise forms.ValidationError("Formats acceptés : PDF, JPG ou PNG.")
         return uploaded

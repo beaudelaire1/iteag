@@ -1,6 +1,5 @@
 """Formulaires de production de contenu — portail enseignant."""
 
-import hashlib
 import re
 from urllib.parse import parse_qs, urlparse
 
@@ -139,67 +138,6 @@ class LeconForm(forms.ModelForm):
         return lecon
 
 
-class VideoUploadForm(forms.Form):
-    """
-    Dépôt d'un fichier vidéo.
-
-    Le type réel est contrôlé à partir des premiers octets, pas de l'extension :
-    renommer un exécutable en .mp4 ne doit pas suffire à le faire accepter.
-    """
-
-    titre = forms.CharField(
-        label="Titre de la vidéo",
-        max_length=250,
-        widget=forms.TextInput(attrs={"class": INPUT}),
-    )
-    fichier = forms.FileField(
-        label="Fichier vidéo",
-        widget=forms.ClearableFileInput(attrs={"class": FICHIER, "accept": "video/*"}),
-    )
-    transcription = forms.CharField(
-        label="Transcription (facultative)",
-        required=False,
-        widget=forms.Textarea(attrs={"class": INPUT, "rows": 5}),
-        help_text="Améliore l'accessibilité et le référencement.",
-    )
-
-    # Signatures des conteneurs vidéo acceptés, lues en tête de fichier.
-    SIGNATURES = {
-        b"\x1aE\xdf\xa3": "video/webm",  # Matroska / WebM
-    }
-    MARQUEUR_MP4 = b"ftyp"  # présent à l'octet 4 des conteneurs ISO (MP4, MOV)
-
-    def clean_fichier(self):
-        fichier = self.cleaned_data["fichier"]
-
-        taille_max = getattr(settings, "ELEARNING_TAILLE_VIDEO_MAX", 2 * 1024**3)
-        if fichier.size > taille_max:
-            raise forms.ValidationError(f"Fichier trop volumineux : maximum {taille_max // 1024**2} Mo.")
-
-        entete = fichier.read(12)
-        fichier.seek(0)
-        if not self._entete_video(entete):
-            raise forms.ValidationError("Ce fichier n'est pas une vidéo reconnue. Formats acceptés : MP4, MOV, WebM.")
-        return fichier
-
-    @classmethod
-    def _entete_video(cls, entete: bytes) -> bool:
-        if len(entete) < 12:
-            return False
-        if entete[4:8] == cls.MARQUEUR_MP4:
-            return True
-        return any(entete.startswith(signature) for signature in cls.SIGNATURES)
-
-    @staticmethod
-    def empreinte(fichier) -> str:
-        """Empreinte SHA-256, calculée par blocs pour ne pas charger le fichier en mémoire."""
-        condensat = hashlib.sha256()
-        for bloc in fichier.chunks():
-            condensat.update(bloc)
-        fichier.seek(0)
-        return condensat.hexdigest()
-
-
 class SousTitreForm(forms.ModelForm):
     class Meta:
         model = SousTitre
@@ -223,10 +161,9 @@ class VideoExterneForm(forms.Form):
     """
     Référencement d'une vidéo déjà déposée chez le fournisseur.
 
-    Avec un fournisseur externe, l'enseignant ne téléverse plus : il dépose
-    dans la console du service, puis colle ici l'identifiant. Le champ est
-    validé sur sa forme, car un identifiant fautif ne se manifesterait
-    autrement qu'au moment où un étudiant tente de lire — trop tard.
+    L'enseignant colle une adresse HTTPS. Le fournisseur et l'identifiant sont
+    déduits de cette adresse puis validés avant l'enregistrement. Le média ne
+    transite jamais par le serveur de l'institut.
     """
 
     titre = forms.CharField(
@@ -234,11 +171,17 @@ class VideoExterneForm(forms.Form):
         max_length=250,
         widget=forms.TextInput(attrs={"class": INPUT}),
     )
-    identifiant = forms.CharField(
-        label="Identifiant chez le fournisseur",
-        max_length=200,
-        widget=forms.TextInput(attrs={"class": INPUT, "placeholder": "par exemple 8f2c1e94-…"}),
-        help_text="Identifiant de la vidéo dans la console du fournisseur, ou adresse complète.",
+    adresse_video = forms.URLField(
+        label="Lien HTTPS de la vidéo",
+        max_length=500,
+        widget=forms.URLInput(
+            attrs={
+                "class": INPUT,
+                "placeholder": "https://www.youtube.com/watch?v=…",
+                "inputmode": "url",
+            }
+        ),
+        help_text="Lien Bunny Stream, Vimeo ou YouTube. Aucun fichier n'est chargé sur le site.",
     )
     duree_secondes = forms.IntegerField(
         label="Durée (secondes)",
@@ -254,34 +197,76 @@ class VideoExterneForm(forms.Form):
         help_text="Améliore l'accessibilité et le référencement.",
     )
 
-    # Identifiants acceptés : UUID Bunny, identifiant YouTube (11 caractères),
-    # identifiant numérique Vimeo.
-    MOTIF_IDENTIFIANT = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
+    MOTIFS_IDENTIFIANT = {
+        "bunny": re.compile(r"^[A-Za-z0-9_-]{6,64}$"),
+        "youtube": re.compile(r"^[A-Za-z0-9_-]{11}$"),
+        "vimeo": re.compile(r"^[0-9]{6,15}$"),
+    }
+    DOMAINES = {
+        "youtube": ("youtube.com", "youtube-nocookie.com", "youtu.be"),
+        "vimeo": ("vimeo.com",),
+        "bunny": ("mediadelivery.net", "bunnycdn.com", "b-cdn.net"),
+    }
 
-    def clean_identifiant(self):
-        saisie = self.cleaned_data["identifiant"].strip()
-        identifiant = self._extraire(saisie)
-        if not self.MOTIF_IDENTIFIANT.match(identifiant):
+    def clean_adresse_video(self):
+        adresse = self.cleaned_data["adresse_video"].strip()
+        analyse = urlparse(adresse)
+        if analyse.scheme != "https":
+            raise forms.ValidationError("Le lien doit utiliser HTTPS.")
+
+        hote = (analyse.hostname or "").lower().rstrip(".")
+        fournisseur = self._detecter_fournisseur(hote)
+        if fournisseur is None:
+            raise forms.ValidationError("Fournisseur non reconnu. Utiliser un lien Bunny Stream, Vimeo ou YouTube.")
+
+        if fournisseur == "bunny" and (
+            not getattr(settings, "BUNNY_ZONE_DIFFUSION", "") or not getattr(settings, "BUNNY_CLE_SIGNATURE", "")
+        ):
             raise forms.ValidationError(
-                "Identifiant non reconnu. Coller l'identifiant de la vidéo ou son adresse complète."
+                "Bunny Stream n'est pas encore configuré. Renseigner la zone de diffusion et la clé de signature."
             )
+
+        identifiant = self._extraire(analyse, fournisseur)
+        if not self.MOTIFS_IDENTIFIANT[fournisseur].fullmatch(identifiant):
+            raise forms.ValidationError("Le lien ne contient pas un identifiant vidéo valide.")
         if VideoAsset.objects.filter(cle_stockage=identifiant).exists():
             raise forms.ValidationError("Cette vidéo est déjà référencée.")
-        return identifiant
+
+        self.fournisseur_detecte = fournisseur
+        self.identifiant_detecte = identifiant
+        return adresse
+
+    def clean(self):
+        donnees = super().clean()
+        if hasattr(self, "fournisseur_detecte"):
+            donnees["fournisseur"] = self.fournisseur_detecte
+            donnees["identifiant"] = self.identifiant_detecte
+        return donnees
+
+    @classmethod
+    def _detecter_fournisseur(cls, hote: str) -> str | None:
+        zone_bunny = urlparse(getattr(settings, "BUNNY_ZONE_DIFFUSION", "")).hostname
+        if zone_bunny and hote == zone_bunny.lower().rstrip("."):
+            return "bunny"
+        for fournisseur, domaines in cls.DOMAINES.items():
+            if any(hote == domaine or hote.endswith(f".{domaine}") for domaine in domaines):
+                return fournisseur
+        return None
 
     @staticmethod
-    def _extraire(saisie: str) -> str:
-        """
-        Identifiant contenu dans une adresse collée.
-
-        Les enseignants collent l'adresse de la barre du navigateur bien plus
-        souvent que l'identifiant seul : l'exiger nu serait une friction inutile.
-        """
-        if "://" not in saisie:
-            return saisie
-        analyse = urlparse(saisie)
+    def _extraire(analyse, fournisseur: str) -> str:
         parametres = parse_qs(analyse.query)
-        if "v" in parametres:  # https://www.youtube.com/watch?v=…
+        if fournisseur == "youtube" and "v" in parametres:
             return parametres["v"][0]
         segments = [segment for segment in analyse.path.split("/") if segment]
-        return segments[-1] if segments else saisie
+        if (
+            fournisseur == "bunny"
+            and segments
+            and segments[-1].lower()
+            in {
+                "playlist.m3u8",
+                "master.m3u8",
+            }
+        ):
+            segments.pop()
+        return segments[-1] if segments else ""

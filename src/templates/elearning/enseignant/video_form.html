@@ -15,20 +15,18 @@
 {% block portal_content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-    {# Dépôt #}
+    {# Référencement externe #}
     <section class="lg:col-span-1">
-        <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
+        <form method="post" class="card-elevated space-y-5">
             {% csrf_token %}
             <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
-                {% if televersement %}Déposer une vidéo{% else %}Référencer une vidéo{% endif %}
+                Référencer une vidéo
             </h2>
 
-            {% if not televersement %}
             <p class="text-sm" style="color: var(--color-warm-600);">
-                Les vidéos ne sont pas hébergées sur le site. Déposez-la d'abord dans la console
-                du fournisseur, puis collez ici son identifiant ou son adresse.
+                Collez le lien HTTPS d'une vidéo déjà hébergée sur Bunny Stream, Vimeo ou YouTube.
+                Le média reste chez le fournisseur et n'occupe aucun espace de stockage de l'institut.
             </p>
-            {% endif %}
 
             {% for champ in form %}
             <div>
@@ -39,15 +37,14 @@
             </div>
             {% endfor %}
 
-            {% if televersement %}
             <p class="text-xs" style="color: var(--color-warm-500);">
-                Formats acceptés : MP4, MOV, WebM. Définition recommandée : 720p, pour rester
-                confortable depuis la Martinique et la Guyane.
+                Pour une formation payante ou réservée aux inscrits, utilisez Bunny Stream :
+                ses liens signés peuvent expirer et être révoqués. Vimeo et YouTube conviennent
+                uniquement aux contenus publics.
             </p>
-            {% endif %}
 
             <button type="submit" class="btn-primary w-full justify-center">
-                {% if televersement %}Déposer{% else %}Référencer{% endif %}
+                Référencer le lien
             </button>
         </form>
     </section>
@@ -58,12 +55,13 @@
         <div class="tw overflow-x-auto">
             <table class="table-premium">
                 <thead>
-                    <tr><th>Vidéo</th><th>État</th><th>Durée</th><th>Utilisée</th><th></th></tr>
+                    <tr><th>Vidéo</th><th>Fournisseur</th><th>État</th><th>Durée</th><th>Utilisée</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for video in videos %}
                     <tr>
                         <td class="font-medium">{{ video.titre }}</td>
+                        <td>{{ video.get_fournisseur_display }}</td>
                         <td>
                             {% if video.statut_traitement == "pret" %}<span class="badge badge-success">Prête</span>
                             {% elif video.statut_traitement == "erreur" %}<span class="badge badge-danger">Erreur</span>
@@ -75,9 +73,10 @@
                             <span class="flex flex-wrap gap-3">
                                 <a href="{% url 'elearning:enseignant_soustitre' video.pk %}"
                                    class="text-sm link-reveal" style="color: var(--color-navy-700);">Sous-titres</a>
-                                <form method="post" action="{% url 'elearning:enseignant_video_supprimer' video.pk %}">
+                                <form method="post" action="{% url 'elearning:enseignant_video_supprimer' video.pk %}"
+                                      onsubmit="return confirm('Retirer cette référence de la bibliothèque ? Le média restera chez le fournisseur.');">
                                     {% csrf_token %}
-                                    <button type="submit" class="text-sm text-danger link-reveal">Supprimer</button>
+                                    <button type="submit" class="text-sm text-danger link-reveal">Retirer</button>
                                 </form>
                             </span>
                         </td>
@@ -88,7 +87,7 @@
         </div>
         {% else %}
         <div class="card text-center py-16">
-            <p style="color: var(--color-warm-600);">Aucune vidéo déposée pour le moment.</p>
+            <p style="color: var(--color-warm-600);">Aucun lien vidéo référencé pour le moment.</p>
         </div>
         {% endif %}
     </section>

@@ -1,0 +1,22 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Confirmer la suppression — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='courses' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='courses' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8"><p class="overline mb-2">Confirmation</p><h1 style="font-size: clamp(1.4rem, 3vw, 2rem);">Supprimer « {{ objet }} » ?</h1></div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="post" class="card-elevated max-w-xl">
+    {% csrf_token %}
+    <p class="text-sm leading-6 text-warm-600">Cette suppression est définitive. Vérifiez que les étudiants n’ont plus besoin de ce contenu.</p>
+    <div class="mt-6 flex gap-4"><button type="submit" class="btn-primary">Confirmer la suppression</button><a href="{% url 'lms:dashboard' %}" class="btn-secondary">Annuler</a></div>
+</form>
+{% endblock %}

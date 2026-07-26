@@ -63,8 +63,8 @@ gigaoctet transféré, cinq à dix fois moins cher à volume comparable.
 
 ## Décision
 
-**Bunny Stream pour les modules à accès restreint. YouTube pour les
-bandes-annonces du catalogue public.**
+**Bunny Stream pour les modules à accès restreint. Vimeo et YouTube pour les
+contenus publics.**
 
 Deux besoins distincts, deux outils. Le catalogue public n'a rien à protéger et
 gagne au référencement ; un module payant doit pouvoir être coupé.
@@ -94,9 +94,10 @@ préparait.
 **Défavorables.** Dépendance à un tiers pour la disponibilité du service. Bunny
 est un acteur plus petit que Cloudflare ou Vimeo ; le risque est atténué par
 l'abstraction, changer de fournisseur reste l'écriture d'une classe. Le dépôt
-d'une vidéo passe désormais par le fournisseur : l'enseignant renseigne un
-identifiant au lieu de téléverser un fichier, ce qui est un changement de
-geste à accompagner.
+d'une vidéo passe désormais par le fournisseur : l'enseignant colle ensuite
+son lien HTTPS dans la bibliothèque. La plateforme en déduit le fournisseur et
+l'identifiant sans télécharger le média. C'est un changement de geste à
+accompagner.
 
 **Ce que cette décision ne prétend pas.** Aucun de ces dispositifs n'empêche un
 étudiant déterminé d'enregistrer son écran. Le but est de rendre le partage
@@ -105,6 +106,7 @@ prétendrait, au prix d'une complexité sans rapport avec l'enjeu.
 
 ## Réversibilité
 
-Le backend S3 de l'ADR-001 est conservé et testé. Si le fournisseur externe
-devait être abandonné, le retour se fait par un réglage. C'est la raison pour
-laquelle l'abstraction est maintenue plutôt que remplacée.
+Les backends local et S3 de l'ADR-001 sont conservés uniquement pour relire et
+supprimer proprement d'anciennes références. Aucun formulaire ne permet d'y
+charger une nouvelle vidéo. Si Bunny devait être abandonné, un nouveau
+fournisseur externe serait ajouté derrière la même abstraction.

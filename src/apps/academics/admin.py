@@ -4,6 +4,8 @@ from .models import (
     VAE,
     CoursDeSession,
     CreditECTS,
+    DemandeInscriptionCours,
+    HistoriqueDemandeInscription,
     InscriptionSession,
     Paiement,
     ProfilEtudiant,
@@ -55,8 +57,28 @@ class CoursDeSessionInline(admin.TabularInline):
 
 @admin.register(CoursDeSession)
 class CoursDeSessionAdmin(admin.ModelAdmin):
-    list_display = ["cours", "session", "enseignant", "statut"]
-    list_filter = ["statut", "session"]
+    list_display = ["cours", "session", "enseignant", "modalite", "statut", "inscriptions_ouvertes", "capacite"]
+    list_filter = ["statut", "modalite", "inscriptions_ouvertes", "session"]
+
+
+class HistoriqueDemandeInscriptionInline(admin.TabularInline):
+    model = HistoriqueDemandeInscription
+    extra = 0
+    readonly_fields = ["ancien_statut", "nouveau_statut", "modifie_par", "commentaire", "created_at"]
+    can_delete = False
+
+
+@admin.register(DemandeInscriptionCours)
+class DemandeInscriptionCoursAdmin(admin.ModelAdmin):
+    list_display = ["etudiant", "cours_session", "statut", "montant_du", "paiement", "created_at"]
+    list_filter = ["statut", "cours_session__session"]
+    search_fields = [
+        "etudiant__utilisateur__last_name",
+        "etudiant__utilisateur__first_name",
+        "etudiant__numero_etudiant",
+        "cours_session__cours__titre",
+    ]
+    inlines = [HistoriqueDemandeInscriptionInline]
 
 
 @admin.register(Paiement)

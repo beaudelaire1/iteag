@@ -10,7 +10,13 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
-from apps.academics.models import Paiement, ProfilEtudiant, SessionAcademique
+from apps.academics.models import (
+    CoursDeSession,
+    DemandeInscriptionCours,
+    Paiement,
+    ProfilEtudiant,
+    SessionAcademique,
+)
 from apps.accounts.models import User
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
@@ -68,6 +74,17 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 .first(),
                 "derniers_dossiers": DossierCandidature.objects.select_related("parcours_souhaite")[:5],
                 "derniers_paiements": Paiement.objects.select_related("etudiant__utilisateur", "session")[:5],
+                "demandes_inscription_a_traiter": DemandeInscriptionCours.objects.filter(
+                    statut__in=[
+                        DemandeInscriptionCours.Statut.SOUMISE,
+                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
+                    ]
+                ).count(),
+                "cours_ouverts_inscription": CoursDeSession.objects.filter(
+                    inscriptions_ouvertes=True,
+                    statut=CoursDeSession.StatutCours.PROGRAMME,
+                    session__date_fin__gte=today,
+                ).count(),
             }
         )
         return ctx
@@ -93,7 +110,21 @@ class SecretariatDashboardView(SecretariatRoleRequiredMixin, TemplateView):
                 ).count(),
                 "etudiants_actifs": ProfilEtudiant.objects.filter(statut_inscription="actif").count(),
                 "paiements_en_attente": Paiement.objects.filter(statut=Paiement.StatutPaiement.EN_ATTENTE).count(),
+                "demandes_inscription_a_traiter": DemandeInscriptionCours.objects.filter(
+                    statut__in=[
+                        DemandeInscriptionCours.Statut.SOUMISE,
+                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
+                    ]
+                ).count(),
                 "dossiers_recents": DossierCandidature.objects.select_related("parcours_souhaite")[:8],
+                "demandes_inscription_recentes": DemandeInscriptionCours.objects.filter(
+                    statut__in=[
+                        DemandeInscriptionCours.Statut.SOUMISE,
+                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
+                    ]
+                )
+                .select_related("etudiant__utilisateur", "cours_session__cours", "cours_session__session")
+                .order_by("created_at")[:8],
                 "session_en_cours": SessionAcademique.objects.filter(
                     Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
                 ).first(),
@@ -370,7 +401,7 @@ class AdminUserDeleteView(AdminRoleRequiredMixin, DeleteView):
 # ══════════════════════════════════════════════
 
 
-class AdminSessionCreateView(AdminRoleRequiredMixin, CreateView):
+class AdminSessionCreateView(StaffRoleRequiredMixin, CreateView):
     model = SessionAcademique
     form_class = AdminSessionForm
     template_name = "administration/form.html"
@@ -388,7 +419,7 @@ class AdminSessionCreateView(AdminRoleRequiredMixin, CreateView):
         return response
 
 
-class AdminSessionUpdateView(AdminRoleRequiredMixin, UpdateView):
+class AdminSessionUpdateView(StaffRoleRequiredMixin, UpdateView):
     model = SessionAcademique
     form_class = AdminSessionForm
     template_name = "administration/form.html"

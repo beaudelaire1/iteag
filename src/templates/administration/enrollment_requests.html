@@ -1,0 +1,67 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Demandes d’inscription — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='enrollment_requests' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='enrollment_requests' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Admissions aux cours</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Demandes d’inscription</h1>
+        <p class="mt-1 text-sm text-warm-500">Contrôle du dossier, paiement et confirmation de l’accès au cours.</p>
+    </div>
+    <a href="{% url 'administration:course_offerings' %}" class="btn-secondary">Gérer l’offre de cours</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+    {% for value, label in statuts %}
+    <a href="?statut={{ value }}" class="card-elevated">
+        <p class="stat-label">{{ label }}</p>
+        <p class="stat-number mt-2">{% for key, count in counts.items %}{% if key == value %}{{ count }}{% endif %}{% endfor %}</p>
+    </a>
+    {% endfor %}
+</div>
+
+<form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[2fr_1fr_1fr_auto]">
+    <div><label class="form-label" for="request-q">Étudiant ou cours</label><input id="request-q" class="form-input" name="q" value="{{ query }}" type="search"></div>
+    <div>
+        <label class="form-label" for="request-status">Statut</label>
+        <select id="request-status" class="form-input" name="statut"><option value="">Tous</option>{% for value, label in statuts %}<option value="{{ value }}"{% if current_statut == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div>
+        <label class="form-label" for="request-session">Session</label>
+        <select id="request-session" class="form-input" name="session"><option value="">Toutes</option>{% for session in sessions %}<option value="{{ session.pk }}"{% if current_session == session.pk|stringformat:"s" %} selected{% endif %}>{{ session.nom }}</option>{% endfor %}</select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="card-elevated overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="border-b border-warm-200 text-xs uppercase tracking-wide text-warm-500"><tr><th class="py-3 pr-4">Étudiant</th><th class="py-3 pr-4">Cours</th><th class="py-3 pr-4">Dépôt</th><th class="py-3 pr-4">Montant</th><th class="py-3 pr-4">Statut</th><th class="py-3 text-right">Action</th></tr></thead>
+            <tbody class="divide-y divide-warm-100">
+                {% for demande in demandes %}
+                <tr class="hover:bg-warm-50">
+                    <td class="py-4 pr-4"><p class="font-semibold text-navy-900">{{ demande.etudiant.utilisateur.get_full_name }}</p><p class="text-xs text-warm-500">{{ demande.etudiant.numero_etudiant }} · {{ demande.etudiant.parcours }}</p></td>
+                    <td class="py-4 pr-4"><p class="font-semibold text-navy-900">{{ demande.cours_session.cours.titre }}</p><p class="text-xs text-warm-500">{{ demande.cours_session.session.nom }}</p></td>
+                    <td class="py-4 pr-4 text-warm-600">{{ demande.created_at|date:"d/m/Y H:i" }}</td>
+                    <td class="py-4 pr-4 font-semibold text-navy-900">{{ demande.montant_du }} €</td>
+                    <td class="py-4 pr-4"><span class="badge {% if demande.statut == 'confirmee' %}badge-success{% elif demande.statut == 'refusee' or demande.statut == 'annulee' %}badge-gold{% else %}badge-warning{% endif %}">{{ demande.get_statut_display }}</span></td>
+                    <td class="py-4 text-right"><a href="{% url 'administration:enrollment_request_detail' demande.pk %}" class="text-sm font-semibold text-navy-600">Traiter →</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="py-12 text-center text-warm-400">Aucune demande pour ces critères.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

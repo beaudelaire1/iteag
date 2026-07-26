@@ -18,7 +18,6 @@ from django.core.exceptions import ValidationError
 from apps.elearning.diffusion import (
     FOURNISSEURS,
     BunnyStreamVideo,
-    LocalStockageVideo,
     ModeLecture,
     NiveauProtection,
     VimeoVideo,
@@ -43,10 +42,10 @@ class TestSelection:
         settings.ELEARNING_DIFFUSION_VIDEO = "youtube"
         assert fournisseur("local").nom == "local"
 
-    def test_un_reglage_inconnu_retombe_sur_le_local(self, settings):
-        """Une faute de frappe en configuration ne doit pas rendre la plateforme muette."""
+    def test_un_reglage_inconnu_retombe_sur_bunny(self, settings):
+        """Une faute de frappe ne doit jamais réactiver le stockage local."""
         settings.ELEARNING_DIFFUSION_VIDEO = "fournisseur-inexistant"
-        assert fournisseur().nom == "local"
+        assert fournisseur().nom == "bunny"
 
     def test_tous_les_fournisseurs_declarent_leur_protection(self):
         for nom, classe in FOURNISSEURS.items():
@@ -155,28 +154,33 @@ class TestFournisseursIframe:
 
 
 class TestOriginesCsp:
-    def test_le_local_n_ouvre_aucune_origine(self, settings):
+    def test_les_fournisseurs_de_liens_sont_toujours_autorises(self, settings):
         settings.ELEARNING_DIFFUSION_VIDEO = "local"
         settings.ELEARNING_DIFFUSION_PUBLIQUE = []
-        assert origines_actives() == []
+        settings.BUNNY_ZONE_DIFFUSION = ""
+        assert origines_actives() == [
+            "https://player.vimeo.com",
+            "https://www.youtube-nocookie.com",
+        ]
 
     def test_youtube_public_ouvre_son_origine(self, settings):
         settings.ELEARNING_DIFFUSION_VIDEO = "local"
         settings.ELEARNING_DIFFUSION_PUBLIQUE = ["youtube"]
-        assert origines_actives() == ["https://www.youtube-nocookie.com"]
+        settings.BUNNY_ZONE_DIFFUSION = ""
+        assert "https://www.youtube-nocookie.com" in origines_actives()
 
     def test_l_origine_bunny_vient_du_reglage(self, settings):
         """Elle est calculée, pas codée en dur : c'est la zone du client."""
         settings.ELEARNING_DIFFUSION_VIDEO = "bunny"
         settings.ELEARNING_DIFFUSION_PUBLIQUE = []
         settings.BUNNY_ZONE_DIFFUSION = "https://iteag.b-cdn.net"
-        assert origines_actives() == ["https://iteag.b-cdn.net"]
+        assert "https://iteag.b-cdn.net" in origines_actives()
 
     def test_bunny_sans_zone_configuree_n_ouvre_rien(self, settings):
         settings.ELEARNING_DIFFUSION_VIDEO = "bunny"
         settings.ELEARNING_DIFFUSION_PUBLIQUE = []
         settings.BUNNY_ZONE_DIFFUSION = ""
-        assert origines_actives() == []
+        assert all("b-cdn.net" not in origine for origine in origines_actives())
 
 
 # ══════════════════════════════════════════════
@@ -301,9 +305,9 @@ class TestModeLecture:
             video = VideoAsset.objects.create(titre="V", cle_stockage=f"c-{nom}", fournisseur=nom)
             assert video.mode_lecture == classe.mode
 
-    def test_un_fournisseur_inconnu_retombe_sur_le_mode_fichier(self):
+    def test_un_fournisseur_inconnu_retombe_sur_le_mode_hls_externe(self):
         video = VideoAsset.objects.create(titre="V", cle_stockage="c-x", fournisseur="inconnu")
-        assert video.mode_lecture == LocalStockageVideo.mode
+        assert video.mode_lecture == BunnyStreamVideo.mode
 
 
 @pytest.mark.django_db
@@ -349,12 +353,13 @@ class TestCspSurLaReponse:
         # « 'none' » doit avoir disparu : la spécification le veut seul.
         assert "frame-src 'none'" not in entete
 
-    def test_sans_fournisseur_externe_le_cadre_reste_interdit(self, client, module_public, settings):
+    def test_les_fournisseurs_acceptes_restent_limites_a_la_liste_blanche(self, client, module_public, settings):
         settings.CONTENT_SECURITY_POLICY = {"DIRECTIVES": {"default-src": ["'self'"], "frame-src": ["'none'"]}}
         settings.ELEARNING_DIFFUSION_VIDEO = "local"
         settings.ELEARNING_DIFFUSION_PUBLIQUE = []
 
         reponse = client.get(module_public.get_absolute_url())
         entete = reponse.headers.get("Content-Security-Policy", "")
-        assert "youtube" not in entete
-        assert "frame-src 'none'" in entete
+        assert "https://www.youtube-nocookie.com" in entete
+        assert "https://player.vimeo.com" in entete
+        assert "frame-src 'none'" not in entete

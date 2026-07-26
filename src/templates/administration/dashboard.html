@@ -65,7 +65,7 @@
 </div>
 
 {# ── Stats secondaires ── #}
-<div class="grid grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-5 mb-10">
     <div class="card-elevated">
         <p class="stat-label">Utilisateurs actifs</p>
         <p class="stat-number mt-2" data-counter="{{ total_users }}" data-counter-suffix="">{{ total_users }}</p>
@@ -83,6 +83,14 @@
         <p class="mt-1 text-xs" style="color: var(--color-warm-400);">Prochaine : {{ prochaine_session.nom }} — {{ prochaine_session.date_debut|date:"d/m/Y" }}</p>
         {% endif %}
     </div>
+    <a href="{% url 'administration:enrollment_requests' %}" class="card-elevated">
+        <p class="stat-label">Inscriptions à traiter</p>
+        <p class="stat-number mt-2">{{ demandes_inscription_a_traiter }}</p>
+    </a>
+    <a href="{% url 'administration:course_offerings' %}" class="card-elevated">
+        <p class="stat-label">Cours ouverts</p>
+        <p class="stat-number mt-2">{{ cours_ouverts_inscription }}</p>
+    </a>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-8">
@@ -146,7 +154,7 @@
 {# ── Raccourcis rapides ── #}
 <div class="mt-10">
     <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-warm-500);">Actions rapides</h2>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <a href="{% url 'administration:candidatures' %}?statut=soumis" class="card group text-center py-5 hover:shadow-md transition-shadow">
             <div class="h-10 w-10 mx-auto mb-2 rounded-full flex items-center justify-center" style="background: var(--color-navy-700);">
                 <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -165,6 +173,15 @@
                 <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
             </div>
             <p class="text-sm font-semibold" style="color: var(--color-navy-800);">Sessions académiques</p>
+        </a>
+        <a href="{% url 'administration:enrollment_requests' %}" class="card group text-center py-5 hover:shadow-md transition-shadow">
+            <div class="h-10 w-10 mx-auto mb-2 rounded-full flex items-center justify-center text-white" style="background: var(--color-navy-700);">✓</div>
+            <p class="text-sm font-semibold" style="color: var(--color-navy-800);">Inscriptions aux cours</p>
+            <p class="text-xs mt-0.5" style="color: var(--color-warm-400);">{{ demandes_inscription_a_traiter }} à traiter</p>
+        </a>
+        <a href="{% url 'administration:payments' %}" class="card group text-center py-5 hover:shadow-md transition-shadow">
+            <div class="h-10 w-10 mx-auto mb-2 rounded-full flex items-center justify-center text-white" style="background: var(--color-navy-700);">€</div>
+            <p class="text-sm font-semibold" style="color: var(--color-navy-800);">Paiements</p>
         </a>
         <a href="/django-admin/" class="card group text-center py-5 hover:shadow-md transition-shadow">
             <div class="h-10 w-10 mx-auto mb-2 rounded-full flex items-center justify-center" style="background: var(--color-warm-300);">

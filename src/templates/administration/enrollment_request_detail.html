@@ -1,0 +1,78 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Demande {{ demande.pk }} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='enrollment_requests' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='enrollment_requests' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'administration:enrollment_requests' %}" class="mb-4 inline-flex text-sm font-semibold text-navy-600">← Toutes les demandes</a>
+    <div class="flex flex-wrap items-center gap-3"><h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ demande.cours_session.cours.titre }}</h1><span class="badge {% if demande.statut == 'confirmee' %}badge-success{% elif demande.statut == 'refusee' or demande.statut == 'annulee' %}badge-gold{% else %}badge-warning{% endif %}">{{ demande.get_statut_display }}</span></div>
+    <p class="mt-1 text-sm text-warm-500">Demande n°{{ demande.pk }} · déposée le {{ demande.created_at|date:"d/m/Y à H:i" }}</p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid gap-8 xl:grid-cols-[1.3fr_1fr]">
+    <div class="space-y-6">
+        <section class="card-elevated">
+            <h2 class="text-lg font-semibold text-navy-900">Dossier étudiant</h2>
+            <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-sm">
+                <div><dt class="text-xs text-warm-500">Étudiant</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.etudiant.utilisateur.get_full_name }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Numéro</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.etudiant.numero_etudiant }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Parcours</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.etudiant.parcours }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Statut administratif</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.etudiant.get_statut_inscription_display }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Email</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.etudiant.utilisateur.email }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Promotion</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.etudiant.promotion }}</dd></div>
+            </dl>
+            {% if demande.note_etudiant %}<div class="mt-5 rounded bg-warm-50 p-4 text-sm text-warm-700"><strong>Message :</strong> {{ demande.note_etudiant }}</div>{% endif %}
+        </section>
+
+        <section class="card-elevated">
+            <h2 class="text-lg font-semibold text-navy-900">Cours et capacité</h2>
+            <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-sm">
+                <div><dt class="text-xs text-warm-500">Session</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.session }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Enseignant</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.enseignant }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Modalité</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.get_modalite_display }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Places disponibles</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.places_restantes }} / {{ demande.cours_session.capacite }}</dd></div>
+            </dl>
+        </section>
+
+        <section class="card-elevated">
+            <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="text-lg font-semibold text-navy-900">Paiement</h2><a href="{% url 'administration:payment_create' %}?etudiant={{ demande.etudiant_id }}&session={{ demande.cours_session.session_id }}&montant={{ demande.montant_du }}&reference={{ demande.reference_paiement|urlencode }}&demande={{ demande.pk }}" class="btn-secondary text-sm">+ Enregistrer un paiement</a></div>
+            <p class="mt-3 text-sm text-warm-600">Montant dû : <strong>{{ demande.montant_du }} €</strong>{% if demande.reference_paiement %} · référence communiquée : <strong>{{ demande.reference_paiement }}</strong>{% endif %}</p>
+            {% if demande.justificatif_paiement %}<a href="{% url 'administration:enrollment_proof_download' demande.pk %}" class="mt-3 inline-flex text-sm font-semibold text-navy-600">Télécharger le justificatif transmis</a>{% endif %}
+            <div class="mt-4 space-y-2">
+                {% for paiement in paiements_compatibles %}
+                <div class="flex items-center justify-between rounded bg-warm-50 p-3 text-sm"><span>{{ paiement.date_paiement|date:"d/m/Y" }} · {{ paiement.reference|default:"Sans référence" }}</span><span class="font-semibold {% if paiement.statut == 'confirme' %}text-emerald-700{% else %}text-amber-700{% endif %}">{{ paiement.montant }} € · {{ paiement.get_statut_display }}</span></div>
+                {% empty %}<p class="text-sm text-warm-400">Aucun paiement enregistré pour cette session.</p>{% endfor %}
+            </div>
+        </section>
+
+        <section class="card-elevated">
+            <h2 class="text-lg font-semibold text-navy-900">Historique du workflow</h2>
+            <ol class="mt-5 space-y-4">
+                {% for entree in historique %}
+                <li class="border-l-2 border-warm-200 pl-4"><p class="text-sm font-semibold text-navy-900">{{ entree.get_nouveau_statut_display }}</p><p class="text-xs text-warm-500">{{ entree.created_at|date:"d/m/Y H:i" }} · {{ entree.modifie_par|default:"Système" }}</p>{% if entree.commentaire %}<p class="mt-1 text-sm text-warm-600">{{ entree.commentaire }}</p>{% endif %}</li>
+                {% endfor %}
+            </ol>
+        </section>
+    </div>
+
+    <aside>
+        <form method="post" action="{% url 'administration:enrollment_request_action' demande.pk %}" class="card-elevated sticky top-24 space-y-5">
+            {% csrf_token %}
+            <div><h2 class="text-lg font-semibold text-navy-900">Décision du secrétariat</h2><p class="mt-1 text-xs leading-5 text-warm-500">La confirmation crée automatiquement l’inscription au cours. Si un montant est dû, un paiement confirmé ou une exonération motivée est obligatoire.</p></div>
+            {% for field in decision_form %}
+            <div><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="mt-1 text-xs text-warm-500">{{ field.help_text }}</p>{% endif %}</div>
+            {% endfor %}
+            <button type="submit" class="btn-primary w-full">Appliquer la décision</button>
+        </form>
+    </aside>
+</div>
+{% endblock %}

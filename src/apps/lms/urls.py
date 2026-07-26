@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     TeacherAnnoncesListView,
     TeacherAnnouncementCreateView,
+    TeacherAnnouncementDeleteView,
     TeacherAnnouncementUpdateView,
     TeacherCourseDetailView,
     TeacherCoursesListView,
@@ -11,6 +12,8 @@ from .views import (
     TeacherGradeEvaluationView,
     TeacherPrepareEvaluationsView,
     TeacherPublishGradesView,
+    TeacherResourceDeleteView,
+    TeacherResourceUpdateView,
     TeacherResourceUploadView,
 )
 
@@ -21,6 +24,8 @@ urlpatterns = [
     path("cours/", TeacherCoursesListView.as_view(), name="courses_list"),
     path("cours/<int:pk>/", TeacherCourseDetailView.as_view(), name="course_detail"),
     path("cours/<int:cours_pk>/ressource/", TeacherResourceUploadView.as_view(), name="resource_upload"),
+    path("ressources/<int:pk>/modifier/", TeacherResourceUpdateView.as_view(), name="resource_update"),
+    path("ressources/<int:pk>/supprimer/", TeacherResourceDeleteView.as_view(), name="resource_delete"),
     path("cours/<int:cours_pk>/annonce/", TeacherAnnouncementCreateView.as_view(), name="announcement_create"),
     path("cours/<int:pk>/publier-notes/", TeacherPublishGradesView.as_view(), name="publish_grades"),
     path("cours/<int:pk>/preparer-evaluations/", TeacherPrepareEvaluationsView.as_view(), name="prepare_evaluations"),
@@ -28,4 +33,5 @@ urlpatterns = [
     path("evaluations/<int:pk>/noter/", TeacherGradeEvaluationView.as_view(), name="grade_evaluation"),
     path("annonces/", TeacherAnnoncesListView.as_view(), name="annonces_list"),
     path("annonces/<int:pk>/modifier/", TeacherAnnouncementUpdateView.as_view(), name="announcement_update"),
+    path("annonces/<int:pk>/supprimer/", TeacherAnnouncementDeleteView.as_view(), name="announcement_delete"),
 ]

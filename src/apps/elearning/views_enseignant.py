@@ -17,14 +17,13 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, T
 
 from apps.core.mixins import TeacherRoleRequiredMixin
 from apps.core.services.audit import journaliser
-from apps.elearning.diffusion import nouvelle_cle, stockage_video
+from apps.elearning.diffusion import fournisseur
 from apps.elearning.forms import (
     ChapitreForm,
     LeconForm,
     ModuleForm,
     SousTitreForm,
     VideoExterneForm,
-    VideoUploadForm,
 )
 from apps.elearning.models import (
     Chapitre,
@@ -318,29 +317,18 @@ class ReordonnerLeconsView(ProfesseurMixin, View):
 
 
 class VideoUploadView(ProfesseurMixin, TemplateView):
-    """
-    Dépôt d'une vidéo, ou référencement d'une vidéo hébergée chez le
-    fournisseur — selon ce que celui-ci accepte (ADR-005).
-    """
+    """Référence une vidéo externe sans jamais recevoir son fichier."""
 
     template_name = "elearning/enseignant/video_form.html"
 
-    def _fournisseur(self):
-        return stockage_video()
-
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
-        fournisseur = self._fournisseur()
-        contexte["televersement"] = fournisseur.accepte_televersement
-        contexte["fournisseur"] = fournisseur.nom
-        contexte.setdefault("form", VideoUploadForm() if fournisseur.accepte_televersement else VideoExterneForm())
+        contexte.setdefault("form", VideoExterneForm())
         contexte["videos"] = VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:30]
         return contexte
 
     def post(self, request, *args, **kwargs):
-        if not self._fournisseur().accepte_televersement:
-            return self._referencer(request)
-        return self._televerser(request)
+        return self._referencer(request)
 
     def _referencer(self, request):
         """La vidéo vit chez le fournisseur : on n'enregistre que sa référence."""
@@ -351,7 +339,7 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         video = VideoAsset.objects.create(
             titre=formulaire.cleaned_data["titre"],
             cle_stockage=formulaire.cleaned_data["identifiant"],
-            fournisseur=self._fournisseur().nom,
+            fournisseur=formulaire.cleaned_data["fournisseur"],
             duree_secondes=formulaire.cleaned_data.get("duree_secondes") or 0,
             transcription=formulaire.cleaned_data["transcription"],
             uploade_par=request.user,
@@ -361,40 +349,6 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         )
         journaliser("creation", request=request, objet=video)
         messages.success(request, "Vidéo référencée. Elle peut être rattachée à une leçon.")
-        return redirect(reverse("elearning:enseignant_videos"))
-
-    def _televerser(self, request):
-        formulaire = VideoUploadForm(request.POST, request.FILES)
-        if not formulaire.is_valid():
-            return self.render_to_response(self.get_context_data(form=formulaire))
-
-        fichier = formulaire.cleaned_data["fichier"]
-        cle = nouvelle_cle(fichier.name)
-        stockage = stockage_video()
-
-        empreinte = VideoUploadForm.empreinte(fichier)
-        stockage.televerser(fichier, cle)
-
-        video = VideoAsset.objects.create(
-            titre=formulaire.cleaned_data["titre"],
-            cle_stockage=cle,
-            fournisseur=stockage.nom,
-            nom_origine=fichier.name[:250],
-            taille_octets=fichier.size,
-            checksum_sha256=empreinte,
-            transcription=formulaire.cleaned_data["transcription"],
-            uploade_par=request.user,
-        )
-
-        from apps.elearning.tasks import preparer_video
-
-        try:
-            preparer_video.delay(str(video.pk))
-        except Exception:  # noqa: BLE001 — sans courtier, on prépare immédiatement
-            preparer_video(str(video.pk))
-
-        journaliser("creation", request=request, objet=video)
-        messages.success(request, "Vidéo déposée. Sa préparation est en cours.")
         return redirect(reverse("elearning:enseignant_videos"))
 
 
@@ -427,10 +381,17 @@ class VideoDeleteView(ProfesseurMixin, View):
             messages.error(request, "Cette vidéo est utilisée par une leçon : retirez-la d'abord.")
             return redirect(reverse("elearning:enseignant_videos"))
 
-        stockage_video().supprimer(video.cle_stockage)
+        fournisseur_video = fournisseur(video.fournisseur)
+        fournisseur_video.supprimer(video.cle_stockage)
         journaliser("suppression", request=request, objet=video)
         video.delete()
-        messages.success(request, "Vidéo supprimée.")
+        if fournisseur_video.accepte_televersement:
+            messages.success(request, "Ancienne vidéo locale supprimée.")
+        else:
+            messages.success(
+                request,
+                "Référence retirée de l'institut. Le média reste disponible chez le fournisseur externe.",
+            )
         return redirect(reverse("elearning:enseignant_videos"))
 
 

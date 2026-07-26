@@ -142,6 +142,24 @@ class TestRessourcesEtAnnonces:
         assert reponse.status_code == 404
         assert RessourcePedagogique.objects.count() == 0
 
+    def test_modification_et_suppression_d_une_ressource(
+        self, client, enseignant, autre_enseignant, cours_session, tmp_path, settings
+    ):
+        settings.MEDIA_ROOT = tmp_path
+        ressource = RessourcePedagogique.objects.create(
+            cours_session=cours_session,
+            uploade_par=enseignant.user,
+            titre="Document initial",
+            fichier=SimpleUploadedFile("initial.pdf", b"%PDF-1.7"),
+        )
+        client.force_login(autre_enseignant.user)
+        assert client.get(reverse("lms:resource_update", kwargs={"pk": ressource.pk})).status_code == 404
+
+        client.force_login(enseignant.user)
+        response = client.post(reverse("lms:resource_delete", kwargs={"pk": ressource.pk}))
+        assert response.status_code == 302
+        assert not RessourcePedagogique.objects.filter(pk=ressource.pk).exists()
+
     def test_publication_d_une_annonce(self, client, enseignant, cours_session):
         client.force_login(enseignant.user)
         client.post(
@@ -175,6 +193,18 @@ class TestRessourcesEtAnnonces:
             ).status_code
             == 404
         )
+
+    def test_suppression_d_une_annonce(self, client, enseignant, cours_session):
+        annonce = Annonce.objects.create(
+            cours_session=cours_session,
+            auteur=enseignant.user,
+            titre="À supprimer",
+            contenu="Information périmée.",
+        )
+        client.force_login(enseignant.user)
+        response = client.post(reverse("lms:announcement_delete", kwargs={"pk": annonce.pk}))
+        assert response.status_code == 302
+        assert not Annonce.objects.filter(pk=annonce.pk).exists()
 
 
 @pytest.mark.django_db

@@ -2,13 +2,13 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.academics.models import CoursDeSession
 from apps.core.mixins import TeacherRoleRequiredMixin
 
 from .forms import AnnonceForm, GradeForm, RessourceUploadForm
-from .models import Annonce, Evaluation
+from .models import Annonce, Evaluation, RessourcePedagogique
 
 # ──────────────────────────────────────────────
 # Helpers
@@ -187,6 +187,50 @@ class TeacherResourceUploadView(TeacherRoleRequiredMixin, CreateView):
         return redirect(reverse("lms:course_detail", kwargs={"pk": self.cours_session.pk}))
 
 
+class TeacherResourceUpdateView(TeacherRoleRequiredMixin, UpdateView):
+    model = RessourcePedagogique
+    form_class = RessourceUploadForm
+    template_name = "lms/resource_form.html"
+    context_object_name = "ressource"
+
+    def get_queryset(self):
+        prof = _get_professeur(self.request)
+        if prof is None:
+            return RessourcePedagogique.objects.none()
+        return RessourcePedagogique.objects.filter(cours_session__enseignant=prof).select_related(
+            "cours_session__cours"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["cours_session"] = self.object.cours_session
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+        messages.success(self.request, "Ressource mise à jour.")
+        return redirect("lms:course_detail", pk=self.object.cours_session_id)
+
+
+class TeacherResourceDeleteView(TeacherRoleRequiredMixin, DeleteView):
+    model = RessourcePedagogique
+    template_name = "lms/confirm_delete.html"
+    context_object_name = "objet"
+
+    def get_queryset(self):
+        prof = _get_professeur(self.request)
+        if prof is None:
+            return RessourcePedagogique.objects.none()
+        return RessourcePedagogique.objects.filter(cours_session__enseignant=prof)
+
+    def form_valid(self, form):
+        messages.success(self.request, "Ressource supprimée.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("lms:course_detail", kwargs={"pk": self.object.cours_session_id})
+
+
 # ──────────────────────────────────────────────
 # Grade evaluation
 # ──────────────────────────────────────────────
@@ -323,3 +367,22 @@ class TeacherAnnouncementUpdateView(TeacherRoleRequiredMixin, UpdateView):
         form.save()
         messages.success(self.request, "Annonce modifiée.")
         return redirect(reverse("lms:annonces_list"))
+
+
+class TeacherAnnouncementDeleteView(TeacherRoleRequiredMixin, DeleteView):
+    model = Annonce
+    template_name = "lms/confirm_delete.html"
+    context_object_name = "objet"
+
+    def get_queryset(self):
+        prof = _get_professeur(self.request)
+        if prof is None:
+            return Annonce.objects.none()
+        return Annonce.objects.filter(cours_session__enseignant=prof)
+
+    def form_valid(self, form):
+        messages.success(self.request, "Annonce supprimée.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("lms:annonces_list")

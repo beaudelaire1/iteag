@@ -334,16 +334,16 @@ CELERY_TIMEZONE = TIME_ZONE
 # ──────────────────────────────────────────────
 
 # Fournisseur de diffusion des modules protégés — voir ADR-005.
-# "local" en développement, "bunny" en production. "s3" reste le chemin de
-# retour prévu par l'ADR-001.
-ELEARNING_DIFFUSION_VIDEO = env("ELEARNING_DIFFUSION_VIDEO", default="local")
+# Les nouveaux médias sont toujours référencés chez un fournisseur externe.
+# "local" et "s3" ne subsistent que pour relire d'anciennes références.
+ELEARNING_DIFFUSION_VIDEO = env("ELEARNING_DIFFUSION_VIDEO", default="bunny")
 # Ancien nom, conservé le temps que les environnements soient mis à jour.
 ELEARNING_STOCKAGE_VIDEO = ELEARNING_DIFFUSION_VIDEO
 
 # Fournisseurs admis pour le contenu public (bandes-annonces du catalogue).
 # Ils ne protègent rien : le modèle refuse de les rattacher à un module
 # restreint, cette liste ne sert qu'à autoriser leurs origines dans la CSP.
-ELEARNING_DIFFUSION_PUBLIQUE = env.list("ELEARNING_DIFFUSION_PUBLIQUE", default=["youtube"])
+ELEARNING_DIFFUSION_PUBLIQUE = env.list("ELEARNING_DIFFUSION_PUBLIQUE", default=["youtube", "vimeo"])
 
 AWS_STORAGE_BUCKET_NAME_VIDEOS = env("AWS_STORAGE_BUCKET_NAME_VIDEOS", default="iteag-videos")
 
@@ -362,10 +362,6 @@ ELEARNING_FLUX_TTL = 900
 
 # Intervalle des signaux de progression envoyés par le lecteur (secondes).
 ELEARNING_INTERVALLE_SIGNAL = 15
-
-# Taille maximale d'une vidéo déposée par un enseignant.
-ELEARNING_TAILLE_VIDEO_MAX = 2 * 1024 * 1024 * 1024  # 2 Go
-ELEARNING_TYPES_VIDEO = ["video/mp4", "video/webm", "video/quicktime"]
 
 # ──────────────────────────────────────────────
 # Session

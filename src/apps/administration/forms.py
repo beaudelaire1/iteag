@@ -1,9 +1,11 @@
+from pathlib import Path
+
 from django import forms
 from django.contrib.auth.password_validation import validate_password
 
-from apps.academics.models import ProfilEtudiant, SessionAcademique
+from apps.academics.models import CoursDeSession, DemandeInscriptionCours, Paiement, ProfilEtudiant, SessionAcademique
 from apps.accounts.models import User
-from apps.formations.models import Professeur
+from apps.formations.models import Cours, Professeur
 
 
 class AdminUserForm(forms.ModelForm):
@@ -113,3 +115,122 @@ class AdminEtudiantForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["utilisateur"].queryset = User.objects.filter(role=User.Role.ETUDIANT)
+
+
+class AdminCoursForm(forms.ModelForm):
+    class Meta:
+        model = Cours
+        fields = ["titre", "slug", "code", "discipline", "parcours", "description", "objectifs", "ects", "actif"]
+        widgets = {
+            "titre": forms.TextInput(attrs={"class": "form-input"}),
+            "slug": forms.TextInput(attrs={"class": "form-input"}),
+            "code": forms.TextInput(attrs={"class": "form-input"}),
+            "discipline": forms.Select(attrs={"class": "form-input"}),
+            "parcours": forms.CheckboxSelectMultiple(),
+            "description": forms.Textarea(attrs={"class": "form-input", "rows": 5}),
+            "objectifs": forms.Textarea(attrs={"class": "form-input", "rows": 5}),
+            "ects": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.5"}),
+            "actif": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
+        }
+
+
+class CoursDeSessionForm(forms.ModelForm):
+    class Meta:
+        model = CoursDeSession
+        fields = [
+            "session",
+            "cours",
+            "enseignant",
+            "modalite",
+            "salle",
+            "horaires",
+            "statut",
+            "capacite",
+            "inscriptions_ouvertes",
+            "date_limite_inscription",
+            "frais_inscription",
+            "informations_pratiques",
+        ]
+        widgets = {
+            "session": forms.Select(attrs={"class": "form-input"}),
+            "cours": forms.Select(attrs={"class": "form-input"}),
+            "enseignant": forms.Select(attrs={"class": "form-input"}),
+            "modalite": forms.Select(attrs={"class": "form-input"}),
+            "salle": forms.TextInput(attrs={"class": "form-input"}),
+            "horaires": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
+            "statut": forms.Select(attrs={"class": "form-input"}),
+            "capacite": forms.NumberInput(attrs={"class": "form-input", "min": 1}),
+            "inscriptions_ouvertes": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
+            "date_limite_inscription": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
+            "frais_inscription": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.01"}),
+            "informations_pratiques": forms.Textarea(attrs={"class": "form-input", "rows": 4}),
+        }
+
+
+class PaiementForm(forms.ModelForm):
+    class Meta:
+        model = Paiement
+        fields = ["etudiant", "session", "montant", "date_paiement", "mode", "statut", "reference", "recu_pdf"]
+        widgets = {
+            "etudiant": forms.Select(attrs={"class": "form-input"}),
+            "session": forms.Select(attrs={"class": "form-input"}),
+            "montant": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.01"}),
+            "date_paiement": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
+            "mode": forms.Select(attrs={"class": "form-input"}),
+            "statut": forms.Select(attrs={"class": "form-input"}),
+            "reference": forms.TextInput(attrs={"class": "form-input"}),
+            "recu_pdf": forms.ClearableFileInput(attrs={"class": "form-file", "accept": ".pdf"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["etudiant"].queryset = ProfilEtudiant.objects.select_related("utilisateur").order_by(
+            "utilisateur__last_name", "utilisateur__first_name"
+        )
+        self.fields["session"].queryset = SessionAcademique.objects.order_by("-date_debut")
+
+    def clean_recu_pdf(self):
+        uploaded = self.cleaned_data.get("recu_pdf")
+        if not uploaded:
+            return uploaded
+        if uploaded.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("Le reçu ne doit pas dépasser 5 Mo.")
+        if Path(uploaded.name).suffix.lower() != ".pdf":
+            raise forms.ValidationError("Le reçu doit être un fichier PDF.")
+        return uploaded
+
+
+class EnrollmentDecisionForm(forms.Form):
+    ACTIONS = [
+        ("demander_paiement", "Valider administrativement et demander le paiement"),
+        ("confirmer", "Confirmer l'inscription"),
+        ("refuser", "Refuser la demande"),
+        ("reouvrir", "Rouvrir la demande"),
+    ]
+
+    action = forms.ChoiceField(choices=ACTIONS, widget=forms.Select(attrs={"class": "form-input"}))
+    paiement = forms.ModelChoiceField(
+        queryset=Paiement.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-input"}),
+        help_text="Facultatif : le dernier paiement confirmé compatible sera sinon utilisé automatiquement.",
+    )
+    exonere_paiement = forms.BooleanField(
+        required=False,
+        label="Exonérer du paiement",
+        widget=forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
+    )
+    commentaire = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-input", "rows": 4}),
+        help_text="Obligatoire pour un refus ou une exonération.",
+    )
+
+    def __init__(self, *args, demande: DemandeInscriptionCours, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.demande = demande
+        self.fields["paiement"].queryset = Paiement.objects.filter(
+            etudiant=demande.etudiant,
+            session=demande.cours_session.session,
+            statut=Paiement.StatutPaiement.CONFIRME,
+        ).order_by("-date_paiement")
