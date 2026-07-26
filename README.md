@@ -16,6 +16,7 @@ enseignant, administratif) et un module de formation vidéo à accès contrôlé
 | [`docs/architecture/uml.md`](docs/architecture/uml.md) | Dossier de conception UML |
 | [`docs/architecture/adr/`](docs/architecture/adr/) | Décisions d'architecture |
 | [`docs/plan/plan-finalisation.md`](docs/plan/plan-finalisation.md) | Plan de finalisation par lots |
+| [`docs/architecture/adr/ADR-005-fournisseurs-video-externes.md`](docs/architecture/adr/ADR-005-fournisseurs-video-externes.md) | Choix du fournisseur de diffusion vidéo |
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
 
 ---
@@ -43,7 +44,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
 npm install
 
-npm run css:build                                    # feuilles de style
+npm run build                                        # styles + bibliothèques tierces
 export DJANGO_SETTINGS_MODULE=config.settings.dev
 python manage.py migrate
 python manage.py createsuperuser

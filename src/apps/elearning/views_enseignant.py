@@ -17,7 +17,15 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, T
 
 from apps.core.mixins import TeacherRoleRequiredMixin
 from apps.core.services.audit import journaliser
-from apps.elearning.forms import ChapitreForm, LeconForm, ModuleForm, SousTitreForm, VideoUploadForm
+from apps.elearning.diffusion import nouvelle_cle, stockage_video
+from apps.elearning.forms import (
+    ChapitreForm,
+    LeconForm,
+    ModuleForm,
+    SousTitreForm,
+    VideoExterneForm,
+    VideoUploadForm,
+)
 from apps.elearning.models import (
     Chapitre,
     InscriptionModule,
@@ -26,7 +34,6 @@ from apps.elearning.models import (
     ProgressionLecon,
     VideoAsset,
 )
-from apps.elearning.storage import nouvelle_cle, stockage_video
 
 
 class ProfesseurMixin(TeacherRoleRequiredMixin):
@@ -311,15 +318,52 @@ class ReordonnerLeconsView(ProfesseurMixin, View):
 
 
 class VideoUploadView(ProfesseurMixin, TemplateView):
+    """
+    Dépôt d'une vidéo, ou référencement d'une vidéo hébergée chez le
+    fournisseur — selon ce que celui-ci accepte (ADR-005).
+    """
+
     template_name = "elearning/enseignant/video_form.html"
+
+    def _fournisseur(self):
+        return stockage_video()
 
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
-        contexte.setdefault("form", VideoUploadForm())
+        fournisseur = self._fournisseur()
+        contexte["televersement"] = fournisseur.accepte_televersement
+        contexte["fournisseur"] = fournisseur.nom
+        contexte.setdefault("form", VideoUploadForm() if fournisseur.accepte_televersement else VideoExterneForm())
         contexte["videos"] = VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:30]
         return contexte
 
     def post(self, request, *args, **kwargs):
+        if not self._fournisseur().accepte_televersement:
+            return self._referencer(request)
+        return self._televerser(request)
+
+    def _referencer(self, request):
+        """La vidéo vit chez le fournisseur : on n'enregistre que sa référence."""
+        formulaire = VideoExterneForm(request.POST)
+        if not formulaire.is_valid():
+            return self.render_to_response(self.get_context_data(form=formulaire))
+
+        video = VideoAsset.objects.create(
+            titre=formulaire.cleaned_data["titre"],
+            cle_stockage=formulaire.cleaned_data["identifiant"],
+            fournisseur=self._fournisseur().nom,
+            duree_secondes=formulaire.cleaned_data.get("duree_secondes") or 0,
+            transcription=formulaire.cleaned_data["transcription"],
+            uploade_par=request.user,
+            # Rien à préparer de notre côté : l'encodage est fait chez le
+            # fournisseur avant que l'identifiant ne soit communiqué.
+            statut_traitement=VideoAsset.StatutTraitement.PRET,
+        )
+        journaliser("creation", request=request, objet=video)
+        messages.success(request, "Vidéo référencée. Elle peut être rattachée à une leçon.")
+        return redirect(reverse("elearning:enseignant_videos"))
+
+    def _televerser(self, request):
         formulaire = VideoUploadForm(request.POST, request.FILES)
         if not formulaire.is_valid():
             return self.render_to_response(self.get_context_data(form=formulaire))
@@ -334,7 +378,7 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         video = VideoAsset.objects.create(
             titre=formulaire.cleaned_data["titre"],
             cle_stockage=cle,
-            backend_stockage=stockage.nom,
+            fournisseur=stockage.nom,
             nom_origine=fichier.name[:250],
             taille_octets=fichier.size,
             checksum_sha256=empreinte,

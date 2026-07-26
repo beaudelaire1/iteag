@@ -147,7 +147,7 @@ class TestServiceDuFichier:
         assert client.get(reverse("elearning:fichier_video", kwargs={"jeton": "n-importe-quoi"})).status_code == 404
 
     def test_un_jeton_expire_est_rejete(self, lecon):
-        from apps.elearning.storage import LocalStockageVideo
+        from apps.elearning.diffusion import LocalStockageVideo
 
         jeton = LocalStockageVideo().url_lecture(lecon.video.cle_stockage).rsplit("/", 2)[1]
         assert LocalStockageVideo.cle_depuis_jeton(jeton, ttl=-1) is None

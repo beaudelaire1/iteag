@@ -2,7 +2,12 @@
    ITEAG — Lecteur vidéo sécurisé
    Aucune adresse de fichier n'est présente dans la page : elle est
    demandée au serveur, qui revérifie le droit et délivre une adresse
-   signée à durée de vie courte (voir ADR-001).
+   signée à durée de vie courte (ADR-001, ADR-005).
+
+   Deux modes arrivent ici : « fichier » (adresse directe) et « hls »
+   (manifeste segmenté, lu par hls.js auto-hébergé). Le mode « iframe »
+   ne passe pas par ce script : il ne concerne que du contenu public,
+   sans mesure de progression — le cadre tiers ne nous en donne pas.
    ═══════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -22,6 +27,7 @@
   let expireLe = 0;
   let dernierSignal = 0;
   let minuteur = null;
+  let hls = null;
 
   function jetonCsrf() {
     const champ = document.querySelector("[name=csrfmiddlewaretoken]");
@@ -61,17 +67,58 @@
     // On renouvelle un peu avant l'échéance pour éviter une coupure en pleine lecture.
     expireLe = Date.now() + (donnees.expire_dans - 30) * 1000;
     masquerMessage();
-    return donnees.url;
+    return { url: donnees.url, mode: donnees.mode || "fichier" };
+  }
+
+  /* ── Rattachement de la source selon le mode ── */
+
+  // Safari lit le HLS nativement : lui imposer hls.js dégraderait la lecture
+  // et couperait l'AirPlay.
+  function hlsNatif() {
+    return video.canPlayType("application/vnd.apple.mpegurl") !== "";
+  }
+
+  function attacherHls(adresse) {
+    if (hlsNatif()) {
+      video.src = adresse;
+      return true;
+    }
+    if (typeof Hls === "undefined" || !Hls.isSupported()) {
+      afficherMessage("Votre navigateur ne permet pas la lecture de cette vidéo.");
+      return false;
+    }
+    if (hls) hls.destroy();
+    hls = new Hls({ lowLatencyMode: false });
+    hls.loadSource(adresse);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR, (_evenement, donnees) => {
+      if (!donnees.fatal) return;
+      // Une erreur réseau fatale signifie le plus souvent un jeton périmé :
+      // on redemande une adresse plutôt que d'afficher un échec.
+      adresseObtenue = false;
+      if (donnees.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        preparerLecture().then((pret) => {
+          if (pret) video.play().catch(() => {});
+        });
+      } else {
+        afficherMessage("La lecture a été interrompue. Rechargez la page.");
+      }
+    });
+    return true;
   }
 
   async function preparerLecture() {
     if (adresseObtenue && Date.now() < expireLe) return true;
 
     const positionCourante = video.currentTime || positionReprise;
-    const adresse = await obtenirAdresse();
-    if (!adresse) return false;
+    const lecture = await obtenirAdresse();
+    if (!lecture) return false;
 
-    video.src = adresse;
+    if (lecture.mode === "hls") {
+      if (!attacherHls(lecture.url)) return false;
+    } else {
+      video.src = lecture.url;
+    }
     adresseObtenue = true;
 
     if (positionCourante > 0) {

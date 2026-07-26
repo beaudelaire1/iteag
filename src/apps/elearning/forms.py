@@ -1,6 +1,8 @@
 """Formulaires de production de contenu — portail enseignant."""
 
 import hashlib
+import re
+from urllib.parse import parse_qs, urlparse
 
 from django import forms
 from django.conf import settings
@@ -215,3 +217,71 @@ class SousTitreForm(forms.ModelForm):
         if not entete.startswith(b"WEBVTT"):
             raise forms.ValidationError("Le fichier doit être au format WebVTT (il commence par « WEBVTT »).")
         return fichier
+
+
+class VideoExterneForm(forms.Form):
+    """
+    Référencement d'une vidéo déjà déposée chez le fournisseur.
+
+    Avec un fournisseur externe, l'enseignant ne téléverse plus : il dépose
+    dans la console du service, puis colle ici l'identifiant. Le champ est
+    validé sur sa forme, car un identifiant fautif ne se manifesterait
+    autrement qu'au moment où un étudiant tente de lire — trop tard.
+    """
+
+    titre = forms.CharField(
+        label="Titre de la vidéo",
+        max_length=250,
+        widget=forms.TextInput(attrs={"class": INPUT}),
+    )
+    identifiant = forms.CharField(
+        label="Identifiant chez le fournisseur",
+        max_length=200,
+        widget=forms.TextInput(attrs={"class": INPUT, "placeholder": "par exemple 8f2c1e94-…"}),
+        help_text="Identifiant de la vidéo dans la console du fournisseur, ou adresse complète.",
+    )
+    duree_secondes = forms.IntegerField(
+        label="Durée (secondes)",
+        min_value=0,
+        required=False,
+        widget=forms.NumberInput(attrs={"class": INPUT}),
+        help_text="Renseignée par le fournisseur ; laisser vide si inconnue.",
+    )
+    transcription = forms.CharField(
+        label="Transcription (facultative)",
+        required=False,
+        widget=forms.Textarea(attrs={"class": INPUT, "rows": 5}),
+        help_text="Améliore l'accessibilité et le référencement.",
+    )
+
+    # Identifiants acceptés : UUID Bunny, identifiant YouTube (11 caractères),
+    # identifiant numérique Vimeo.
+    MOTIF_IDENTIFIANT = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
+
+    def clean_identifiant(self):
+        saisie = self.cleaned_data["identifiant"].strip()
+        identifiant = self._extraire(saisie)
+        if not self.MOTIF_IDENTIFIANT.match(identifiant):
+            raise forms.ValidationError(
+                "Identifiant non reconnu. Coller l'identifiant de la vidéo ou son adresse complète."
+            )
+        if VideoAsset.objects.filter(cle_stockage=identifiant).exists():
+            raise forms.ValidationError("Cette vidéo est déjà référencée.")
+        return identifiant
+
+    @staticmethod
+    def _extraire(saisie: str) -> str:
+        """
+        Identifiant contenu dans une adresse collée.
+
+        Les enseignants collent l'adresse de la barre du navigateur bien plus
+        souvent que l'identifiant seul : l'exiger nu serait une friction inutile.
+        """
+        if "://" not in saisie:
+            return saisie
+        analyse = urlparse(saisie)
+        parametres = parse_qs(analyse.query)
+        if "v" in parametres:  # https://www.youtube.com/watch?v=…
+            return parametres["v"][0]
+        segments = [segment for segment in analyse.path.split("/") if segment]
+        return segments[-1] if segments else saisie

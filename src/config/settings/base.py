@@ -333,9 +333,27 @@ CELERY_TIMEZONE = TIME_ZONE
 # Formation vidéo (voir ADR-001 et ADR-002)
 # ──────────────────────────────────────────────
 
-# Backend de stockage des vidéos : "local" en développement, "s3" en production.
-ELEARNING_STOCKAGE_VIDEO = env("ELEARNING_STOCKAGE_VIDEO", default="local")
+# Fournisseur de diffusion des modules protégés — voir ADR-005.
+# "local" en développement, "bunny" en production. "s3" reste le chemin de
+# retour prévu par l'ADR-001.
+ELEARNING_DIFFUSION_VIDEO = env("ELEARNING_DIFFUSION_VIDEO", default="local")
+# Ancien nom, conservé le temps que les environnements soient mis à jour.
+ELEARNING_STOCKAGE_VIDEO = ELEARNING_DIFFUSION_VIDEO
+
+# Fournisseurs admis pour le contenu public (bandes-annonces du catalogue).
+# Ils ne protègent rien : le modèle refuse de les rattacher à un module
+# restreint, cette liste ne sert qu'à autoriser leurs origines dans la CSP.
+ELEARNING_DIFFUSION_PUBLIQUE = env.list("ELEARNING_DIFFUSION_PUBLIQUE", default=["youtube"])
+
 AWS_STORAGE_BUCKET_NAME_VIDEOS = env("AWS_STORAGE_BUCKET_NAME_VIDEOS", default="iteag-videos")
+
+# Bunny Stream. La clé de signature ne quitte jamais le serveur : elle sert à
+# calculer les jetons de lecture, jamais à être transmise au navigateur.
+BUNNY_ZONE_DIFFUSION = env("BUNNY_ZONE_DIFFUSION", default="")
+BUNNY_CLE_SIGNATURE = env("BUNNY_CLE_SIGNATURE", default="")
+# Liaison du jeton à l'adresse IP : plus strict, mais coupe la lecture quand
+# l'adresse change en cours de séance — fréquent en mobile.
+BUNNY_LIER_ADRESSE_IP = env.bool("BUNNY_LIER_ADRESSE_IP", default=False)
 
 # Nombre de lectures simultanées tolérées par compte. 1 = un seul appareil à la
 # fois, ce qui rend le partage de compte inconfortable sans gêner un usage normal.

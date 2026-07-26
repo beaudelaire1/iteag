@@ -22,6 +22,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel, UUIDModel
+from apps.elearning.diffusion import (
+    CHOIX_FOURNISSEUR,
+    PROTECTION_PAR_FOURNISSEUR,
+    Lecture,
+    NiveauProtection,
+    protection_suffisante,
+)
 
 # ══════════════════════════════════════════════
 # Contenu
@@ -181,6 +188,14 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
                     return False, f"La leçon « {lecon.titre} » n'a pas de vidéo."
                 if lecon.video.statut_traitement != VideoAsset.StatutTraitement.PRET:
                     return False, f"La vidéo de « {lecon.titre} » est encore en préparation."
+                # Dernier filet avant la mise en ligne : la politique d'accès a
+                # pu être resserrée après le rattachement de la vidéo.
+                if not protection_suffisante(lecon.video.protection, self.politique_acces):
+                    return False, (
+                        f"La vidéo de « {lecon.titre} » est hébergée chez "
+                        f"« {lecon.video.get_fournisseur_display()} », qui ne permet pas de retirer "
+                        f"un accès. Incompatible avec « {self.get_politique_acces_display()} »."
+                    )
         return True, ""
 
     def publier(self):
@@ -266,6 +281,30 @@ class Lecon(UUIDModel, TimeStampedModel):
             raise ValidationError({"video": "Une leçon de type vidéo doit référencer un fichier vidéo."})
         if self.type_lecon == self.TypeLecon.LIEN_EXTERNE and not self.lien_externe:
             raise ValidationError({"lien_externe": "Une leçon de type lien doit porter une adresse."})
+        self._verifier_protection_video()
+
+    def _verifier_protection_video(self):
+        """
+        Un fournisseur trop faible ne peut pas servir un module protégé — ADR-005.
+
+        Sans cette règle, coller un identifiant YouTube sur la leçon d'un module
+        payant suffirait à percer tout le contrôle d'accès, sans qu'aucune alerte
+        ne se déclenche : la page resterait protégée, la vidéo ne le serait plus.
+        """
+        if self.video_id is None or self.chapitre_id is None:
+            return
+        politique = self.module.politique_acces
+        if protection_suffisante(self.video.protection, politique):
+            return
+        raise ValidationError(
+            {
+                "video": (
+                    f"« {self.video.get_fournisseur_display()} » ne protège pas assez pour la politique "
+                    f"« {self.module.get_politique_acces_display()} » : l'adresse délivrée ne peut pas être "
+                    "retirée une fois partagée. Choisir un fournisseur à adresse signée."
+                )
+            }
+        )
 
     def save(self, *args, **kwargs):
         if self.video_id and not self.duree_secondes:
@@ -288,8 +327,18 @@ class VideoAsset(UUIDModel, TimeStampedModel):
         ERREUR = "erreur", "Erreur"
 
     titre = models.CharField(max_length=250)
-    cle_stockage = models.CharField(max_length=500, unique=True, verbose_name="Clé de stockage")
-    backend_stockage = models.CharField(max_length=20, default="local")
+    cle_stockage = models.CharField(
+        max_length=500,
+        unique=True,
+        verbose_name="Clé ou identifiant",
+        help_text="Clé de stockage interne, ou identifiant de la vidéo chez le fournisseur externe",
+    )
+    fournisseur = models.CharField(
+        max_length=20,
+        default="local",
+        choices=CHOIX_FOURNISSEUR,
+        verbose_name="Fournisseur de diffusion",
+    )
     nom_origine = models.CharField(max_length=250, blank=True, verbose_name="Nom du fichier d'origine")
 
     duree_secondes = models.PositiveIntegerField(default=0, verbose_name="Durée")
@@ -327,11 +376,30 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     def est_prete(self) -> bool:
         return self.statut_traitement == self.StatutTraitement.PRET
 
-    def url_lecture_signee(self, ttl: int = 300) -> str:
-        """Adresse éphémère de lecture. Jamais rendue dans un gabarit."""
-        from apps.elearning.storage import stockage_video
+    @property
+    def protection(self) -> str:
+        """Ce que le fournisseur de cette vidéo sait garantir."""
+        return PROTECTION_PAR_FOURNISSEUR.get(self.fournisseur, NiveauProtection.AUCUNE)
 
-        return stockage_video().url_lecture(self.cle_stockage, ttl=ttl)
+    @property
+    def mode_lecture(self) -> str:
+        """Comment le gabarit doit rendre cette vidéo : fichier, hls ou iframe."""
+        from apps.elearning.diffusion import FOURNISSEURS, LocalStockageVideo
+
+        return FOURNISSEURS.get(self.fournisseur, LocalStockageVideo).mode
+
+    def lecture(self, ttl: int = 300, adresse_ip: str = "") -> Lecture:
+        """
+        Descripteur de lecture éphémère. L'adresse n'est jamais rendue dans un
+        gabarit : elle est délivrée à la demande, après revérification du droit.
+        """
+        from apps.elearning.diffusion import fournisseur as choisir
+
+        return choisir(self.fournisseur).lecture(self.cle_stockage, ttl=ttl, adresse_ip=adresse_ip)
+
+    def url_lecture_signee(self, ttl: int = 300) -> str:
+        """Adresse seule — conservée pour les appelants qui n'ont pas besoin du mode."""
+        return self.lecture(ttl=ttl).url
 
 
 class SousTitre(TimeStampedModel):

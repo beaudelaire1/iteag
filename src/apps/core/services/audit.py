@@ -7,7 +7,7 @@ approximative faite à plusieurs endroits.
 from apps.core.models import JournalAudit
 
 
-def _adresse_ip(request):
+def adresse_ip(request):
     """Adresse du client, en tenant compte d'un éventuel proxy de confiance."""
     if request is None:
         return None
@@ -49,7 +49,7 @@ def journaliser(
         objet_type=objet_type[:100],
         objet_id=objet_id[:64],
         objet_libelle=objet_libelle[:250],
-        adresse_ip=_adresse_ip(request),
+        adresse_ip=adresse_ip(request),
         user_agent=(request.META.get("HTTP_USER_AGENT", "")[:300] if request else ""),
         metadonnees=metadonnees or {},
     )
