@@ -347,6 +347,102 @@
     border-bottom-color: var(--color-gold-400);
   }
 
+  /* ── Rubriques de la navigation publique ──
+     Sept entrées à plat encombraient la barre, et « Formations vidéo » y
+     figurait à côté de « Formations » comme s'il s'agissait d'une autre offre.
+     Les rubriques les regroupent.
+
+     Aucun JavaScript : le panneau s'ouvre au survol et à la prise de focus.
+     L'intitulé reste un lien vers la page principale de la rubrique, si bien
+     qu'aucune destination ne dépend de l'ouverture du panneau — au clavier, à
+     la souris, sans script, tout reste atteignable. */
+  .nav-groupe {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .nav-groupe > .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .nav-groupe .chevron {
+    width: 0.75rem;
+    height: 0.75rem;
+    transition: transform var(--duration-fast) var(--ease-premium);
+  }
+  .nav-groupe:hover .chevron,
+  .nav-groupe:focus-within .chevron {
+    transform: rotate(180deg);
+  }
+
+  .nav-groupe-panneau {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-0.375rem);
+    min-width: 15rem;
+    padding: 0.5rem 0;
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: var(--shadow-elevated);
+    /* Non affiché mais toujours dans le flux de mise en page : le panneau
+       reste accessible au clavier, ce que « display: none » interdirait. */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity var(--duration-fast) var(--ease-premium),
+                visibility var(--duration-fast) var(--ease-premium),
+                transform var(--duration-fast) var(--ease-premium);
+    z-index: 50;
+  }
+  /* Pont invisible entre l'intitulé et le panneau : sans lui, le pointeur
+     traverse un vide et le menu se referme avant d'être atteint. */
+  .nav-groupe-panneau::before {
+    content: "";
+    position: absolute;
+    inset: -0.625rem 0 100% 0;
+  }
+  .nav-groupe:hover .nav-groupe-panneau,
+  .nav-groupe:focus-within .nav-groupe-panneau {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0.5rem);
+  }
+
+  .nav-groupe-lien {
+    display: block;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-warm-700);
+    white-space: nowrap;
+    transition: all var(--duration-fast) var(--ease-premium);
+  }
+  .nav-groupe-lien:hover,
+  .nav-groupe-lien:focus-visible {
+    color: var(--color-navy-800);
+    background-color: var(--color-warm-50);
+  }
+  .nav-groupe-lien .detail {
+    display: block;
+    margin-top: 0.0625rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-warm-500);
+  }
+
+  /* Intitulé de sous-rubrique dans le menu mobile, où tout est déplié. */
+  .nav-mobile-groupe {
+    padding: 0.75rem 1rem 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-gold-400);
+  }
+
   /* ── Formulaires premium ── */
   .form-input {
     display: block;

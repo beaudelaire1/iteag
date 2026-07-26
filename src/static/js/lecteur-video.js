@@ -88,7 +88,19 @@
       return false;
     }
     if (hls) hls.destroy();
-    hls = new Hls({ lowLatencyMode: false });
+    hls = new Hls({
+      lowLatencyMode: false,
+      // Un flux HLS n'est pas un fichier : après le manifeste, le lecteur
+      // demande les segments un par un. Ces adresses sont résolues
+      // relativement au manifeste, donc *sans* sa chaîne de requête — le
+      // jeton d'accès y serait perdu et chaque segment refusé. On la
+      // réapplique, sauf si le manifeste en a déjà fourni une.
+      xhrSetup: (xhr, url) => {
+        const requeteSignee = adresse.split("?")[1];
+        if (!requeteSignee || url.includes("?")) return;
+        xhr.open("GET", url + "?" + requeteSignee, true);
+      },
+    });
     hls.loadSource(adresse);
     hls.attachMedia(video);
     hls.on(Hls.Events.ERROR, (_evenement, donnees) => {
