@@ -50,7 +50,7 @@
                 <td class="px-4 py-3 text-right">
                     {% if user.is_admin %}
                     <a href="{% url 'administration:tarif_update' tarif.pk %}" class="btn-secondary text-sm">Modifier</a>
-                    <a href="{% url 'administration:tarif_delete' tarif.pk %}" class="ml-3 text-sm font-semibold text-red-700">Supprimer</a>
+                    <a href="{% url 'administration:tarif_delete' tarif.pk %}" class="ml-3 text-sm font-semibold text-rose-700">Supprimer</a>
                     {% else %}
                     <span class="text-xs text-warm-400">Lecture seule</span>
                     {% endif %}

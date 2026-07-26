@@ -16,7 +16,7 @@
         {% if events %}
         <div class="space-y-6" data-motion-stagger>
             {% for event in events %}
-            <article class="reveal group flex flex-col sm:flex-row gap-6 bg-white rounded-xl shadow-sm border border-warm-200 p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+            <article class="reveal group flex flex-col sm:flex-row gap-6 bg-white rounded shadow-sm border border-warm-200 p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                 <div class="flex-shrink-0 flex flex-col items-center justify-center bg-navy-50 rounded-lg px-4 py-3 min-w-[5rem] text-center">
                     <span class="text-2xl font-bold text-navy-700">{{ event.date_debut|date:"d" }}</span>
                     <span class="text-sm font-medium text-navy-600 uppercase">{{ event.date_debut|date:"M" }}</span>

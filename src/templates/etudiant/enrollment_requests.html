@@ -46,7 +46,7 @@
             {% if demande.peut_etre_annulee %}
             <form method="post" action="{% url 'etudiant:enrollment_request_cancel' demande.pk %}" onsubmit="return confirm('Annuler cette demande d’inscription ?');">
                 {% csrf_token %}
-                <button type="submit" class="text-sm font-semibold text-red-700">Annuler la demande</button>
+                <button type="submit" class="text-sm font-semibold text-rose-700">Annuler la demande</button>
             </form>
             {% endif %}
         </div>

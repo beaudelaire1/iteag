@@ -40,11 +40,11 @@
                     <td class="px-5 py-3 text-sm" style="color: var(--color-warm-600);">{{ eval.get_type_evaluation_display }}</td>
                     <td class="px-5 py-3 text-sm">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                            {% if eval.statut == 'soumis' %}bg-blue-100 text-blue-700
-                            {% elif eval.statut == 'en_correction' %}bg-yellow-100 text-yellow-700
-                            {% elif eval.statut == 'note' %}bg-green-100 text-green-700
-                            {% elif eval.statut == 'publie' %}bg-purple-100 text-purple-700
-                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {% if eval.statut == 'soumis' %}bg-navy-100 text-navy-700
+                            {% elif eval.statut == 'en_correction' %}bg-gold-100 text-gold-700
+                            {% elif eval.statut == 'note' %}bg-green-100 text-emerald-700
+                            {% elif eval.statut == 'publie' %}bg-navy-100 text-navy-700
+                            {% else %}bg-warm-100 text-warm-700{% endif %}">
                             {{ eval.get_statut_display }}
                         </span>
                     </td>

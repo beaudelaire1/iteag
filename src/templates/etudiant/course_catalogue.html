@@ -13,7 +13,7 @@
 <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
     <div>
         <p class="overline mb-2">Choisir sa formation</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Catalogue des cours</h1>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Catalogue des formations</h1>
         <p class="mt-2 max-w-2xl text-sm text-warm-500">Consultez le programme, les modalités, les places et le tarif qui s’applique à votre dossier avant de demander votre inscription.</p>
     </div>
     <a href="{% url 'etudiant:enrollment_requests' %}" class="btn-secondary">Suivre mes demandes</a>
@@ -59,6 +59,10 @@
     </div>
 </form>
 
+{% if modules_video %}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4" style="color: var(--color-warm-500);">Cours en session</h2>
+{% endif %}
+
 <div class="grid gap-6 xl:grid-cols-2">
     {% for offre in offres %}
     <article class="card-elevated flex h-full flex-col">
@@ -98,6 +102,41 @@
     </div>
     {% endfor %}
 </div>
+
+{% comment %}Même catalogue, autre format : la vidéo n'a pas d'écran séparé.{% endcomment %}
+{% if modules_video %}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4 mt-10" style="color: var(--color-warm-500);">Modules vidéo</h2>
+<div class="grid gap-6 xl:grid-cols-2">
+    {% for module in modules_video %}
+    <article class="card-elevated flex h-full flex-col">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <span class="badge badge-info">{{ module.discipline|default:"Formation vidéo" }}</span>
+            <span class="text-xs font-semibold text-warm-500">{{ module.get_niveau_display }}</span>
+        </div>
+        <h3 class="text-xl font-semibold text-navy-900">{{ module.titre }}</h3>
+        <p class="mt-2 text-sm leading-6 text-warm-600">{{ module.description|default:"Le programme détaillé sera communiqué par l’enseignant."|truncatewords:32 }}</p>
+
+        <dl class="mt-5 grid grid-cols-2 gap-4 rounded bg-warm-50 p-4 text-sm">
+            <div><dt class="text-xs text-warm-500">Responsable</dt><dd class="mt-1 font-semibold text-navy-900">{{ module.responsable|default:"À confirmer" }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Format</dt><dd class="mt-1 font-semibold text-navy-900">Vidéo, à votre rythme</dd></div>
+            <div><dt class="text-xs text-warm-500">ECTS</dt><dd class="mt-1 font-semibold text-navy-900">{{ module.ects }}</dd></div>
+            <div><dt class="text-xs text-warm-500">Attestation</dt><dd class="mt-1 font-semibold text-navy-900">{% if module.certifiant %}Oui{% else %}Non{% endif %}</dd></div>
+        </dl>
+
+        <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+            {% if module.acces_etudiant.statut == 'demande' %}
+            <span class="badge badge-gold">Demande en attente</span>
+            {% elif module.acces_etudiant %}
+            <span class="badge badge-success">{{ module.acces_etudiant.get_statut_display }}</span>
+            {% else %}
+            <span class="badge badge-success">Ouvert sur demande</span>
+            {% endif %}
+            <a href="{{ module.get_absolute_url }}" class="btn-secondary text-sm">Voir le module</a>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% endif %}
 
 {% if page_obj.has_other_pages %}
 <nav class="mt-8 flex justify-center gap-2" aria-label="Pagination">

@@ -1,6 +1,6 @@
 {% extends "partials/portal_base.html" %}
 
-{% block title %}Mes cours — {{ SITE_NAME }}{% endblock %}
+{% block title %}Mes formations — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
 {% with nav='courses' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
@@ -10,66 +10,109 @@
 {% endblock %}
 
 {% block portal_header %}
-<div class="mb-10 flex flex-wrap items-end justify-between gap-4">
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
         <p class="overline mb-2">Académique</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
-        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Cours auxquels vous êtes inscrit(e) et ressources associées</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes formations</h1>
+        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+            Vos enseignements en session et en vidéo, avec leurs ressources.
+        </p>
     </div>
-    <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary">Choisir un cours</a>
+    <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary">Choisir une formation</a>
 </div>
 {% endblock %}
 
 {% block portal_content %}
+
+{% comment %}Un seul écran pour les deux formats : la vidéo est un format d'enseignement, pas une formation à part.{% endcomment %}
+
+{% if inscriptions %}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4" style="color: var(--color-warm-500);">Cours en session</h2>
 {% for insc in inscriptions %}
-<details class="accordeon bg-white rounded-xl border border-gray-200 overflow-hidden mb-6"{% if forloop.first %} open{% endif %}>
-    <summary class="w-full px-5 py-4">
-        <div>
-            <h2 class="text-base font-semibold text-gray-900">{{ insc.cours_session.cours.titre }}</h2>
-            <p class="text-sm text-gray-500 mt-0.5">{{ insc.cours_session.session.nom }} · {{ insc.cours_session.enseignant|default:"Enseignant à confirmer" }} · {{ insc.cours_session.cours.ects }} ECTS</p>
+<details class="accordeon card-elevated mb-4" style="padding: 0;"{% if forloop.first %} open{% endif %}>
+    <summary class="px-5 py-4">
+        <div class="min-w-0">
+            <h3 class="text-base font-semibold" style="color: var(--color-navy-900);">{{ insc.cours_session.cours.titre }}</h3>
+            <p class="text-sm mt-0.5" style="color: var(--color-warm-500);">
+                {{ insc.cours_session.session.nom }} · {{ insc.cours_session.enseignant|default:"Enseignant à confirmer" }} · {{ insc.cours_session.cours.ects }} ECTS
+            </p>
         </div>
-        <svg class="chevron h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+        <svg class="chevron h-5 w-5 shrink-0" style="color: var(--color-warm-400);" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
     </summary>
 
     <div>
-        {# ── Annonces ── #}
         {% if insc.cours_session.annonces.all %}
-        <div class="border-t border-gray-100 px-5 py-3 bg-yellow-50">
-            <p class="text-xs font-semibold text-yellow-800 uppercase tracking-wider mb-2">Annonces</p>
+        <div class="border-t px-5 py-3" style="border-color: var(--color-warm-100); background: var(--color-gold-50);">
+            <p class="overline mb-2">Annonces</p>
             {% for annonce in insc.cours_session.annonces.all %}
-            <div class="{% if not forloop.first %}mt-2 pt-2 border-t border-yellow-100{% endif %}">
-                <p class="text-sm font-medium text-gray-900">{{ annonce.titre }}</p>
-                <p class="text-sm text-gray-600 mt-0.5">{{ annonce.contenu|truncatewords:40 }}</p>
-                <p class="text-xs text-gray-400 mt-1">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
+            <div class="{% if not forloop.first %}mt-3 pt-3 border-t{% endif %}" style="border-color: var(--color-gold-100);">
+                <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
+                <p class="text-sm mt-0.5" style="color: var(--color-warm-600);">{{ annonce.contenu|truncatewords:40 }}</p>
+                <p class="text-xs mt-1" style="color: var(--color-warm-400);">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
             </div>
             {% endfor %}
         </div>
         {% endif %}
 
-        {# ── Ressources ── #}
-        <div class="border-t border-gray-100 px-5 py-3">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ressources pédagogiques</p>
+        <div class="border-t px-5 py-3" style="border-color: var(--color-warm-100);">
+            <p class="overline mb-2">Ressources pédagogiques</p>
             {% for res in insc.cours_session.ressources.all %}
-            <div class="flex items-center justify-between py-2 {% if not forloop.first %}border-t border-gray-50{% endif %}">
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">{{ res.type_fichier|default:"?" }}</span>
-                    <div>
-                        <p class="text-sm font-medium text-gray-900">{{ res.titre }}</p>
-                        {% if res.description %}<p class="text-xs text-gray-500">{{ res.description|truncatewords:15 }}</p>{% endif %}
+            <div class="flex items-center justify-between gap-4 py-2 {% if not forloop.first %}border-t{% endif %}" style="border-color: var(--color-warm-100);">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-xs font-bold" style="background: var(--color-navy-50); color: var(--color-navy-700);">{{ res.type_fichier|default:"?" }}</span>
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ res.titre }}</p>
+                        {% if res.description %}<p class="truncate text-xs" style="color: var(--color-warm-500);">{{ res.description|truncatewords:15 }}</p>{% endif %}
                     </div>
                 </div>
-                <a href="{{ res.fichier.url }}" class="text-sm text-blue-700 hover:underline" download>Télécharger</a>
+                <a href="{{ res.fichier.url }}" class="shrink-0 text-sm font-semibold link-reveal" download>Télécharger</a>
             </div>
             {% empty %}
-            <p class="text-sm text-gray-400 py-2">Aucune ressource disponible.</p>
+            <p class="py-2 text-sm" style="color: var(--color-warm-400);">Aucune ressource disponible.</p>
             {% endfor %}
         </div>
     </div>
 </details>
-{% empty %}
-<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-    <p class="text-gray-500">Vous n'êtes inscrit(e) à aucun cours pour le moment.</p>
+{% endfor %}
+{% endif %}
+
+{% if modules_actifs or modules_demandes or modules_indisponibles %}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4 {% if inscriptions %}mt-10{% endif %}" style="color: var(--color-warm-500);">Modules vidéo</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    {% for inscription in modules_actifs %}
+    {% include "elearning/partials/carte_module.html" %}
+    {% endfor %}
+    {% for inscription in modules_demandes %}
+    {% include "elearning/partials/carte_module.html" %}
+    {% endfor %}
+    {% for inscription in modules_indisponibles %}
+    {% include "elearning/partials/carte_module.html" %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if attestations_modules %}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4 mt-10" style="color: var(--color-warm-500);">Attestations obtenues</h2>
+<div class="card-elevated" style="padding: 0;">
+    <div class="divide-y" style="border-color: var(--color-warm-100);">
+        {% for attestation in attestations_modules %}
+        <div class="flex items-center justify-between gap-4 px-5 py-3">
+            <div class="min-w-0">
+                <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ attestation.inscription.module.titre }}</p>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ attestation.numero }}</p>
+            </div>
+            <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}" class="shrink-0 text-sm font-semibold link-reveal">Télécharger</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if not inscriptions and not modules_actifs and not modules_demandes and not modules_indisponibles %}
+<div class="card-elevated py-16 text-center">
+    <p style="color: var(--color-warm-500);">Vous ne suivez encore aucune formation.</p>
     <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary mt-5">Consulter le catalogue</a>
 </div>
-{% endfor %}
+{% endif %}
+
 {% endblock %}

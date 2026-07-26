@@ -40,7 +40,7 @@
         <div class="flex flex-wrap gap-3">
             <a href="{% url 'administration:enrollment_requests' %}?session={{ offre.session_id }}&q={{ offre.cours.titre|urlencode }}" class="btn-secondary text-sm">Demandes</a>
             <a href="{% url 'administration:course_offering_update' offre.pk %}" class="btn-secondary text-sm">Modifier</a>
-            {% if user.is_admin %}<a href="{% url 'administration:course_offering_delete' offre.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a>{% endif %}
+            {% if user.is_admin %}<a href="{% url 'administration:course_offering_delete' offre.pk %}" class="text-sm font-semibold text-rose-700">Supprimer</a>{% endif %}
         </div>
     </article>
     {% empty %}<div class="card-elevated py-12 text-center text-warm-400">Aucun cours programmé.</div>{% endfor %}

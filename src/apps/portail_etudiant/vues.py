@@ -146,7 +146,12 @@ class StudentProgressView(StudentRoleRequiredMixin, TemplateView):
 
 
 class StudentCoursesView(StudentRoleRequiredMixin, TemplateView):
-    """ETU-003 — Accès aux cours et ressources."""
+    """ETU-003 — Tout ce que l'étudiant suit, quel que soit le format.
+
+    La vidéo n'est pas une formation à part : c'est un format d'enseignement.
+    Séparer les deux écrans obligeait l'étudiant à savoir d'avance où chercher
+    son cours — et laissait la moitié de sa formation hors de sa navigation.
+    """
 
     template_name = "etudiant/courses.html"
 
@@ -165,8 +170,26 @@ class StudentCoursesView(StudentRoleRequiredMixin, TemplateView):
             )
             .order_by("-cours_session__session__date_debut")
         )
-        context.update({"profil": profil, "inscriptions": inscriptions})
+        context.update({"profil": profil, "inscriptions": inscriptions, **self._modules_video(profil)})
         return context
+
+    def _modules_video(self, profil) -> dict:
+        from apps.elearning.models import AttestationModule, InscriptionModule
+
+        acces = list(
+            InscriptionModule.objects.filter(etudiant=profil)
+            .select_related("module", "module__discipline", "module__responsable")
+            .order_by("module__ordre", "module__titre")
+        )
+        etats = InscriptionModule.StatutAcces
+        return {
+            "modules_actifs": [i for i in acces if i.statut in (etats.ACTIF, etats.TERMINE)],
+            "modules_demandes": [i for i in acces if i.statut == etats.DEMANDE],
+            "modules_indisponibles": [i for i in acces if i.statut in (etats.SUSPENDU, etats.EXPIRE, etats.REVOQUE)],
+            "attestations_modules": AttestationModule.objects.filter(inscription__etudiant=profil)
+            .select_related("inscription__module")
+            .order_by("-created_at"),
+        }
 
 
 class StudentGradesView(StudentRoleRequiredMixin, TemplateView):

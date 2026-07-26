@@ -490,6 +490,8 @@
   .badge-danger  { background: #FEF2F2; color: #991B1B; }
   .badge-info    { background: var(--color-navy-50); color: var(--color-navy-700); }
   .badge-gold    { background: var(--color-gold-50); color: var(--color-gold-700); }
+  /* État neutre ou inactif — remplace les gris Tailwind employés au cas par cas. */
+  .badge-neutral { background: var(--color-warm-100); color: var(--color-warm-600); }
 
   /* ── Portal sidebar ── */
   .portal-nav-link {
@@ -511,6 +513,67 @@
     color: var(--color-navy-800);
     background-color: var(--color-navy-50);
     font-weight: 600;
+  }
+  .portal-nav-link:focus-visible {
+    outline: 2px solid var(--color-navy-500);
+    outline-offset: 2px;
+  }
+
+  /* Intitulé de rubrique : c'est le regroupement qui allège une barre longue,
+     pas le retrait de liens dont chacun sert à quelqu'un. */
+  .portal-nav-group {
+    margin: 1.25rem 0 0.375rem;
+    padding: 0 1rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-warm-400);
+  }
+  .portal-nav-group:first-child { margin-top: 0; }
+
+  /* Compteur d'attente accolé à un lien — ce qui appelle une action se voit. */
+  .portal-nav-count {
+    margin-left: auto;
+    min-width: 1.25rem;
+    padding: 0 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    text-align: center;
+    color: var(--color-gold-700);
+    background-color: var(--color-gold-50);
+    border-radius: 999px;
+  }
+
+  /* Barre mobile : mêmes couleurs et mêmes états que la barre latérale. */
+  .portal-nav-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    color: var(--color-warm-600);
+    background-color: #fff;
+    border: 1px solid var(--color-warm-200);
+    border-radius: 999px;
+    transition: all var(--duration-fast) var(--ease-premium);
+  }
+  .portal-nav-pill:hover {
+    color: var(--color-navy-800);
+    border-color: var(--color-navy-200);
+  }
+  .portal-nav-pill.active {
+    color: #fff;
+    background-color: var(--color-navy-700);
+    border-color: var(--color-navy-700);
+  }
+  .portal-nav-pill:focus-visible {
+    outline: 2px solid var(--color-navy-500);
+    outline-offset: 2px;
   }
 
   /* ── HTMX loading indicators ── */

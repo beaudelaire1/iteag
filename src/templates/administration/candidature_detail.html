@@ -18,10 +18,10 @@
     <div class="flex flex-wrap items-center gap-3">
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ dossier.nom_complet }}</h1>
         <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
-            {% if dossier.statut == 'soumis' %}bg-blue-50 text-blue-700
+            {% if dossier.statut == 'soumis' %}badge-info
             {% elif dossier.statut == 'en_examen' %}bg-amber-50 text-amber-700
             {% elif dossier.statut == 'accepte' %}bg-emerald-50 text-emerald-700
-            {% elif dossier.statut == 'refuse' %}bg-red-50 text-red-700
+            {% elif dossier.statut == 'refuse' %}bg-red-50 text-rose-700
             {% else %}bg-orange-50 text-orange-700{% endif %}">
             {{ dossier.get_statut_display }}
         </span>

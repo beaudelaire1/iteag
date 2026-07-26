@@ -52,8 +52,8 @@
             </div>
             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
                 {% if s.statut == 'en_cours' %}bg-emerald-50 text-emerald-700
-                {% elif s.statut == 'planifiee' %}bg-blue-50 text-blue-700
-                {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {% elif s.statut == 'planifiee' %}badge-info
+                {% else %}badge-neutral{% endif %}">
                 {{ s.get_statut_display }}
             </span>
             <a href="{% url 'administration:session_update' s.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>

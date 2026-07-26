@@ -19,7 +19,7 @@
         {% csrf_token %}
         <label for="{{ form.fichier_soumis.id_for_label }}" class="form-label">Fichier à remettre</label>
         {{ form.fichier_soumis }}
-        {% for error in form.fichier_soumis.errors %}<p class="mt-2 text-sm text-red-700">{{ error }}</p>{% endfor %}
+        {% for error in form.fichier_soumis.errors %}<p class="mt-2 text-sm text-rose-700">{{ error }}</p>{% endfor %}
         <div class="mt-6 flex items-center gap-4">
             <button type="submit" class="btn-primary">Confirmer la remise</button>
             <a href="{% url 'etudiant:grades' %}" class="btn-ghost">Annuler</a>

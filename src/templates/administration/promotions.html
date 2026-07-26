@@ -54,7 +54,7 @@
             <a href="{% url 'administration:etudiants' %}?promotion={{ promotion.pk }}" class="btn-secondary text-sm">Étudiants</a>
             <a href="{% url 'administration:promotion_update' promotion.pk %}" class="btn-secondary text-sm">Modifier</a>
             {% if user.is_admin %}
-            <a href="{% url 'administration:promotion_delete' promotion.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a>
+            <a href="{% url 'administration:promotion_delete' promotion.pk %}" class="text-sm font-semibold text-rose-700">Supprimer</a>
             {% endif %}
         </div>
     </article>

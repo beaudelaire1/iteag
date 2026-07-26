@@ -64,10 +64,10 @@
                     <td class="px-6 py-3 hidden md:table-cell" style="color: var(--color-warm-600);">{{ u.email }}</td>
                     <td class="px-6 py-3">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                            {% if u.role == 'admin' %}bg-purple-50 text-purple-700
+                            {% if u.role == 'admin' %}badge-info
                             {% elif u.role == 'secretariat' %}bg-indigo-50 text-indigo-700
                             {% elif u.role == 'enseignant' %}bg-amber-50 text-amber-700
-                            {% else %}bg-blue-50 text-blue-700{% endif %}">
+                            {% else %}badge-info{% endif %}">
                             {{ u.get_role_display }}
                         </span>
                         {% if u.is_superuser %}
@@ -77,7 +77,7 @@
                     <td class="px-6 py-3 hidden lg:table-cell" style="color: var(--color-warm-600);">{{ u.phone|default:"—" }}</td>
                     <td class="px-6 py-3 text-center">
                         {% if u.is_active %}
-                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 text-xs">✓</span>
+                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full badge-success text-xs">✓</span>
                         {% else %}
                         <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-50 text-red-400 text-xs">✕</span>
                         {% endif %}

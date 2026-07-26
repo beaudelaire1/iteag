@@ -35,43 +35,43 @@
 </div>
 
 {# ── Cours assignés ── #}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="text-base font-semibold text-gray-900">Mes cours</h2>
+<div class="card-elevated mb-8" style="padding: 0;">
+    <div class="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
+        <h2 class="text-base font-semibold text-navy-900">Mes cours</h2>
         <a href="{% url 'lms:courses_list' %}" class="text-sm font-medium hover:underline" style="color: var(--color-navy-600);">Tout voir</a>
     </div>
-    <div class="divide-y divide-gray-100">
+    <div class="divide-y divide-warm-100">
         {% for cs in cours_assignes %}
-        <a href="{% url 'lms:course_detail' cs.pk %}" class="block px-5 py-4 hover:bg-gray-50 transition-colors">
+        <a href="{% url 'lms:course_detail' cs.pk %}" class="block px-5 py-4 hover:bg-warm-50 transition-colors">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-900">{{ cs.cours.titre }}</p>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ cs.session.nom }} · {{ cs.get_statut_display }}</p>
+                    <p class="text-sm font-medium text-navy-900">{{ cs.cours.titre }}</p>
+                    <p class="text-xs text-warm-500 mt-0.5">{{ cs.session.nom }} · {{ cs.get_statut_display }}</p>
                 </div>
-                <svg class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                <svg class="h-5 w-5 text-warm-300" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
             </div>
         </a>
         {% empty %}
-        <p class="px-5 py-8 text-sm text-gray-400 text-center">Aucun cours assigné pour le moment.</p>
+        <p class="px-5 py-8 text-sm text-warm-400 text-center">Aucun cours assigné pour le moment.</p>
         {% endfor %}
     </div>
 </div>
 
 {# ── Évaluations à corriger ── #}
 {% if pending_evaluations %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="text-base font-semibold text-gray-900">Évaluations à corriger</h2>
+<div class="card-elevated mb-8" style="padding: 0;">
+    <div class="px-5 py-4 border-b border-warm-100">
+        <h2 class="text-base font-semibold text-navy-900">Évaluations à corriger</h2>
     </div>
-    <div class="divide-y divide-gray-100">
+    <div class="divide-y divide-warm-100">
         {% for eval in pending_evaluations %}
         <div class="px-5 py-3 flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-900">{{ eval.etudiant.utilisateur.get_full_name }}</p>
-                <p class="text-xs text-gray-500">{{ eval.cours_session.cours.titre }} — {{ eval.get_type_evaluation_display }}</p>
+                <p class="text-sm font-medium text-navy-900">{{ eval.etudiant.utilisateur.get_full_name }}</p>
+                <p class="text-xs text-warm-500">{{ eval.cours_session.cours.titre }} — {{ eval.get_type_evaluation_display }}</p>
             </div>
             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                {% if eval.statut == 'soumis' %}bg-blue-100 text-blue-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                {% if eval.statut == 'soumis' %}bg-navy-100 text-navy-700{% else %}bg-gold-100 text-gold-700{% endif %}">
                 {{ eval.get_statut_display }}
             </span>
         </div>
@@ -82,15 +82,15 @@
 
 {# ── Annonces récentes ── #}
 {% if recent_annonces %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="text-base font-semibold text-gray-900">Mes annonces</h2>
+<div class="card-elevated" style="padding: 0;">
+    <div class="px-5 py-4 border-b border-warm-100">
+        <h2 class="text-base font-semibold text-navy-900">Mes annonces</h2>
     </div>
-    <div class="divide-y divide-gray-100">
+    <div class="divide-y divide-warm-100">
         {% for annonce in recent_annonces %}
         <div class="px-5 py-3">
-            <p class="text-sm font-medium text-gray-900">{{ annonce.titre }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
+            <p class="text-sm font-medium text-navy-900">{{ annonce.titre }}</p>
+            <p class="text-xs text-warm-500 mt-0.5">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
         </div>
         {% endfor %}
     </div>

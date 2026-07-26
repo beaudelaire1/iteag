@@ -1,41 +1,23 @@
-{# Admin mobile navigation #}
+{% comment %}Mêmes entrées que la barre latérale, dans le même ordre.{% endcomment %}
 {% if user.is_secretariat and not user.is_superuser %}
 {% include "administration/partials/secretariat_nav_mobile.html" %}
 {% else %}
-{% url 'administration:dashboard' as url_dashboard %}
-{% url 'administration:candidatures' as url_candidatures %}
-{% url 'administration:etudiants' as url_etudiants %}
-{% url 'administration:professeurs' as url_professeurs %}
-{% url 'administration:formations' as url_formations %}
-{% url 'administration:sessions' as url_sessions %}
-{% url 'administration:utilisateurs' as url_utilisateurs %}
-{% url 'administration:course_offerings' as url_offres %}
-{% url 'administration:enrollment_requests' as url_inscriptions %}
-{% url 'administration:payments' as url_paiements %}
-{% url 'administration:promotions' as url_promotions %}
-{% url 'administration:credits_ects' as url_credits %}
-{% url 'administration:stages' as url_stages %}
-{% url 'administration:vae' as url_vae %}
-{% url 'administration:tarifs' as url_tarifs %}
-
-<a href="{{ url_dashboard }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'dashboard' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Tableau de bord</a>
-<a href="{{ url_candidatures }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'candidatures' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Candidatures</a>
-<a href="{{ url_etudiants }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'etudiants' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Étudiants</a>
-<a href="{{ url_professeurs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'professeurs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Professeurs</a>
-<a href="{{ url_formations }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'formations' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Formations</a>
-<a href="{{ url_sessions }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'sessions' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Sessions</a>
-<a href="{{ url_offres }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'course_offerings' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Offre de cours</a>
-<a href="{{ url_inscriptions }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'enrollment_requests' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Inscriptions</a>
-<a href="{{ url_paiements }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'payments' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Paiements</a>
-<a href="{{ url_promotions }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'promotions' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Promotions</a>
-<a href="{{ url_credits }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'credits_ects' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">ECTS</a>
-<a href="{{ url_stages }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'stages' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Stages</a>
-<a href="{{ url_vae }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'vae' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">VAE</a>
-<a href="{{ url_tarifs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'tarifs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Tarifs</a>
-<a href="{{ url_utilisateurs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'utilisateurs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Utilisateurs</a>
+<a href="{% url 'administration:dashboard' %}" class="portal-nav-pill {% if nav == 'dashboard' %}active{% endif %}">Tableau de bord</a>
+<a href="{% url 'administration:candidatures' %}" class="portal-nav-pill {% if nav == 'candidatures' %}active{% endif %}">Candidatures</a>
+<a href="{% url 'administration:etudiants' %}" class="portal-nav-pill {% if nav == 'etudiants' %}active{% endif %}">Étudiants</a>
+<a href="{% url 'administration:promotions' %}" class="portal-nav-pill {% if nav == 'promotions' %}active{% endif %}">Promotions</a>
+<a href="{% url 'administration:formations' %}" class="portal-nav-pill {% if nav == 'formations' %}active{% endif %}">Formations</a>
+<a href="{% url 'administration:sessions' %}" class="portal-nav-pill {% if nav == 'sessions' %}active{% endif %}">Sessions</a>
+<a href="{% url 'administration:course_offerings' %}" class="portal-nav-pill {% if nav == 'course_offerings' %}active{% endif %}">Programmation</a>
+<a href="{% url 'administration:professeurs' %}" class="portal-nav-pill {% if nav == 'professeurs' %}active{% endif %}">Professeurs</a>
+<a href="{% url 'administration:enrollment_requests' %}" class="portal-nav-pill {% if nav == 'enrollment_requests' %}active{% endif %}">Inscriptions</a>
+<a href="{% url 'administration:credits_ects' %}" class="portal-nav-pill {% if nav == 'credits_ects' %}active{% endif %}">ECTS</a>
+<a href="{% url 'administration:stages' %}" class="portal-nav-pill {% if nav == 'stages' %}active{% endif %}">Stages</a>
+<a href="{% url 'administration:vae' %}" class="portal-nav-pill {% if nav == 'vae' %}active{% endif %}">VAE</a>
+<a href="{% url 'administration:acces' %}" class="portal-nav-pill {% if nav == 'acces' %}active{% endif %}">Accès vidéo</a>
+<a href="{% url 'administration:video_statistiques' %}" class="portal-nav-pill {% if nav == 'video_statistiques' %}active{% endif %}">Statistiques</a>
+<a href="{% url 'administration:video_journal' %}" class="portal-nav-pill {% if nav == 'video_journal' %}active{% endif %}">Journal</a>
+<a href="{% url 'administration:payments' %}" class="portal-nav-pill {% if nav == 'payments' %}active{% endif %}">Paiements</a>
+<a href="{% url 'administration:tarifs' %}" class="portal-nav-pill {% if nav == 'tarifs' %}active{% endif %}">Tarifs</a>
+<a href="{% url 'administration:utilisateurs' %}" class="portal-nav-pill {% if nav == 'utilisateurs' %}active{% endif %}">Utilisateurs</a>
 {% endif %}
-
-{# Formation vidéo #}
-<a href="{% url 'administration:acces' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100 ">Accès aux modules</a>
-<a href="{% url 'administration:video_statistiques' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100">Statistiques vidéo</a>
-<a href="{% url 'administration:video_journal' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100">Journal des accès</a>

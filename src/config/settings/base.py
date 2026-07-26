@@ -127,6 +127,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_context",
                 "apps.core.context_processors.notifications_context",
+                "apps.administration.context_processors.taches_en_attente",
             ],
         },
     },

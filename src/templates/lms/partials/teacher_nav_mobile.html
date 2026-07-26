@@ -1,5 +1,7 @@
-{# Teacher mobile navigation pills #}
-<a href="{% url 'enseignant:accueil' %}" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors {% if nav == 'dashboard' %}bg-blue-700 text-white{% else %}bg-white text-gray-700 border border-gray-200 hover:bg-gray-50{% endif %}">Tableau de bord</a>
-<a href="{% url 'lms:courses_list' %}" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors {% if nav == 'courses' or nav == 'course' %}bg-blue-700 text-white{% else %}bg-white text-gray-700 border border-gray-200 hover:bg-gray-50{% endif %}">Cours</a>
-<a href="{% url 'lms:evaluations_list' %}" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors {% if nav == 'evaluations' %}bg-blue-700 text-white{% else %}bg-white text-gray-700 border border-gray-200 hover:bg-gray-50{% endif %}">Évaluations</a>
-<a href="{% url 'lms:annonces_list' %}" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors {% if nav == 'annonces' %}bg-blue-700 text-white{% else %}bg-white text-gray-700 border border-gray-200 hover:bg-gray-50{% endif %}">Annonces</a>
+{% comment %}Mêmes entrées que la barre latérale, dans le même ordre.{% endcomment %}
+<a href="{% url 'enseignant:accueil' %}" class="portal-nav-pill {% if nav == 'dashboard' %}active{% endif %}">Accueil</a>
+<a href="{% url 'lms:courses_list' %}" class="portal-nav-pill {% if nav == 'courses' or nav == 'course' %}active{% endif %}">Cours en session</a>
+<a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-pill {% if nav == 'modules' %}active{% endif %}">Modules vidéo</a>
+<a href="{% url 'elearning:enseignant_videos' %}" class="portal-nav-pill {% if nav == 'videos' %}active{% endif %}">Bibliothèque</a>
+<a href="{% url 'lms:evaluations_list' %}" class="portal-nav-pill {% if nav == 'evaluations' %}active{% endif %}">Évaluations</a>
+<a href="{% url 'lms:annonces_list' %}" class="portal-nav-pill {% if nav == 'annonces' %}active{% endif %}">Annonces</a>

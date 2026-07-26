@@ -30,9 +30,9 @@
             <p class="font-medium" style="color: var(--color-warm-500);">Statut actuel</p>
             <p>
                 <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                    {% if evaluation.statut == 'soumis' %}bg-blue-100 text-blue-700
-                    {% elif evaluation.statut == 'en_correction' %}bg-yellow-100 text-yellow-700
-                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {% if evaluation.statut == 'soumis' %}bg-navy-100 text-navy-700
+                    {% elif evaluation.statut == 'en_correction' %}bg-gold-100 text-gold-700
+                    {% else %}bg-warm-100 text-warm-700{% endif %}">
                     {{ evaluation.get_statut_display }}
                 </span>
             </p>

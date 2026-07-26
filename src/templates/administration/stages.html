@@ -67,7 +67,7 @@
         <div class="flex flex-wrap gap-3">
             <a href="{% url 'administration:stage_update' stage.pk %}" class="btn-secondary text-sm">Modifier</a>
             {% if user.is_admin %}
-            <a href="{% url 'administration:stage_delete' stage.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a>
+            <a href="{% url 'administration:stage_delete' stage.pk %}" class="text-sm font-semibold text-rose-700">Supprimer</a>
             {% endif %}
         </div>
     </article>

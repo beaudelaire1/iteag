@@ -3,6 +3,9 @@
 {% block title %}Espace enseignant — {{ SITE_NAME }}{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
 
+{% block portal_nav %}{% with nav='dashboard' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='dashboard' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Espace enseignant</p>
