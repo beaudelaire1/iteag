@@ -21,6 +21,7 @@ from apps.academics.models import (
 )
 from apps.accounts.models import User
 from apps.administration.services import pilotage
+from apps.administration.suppression import SuppressionProtegee
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
 from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
@@ -428,20 +429,41 @@ class AdminUserUpdateView(AdminRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminUserDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminUserDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """
+    Supprimer un compte emportait le profil étudiant en cascade, et avec lui
+    inscriptions, notes, crédits ECTS et historique de paiements. En deux clics,
+    sans avertissement.
+    """
+
     model = User
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:utilisateurs")
+    url_retour = "administration:utilisateurs"
+
+    def libelle(self):
+        return f"l'utilisateur « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.pk == self.request.user.pk:
+            return "Vous ne pouvez pas supprimer votre propre compte."
+        if hasattr(self.object, "profil_etudiant"):
+            return (
+                "Ce compte porte un dossier étudiant : sa suppression effacerait notes, crédits et "
+                "paiements. Désactivez le compte, ou supprimez d'abord le dossier."
+            )
+        if hasattr(self.object, "profil_professeur"):
+            return "Ce compte est rattaché à une fiche professeur : détachez-la d'abord, ou désactivez le compte."
+        if self.object.is_active and self.object.role == User.Role.ADMIN:
+            restants = User.objects.filter(is_active=True, role=User.Role.ADMIN).exclude(pk=self.object.pk).count()
+            if restants == 0:
+                return "C'est le dernier compte d'administration actif : le supprimer fermerait le portail à tous."
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"l'utilisateur « {self.object} »"
         ctx["nav"] = "utilisateurs"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Utilisateur « {self.object} » supprimé.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
@@ -485,20 +507,29 @@ class AdminSessionUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminSessionDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminSessionDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """Supprimer une session emportait en cascade tous ses cours programmés."""
+
     model = SessionAcademique
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:sessions")
+    url_retour = "administration:sessions"
+
+    def libelle(self):
+        return f"la session « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.cours_de_session.exists():
+            return (
+                "Cette session porte des cours programmés : leur suppression entraînerait "
+                "inscriptions, notes et annonces. Retirez d'abord la programmation, ou clôturez la session."
+            )
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"la session « {self.object} »"
         ctx["nav"] = "sessions"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Session « {self.object} » supprimée.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
@@ -542,20 +573,31 @@ class AdminProfesseurUpdateView(AdminRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminProfesseurDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminProfesseurDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """
+    « CoursDeSession.enseignant » est en PROTECT : sans ce garde-fou, la
+    suppression produisait une erreur de base opaque au lieu d'une explication.
+    """
+
     model = Professeur
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:professeurs")
+    url_retour = "administration:professeurs"
+
+    def libelle(self):
+        return f"le professeur « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.cours_de_session.exists():
+            return "Ce professeur est rattaché à des cours programmés : décochez « actif » plutôt que de supprimer."
+        if self.object.modules_video.exists():
+            return "Ce professeur est responsable de modules vidéo : réattribuez-les d'abord."
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"le professeur « {self.object} »"
         ctx["nav"] = "professeurs"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Professeur « {self.object} » supprimé.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
@@ -599,20 +641,34 @@ class AdminEtudiantUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminEtudiantDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminEtudiantDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """
+    Un dossier étudiant porte des notes, des crédits et des paiements. Un
+    étudiant qui s'en va se désactive : il ne s'efface pas, sans quoi
+    l'institut perdrait la trace de ce qu'il a délivré.
+    """
+
     model = ProfilEtudiant
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:etudiants")
+    url_retour = "administration:etudiants"
+
+    def libelle(self):
+        return f"le profil étudiant « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.credits_ects.exists():
+            return "Ce dossier porte des crédits ECTS acquis : passez le statut à « inactif » au lieu de supprimer."
+        if self.object.paiements.exists():
+            return "Ce dossier porte un historique de paiements : passez le statut à « inactif » au lieu de supprimer."
+        if self.object.evaluations.exists():
+            return "Ce dossier porte des évaluations : passez le statut à « inactif » au lieu de supprimer."
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"le profil étudiant « {self.object} »"
         ctx["nav"] = "etudiants"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Profil étudiant « {self.object} » supprimé.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
