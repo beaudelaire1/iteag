@@ -55,6 +55,16 @@ jobs:
           cache: pip
           cache-dependency-path: src/requirements/dev.txt
       - run: pip install -r requirements/dev.txt
+      # La suite vérifie que chaque « {% static %} » désigne un fichier livré.
+      # Sans les bibliothèques tierces, elle échouerait sur une référence
+      # pourtant valide en production. Elles sont construites plutôt que
+      # versionnées : un fichier commité dériverait en silence de la version
+      # épinglée dans package.json au premier changement de version.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: npm run vendor:build
       - name: Run tests
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test

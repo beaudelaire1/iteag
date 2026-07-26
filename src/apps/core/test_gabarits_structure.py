@@ -83,4 +83,9 @@ def test_toutes_les_references_statiques_existent():
             if finders.find(reference) is None:
                 introuvables.append(f"{chemin.relative_to(TEMPLATES)} → {reference}")
 
-    assert not introuvables, "Références statiques non résolues :\n" + "\n".join(introuvables)
+    assert not introuvables, (
+        "Références statiques non résolues :\n"
+        + "\n".join(introuvables)
+        + "\n\nSi la référence porte sur « js/vendor/ », les bibliothèques tierces "
+        "n'ont pas été construites : lancer « npm run build » depuis src/."
+    )
