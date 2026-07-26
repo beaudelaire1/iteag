@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Accès requis — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+    <div class="container-narrow text-center">
+
+        <p class="overline mb-4">Accès restreint</p>
+        <h1 class="text-3xl">{{ module.titre }}</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto">
+
+        <p class="mt-6 text-warm-700">{{ message }}</p>
+
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+            {% if not user.is_authenticated %}
+                <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" class="btn-primary">
+                    Se connecter
+                </a>
+                <a href="{% url 'admissions:candidature_form' %}" class="btn-ghost">
+                    Déposer une candidature
+                </a>
+            {% elif motif == "refuse_expire" %}
+                <a href="/contact/" class="btn-primary">Demander une prolongation</a>
+                <a href="{% url 'elearning:mes_formations' %}" class="btn-ghost">Mes formations</a>
+            {% elif motif == "refuse_prerequis" %}
+                <a href="{{ module.get_absolute_url }}" class="btn-primary">Voir les prérequis</a>
+                <a href="{% url 'elearning:mes_formations' %}" class="btn-ghost">Mes formations</a>
+            {% else %}
+                <a href="{% url 'elearning:catalogue' %}" class="btn-primary">Voir le catalogue</a>
+                <a href="/contact/" class="btn-ghost">Contacter le secrétariat</a>
+            {% endif %}
+        </div>
+
+        {% if motif == "refuse_prerequis" and module.prerequis.all %}
+        <div class="card mt-10 text-left">
+            <p class="overline mb-3">À terminer d'abord</p>
+            <ul class="space-y-2">
+                {% for prealable in module.prerequis.all %}
+                <li><a href="{{ prealable.get_absolute_url }}" class="link-reveal">{{ prealable.titre }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

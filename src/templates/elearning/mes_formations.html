@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Mes formations — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide">
+
+        <header class="mb-10">
+            <p class="overline mb-2">Espace étudiant</p>
+            <h1>Mes formations vidéo</h1>
+            <hr class="divider-gold revealed mt-5">
+        </header>
+
+        {% if not profil %}
+        <div class="card text-center py-12">
+            <p class="text-warm-600">Votre compte n'est pas rattaché à un dossier étudiant.</p>
+        </div>
+
+        {% elif not inscriptions %}
+        <div class="card text-center py-12">
+            <p class="text-warm-600 mb-4">Aucun module ne vous est encore ouvert.</p>
+            <a href="{% url 'elearning:catalogue' %}" class="btn-ghost">Parcourir le catalogue</a>
+        </div>
+
+        {% else %}
+
+        {% if en_cours %}
+        <h2 class="text-lg mb-5">En cours</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {% for inscription in en_cours %}
+            {% include "elearning/partials/carte_module.html" %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if terminees %}
+        <h2 class="text-lg mb-5">Terminées</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {% for inscription in terminees %}
+            {% include "elearning/partials/carte_module.html" %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if indisponibles %}
+        <h2 class="text-lg mb-5">Indisponibles</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for inscription in indisponibles %}
+            {% include "elearning/partials/carte_module.html" %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription confirmée — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+    <div class="container-narrow text-center">
+        <p class="overline mb-4">Lettre d'information</p>
+        <h1>Votre inscription est confirmée</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto">
+        <p class="mt-6 text-warm-600">
+            L'adresse <strong>{{ abonne.email }}</strong> recevra désormais les actualités de l'ITEAG :
+            ouvertures de sessions, nouvelles formations et informations de l'institut.
+        </p>
+        <p class="mt-3 text-sm text-warm-500">
+            Chaque message contient un lien de désinscription. Vous pouvez vous retirer à tout moment.
+        </p>
+        <div class="mt-10">
+            <a href="/" class="btn-primary">Retour à l'accueil</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

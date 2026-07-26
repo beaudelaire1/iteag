@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import views, views_elearning
 
 app_name = "administration"
 
@@ -37,4 +37,11 @@ urlpatterns = [
     path("export/paiements/", views.ExportPaiementsCsvView.as_view(), name="export_paiements"),
     # Actions groupées
     path("candidatures/bulk-status/", views.BulkCandidatureStatusView.as_view(), name="candidatures_bulk_status"),
+    # ── Formation vidéo : pilotage des accès ──
+    path("formation-video/acces/", views_elearning.AccesListView.as_view(), name="acces"),
+    path("formation-video/acces/action/", views_elearning.AccesActionView.as_view(), name="acces_action"),
+    path("formation-video/acces/octroi-masse/", views_elearning.OctroiEnMasseView.as_view(), name="acces_octroi_masse"),
+    path("formation-video/acces/export/", views_elearning.ExportAccesView.as_view(), name="acces_export"),
+    path("formation-video/statistiques/", views_elearning.StatistiquesVideoView.as_view(), name="video_statistiques"),
+    path("formation-video/journal/", views_elearning.JournalAccesView.as_view(), name="video_journal"),
 ]

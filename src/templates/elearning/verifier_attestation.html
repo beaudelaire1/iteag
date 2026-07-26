@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Vérification d'attestation — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+    <div class="container-narrow text-center">
+
+        <p class="overline mb-4">Vérification</p>
+
+        {% if attestation %}
+        <h1 class="text-3xl">Attestation authentique</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto">
+
+        <div class="card mt-10 text-left">
+            <dl class="space-y-4">
+                <div class="flex flex-wrap justify-between gap-2">
+                    <dt class="text-warm-500 text-sm">Numéro</dt>
+                    <dd class="font-medium text-navy-900">{{ attestation.numero }}</dd>
+                </div>
+                <div class="flex flex-wrap justify-between gap-2">
+                    <dt class="text-warm-500 text-sm">Titulaire</dt>
+                    <dd class="font-medium text-navy-900">
+                        {{ attestation.inscription.etudiant.utilisateur.get_full_name }}
+                    </dd>
+                </div>
+                <div class="flex flex-wrap justify-between gap-2">
+                    <dt class="text-warm-500 text-sm">Module</dt>
+                    <dd class="font-medium text-navy-900">{{ attestation.inscription.module.titre }}</dd>
+                </div>
+                <div class="flex flex-wrap justify-between gap-2">
+                    <dt class="text-warm-500 text-sm">Délivrée le</dt>
+                    <dd class="font-medium text-navy-900">{{ attestation.date_emission|date:"d F Y" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <p class="mt-6 text-sm text-warm-500">
+            Cette attestation a bien été délivrée par l'ITEAG.
+        </p>
+
+        {% else %}
+        <h1 class="text-3xl">Attestation introuvable</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto">
+        <p class="mt-6 text-warm-600">
+            Aucune attestation ne correspond au code <strong>{{ code }}</strong>.
+            Vérifiez la saisie, ou contactez le secrétariat.
+        </p>
+        <div class="mt-10">
+            <a href="/contact/" class="btn-primary">Contacter le secrétariat</a>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

@@ -10,15 +10,16 @@
 - **Dépôt** : `github.com/beaudelaire1/iteag`
 
 ## Phase active
-**Finalisation grade commercial — LOT 0 : remise à niveau du socle**
+**Finalisation achevée — lots 0 à 8 livrés**
 
-Les phases 1 à 3 du CDC (portail public, admissions et espace étudiant, portail
-enseignant) sont implémentées. Le chantier en cours porte sur la livrabilité, puis sur
-l'extension « formation vidéo à accès sécurisé ».
+Les phases 1 à 3 du CDC étaient implémentées à la reprise. Les neuf lots du plan
+de finalisation ont été menés à terme : remise à niveau du socle, socle
+transverse, domaine e-learning vidéo, portails étudiant, enseignant et
+administratif, conversion publique, qualité et exploitation.
 
 ## Architecture retenue
 - **Pattern** : Modular Monolith (Django)
-- **Stack** : Python 3.12 / Django 5.x / Wagtail 6.x / PostgreSQL 16 / Redis / Celery / Tailwind CSS 4 / HTMX
+- **Stack** : Python 3.12 / Django 5.x / Wagtail 7.x / PostgreSQL 16 / Redis / Celery / Tailwind CSS 4 / HTMX
 - **Justification** : proportionnée au volume réel (~200 étudiants, ~10 enseignants, ~2 635 notices biblio). Pas de microservices, pas de SPA.
 
 ## Décisions structurantes
@@ -50,33 +51,31 @@ l'extension « formation vidéo à accès sécurisé ».
 | `library` | Catalogue bibliothèque, recherche full-text | Livré |
 | `documents` | Génération PDF, documents administratifs | Livré |
 | `administration` | Portail administratif | Livré — extrait de `core` |
-| `elearning` | Modules vidéo, accès, progression, attestations | **À créer — LOT 2** |
+| `elearning` | Modules vidéo, accès, progression, attestations | Livré — LOT 2 |
 
-## Avancement — LOT 0
+## Avancement des lots
 
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Lint et format à zéro erreur | FAIT | 232 → 0 ; exclusions documentées par fichier |
-| Chaîne d'assets de production | FAIT | Étape Node ; source Tailwind sortie de `static/` |
-| Suppression de la dépendance Alpine | FAIT | Composants natifs ; voir ADR-003 |
-| Doublon `config/` racine | FAIT | Copie obsolète supprimée |
-| Test d'architecture | FAIT | Cliquet sur la dette de dépendances |
-| Séparation du portail administratif | FAIT | Cycle `core` ↔ `academics` résorbé |
-| README | FAIT | Installation, conventions, architecture |
-| Mise à jour de ce plan | FAIT | — |
-| Tests de fumée sur les gabarits | FAIT | 14 tests ; pages sans directive interdite |
-| Job CI de build des assets | FAIT | `collectstatic` vérifié au commit |
-
-**Sortie de lot** : `ruff check` et `ruff format` sans erreur, 123 tests verts,
-`collectstatic` vérifié en conditions de production.
+| Lot | Objet | État |
+|-----|-------|------|
+| 0 | Remise à niveau du socle | Livré |
+| 1 | Socle transverse — notifications, audit, 2FA, newsletter | Livré |
+| 2 | Domaine e-learning vidéo et contrôle d'accès | Livré |
+| 3 | Portail étudiant vidéo | Livré |
+| 4 | Portail enseignant de production | Livré |
+| 5 | Pilotage des accès côté administration | Livré |
+| 6 | Catalogue public et conversion | Livré |
+| 7 | Qualité, sécurité, couverture | Livré |
+| 8 | Exploitation | Livré côté technique ; voir le manuel pour ce qui relève de l'infrastructure |
 
 ## Suite immédiate
 
-| Lot | Objet | Dépend de |
-|-----|-------|-----------|
-| LOT 1 | Socle transverse : notifications, audit, 2FA, newsletter | LOT 0 |
-| LOT 2 | Domaine e-learning vidéo — **chemin critique** | LOT 0, LOT 1 |
-| LOT 3 | Portail étudiant vidéo | LOT 2 |
+| Point | Détenteur |
+|-------|-----------|
+| Export du catalogue bibliothèque | ITEAG |
+| Contenus textuels validés | ITEAG |
+| Table de redirections depuis l'ancien site | ITEAG |
+| Exercice de restauration chronométré | Exploitant |
+| Sauvegardes déportées et versionnage S3 | Exploitant |
 
 ## Risques actifs
 
@@ -92,7 +91,9 @@ l'extension « formation vidéo à accès sécurisé ».
 
 | Domaine | Mesure | Cible |
 |---------|--------|-------|
-| Tests | 123 verts | ≥ 200 |
-| Couverture | 84 % | ≥ 90 % (100 % sur le contrôle d'accès) |
-| Lint | 0 erreur | 0 |
-| Build de production | Vérifié | Vérifié à chaque commit |
+| Tests | 529 verts | ≥ 200 |
+| Couverture | 92 % | ≥ 90 % |
+| Couverture du contrôle d'accès | 100 % | 100 % |
+| Lint et format | 0 erreur | 0 |
+| Vulnérabilités des dépendances | 1 résiduelle, sans correctif amont, non exploitable ici | 0 exploitable |
+| Build de production | Vérifié à chaque commit | Vérifié |

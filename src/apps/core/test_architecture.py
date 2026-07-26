@@ -36,7 +36,8 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "elearning": {"core", "accounts", "formations", "academics"},
     "library": {"core", "formations"},
     "documents": {"core", "accounts", "academics"},
-    "website": {"core", "formations"},
+    # website est un portail : comme administration, il agrège des domaines.
+    "website": {"core", "formations", "elearning"},
 }
 
 # ── Dette d'architecture identifiée ──────────────────────────────────────────
@@ -61,11 +62,20 @@ def _apps_presentes() -> set[str]:
     return {chemin.name for chemin in APPS_DIR.iterdir() if chemin.is_dir() and (chemin / "apps.py").exists()}
 
 
+def _est_module_de_test(chemin: Path) -> bool:
+    return chemin.name == "tests.py" or chemin.name.startswith("test_")
+
+
 def _imports_de_app(app: str) -> set[str]:
-    """Applications locales importées par `app`, hors elle-même."""
+    """Applications locales importées par `app`, hors elle-même.
+
+    Les migrations et les modules de test sont écartés : l'invariant porte sur
+    le couplage d'exécution. Un test du socle a légitimement besoin de créer un
+    utilisateur, sans que cela fasse de `core` un dépendant de `accounts`.
+    """
     cibles: set[str] = set()
     for fichier in (APPS_DIR / app).rglob("*.py"):
-        if "migrations" in fichier.parts:
+        if "migrations" in fichier.parts or _est_module_de_test(fichier):
             continue
         arbre = ast.parse(fichier.read_text(encoding="utf-8"), filename=str(fichier))
         for noeud in ast.walk(arbre):

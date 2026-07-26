@@ -14,6 +14,7 @@
                 <a href="/" class="nav-link">Accueil</a>
                 <a href="{% url 'formations:parcours_list' %}" class="nav-link">Formations</a>
                 <a href="{% url 'formations:professeur_list' %}" class="nav-link">Professeurs</a>
+                <a href="{% url 'elearning:catalogue' %}" class="nav-link">Formations vidéo</a>
                 <a href="{% url 'library:catalogue' %}" class="nav-link">Bibliothèque</a>
                 <a href="/actualites/" class="nav-link">Actualités</a>
                 <a href="/contact/" class="nav-link">Contact</a>
@@ -43,6 +44,7 @@
                         {% if user.is_etudiant %}
                         <a href="{% url 'academics:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
                         <a href="{% url 'academics:courses' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mes cours</a>
+                        <a href="{% url 'elearning:mes_formations' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mes formations vidéo</a>
                         <a href="{% url 'academics:progress' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Parcours ECTS</a>
                         <a href="{% url 'documents:list' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Documents</a>
                         {% elif user.is_enseignant %}
@@ -89,6 +91,7 @@
                 <a href="/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Accueil</a>
                 <a href="{% url 'formations:parcours_list' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Formations</a>
                 <a href="{% url 'formations:professeur_list' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Professeurs</a>
+                <a href="{% url 'elearning:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Formations vidéo</a>
                 <a href="{% url 'library:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Bibliothèque</a>
                 <a href="/actualites/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Actualités</a>
                 <a href="/contact/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Contact</a>

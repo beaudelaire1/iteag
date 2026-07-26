@@ -27,6 +27,11 @@ STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 AXES_ENABLED = False
 
+# Le second facteur est vérifié par ses propres tests, qui le réactivent
+# explicitement. L'imposer partout obligerait chaque test d'espace
+# administratif à jouer l'enrôlement, sans rien démontrer de plus.
+OTP_ENFORCE = False
+
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 

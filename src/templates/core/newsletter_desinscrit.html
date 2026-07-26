@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Désinscription — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+    <div class="container-narrow text-center">
+        <p class="overline mb-4">Lettre d'information</p>
+        <h1>Vous êtes désinscrit</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto">
+        <p class="mt-6 text-warm-600">
+            L'adresse <strong>{{ abonne.email }}</strong> ne recevra plus la lettre d'information de l'ITEAG.
+        </p>
+        <p class="mt-3 text-sm text-warm-500">
+            Vous pouvez vous réinscrire à tout moment depuis le pied de page du site.
+        </p>
+        <div class="mt-10">
+            <a href="/" class="btn-primary">Retour à l'accueil</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

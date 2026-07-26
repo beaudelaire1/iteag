@@ -1,0 +1,73 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Formation vidéo — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='tableau' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='tableau' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Formation vidéo</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Bonjour {{ professeur.prenom }}</h1>
+    </div>
+    <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Nouveau module</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+    <div class="card-elevated">
+        <p class="stat-number" style="font-size: 2rem;">{{ nb_publies }}</p>
+        <p class="stat-label">Publiés</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-number" style="font-size: 2rem;">{{ nb_brouillons }}</p>
+        <p class="stat-label">Brouillons</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-number" style="font-size: 2rem;">{{ nb_inscrits }}</p>
+        <p class="stat-label">Étudiants inscrits</p>
+    </div>
+    <div class="card-elevated">
+        <p class="stat-number" style="font-size: 2rem;">{{ videos_en_attente }}</p>
+        <p class="stat-label">Vidéos en préparation</p>
+    </div>
+</div>
+
+<h2 class="text-lg mb-4">Mes modules</h2>
+
+{% if modules %}
+<div class="tw overflow-x-auto">
+    <table class="table-premium">
+        <thead>
+            <tr><th>Module</th><th>Discipline</th><th>État</th><th>Durée</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for module in modules %}
+            <tr>
+                <td class="font-medium">{{ module.titre }}</td>
+                <td>{{ module.discipline.nom|default:"—" }}</td>
+                <td>
+                    {% if module.statut == "publie" %}<span class="badge badge-success">Publié</span>
+                    {% elif module.statut == "brouillon" %}<span class="badge badge-warning">Brouillon</span>
+                    {% elif module.statut == "archive" %}<span class="badge badge-danger">Archivé</span>
+                    {% else %}<span class="badge badge-info">{{ module.get_statut_display }}</span>{% endif %}
+                </td>
+                <td class="num">{{ module.duree_minutes }} min</td>
+                <td>
+                    <a href="{% url 'elearning:enseignant_structure' module.slug %}"
+                       class="text-sm font-medium link-reveal" style="color: var(--color-navy-700);">Ouvrir</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card text-center py-12">
+    <p class="text-warm-600 mb-4">Vous n'avez pas encore de module de formation vidéo.</p>
+    <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Créer mon premier module</a>
+</div>
+{% endif %}
+{% endblock %}

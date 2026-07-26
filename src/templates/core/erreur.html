@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titre_erreur }} — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+    <div class="container-narrow text-center">
+        <p class="overline mb-4">Erreur {{ code }}</p>
+        <h1>{{ titre_erreur }}</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto">
+        <p class="mt-6 text-warm-600">{{ explication }}</p>
+
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <a href="/" class="btn-primary">Retour à l'accueil</a>
+            <a href="/contact/" class="btn-ghost">Contacter le secrétariat</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

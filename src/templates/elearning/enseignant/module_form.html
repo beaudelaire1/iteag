@@ -1,0 +1,82 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if object %}Modifier{% else %}Nouveau{% endif %} module — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Formation vidéo</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+        {% if object %}Modifier « {{ object.titre }} »{% else %}Nouveau module{% endif %}
+    </h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-8">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="note alert" style="max-width: none;">
+        <span class="lbl">Corrections nécessaires</span>
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <section class="card-elevated space-y-5">
+        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Présentation</h2>
+        {% for champ in form %}
+            {% if champ.name in "titre,code,description,objectifs,image_couverture" %}
+            <div>
+                <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
+                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    </section>
+
+    <section class="card-elevated space-y-5">
+        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Rattachement</h2>
+        {% for champ in form %}
+            {% if champ.name in "discipline,cours,niveau,ects" %}
+            <div>
+                <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    </section>
+
+    <section class="card-elevated space-y-5">
+        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Validation</h2>
+        {% for champ in form %}
+            {% if champ.name in "seuil_completion,certifiant,autorise_revision" %}
+            <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-start gap-3{% endif %}">
+                {% if champ.field.widget.input_type == 'checkbox' %}
+                    {{ champ }}
+                    <div>
+                        <label for="{{ champ.id_for_label }}" class="text-sm font-medium" style="color: var(--color-navy-900);">{{ champ.label }}</label>
+                        {% if champ.help_text %}<p class="text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
+                    </div>
+                {% else %}
+                    <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                    {{ champ }}
+                    {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
+                {% endif %}
+                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    </section>
+
+    <div class="flex flex-wrap gap-4">
+        <button type="submit" class="btn-primary">Enregistrer</button>
+        <a href="{% url 'elearning:enseignant_modules' %}" class="btn-ghost">Annuler</a>
+    </div>
+</form>
+{% endblock %}

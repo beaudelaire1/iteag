@@ -1,0 +1,60 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Statistiques vidéo — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='statistiques' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='statistiques' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Formation vidéo</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Statistiques de visionnage</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+<div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-10">
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ modules_publies }}</p><p class="stat-label">Modules publiés</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ total_acces }}</p><p class="stat-label">Accès ouverts</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ actifs }}</p><p class="stat-label">En cours</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ termines }}</p><p class="stat-label">Terminés</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ heures_vues }}</p><p class="stat-label">Heures visionnées</p></div>
+    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ attestations }}</p><p class="stat-label">Attestations</p></div>
+</div>
+
+<h2 class="text-lg mb-4">Par module</h2>
+
+{% if modules %}
+<div class="tw overflow-x-auto">
+    <table class="table-premium">
+        <thead>
+            <tr><th>Module</th><th>Inscrits</th><th>Terminés</th><th>Achèvement</th><th>Avancement moyen</th></tr>
+        </thead>
+        <tbody>
+            {% for module in modules %}
+            <tr>
+                <td class="font-medium">{{ module.titre }}</td>
+                <td class="num">{{ module.nb_inscrits }}</td>
+                <td class="num">{{ module.nb_termines }}</td>
+                <td>
+                    <span class="flex items-center gap-3">
+                        <span class="progress-bar" style="width: 6rem;">
+                            <span class="progress-bar-fill block"
+                                  style="width: {% widthratio module.nb_termines module.nb_inscrits 100 %}%"></span>
+                        </span>
+                        <span class="num text-xs">{% widthratio module.nb_termines module.nb_inscrits 100 %} %</span>
+                    </span>
+                </td>
+                <td class="num">{{ module.avancement|floatformat:0 }} %</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card text-center py-16">
+    <p style="color: var(--color-warm-600);">Aucun module n'a encore d'étudiant inscrit.</p>
+</div>
+{% endif %}
+{% endblock %}

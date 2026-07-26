@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Mes notifications — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow">
+
+        <header class="flex flex-wrap items-end justify-between gap-4 mb-8">
+            <div>
+                <p class="overline mb-2">Mon espace</p>
+                <h1>Notifications</h1>
+            </div>
+            {% if nb_non_lues %}
+            <form method="post" action="{% url 'core:notifications_tout_lire' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost">Tout marquer comme lu</button>
+            </form>
+            {% endif %}
+        </header>
+
+        {% if notifications %}
+        <ul class="space-y-3" role="list">
+            {% for notification in notifications %}
+            <li class="card {% if not notification.lu %}shadow-card{% endif %}">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="flex items-center gap-2 flex-wrap">
+                            {% if not notification.lu %}
+                            <span class="badge badge-gold">Nouveau</span>
+                            {% endif %}
+                            <span class="text-xs uppercase tracking-wider text-warm-500">
+                                {{ notification.get_type_notification_display }}
+                            </span>
+                        </p>
+                        <p class="font-semibold text-navy-900 mt-1">{{ notification.titre }}</p>
+                        {% if notification.message %}
+                        <p class="text-sm text-warm-600 mt-1">{{ notification.message }}</p>
+                        {% endif %}
+                        <p class="text-xs text-warm-400 mt-2">
+                            <time datetime="{{ notification.created_at|date:'c' }}">
+                                {{ notification.created_at|date:"d/m/Y à H:i" }}
+                            </time>
+                        </p>
+                    </div>
+                    <form method="post" action="{% url 'core:notification_lue' notification.pk %}" class="shrink-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-ghost" style="padding: 0.5rem 1.25rem;">
+                            {% if notification.url_cible %}Consulter{% else %}Marquer lu{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% include "partials/pagination.html" %}
+
+        {% else %}
+        <div class="card text-center py-12">
+            <p class="text-warm-600">Aucune notification pour le moment.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

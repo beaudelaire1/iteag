@@ -150,6 +150,21 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if not dossier.utilisateur_cree %}
+                <div>
+                    <label class="form-label" for="id_promotion">Promotion d'affectation</label>
+                    <select name="promotion" id="id_promotion" class="form-input">
+                        <option value="">— Choisir —</option>
+                        {% for promotion in promotions %}
+                        <option value="{{ promotion.pk }}">{{ promotion.nom }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-xs" style="color: var(--color-warm-500);">
+                        Requise pour l'acceptation : elle crée le compte étudiant et ouvre
+                        automatiquement les modules obligatoires du parcours.
+                    </p>
+                </div>
+                {% endif %}
                 <div>
                     <label class="form-label" for="id_commentaire">Commentaire (optionnel)</label>
                     <textarea name="commentaire" id="id_commentaire" rows="3" class="form-input" placeholder="Note sur le changement de statut…"></textarea>

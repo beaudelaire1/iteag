@@ -14,3 +14,17 @@ def site_context(request):
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
         "DEBUG": settings.DEBUG,
     }
+
+
+def notifications_context(request):
+    """Compteur de notifications non lues, pour le bandeau des portails.
+
+    Évalué paresseusement : les pages publiques ne paient pas la requête.
+    """
+    utilisateur = getattr(request, "user", None)
+    if utilisateur is None or not utilisateur.is_authenticated:
+        return {}
+
+    from apps.core.services.notifications import compter_non_lues
+
+    return {"notifications_non_lues": lambda: compter_non_lues(utilisateur)}

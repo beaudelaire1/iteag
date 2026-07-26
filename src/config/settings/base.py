@@ -58,6 +58,9 @@ THIRD_PARTY_APPS = [
     "django_htmx",
     "axes",
     "csp",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
 ]
 
 LOCAL_APPS = [
@@ -71,6 +74,7 @@ LOCAL_APPS = [
     "apps.lms",
     "apps.library",
     "apps.documents",
+    "apps.elearning",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -86,6 +90,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "apps.accounts.middleware.Force2FAStaffMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
@@ -118,6 +124,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_context",
+                "apps.core.context_processors.notifications_context",
             ],
         },
     },
@@ -153,6 +160,19 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_URL = "/connexion/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+
+# ──────────────────────────────────────────────
+# Axes (brute force protection)
+# ──────────────────────────────────────────────
+
+# ──────────────────────────────────────────────
+# Double authentification (django-otp)
+# ──────────────────────────────────────────────
+
+OTP_TOTP_ISSUER = "ITEAG"
+OTP_ENFORCE = env.bool("DJANGO_OTP_ENFORCE", default=True)
+# Rôles pour lesquels le second facteur est obligatoire (audit du CDC v1 §5).
+ROLES_2FA_OBLIGATOIRE = ["admin", "secretariat"]
 
 # ──────────────────────────────────────────────
 # Axes (brute force protection)
@@ -310,6 +330,26 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
 # ──────────────────────────────────────────────
+# Formation vidéo (voir ADR-001 et ADR-002)
+# ──────────────────────────────────────────────
+
+# Backend de stockage des vidéos : "local" en développement, "s3" en production.
+ELEARNING_STOCKAGE_VIDEO = env("ELEARNING_STOCKAGE_VIDEO", default="local")
+AWS_STORAGE_BUCKET_NAME_VIDEOS = env("AWS_STORAGE_BUCKET_NAME_VIDEOS", default="iteag-videos")
+
+# Nombre de lectures simultanées tolérées par compte. 1 = un seul appareil à la
+# fois, ce qui rend le partage de compte inconfortable sans gêner un usage normal.
+ELEARNING_FLUX_SIMULTANES_MAX = env.int("ELEARNING_FLUX_SIMULTANES_MAX", default=1)
+ELEARNING_FLUX_TTL = 900
+
+# Intervalle des signaux de progression envoyés par le lecteur (secondes).
+ELEARNING_INTERVALLE_SIGNAL = 15
+
+# Taille maximale d'une vidéo déposée par un enseignant.
+ELEARNING_TAILLE_VIDEO_MAX = 2 * 1024 * 1024 * 1024  # 2 Go
+ELEARNING_TYPES_VIDEO = ["video/mp4", "video/webm", "video/quicktime"]
+
+# ──────────────────────────────────────────────
 # Session
 # ──────────────────────────────────────────────
 
@@ -327,6 +367,7 @@ CONTENT_SECURITY_POLICY = {
         "script-src": ["'self'"],
         "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:"],
+        "media-src": ["'self'", "blob:"],
         "font-src": ["'self'"],
         "connect-src": ["'self'"],
         "frame-src": ["'none'"],

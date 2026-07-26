@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Activer la double authentification — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow">
+
+        <header class="text-center mb-10">
+            <p class="overline mb-3">Sécurité du compte</p>
+            <h1>Activer la double authentification</h1>
+            <hr class="divider-gold revealed mt-6 mx-auto">
+            <p class="mt-6 text-warm-600">
+                {% if obligatoire %}
+                Votre compte donne accès aux dossiers des étudiants. Un second facteur est
+                obligatoire pour y accéder.
+                {% else %}
+                Un second facteur protège votre compte même si votre mot de passe venait à être connu.
+                {% endif %}
+            </p>
+        </header>
+
+        <ol class="space-y-8">
+            <li class="card">
+                <p class="overline mb-3">Étape 1</p>
+                <h2 class="text-lg font-semibold text-navy-900 mb-2">Installez une application d'authentification</h2>
+                <p class="text-sm text-warm-600">
+                    Google Authenticator, Microsoft Authenticator, FreeOTP ou Aegis — au choix,
+                    sur votre téléphone.
+                </p>
+            </li>
+
+            <li class="card">
+                <p class="overline mb-3">Étape 2</p>
+                <h2 class="text-lg font-semibold text-navy-900 mb-4">Scannez ce code</h2>
+                <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+                    <img src="data:image/png;base64,{{ qr_code_base64 }}"
+                         alt="Code QR d'enrôlement du second facteur"
+                         width="200" height="200"
+                         class="shrink-0 border border-warm-200 rounded bg-white p-2">
+                    <div class="min-w-0">
+                        <p class="text-sm text-warm-600 mb-2">
+                            Si vous ne pouvez pas scanner, saisissez cette clé manuellement :
+                        </p>
+                        <p class="font-mono text-sm break-all bg-warm-100 border border-warm-200 rounded px-3 py-2">
+                            {{ secret_manuel }}
+                        </p>
+                    </div>
+                </div>
+            </li>
+
+            <li class="card">
+                <p class="overline mb-3">Étape 3</p>
+                <h2 class="text-lg font-semibold text-navy-900 mb-4">Saisissez le code affiché</h2>
+                <form method="post" class="flex flex-col sm:flex-row gap-3 sm:items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="suivant" value="{{ suivant }}">
+                    <div class="flex-1">
+                        <label for="code" class="form-label">Code à 6 chiffres</label>
+                        <input type="text" name="code" id="code" required
+                               inputmode="numeric" pattern="[0-9 ]{6,9}" autocomplete="one-time-code"
+                               maxlength="9" placeholder="123 456" class="form-input">
+                    </div>
+                    <button type="submit" class="btn-primary justify-center">Activer</button>
+                </form>
+            </li>
+        </ol>
+
+        <p class="mt-8 text-center text-sm text-warm-500">
+            Conservez un accès à votre téléphone : sans lui, seul un administrateur pourra
+            réinitialiser votre second facteur.
+        </p>
+
+    </div>
+</section>
+{% endblock %}

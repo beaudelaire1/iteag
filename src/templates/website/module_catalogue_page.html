@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.accroche|default:page.search_description }}{% endblock %}
+
+{% block content %}
+<section class="section-hero" style="background: var(--color-warm-100);">
+    <div class="container-narrow text-center">
+        <p class="overline mb-4 hero-el hero-el-1">Formation à distance</p>
+        <h1 class="hero-el hero-el-2">{{ page.title }}</h1>
+        <hr class="divider-gold revealed mt-6 mx-auto hero-el hero-el-3">
+        {% if page.accroche %}
+        <p class="mt-6 text-lg hero-el hero-el-4" style="color: var(--color-warm-700);">{{ page.accroche }}</p>
+        {% endif %}
+        {% if page.introduction %}
+        <div class="prose mt-6 mx-auto hero-el hero-el-5" style="color: var(--color-warm-600);">
+            {{ page.introduction|richtext }}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% if page.arguments %}
+<section class="section">
+    <div class="container-wide">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
+            {% for bloc in page.arguments %}
+            <article class="card reveal">
+                {% include_block bloc %}
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="section" style="background: var(--color-warm-50);">
+    <div class="container-wide">
+        <header class="mb-10 text-center">
+            <p class="overline mb-3">Catalogue</p>
+            <h2>Modules disponibles</h2>
+        </header>
+
+        {% if modules %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-motion-stagger>
+            {% for module in modules %}
+            <article class="card reveal relative flex flex-col">
+                <p class="flex flex-wrap items-center gap-2 mb-3">
+                    <span class="badge badge-info">{{ module.get_niveau_display }}</span>
+                    {% if module.certifiant %}<span class="badge badge-gold">Attestation</span>{% endif %}
+                </p>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-navy-900);">
+                    <a href="{{ module.get_absolute_url }}" class="stretched-link">{{ module.titre }}</a>
+                </h3>
+                {% if module.description %}
+                <p class="text-sm line-clamp-3 mb-4" style="color: var(--color-warm-600);">{{ module.description }}</p>
+                {% endif %}
+                <p class="mt-auto pt-4 border-t text-xs"
+                   style="border-color: var(--color-warm-100); color: var(--color-warm-500);">
+                    {% if module.responsable %}{{ module.responsable.nom_complet }} · {% endif %}
+                    {{ module.duree_minutes }} min
+                </p>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center" style="color: var(--color-warm-500);">
+            Les premiers modules seront publiés prochainement.
+        </p>
+        {% endif %}
+
+        <div class="mt-12 text-center">
+            <a href="{% url 'admissions:candidature_form' %}" class="btn-primary">
+                {{ page.texte_appel|default:"Déposer une candidature" }}
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

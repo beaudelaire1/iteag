@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Vérification — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow" style="max-width: 30rem;">
+
+        <header class="text-center mb-8">
+            <p class="overline mb-3">Sécurité du compte</p>
+            <h1 class="text-2xl">Vérification en deux étapes</h1>
+            <hr class="divider-gold revealed mt-5 mx-auto">
+            <p class="mt-5 text-warm-600 text-sm">
+                Saisissez le code affiché par votre application d'authentification.
+            </p>
+        </header>
+
+        <form method="post" class="card space-y-5">
+            {% csrf_token %}
+            <input type="hidden" name="suivant" value="{{ suivant }}">
+            <div>
+                <label for="code" class="form-label">Code à 6 chiffres</label>
+                <input type="text" name="code" id="code" required autofocus
+                       inputmode="numeric" pattern="[0-9 ]{6,9}" autocomplete="one-time-code"
+                       maxlength="9" placeholder="123 456" class="form-input">
+            </div>
+            <button type="submit" class="btn-primary w-full justify-center">Vérifier</button>
+        </form>
+
+        <p class="mt-6 text-center text-sm">
+            <a href="{% url 'accounts:logout' %}" class="link-reveal text-warm-500">
+                Se connecter avec un autre compte
+            </a>
+        </p>
+
+    </div>
+</section>
+{% endblock %}
