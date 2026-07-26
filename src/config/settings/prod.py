@@ -40,6 +40,9 @@ AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="iteag-media") 
 AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="eu-west-3")  # noqa: F405
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
 AWS_DEFAULT_ACL = None
+# Deux dépôts de même nom ne doivent pas s'écraser : un devoir remis
+# effacerait celui d'un autre étudiant.
+AWS_S3_FILE_OVERWRITE = False
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 
 STORAGES["default"] = {

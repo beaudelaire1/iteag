@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("wagtailcore", "0094_alter_page_locale"),
         ("website", "0002_contactpage_destinataire"),
