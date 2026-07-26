@@ -53,6 +53,15 @@ python manage.py runserver
 
 Pendant le développement, laisser `npm run css:watch` tourner dans un second terminal.
 
+> **`npm run build` est obligatoire après chaque `git pull`.**
+> `static/css/main.css` est un artefact de compilation, ignoré par git :
+> récupérer une branche apporte les gabarits mais **pas** les styles. Le site
+> s'ouvre alors avec un HTML neuf sur des règles anciennes, et la mise en page
+> paraît cassée sans qu'aucune erreur ne soit levée.
+>
+> `manage.py check` — donc `runserver` — le signale désormais en nommant les
+> composants manquants, et la suite de tests échoue dans le même cas.
+
 ### Jeux de données
 
 ```bash
