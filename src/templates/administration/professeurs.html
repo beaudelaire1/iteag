@@ -61,7 +61,7 @@
 
         <div class="flex items-center gap-3 mt-4 pt-3" style="border-top: 1px solid var(--color-warm-100);">
             <a href="{% url 'administration:professeur_update' prof.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>
-            <a href="{% url 'administration:professeur_delete' prof.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+            <a href="{% url 'administration:professeur_delete' prof.pk %}" class="lien-danger">Supprimer</a>
         </div>
     </div>
     {% endfor %}

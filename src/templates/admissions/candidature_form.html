@@ -18,28 +18,10 @@
             <form method="post" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
 
-                {% if form.non_field_errors %}
-                <div class="rounded px-4 py-3 text-sm font-medium" style="background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B;">
-                    {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                    {% endfor %}
-                </div>
-                {% endif %}
+                {% include "partials/erreurs_formulaire.html" %}
 
                 {% for field in form %}
-                <div>
-                    <label for="{{ field.id_for_label }}" class="form-label">
-                        {{ field.label }}
-                        {% if field.field.required %}<span style="color: #991B1B;">*</span>{% endif %}
-                    </label>
-                    {{ field }}
-                    {% if field.help_text %}
-                    <p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ field.help_text }}</p>
-                    {% endif %}
-                    {% if field.errors %}
-                    <p class="mt-1 text-sm" style="color: #991B1B;">{{ field.errors.0 }}</p>
-                    {% endif %}
-                </div>
+                {% include "partials/champ.html" %}
                 {% endfor %}
 
                 <div class="pt-4">

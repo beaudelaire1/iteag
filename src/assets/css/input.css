@@ -221,6 +221,34 @@
     background-color: var(--color-navy-50);
   }
 
+  /* Action destructrice : une seule apparence dans tout le projet, au lieu
+     d'un rouge redéclaré en style incrusté à chaque écran de suppression. */
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.75rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    background-color: #B91C1C;
+    border-radius: 2px;
+    transition: all var(--duration-fast) var(--ease-premium);
+  }
+  .btn-danger:hover { background-color: #991B1B; }
+  .btn-danger:focus-visible { outline: 2px solid #B91C1C; outline-offset: 2px; }
+
+  .lien-danger {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #B91C1C;
+    transition: color var(--duration-fast) var(--ease-premium);
+  }
+  .lien-danger:hover { color: #7F1D1D; text-decoration: underline; }
+
   .btn-ghost-white {
     display: inline-flex;
     align-items: center;
@@ -346,8 +374,72 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+    /* Warm-600 sur fond crème : 6,4:1. L'ancien warm-500 tombait sous 4,5:1 —
+       les intitulés se lisaient mal, ce qui faisait paraître les champs
+       flottants. */
     color: var(--color-warm-600);
     margin-bottom: 0.5rem;
+  }
+  .form-label .obligatoire {
+    color: var(--color-gold-600);
+    margin-left: 0.125rem;
+  }
+
+  /* Case à cocher et bouton radio : le navigateur les dessine trop petits et
+     dans sa propre couleur. */
+  .form-checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: var(--color-navy-700);
+    border: 1.5px solid var(--color-warm-300);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .form-checkbox:focus-visible {
+    outline: 2px solid var(--color-navy-500);
+    outline-offset: 2px;
+  }
+
+  /* Champ refusé : la bordure le dit, pas seulement le message sous le champ,
+     que l'œil ne relie pas toujours au bon endroit. L'état est porté par le
+     conteneur, décidé au rendu — le poser sur le widget obligerait à valider
+     le formulaire pendant sa construction. */
+  .champ--invalide .form-input,
+  .champ--invalide .form-select,
+  .champ--invalide .form-file {
+    border-color: #B91C1C;
+    background-color: #FEF7F7;
+  }
+  .champ--invalide .form-input:focus,
+  .champ--invalide .form-select:focus {
+    border-color: #B91C1C;
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+  }
+  .champ--invalide .form-label { color: #991B1B; }
+  .form-erreur {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #991B1B;
+  }
+  .form-aide {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--color-warm-500);
+  }
+
+  /* Récapitulatif d'erreurs en tête de formulaire. */
+  .form-recap-erreurs {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    color: #991B1B;
+    background-color: #FEF2F2;
+    border-left: 3px solid #B91C1C;
+    border-radius: 2px;
   }
   .form-select {
     display: block;

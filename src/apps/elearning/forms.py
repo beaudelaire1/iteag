@@ -7,6 +7,7 @@ from django import forms
 from django.conf import settings
 from django.utils.text import slugify
 
+from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 from apps.elearning.models import Chapitre, Lecon, ModuleFormation, SousTitre, VideoAsset
 
 INPUT = "form-input"
@@ -14,7 +15,7 @@ SELECT = "form-select"
 FICHIER = "form-file"
 
 
-class ModuleForm(forms.ModelForm):
+class ModuleForm(FormulaireModeleITEAG):
     """Création et édition d'un module par son responsable."""
 
     class Meta:
@@ -69,7 +70,7 @@ class ModuleForm(forms.ModelForm):
         return candidat
 
 
-class ChapitreForm(forms.ModelForm):
+class ChapitreForm(FormulaireModeleITEAG):
     class Meta:
         model = Chapitre
         fields = ["titre", "description", "ordre"]
@@ -95,7 +96,7 @@ class ChapitreForm(forms.ModelForm):
         return ordre
 
 
-class LeconForm(forms.ModelForm):
+class LeconForm(FormulaireModeleITEAG):
     """Une leçon : vidéo, document, texte ou lien."""
 
     class Meta:
@@ -169,7 +170,7 @@ class LeconForm(forms.ModelForm):
         return lecon
 
 
-class SousTitreForm(forms.ModelForm):
+class SousTitreForm(FormulaireModeleITEAG):
     class Meta:
         model = SousTitre
         fields = ["langue", "libelle", "fichier_vtt", "par_defaut"]
@@ -188,7 +189,7 @@ class SousTitreForm(forms.ModelForm):
         return fichier
 
 
-class VideoExterneForm(forms.Form):
+class VideoExterneForm(FormulaireITEAG):
     """
     Référencement d'une vidéo déjà déposée chez le fournisseur.
 

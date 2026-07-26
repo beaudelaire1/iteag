@@ -1,9 +1,10 @@
 from django import forms
 
+from apps.core.formulaires import FormulaireITEAG
 from apps.core.models import AbonneNewsletter
 
 
-class NewsletterForm(forms.Form):
+class NewsletterForm(FormulaireITEAG):
     """Inscription à la lettre d'information — CDC PUB-012."""
 
     email = forms.EmailField(

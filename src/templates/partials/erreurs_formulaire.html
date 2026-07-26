@@ -1,0 +1,6 @@
+{% comment %}Erreurs générales d'un formulaire — attend `form`.{% endcomment %}
+{% if form.non_field_errors %}
+<div class="form-recap-erreurs" role="alert">
+    {% for erreur in form.non_field_errors %}<p>{{ erreur }}</p>{% endfor %}
+</div>
+{% endif %}

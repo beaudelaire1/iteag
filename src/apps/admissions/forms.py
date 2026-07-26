@@ -1,10 +1,12 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
+from apps.core.formulaires import FormulaireModeleITEAG
+
 from .models import DossierCandidature
 
 
-class CandidatureForm(forms.ModelForm):
+class CandidatureForm(FormulaireModeleITEAG):
     """Formulaire public multi-étapes de candidature — PUB-011."""
 
     # Honeypot anti-spam : champ invisible pour les humains

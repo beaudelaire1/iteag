@@ -50,14 +50,8 @@
 <div class="card-elevated max-w-2xl">
     <form method="post" class="space-y-5">
         {% csrf_token %}
-        {% for field in form %}
-        <div>
-            <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--color-navy-800);">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<p class="text-xs mt-1" style="color: var(--color-warm-400);">{{ field.help_text }}</p>{% endif %}
-            {% if field.errors %}<p class="text-xs mt-1 text-red-600">{{ field.errors.0 }}</p>{% endif %}
-        </div>
-        {% endfor %}
+        {% include "partials/erreurs_formulaire.html" %}
+        {% for field in form %}{% include "partials/champ.html" %}{% endfor %}
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Enregistrer la note</button>
             <a href="{% url 'lms:course_detail' evaluation.cours_session.pk %}" class="btn-ghost">Annuler</a>

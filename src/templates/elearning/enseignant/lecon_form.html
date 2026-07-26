@@ -33,22 +33,7 @@
     </div>
     {% endif %}
 
-    {% for champ in form %}
-    <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-start gap-3{% endif %}">
-        {% if champ.field.widget.input_type == 'checkbox' %}
-            {{ champ }}
-            <div>
-                <label for="{{ champ.id_for_label }}" class="text-sm font-medium" style="color: var(--color-navy-900);">{{ champ.label }}</label>
-                {% if champ.help_text %}<p class="text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
-            </div>
-        {% else %}
-            <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
-            {{ champ }}
-            {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
-        {% endif %}
-        {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
-    </div>
-    {% endfor %}
+    {% for champ in form %}{% with field=champ %}{% include "partials/champ.html" %}{% endwith %}{% endfor %}
 
     <div class="flex flex-wrap gap-4 pt-2">
         <button type="submit" class="btn-primary">Enregistrer</button>
