@@ -1,8 +1,10 @@
 import csv
+from decimal import Decimal
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -263,8 +265,13 @@ class AdminEtudiantListView(StaffRoleRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = ProfilEtudiant.objects.select_related("utilisateur", "parcours", "promotion").order_by(
-            "utilisateur__last_name", "utilisateur__first_name"
+        # Le total d'ECTS est annoté plutôt que calculé ligne par ligne : la
+        # liste l'affiche pour chaque étudiant, et sans annotation le nombre de
+        # requêtes croissait avec le nombre de lignes.
+        qs = (
+            ProfilEtudiant.objects.select_related("utilisateur", "parcours", "promotion")
+            .annotate(ects_acquis_annotes=Coalesce(Sum("credits_ects__ects_obtenus"), Decimal("0")))
+            .order_by("utilisateur__last_name", "utilisateur__first_name")
         )
         q = self.request.GET.get("q", "").strip()
         statut = self.request.GET.get("statut")
