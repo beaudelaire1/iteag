@@ -385,10 +385,14 @@ class CourseListView(AdminRoleRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
+        # Le tri est posé ici et non laissé au Meta du modèle : l'annotation
+        # ajoute un GROUP BY qui neutralise l'ordre par défaut, et une liste
+        # paginée sans ordre stable répète ou omet des lignes entre deux pages.
         queryset = (
             Cours.objects.select_related("discipline")
             .prefetch_related("parcours")
             .annotate(nombre_sessions=Count("sessions", distinct=True))
+            .order_by("discipline__nom", "titre")
         )
         recherche = self.request.GET.get("q", "").strip()
         discipline = self.request.GET.get("discipline", "")
