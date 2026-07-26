@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -119,22 +120,65 @@ class TeacherCoursesListView(TeacherRoleRequiredMixin, ListView):
 
 
 class TeacherEvaluationsListView(TeacherRoleRequiredMixin, ListView):
+    """
+    La liste croît en étudiants × cours × évaluations : c'est celle qui grossit
+    le plus vite de tout l'espace enseignant. Sans pagination ni filtre, elle
+    finissait par être la page la plus lourde du portail, et les copies à
+    corriger s'y noyaient.
+    """
+
     template_name = "lms/evaluations_list.html"
     context_object_name = "evaluations"
+    paginate_by = 30
 
     def get_queryset(self):
         prof = _get_professeur(self.request)
         if prof is None:
             return Evaluation.objects.none()
-        return (
+        requete = (
             Evaluation.objects.filter(cours_session__enseignant=prof)
             .select_related("etudiant__utilisateur", "cours_session__cours", "cours_session__session")
             .order_by("statut", "-created_at")
         )
+        recherche = self.request.GET.get("q", "").strip()
+        statut = self.request.GET.get("statut", "")
+        cours = self.request.GET.get("cours", "")
+        if recherche:
+            requete = requete.filter(
+                Q(etudiant__utilisateur__last_name__icontains=recherche)
+                | Q(etudiant__utilisateur__first_name__icontains=recherche)
+                | Q(etudiant__numero_etudiant__icontains=recherche)
+                | Q(cours_session__cours__titre__icontains=recherche)
+            )
+        if statut:
+            requete = requete.filter(statut=statut)
+        if cours:
+            requete = requete.filter(cours_session_id=cours)
+        return requete
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["professeur"] = _get_professeur(self.request)
+        prof = _get_professeur(self.request)
+        context.update(
+            {
+                "professeur": prof,
+                "statut_choices": Evaluation.StatutEvaluation.choices,
+                "current_statut": self.request.GET.get("statut", ""),
+                "current_cours": self.request.GET.get("cours", ""),
+                "query": self.request.GET.get("q", ""),
+                "cours_enseignes": (
+                    CoursDeSession.objects.filter(enseignant=prof).select_related("cours", "session")
+                    if prof
+                    else CoursDeSession.objects.none()
+                ),
+                "a_corriger": Evaluation.objects.filter(
+                    cours_session__enseignant=prof,
+                    statut__in=[Evaluation.StatutEvaluation.SOUMIS, Evaluation.StatutEvaluation.EN_CORRECTION],
+                ).count()
+                if prof
+                else 0,
+            }
+        )
         return context
 
 

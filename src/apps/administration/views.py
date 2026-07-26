@@ -328,7 +328,22 @@ class AdminProfesseurListView(AdminRoleRequiredMixin, ListView):
     template_name = "administration/professeurs.html"
     context_object_name = "professeurs"
     paginate_by = 20
-    queryset = Professeur.objects.prefetch_related("disciplines")
+
+    def get_queryset(self):
+        qs = Professeur.objects.prefetch_related("disciplines")
+        q = self.request.GET.get("q", "").strip()
+        actif = self.request.GET.get("actif", "")
+        if q:
+            qs = qs.filter(Q(nom__icontains=q) | Q(prenom__icontains=q) | Q(specialite__icontains=q))
+        if actif in ("1", "0"):
+            qs = qs.filter(actif=actif == "1")
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["query"] = self.request.GET.get("q", "")
+        ctx["current_actif"] = self.request.GET.get("actif", "")
+        return ctx
 
 
 # ──────────────────────────────────────────────
@@ -357,6 +372,39 @@ class AdminSessionListView(StaffRoleRequiredMixin, ListView):
     template_name = "administration/sessions.html"
     context_object_name = "sessions"
     paginate_by = 20
+
+    def get_queryset(self):
+        # Le nombre de sessions croît d'une année sur l'autre : sans filtre, la
+        # session de l'an dernier se retrouve à la même distance que celle qui
+        # commence la semaine prochaine.
+        # L'ordre est réaffirmé après l'annotation : sans lui, la pagination
+        # rendrait des pages qui se recouvrent.
+        qs = SessionAcademique.objects.annotate(nombre_cours=Count("cours_de_session")).order_by("-date_debut")
+        q = self.request.GET.get("q", "").strip()
+        statut = self.request.GET.get("statut", "")
+        annee = self.request.GET.get("annee", "")
+        if q:
+            qs = qs.filter(Q(nom__icontains=q) | Q(annee_academique__icontains=q))
+        if statut:
+            qs = qs.filter(statut=statut)
+        if annee:
+            qs = qs.filter(annee_academique=annee)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(
+            {
+                "query": self.request.GET.get("q", ""),
+                "statut_choices": SessionAcademique.StatutSession.choices,
+                "current_statut": self.request.GET.get("statut", ""),
+                "annees": SessionAcademique.objects.values_list("annee_academique", flat=True)
+                .distinct()
+                .order_by("-annee_academique"),
+                "current_annee": self.request.GET.get("annee", ""),
+            }
+        )
+        return ctx
 
 
 # ──────────────────────────────────────────────

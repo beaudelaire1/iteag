@@ -28,4 +28,6 @@
 {% for paiement in paiements %}<tr><td class="py-4 pr-4"><p class="font-semibold text-navy-900">{{ paiement.etudiant.utilisateur.get_full_name }}</p><p class="text-xs text-warm-500">{{ paiement.etudiant.numero_etudiant }}</p></td><td class="py-4 pr-4">{{ paiement.session|default:"Général" }}</td><td class="py-4 pr-4"><p>{{ paiement.date_paiement|date:"d/m/Y" }}</p><p class="text-xs text-warm-500">{{ paiement.reference|default:"Sans référence" }}</p></td><td class="py-4 pr-4"><span class="badge {% if paiement.statut == 'confirme' %}badge-success{% else %}badge-warning{% endif %}">{{ paiement.get_statut_display }}</span></td><td class="py-4 pr-4 text-right font-bold text-navy-900">{{ paiement.montant }} €</td><td class="py-4 text-right"><a href="{% url 'administration:payment_update' paiement.pk %}" class="font-semibold text-navy-600">Modifier</a>{% if user.is_admin %} · <a href="{% url 'administration:payment_delete' paiement.pk %}" class="font-semibold text-rose-700">Supprimer</a>{% endif %}</td></tr>
 {% empty %}<tr><td colspan="6" class="py-12 text-center text-warm-400">Aucun paiement.</td></tr>{% endfor %}
 </tbody></table></div></div>
+
+{% include "partials/pagination.html" %}
 {% endblock %}

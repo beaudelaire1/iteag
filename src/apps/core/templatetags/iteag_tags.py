@@ -56,3 +56,16 @@ def verset_aleatoire():
     """Retourne un verset tiré au sort, sous la forme {texte, reference}."""
     texte, reference = random.choice(VERSETS)  # noqa: S311 — usage décoratif, non cryptographique
     return {"texte": texte, "reference": reference}
+
+
+@register.simple_tag(takes_context=True)
+def lien_page(context, numero) -> str:
+    """Adresse de la page `numero`, en conservant les filtres en cours.
+
+    Le gabarit de pagination écrivait « ?page=2 » tout court : passer à la page
+    suivante d'une liste filtrée effaçait la recherche et rendait un tout autre
+    jeu de résultats, sans le dire.
+    """
+    requete = context["request"].GET.copy()
+    requete["page"] = numero
+    return f"?{requete.urlencode()}"

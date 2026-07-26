@@ -18,6 +18,39 @@
 {% endblock %}
 
 {% block portal_content %}
+{% comment %}Cette liste croît en étudiants × cours × évaluations : sans filtre, les copies à corriger s'y noient.{% endcomment %}
+<form method="get" class="card-elevated mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
+    <div>
+        <label class="form-label" for="evals-q">Rechercher</label>
+        <input type="search" id="evals-q" name="q" value="{{ query }}" class="form-input" placeholder="Étudiant, numéro, cours">
+    </div>
+    <div>
+        <label class="form-label" for="evals-cours">Cours</label>
+        <select id="evals-cours" name="cours" class="form-select">
+            <option value="">Tous</option>
+            {% for offre in cours_enseignes %}
+            <option value="{{ offre.pk }}"{% if current_cours == offre.pk|stringformat:"s" %} selected{% endif %}>{{ offre.cours.titre }} — {{ offre.session.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="evals-statut">Statut</label>
+        <select id="evals-statut" name="statut" class="form-select">
+            <option value="">Tous</option>
+            {% for valeur, libelle in statut_choices %}
+            <option value="{{ valeur }}"{% if valeur == current_statut %} selected{% endif %}>{{ libelle }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-primary justify-center">Filtrer</button>
+</form>
+
+{% if a_corriger %}
+<p class="mb-6 text-sm" style="color: var(--color-warm-600);">
+    <strong style="color: var(--color-gold-600);">{{ a_corriger }}</strong> copie{{ a_corriger|pluralize }} en attente de correction.
+</p>
+{% endif %}
+
 <div class="card-elevated" style="padding: 0;">
     {% if evaluations %}
     <div class="overflow-x-auto">
@@ -63,4 +96,6 @@
     <p class="px-5 py-12 text-sm text-center" style="color: var(--color-warm-400);">Aucune évaluation pour le moment.</p>
     {% endif %}
 </div>
+
+{% include "partials/pagination.html" %}
 {% endblock %}

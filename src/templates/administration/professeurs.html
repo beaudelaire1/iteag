@@ -20,6 +20,22 @@
 {% endblock %}
 
 {% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 sm:grid-cols-3 items-end">
+    <div class="sm:col-span-1">
+        <label class="form-label" for="profs-q">Rechercher</label>
+        <input type="search" id="profs-q" name="q" value="{{ query }}" class="form-input" placeholder="Nom, prénom, spécialité">
+    </div>
+    <div>
+        <label class="form-label" for="profs-actif">Statut</label>
+        <select id="profs-actif" name="actif" class="form-select">
+            <option value="">Tous</option>
+            <option value="1"{% if current_actif == "1" %} selected{% endif %}>En activité</option>
+            <option value="0"{% if current_actif == "0" %} selected{% endif %}>Retirés</option>
+        </select>
+    </div>
+    <button type="submit" class="btn-primary justify-center">Filtrer</button>
+</form>
+
 {# ── Grille ── #}
 {% if professeurs %}
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -88,4 +104,6 @@
     <p style="color: var(--color-warm-400);">Aucun professeur trouvé.</p>
 </div>
 {% endif %}
+
+{% include "partials/pagination.html" %}
 {% endblock %}
