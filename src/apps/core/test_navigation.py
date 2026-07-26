@@ -156,7 +156,7 @@ def test_une_seule_charte_dans_tous_les_gabarits():
         relatif = gabarit.relative_to(racine).as_posix()
         if relatif in GABARITS_HORS_CHARTE:
             continue
-        for numero, ligne in enumerate(gabarit.read_text().splitlines(), 1):
+        for numero, ligne in enumerate(gabarit.read_text(encoding="utf-8").splitlines(), 1):
             trouve = motif.findall(ligne)
             if trouve:
                 fautifs.append(f"  {relatif}:{numero} → {sorted(set(trouve))}")

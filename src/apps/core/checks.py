@@ -42,8 +42,8 @@ def composants_manquants() -> list[str]:
     source, construite = _chemins()
     if not source.exists() or not construite.exists():
         return []
-    servie = construite.read_text()
-    declares = set(DECLARATION.findall(source.read_text()))
+    servie = construite.read_text(encoding="utf-8")
+    declares = set(DECLARATION.findall(source.read_text(encoding="utf-8")))
     return sorted(nom for nom in declares if f".{nom}" not in servie)
 
 

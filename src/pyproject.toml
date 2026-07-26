@@ -14,8 +14,19 @@ line-length = 120
 src = ["apps", "config"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "S", "DJ"]
+# PLW1514 : lire un fichier sans encodage explicite. Sous Windows, Python
+# retombe alors sur cp1252 et lève UnicodeDecodeError au premier caractère
+# accentué — ce qui est fatal sur un projet dont les gabarits et les feuilles
+# de style sont en français. Le défaut ne se voit pas sous Linux, donc ni en
+# développement ici, ni en intégration continue : seul le poste d'un
+# collègue le révèle.
+select = ["E", "F", "W", "I", "B", "UP", "S", "DJ", "PLW1514"]
 ignore = ["S101", "DJ001"]
+# PLW1514 n'est encore proposée qu'en avant-première. « explicit-preview-rules »
+# n'active que celles qui sont nommées ci-dessus : le reste de l'avant-première
+# ne s'invite pas dans le projet.
+preview = true
+explicit-preview-rules = true
 
 [tool.ruff.lint.per-file-ignores]
 # Les jeux d'essai manipulent des mots de passe factices : l'alerte n'a pas de sens ici.

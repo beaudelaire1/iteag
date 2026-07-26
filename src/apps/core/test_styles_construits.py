@@ -73,7 +73,7 @@ SOURCE_MINIMALE = "@layer components {\n  .nav-groupe {\n    x: y;\n  }\n}"
 def feuille() -> str:
     if not CONSTRUITE.exists():
         pytest.fail(f"« {CONSTRUITE} » est absente." + MESSAGE)
-    return CONSTRUITE.read_text()
+    return CONSTRUITE.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("composant", COMPOSANTS)
@@ -103,7 +103,7 @@ class TestLeControleDeDemarrage:
         from apps.core.checks import styles_construits
 
         (tmp_path / "assets" / "css").mkdir(parents=True)
-        (tmp_path / "assets" / "css" / "input.css").write_text("/* source */")
+        (tmp_path / "assets" / "css" / "input.css").write_text("/* source */", encoding="utf-8")
         settings.BASE_DIR = tmp_path
 
         problemes = styles_construits(None)
@@ -116,8 +116,8 @@ class TestLeControleDeDemarrage:
 
         (tmp_path / "assets" / "css").mkdir(parents=True)
         (tmp_path / "static" / "css").mkdir(parents=True)
-        (tmp_path / "assets" / "css" / "input.css").write_text(SOURCE_MINIMALE)
-        (tmp_path / "static" / "css" / "main.css").write_text(".autre-chose{x:y}")
+        (tmp_path / "assets" / "css" / "input.css").write_text(SOURCE_MINIMALE, encoding="utf-8")
+        (tmp_path / "static" / "css" / "main.css").write_text(".autre-chose{x:y}", encoding="utf-8")
         settings.BASE_DIR = tmp_path
 
         problemes = styles_construits(None)
@@ -130,8 +130,8 @@ class TestLeControleDeDemarrage:
 
         (tmp_path / "assets" / "css").mkdir(parents=True)
         (tmp_path / "static" / "css").mkdir(parents=True)
-        (tmp_path / "assets" / "css" / "input.css").write_text(SOURCE_MINIMALE)
-        (tmp_path / "static" / "css" / "main.css").write_text(".nav-groupe{x:y}")
+        (tmp_path / "assets" / "css" / "input.css").write_text(SOURCE_MINIMALE, encoding="utf-8")
+        (tmp_path / "static" / "css" / "main.css").write_text(".nav-groupe{x:y}", encoding="utf-8")
         settings.BASE_DIR = tmp_path
 
         assert styles_construits(None) == []
@@ -150,9 +150,9 @@ class TestLeControleDeDemarrage:
 
         (tmp_path / "assets" / "css").mkdir(parents=True)
         (tmp_path / "static" / "css").mkdir(parents=True)
-        (tmp_path / "assets" / "css" / "input.css").write_text(SOURCE_MINIMALE)
+        (tmp_path / "assets" / "css" / "input.css").write_text(SOURCE_MINIMALE, encoding="utf-8")
         construite = tmp_path / "static" / "css" / "main.css"
-        construite.write_text(".nav-groupe{x:y}")
+        construite.write_text(".nav-groupe{x:y}", encoding="utf-8")
         os.utime(construite, (time.time() - 7200, time.time() - 7200))
         settings.BASE_DIR = tmp_path
 

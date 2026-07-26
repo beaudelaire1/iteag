@@ -34,7 +34,7 @@ CLASSES_MASQUANTES = [
 
 def bloc_mouvement_reduit() -> str:
     """Contenu de la règle « prefers-reduced-motion » de la feuille source."""
-    texte = CSS_SOURCE.read_text()
+    texte = CSS_SOURCE.read_text(encoding="utf-8")
     marqueur = "@media (prefers-reduced-motion: reduce)"
     assert marqueur in texte, "Aucune règle « prefers-reduced-motion » dans la feuille de style"
     depart = texte.index(marqueur)
@@ -53,7 +53,7 @@ def test_le_repli_sans_javascript_est_dans_le_gabarit_de_base():
     Posé dans « base.html » et non dans chaque page : c'est le seul endroit où
     il ne peut pas être oublié.
     """
-    base = (RACINE / "templates" / "base.html").read_text()
+    base = (RACINE / "templates" / "base.html").read_text(encoding="utf-8")
     assert "<noscript>" in base
     debut = base.index("<noscript>")
     bloc = base[debut : base.index("</noscript>", debut)]
