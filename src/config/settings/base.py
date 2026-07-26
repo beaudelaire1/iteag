@@ -72,6 +72,7 @@ LOCAL_APPS = [
     "apps.admissions",
     "apps.academics",
     "apps.portail_etudiant",
+    "apps.portail_enseignant",
     "apps.lms",
     "apps.library",
     "apps.documents",

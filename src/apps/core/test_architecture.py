@@ -39,6 +39,7 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     # Les portails agrègent plusieurs domaines : c'est leur raison d'être, et
     # c'est pourquoi ils vivent hors des applications de domaine.
     "portail_etudiant": {"core", "accounts", "formations", "academics", "lms", "documents", "elearning"},
+    "portail_enseignant": {"core", "accounts", "formations", "academics", "lms", "elearning"},
     # website est un portail : comme administration, il agrège des domaines.
     "website": {"core", "formations", "elearning"},
 }

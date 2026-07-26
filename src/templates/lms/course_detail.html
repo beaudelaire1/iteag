@@ -11,7 +11,7 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:dashboard' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au tableau de bord</a>
+    <a href="{% url 'enseignant:accueil' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au tableau de bord</a>
     <p class="overline mb-2">Cours</p>
     <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ cours_session.cours.titre }}</h1>
     <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.session.nom }} · {{ cours_session.get_statut_display }} · {{ cours_session.cours.ects }} ECTS</p>

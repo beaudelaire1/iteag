@@ -42,6 +42,7 @@ urlpatterns = [
     path("admissions/", include("apps.admissions.urls", namespace="admissions")),
     path("bibliotheque/", include("apps.library.urls", namespace="library")),
     path("espace-etudiant/", include("apps.portail_etudiant.urls", namespace="etudiant")),
+    path("espace-enseignant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
     path("espace-enseignant/", include("apps.lms.urls", namespace="lms")),
     path("mes-documents/", include("apps.documents.urls", namespace="documents")),
     path("formations-video/", include("apps.elearning.urls", namespace="elearning")),

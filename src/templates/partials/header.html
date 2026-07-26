@@ -48,7 +48,7 @@
                         <a href="{% url 'etudiant:progress' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Parcours ECTS</a>
                         <a href="{% url 'documents:list' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Documents</a>
                         {% elif user.is_enseignant %}
-                        <a href="{% url 'lms:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
+                        <a href="{% url 'enseignant:accueil' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
                         {% endif %}
                         {% if user.is_admin %}
                         <a href="{% url 'administration:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Administration</a>
@@ -104,7 +104,7 @@
                 {% if user.is_etudiant %}
                 <a href="{% url 'etudiant:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace étudiant</a>
                 {% elif user.is_enseignant %}
-                <a href="{% url 'lms:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
+                <a href="{% url 'enseignant:accueil' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
                 {% elif user.is_secretariat %}
                 <a href="{% url 'secretariat:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Espace secrétariat</a>
                 {% elif user.is_admin %}
