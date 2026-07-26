@@ -1,12 +1,22 @@
 from django.db.models import Q
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 from django.views.generic import DetailView, ListView
 
 from .models import Cours, Discipline, Parcours, Professeur, Tarif
 
+# « cache_page » enveloppait les deux listes ci-dessous. Le gabarit qu'elles
+# rendent contient la barre de navigation, qui porte le prénom, les initiales,
+# le rôle et les liens d'espace de qui est connecté. Le cache de page mémorise
+# le HTML complet sous une clé qui ignore la session : la première version
+# rendue était resservie à tous les suivants, dans les deux sens — le prénom
+# d'un étudiant à un visiteur anonyme, et la page anonyme à un connecté qui se
+# découvrait déconnecté. En production le cache est partagé par tous les
+# processus, la fuite ne se limitait pas à un travailleur.
+#
+# Ces listes portent sur des tables de quelques dizaines de lignes : les mettre
+# en cache n'était pas ce qui tenait le site debout. Voir
+# « test_cache_pages.py ».
 
-@method_decorator(cache_page(300), name="dispatch")  # 5 min
+
 class ParcoursListView(ListView):
     model = Parcours
     template_name = "formations/parcours_list.html"
@@ -59,7 +69,6 @@ class CoursDetailView(DetailView):
     queryset = Cours.objects.filter(actif=True).select_related("discipline")
 
 
-@method_decorator(cache_page(600), name="dispatch")  # 10 min
 class ProfesseurListView(ListView):
     model = Professeur
     template_name = "formations/professeur_list.html"
