@@ -42,21 +42,20 @@
                             </p>
                         </div>
                         {% if user.is_etudiant %}
-                        <a href="{% url 'academics:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
-                        <a href="{% url 'academics:courses' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mes cours</a>
-                        <a href="{% url 'elearning:mes_formations' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mes formations vidéo</a>
-                        <a href="{% url 'academics:progress' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Parcours ECTS</a>
-                        <a href="{% url 'documents:list' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Documents</a>
+                        <a href="{% url 'etudiant:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Mon espace</a>
+                        <a href="{% url 'etudiant:courses' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Mes formations</a>
+                        <a href="{% url 'etudiant:progress' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Parcours ECTS</a>
+                        <a href="{% url 'documents:list' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Documents</a>
                         {% elif user.is_enseignant %}
-                        <a href="{% url 'lms:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Mon espace</a>
+                        <a href="{% url 'enseignant:accueil' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Mon espace</a>
                         {% endif %}
                         {% if user.is_admin %}
-                        <a href="{% url 'administration:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Administration</a>
+                        <a href="{% url 'administration:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Administration</a>
                         {% elif user.is_secretariat %}
-                        <a href="{% url 'secretariat:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-gray-50">Espace secrétariat</a>
+                        <a href="{% url 'secretariat:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Espace secrétariat</a>
                         {% endif %}
                         <hr class="my-1 border-warm-100">
-                        <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left px-4 py-2 text-sm font-medium text-danger hover:bg-gray-50">Déconnexion</button></form>
+                        <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left px-4 py-2 text-sm font-medium text-danger hover:bg-warm-50">Déconnexion</button></form>
                     </div>
                 </div>
                 {% else %}
@@ -102,9 +101,9 @@
                     <span class="overline-light">{{ user.first_name|default:user.username }}</span>
                 </div>
                 {% if user.is_etudiant %}
-                <a href="{% url 'academics:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace étudiant</a>
+                <a href="{% url 'etudiant:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace étudiant</a>
                 {% elif user.is_enseignant %}
-                <a href="{% url 'lms:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
+                <a href="{% url 'enseignant:accueil' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
                 {% elif user.is_secretariat %}
                 <a href="{% url 'secretariat:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Espace secrétariat</a>
                 {% elif user.is_admin %}

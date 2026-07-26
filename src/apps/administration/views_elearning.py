@@ -85,6 +85,11 @@ class AccesListView(StaffRoleRequiredMixin, ListView):
                     valeur: InscriptionModule.objects.filter(statut=valeur).count()
                     for valeur, _ in InscriptionModule.StatutAcces.choices
                 },
+                # Les demandes attendent une décision : elles sont mises en tête
+                # d'écran plutôt que noyées parmi les autres statuts.
+                "demandes_en_attente": InscriptionModule.objects.filter(
+                    statut=InscriptionModule.StatutAcces.DEMANDE
+                ).count(),
             }
         )
         return contexte
@@ -107,7 +112,37 @@ class AccesActionView(StaffRoleRequiredMixin, View):
         selection = InscriptionModule.objects.filter(pk__in=identifiants)
         nombre = selection.count()
 
-        if action == "suspendre":
+        if action == "accorder":
+            # Une demande accordée devient un accès ordinaire : c'est « octroyer »
+            # qui décide, afin qu'un octroi manuel et une demande acceptée
+            # produisent exactement le même objet.
+            try:
+                jours = int(request.POST.get("jours") or 0) or None
+            except (TypeError, ValueError):
+                jours = None
+            for inscription in selection.select_related("etudiant", "module"):
+                octroi.octroyer(
+                    inscription.etudiant,
+                    inscription.module,
+                    source=InscriptionModule.SourceAcces.OCTROI_MANUEL,
+                    duree_jours=jours,
+                    octroye_par=request.user,
+                )
+            messages.success(request, f"{nombre} demande(s) accordée(s).")
+
+        elif action == "refuser":
+            motif = request.POST.get("motif", "").strip()
+            if not motif:
+                messages.error(request, "Précisez le motif du refus.")
+                return redirect(retour)
+            refusees = 0
+            for inscription in selection.select_related("etudiant__utilisateur", "module"):
+                if inscription.statut == InscriptionModule.StatutAcces.DEMANDE:
+                    octroi.refuser_demande(inscription, motif=motif, par=request.user)
+                    refusees += 1
+            messages.success(request, f"{refusees} demande(s) refusée(s).")
+
+        elif action == "suspendre":
             selection.update(statut=InscriptionModule.StatutAcces.SUSPENDU)
             journaliser("revocation_acces", request=request, objet_type="InscriptionModule", nombre=nombre)
             messages.success(request, f"{nombre} accès suspendu(s).")

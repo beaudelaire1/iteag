@@ -10,9 +10,11 @@ import json
 import uuid
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import FileResponse, Http404, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import DetailView, ListView, TemplateView
@@ -27,6 +29,7 @@ from apps.elearning.models import (
     ModuleFormation,
     ProgressionLecon,
 )
+from apps.elearning.services import octroi
 from apps.elearning.services import progression as service_progression
 from apps.elearning.services.acces import journaliser_acces, verifier_acces
 
@@ -102,6 +105,7 @@ class ModuleDetailView(CspLectureVideoMixin, DetailView):
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
         module = self.object
+        profil = getattr(self.request.user, "profil_etudiant", None)
         inscription = self._inscription(module)
 
         faites = set()
@@ -120,6 +124,12 @@ class ModuleDetailView(CspLectureVideoMixin, DetailView):
                 "lecon_suivante": service_progression.lecon_suivante(inscription) if inscription else None,
                 "attestation": getattr(inscription, "attestation", None) if inscription else None,
                 "lecon_apercu": module.lecons().filter(apercu_gratuit=True).first(),
+                # Un étudiant déjà inscrit demande l'accès en un clic ; seul un
+                # visiteur sans dossier est invité à déposer une candidature.
+                "profil_etudiant": profil,
+                "acces_actif": bool(inscription and inscription.est_active()),
+                "demande_en_attente": bool(inscription and inscription.statut == InscriptionModule.StatutAcces.DEMANDE),
+                "motif_refus_demande": (octroi.motif_refus_demande(profil, module) if profil is not None else ""),
             }
         )
         return contexte
@@ -159,6 +169,7 @@ class MesFormationsView(LoginRequiredMixin, TemplateView):
                 "inscriptions": inscriptions,
                 "en_cours": [i for i in inscriptions if i.statut == InscriptionModule.StatutAcces.ACTIF],
                 "terminees": [i for i in inscriptions if i.statut == InscriptionModule.StatutAcces.TERMINE],
+                "demandes": [i for i in inscriptions if i.statut == InscriptionModule.StatutAcces.DEMANDE],
                 "indisponibles": [
                     i
                     for i in inscriptions
@@ -172,6 +183,32 @@ class MesFormationsView(LoginRequiredMixin, TemplateView):
             }
         )
         return contexte
+
+
+class DemandeAccesModuleView(LoginRequiredMixin, View):
+    """Demande d'accès à un module, par un étudiant déjà connu de l'institut.
+
+    Un clic, aucun formulaire : l'ITEAG détient déjà l'identité et les
+    coordonnées de cet étudiant. Redemander une candidature complète — ce que
+    faisait le seul appel à l'action disponible ici — revenait à ignorer son
+    dossier.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, slug):
+        module = get_object_or_404(ModuleFormation, slug=slug)
+        profil = getattr(request.user, "profil_etudiant", None)
+        try:
+            octroi.demander(profil, module, request=request)
+        except ValidationError as exception:
+            messages.error(request, exception.messages[0])
+        else:
+            messages.success(
+                request,
+                f"Votre demande d'accès à « {module.titre} » a été transmise au secrétariat.",
+            )
+        return redirect(module.get_absolute_url())
 
 
 class LeconDetailView(CspLectureVideoMixin, DetailView):
@@ -196,14 +233,27 @@ class LeconDetailView(CspLectureVideoMixin, DetailView):
 
         if not decision.autorise:
             journaliser_acces(decision, utilisateur=request.user, lecon=self.object, request=request)
+            module = self.object.chapitre.module
+            profil = getattr(request.user, "profil_etudiant", None)
             return render(
                 request,
                 "elearning/acces_requis.html",
                 {
                     "lecon": self.object,
-                    "module": self.object.chapitre.module,
+                    "module": module,
                     "motif": decision.motif,
                     "message": decision.message,
+                    # Un refus doit proposer la voie de sortie la plus courte.
+                    # Pour un étudiant déjà inscrit, c'est une demande en un
+                    # clic — pas une nouvelle candidature.
+                    "profil_etudiant": profil,
+                    "peut_demander": profil is not None and not octroi.motif_refus_demande(profil, module),
+                    "demande_en_attente": profil is not None
+                    and InscriptionModule.objects.filter(
+                        etudiant=profil,
+                        module=module,
+                        statut=InscriptionModule.StatutAcces.DEMANDE,
+                    ).exists(),
                 },
                 status=403,
             )

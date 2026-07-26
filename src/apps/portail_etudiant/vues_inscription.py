@@ -22,7 +22,7 @@ from apps.formations.models import Discipline
 
 
 class CourseCatalogueView(StudentRoleRequiredMixin, ListView):
-    template_name = "academics/course_catalogue.html"
+    template_name = "etudiant/course_catalogue.html"
     context_object_name = "offres"
     paginate_by = 12
 
@@ -90,14 +90,47 @@ class CourseCatalogueView(StudentRoleRequiredMixin, ListView):
                 "current_discipline": self.request.GET.get("discipline", ""),
                 "current_session": self.request.GET.get("session", ""),
                 "current_modalite": self.request.GET.get("modalite", ""),
+                **self._modules_video(profil),
             }
         )
         return context
 
+    def _modules_video(self, profil) -> dict:
+        """Les modules vidéo relèvent du même catalogue : c'est un format, pas une offre à part.
+
+        La recherche s'y applique aussi, sans quoi filtrer ferait disparaître la
+        moitié de l'offre sans le dire.
+        """
+        from apps.elearning.models import InscriptionModule, ModuleFormation
+
+        modules = (
+            ModuleFormation.objects.filter(statut=ModuleFormation.StatutPublication.PUBLIE)
+            .select_related("discipline", "responsable")
+            .order_by("ordre", "titre")
+        )
+        recherche = self.request.GET.get("q", "").strip()
+        discipline = self.request.GET.get("discipline", "")
+        if recherche:
+            modules = modules.filter(Q(titre__icontains=recherche) | Q(description__icontains=recherche))
+        if discipline:
+            modules = modules.filter(discipline_id=discipline)
+        # Une session ou une modalité de présentiel ne s'applique pas à un module
+        # vidéo : filtrer là-dessus doit masquer la section, non la fausser.
+        if self.request.GET.get("session") or self.request.GET.get("modalite"):
+            return {"modules_video": []}
+
+        modules = list(modules)
+        etats = {
+            acces.module_id: acces for acces in InscriptionModule.objects.filter(etudiant=profil, module__in=modules)
+        }
+        for module in modules:
+            module.acces_etudiant = etats.get(module.pk)
+        return {"modules_video": modules}
+
 
 class CourseOfferingDetailView(StudentRoleRequiredMixin, DetailView):
     model = CoursDeSession
-    template_name = "academics/course_offering_detail.html"
+    template_name = "etudiant/course_offering_detail.html"
     context_object_name = "offre"
 
     def get_queryset(self):
@@ -142,7 +175,7 @@ class EnrollmentRequestCreateView(StudentRoleRequiredMixin, View):
             for erreurs in form.errors.values():
                 for erreur in erreurs:
                     messages.error(request, erreur)
-            return redirect("academics:course_offering_detail", pk=offre.pk)
+            return redirect("etudiant:course_offering_detail", pk=offre.pk)
         try:
             demande = soumettre_demande(
                 etudiant=profil,
@@ -157,11 +190,11 @@ class EnrollmentRequestCreateView(StudentRoleRequiredMixin, View):
                 request,
                 f"Votre demande pour « {demande.cours_session.cours.titre} » a été transmise au secrétariat.",
             )
-        return redirect("academics:enrollment_requests")
+        return redirect("etudiant:enrollment_requests")
 
 
 class MyEnrollmentRequestsView(StudentRoleRequiredMixin, ListView):
-    template_name = "academics/enrollment_requests.html"
+    template_name = "etudiant/enrollment_requests.html"
     context_object_name = "demandes"
     paginate_by = 20
 
@@ -188,11 +221,11 @@ class EnrollmentRequestCancelView(StudentRoleRequiredMixin, View):
             messages.error(request, exc.messages[0])
         else:
             messages.success(request, "La demande d'inscription a été annulée.")
-        return redirect("academics:enrollment_requests")
+        return redirect("etudiant:enrollment_requests")
 
 
 class StudentPaymentsView(StudentRoleRequiredMixin, TemplateView):
-    template_name = "academics/payments.html"
+    template_name = "etudiant/payments.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

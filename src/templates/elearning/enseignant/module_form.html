@@ -3,7 +3,7 @@
 {% block title %}{% if object %}Modifier{% else %}Nouveau{% endif %} module — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
-{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
 
 {% block portal_header %}
 <div class="mb-8">
@@ -29,12 +29,7 @@
         <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Présentation</h2>
         {% for champ in form %}
             {% if champ.name in "titre,code,description,objectifs,image_couverture" %}
-            <div>
-                <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
-                {{ champ }}
-                {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
-                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
-            </div>
+            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
             {% endif %}
         {% endfor %}
     </section>
@@ -43,11 +38,7 @@
         <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Rattachement</h2>
         {% for champ in form %}
             {% if champ.name in "discipline,cours,niveau,ects" %}
-            <div>
-                <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
-                {{ champ }}
-                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
-            </div>
+            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
             {% endif %}
         {% endfor %}
     </section>
@@ -56,20 +47,7 @@
         <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Validation</h2>
         {% for champ in form %}
             {% if champ.name in "seuil_completion,certifiant,autorise_revision" %}
-            <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-start gap-3{% endif %}">
-                {% if champ.field.widget.input_type == 'checkbox' %}
-                    {{ champ }}
-                    <div>
-                        <label for="{{ champ.id_for_label }}" class="text-sm font-medium" style="color: var(--color-navy-900);">{{ champ.label }}</label>
-                        {% if champ.help_text %}<p class="text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
-                    </div>
-                {% else %}
-                    <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
-                    {{ champ }}
-                    {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
-                {% endif %}
-                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
-            </div>
+            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
             {% endif %}
         {% endfor %}
     </section>

@@ -67,10 +67,10 @@
                     <td class="px-6 py-3">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
                             {% if e.statut_inscription == 'actif' %}bg-emerald-50 text-emerald-700
-                            {% elif e.statut_inscription == 'inscrit' %}bg-blue-50 text-blue-700
-                            {% elif e.statut_inscription == 'suspendu' %}bg-red-50 text-red-700
+                            {% elif e.statut_inscription == 'inscrit' %}badge-info
+                            {% elif e.statut_inscription == 'suspendu' %}bg-red-50 text-rose-700
                             {% elif e.statut_inscription == 'diplome' %}bg-amber-50 text-amber-700
-                            {% else %}bg-gray-50 text-gray-600{% endif %}">
+                            {% else %}badge-neutral{% endif %}">
                             {{ e.get_statut_inscription_display }}
                         </span>
                     </td>
@@ -80,7 +80,7 @@
                     <td class="px-6 py-3 text-right">
                         <a href="{% url 'administration:etudiant_update' e.pk %}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Modifier</a>
                         {% if user.is_admin %}
-                        <a href="{% url 'administration:etudiant_delete' e.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+                        <a href="{% url 'administration:etudiant_delete' e.pk %}" class="lien-danger">Supprimer</a>
                         {% endif %}
                     </td>
                 </tr>
@@ -113,4 +113,6 @@
     {% endif %}
 </nav>
 {% endif %}
+
+{% include "partials/pagination.html" %}
 {% endblock %}

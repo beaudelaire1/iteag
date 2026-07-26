@@ -89,7 +89,7 @@ def enrollment_context(db):
 class TestStudentEnrollmentJourney:
     def test_catalogue_displays_eligible_course(self, client, enrollment_context):
         client.force_login(enrollment_context["etudiant"].utilisateur)
-        response = client.get(reverse("academics:course_catalogue"))
+        response = client.get(reverse("etudiant:course_catalogue"))
         assert response.status_code == 200
         assert enrollment_context["offre"].pk in {offre.pk for offre in response.context["offres"]}
 
@@ -99,7 +99,7 @@ class TestStudentEnrollmentJourney:
         client.force_login(etudiant.utilisateur)
 
         response = client.post(
-            reverse("academics:enrollment_request_create", kwargs={"pk": offre.pk}),
+            reverse("etudiant:enrollment_request_create", kwargs={"pk": offre.pk}),
             {"note_etudiant": "Je souhaite suivre cette session."},
         )
         assert response.status_code == 302
@@ -108,7 +108,7 @@ class TestStudentEnrollmentJourney:
         assert demande.montant_du == Decimal("120.00")
         assert demande.historique.count() == 1
 
-        response = client.post(reverse("academics:enrollment_request_cancel", kwargs={"pk": demande.pk}))
+        response = client.post(reverse("etudiant:enrollment_request_cancel", kwargs={"pk": demande.pk}))
         assert response.status_code == 302
         demande.refresh_from_db()
         assert demande.statut == DemandeInscriptionCours.Statut.ANNULEE
@@ -116,14 +116,14 @@ class TestStudentEnrollmentJourney:
 
     def test_student_payment_and_request_tracking_pages(self, client, enrollment_context):
         client.force_login(enrollment_context["etudiant"].utilisateur)
-        assert client.get(reverse("academics:enrollment_requests")).status_code == 200
-        assert client.get(reverse("academics:payments")).status_code == 200
+        assert client.get(reverse("etudiant:enrollment_requests")).status_code == 200
+        assert client.get(reverse("etudiant:payments")).status_code == 200
 
     def test_duplicate_pending_request_is_not_created(self, client, enrollment_context):
         etudiant = enrollment_context["etudiant"]
         offre = enrollment_context["offre"]
         client.force_login(etudiant.utilisateur)
-        url = reverse("academics:enrollment_request_create", kwargs={"pk": offre.pk})
+        url = reverse("etudiant:enrollment_request_create", kwargs={"pk": offre.pk})
         client.post(url, {})
         client.post(url, {})
         assert DemandeInscriptionCours.objects.filter(etudiant=etudiant, cours_session=offre).count() == 1

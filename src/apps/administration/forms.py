@@ -15,10 +15,11 @@ from apps.academics.models import (
     Stage,
 )
 from apps.accounts.models import User
+from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 from apps.formations.models import Cours, Professeur, Tarif
 
 
-class AdminUserForm(forms.ModelForm):
+class AdminUserForm(FormulaireModeleITEAG):
     password1 = forms.CharField(
         label="Mot de passe",
         widget=forms.PasswordInput(attrs={"class": "form-input"}),
@@ -63,7 +64,7 @@ class AdminUserCreateForm(AdminUserForm):
     )
 
 
-class AdminSessionForm(forms.ModelForm):
+class AdminSessionForm(FormulaireModeleITEAG):
     class Meta:
         model = SessionAcademique
         fields = ["nom", "periode", "annee_academique", "date_debut", "date_fin", "statut"]
@@ -77,7 +78,7 @@ class AdminSessionForm(forms.ModelForm):
         }
 
 
-class AdminProfesseurForm(forms.ModelForm):
+class AdminProfesseurForm(FormulaireModeleITEAG):
     class Meta:
         model = Professeur
         fields = ["nom", "prenom", "slug", "specialite", "biographie", "photo", "disciplines", "user", "actif", "ordre"]
@@ -100,7 +101,7 @@ class AdminProfesseurForm(forms.ModelForm):
         self.fields["user"].required = False
 
 
-class AdminEtudiantForm(forms.ModelForm):
+class AdminEtudiantForm(FormulaireModeleITEAG):
     class Meta:
         model = ProfilEtudiant
         fields = [
@@ -127,7 +128,7 @@ class AdminEtudiantForm(forms.ModelForm):
         self.fields["utilisateur"].queryset = User.objects.filter(role=User.Role.ETUDIANT)
 
 
-class AdminCoursForm(forms.ModelForm):
+class AdminCoursForm(FormulaireModeleITEAG):
     class Meta:
         model = Cours
         fields = ["titre", "slug", "code", "discipline", "parcours", "description", "objectifs", "ects", "actif"]
@@ -144,7 +145,7 @@ class AdminCoursForm(forms.ModelForm):
         }
 
 
-class CoursDeSessionForm(forms.ModelForm):
+class CoursDeSessionForm(FormulaireModeleITEAG):
     class Meta:
         model = CoursDeSession
         fields = [
@@ -177,7 +178,7 @@ class CoursDeSessionForm(forms.ModelForm):
         }
 
 
-class PaiementForm(forms.ModelForm):
+class PaiementForm(FormulaireModeleITEAG):
     class Meta:
         model = Paiement
         fields = ["etudiant", "session", "montant", "date_paiement", "mode", "statut", "reference", "recu_pdf"]
@@ -210,7 +211,7 @@ class PaiementForm(forms.ModelForm):
         return uploaded
 
 
-class EnrollmentDecisionForm(forms.Form):
+class EnrollmentDecisionForm(FormulaireITEAG):
     ACTIONS = [
         ("demander_paiement", "Valider administrativement et demander le paiement"),
         ("confirmer", "Confirmer l'inscription"),
@@ -246,7 +247,7 @@ class EnrollmentDecisionForm(forms.Form):
         ).order_by("-date_paiement")
 
 
-class PromotionForm(forms.ModelForm):
+class PromotionForm(FormulaireModeleITEAG):
     """
     Cohorte d'étudiants.
 
@@ -274,7 +275,7 @@ class PromotionForm(forms.ModelForm):
         return donnees
 
 
-class TarifForm(forms.ModelForm):
+class TarifForm(FormulaireModeleITEAG):
     """Grille tarifaire — CDC §2.6. Affichée au public, donc éditable sans développeur."""
 
     class Meta:
@@ -288,7 +289,7 @@ class TarifForm(forms.ModelForm):
         }
 
 
-class CreditECTSForm(forms.ModelForm):
+class CreditECTSForm(FormulaireModeleITEAG):
     """
     Saisie manuelle d'un crédit.
 
@@ -333,7 +334,7 @@ class CreditECTSForm(forms.ModelForm):
         return donnees
 
 
-class StageForm(forms.ModelForm):
+class StageForm(FormulaireModeleITEAG):
     """Convention de stage — CDC §2.5, 30 ECTS. Tenue par le secrétariat."""
 
     class Meta:
@@ -358,7 +359,7 @@ class StageForm(forms.ModelForm):
         return donnees
 
 
-class VAEForm(forms.ModelForm):
+class VAEForm(FormulaireModeleITEAG):
     """
     Validation des acquis — CDC §2.5. Réservée à l'administration.
 

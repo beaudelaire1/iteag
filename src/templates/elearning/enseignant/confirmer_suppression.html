@@ -3,7 +3,7 @@
 {% block title %}Confirmer la suppression — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
-{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
 
 {% block portal_content %}
 <div class="max-w-xl">
@@ -16,7 +16,7 @@
 
         <form method="post" class="flex flex-wrap gap-4">
             {% csrf_token %}
-            <button type="submit" class="btn-primary" style="background-color: #991B1B;">Supprimer</button>
+            <button type="submit" class="btn-danger">Supprimer</button>
             <a href="{{ annuler_url }}" class="btn-ghost">Annuler</a>
         </form>
     </div>

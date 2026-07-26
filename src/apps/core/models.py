@@ -105,6 +105,7 @@ class JournalAudit(TimeStampedModel):
         MODIFICATION = "modification", "Modification"
         SUPPRESSION = "suppression", "Suppression"
         CHANGEMENT_STATUT = "changement_statut", "Changement de statut"
+        DEMANDE_ACCES = "demande_acces", "Demande d'accès"
         OCTROI_ACCES = "octroi_acces", "Octroi d'accès"
         REVOCATION_ACCES = "revocation_acces", "Révocation d'accès"
         EXPORT = "export", "Export de données"

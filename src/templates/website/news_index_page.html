@@ -19,7 +19,7 @@
         {% if articles %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-motion-stagger>
             {% for article in articles %}
-            <article class="reveal card group bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+            <article class="reveal card group bg-white rounded shadow-sm border border-warm-200 overflow-hidden">
                 {% if article.image %}
                 {% load wagtailimages_tags %}
                 {% image article.image fill-600x340 as article_img %}

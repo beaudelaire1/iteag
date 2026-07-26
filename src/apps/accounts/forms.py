@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 
+from apps.core.formulaires import habiller
+
 from .models import User
 
 
@@ -10,6 +12,12 @@ class EmailOrUsernameAuthenticationForm(AuthenticationForm):
         "invalid_login": "Identifiants invalides. Vérifiez votre email ou votre identifiant, puis votre mot de passe.",
         "inactive": "Ce compte est désactivé.",
     }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Le formulaire d'authentification vient de Django : il ne connaît pas
+        # la charte. On l'y rattache comme les autres.
+        habiller(self)
 
     def clean(self):
         username = self.cleaned_data.get("username")

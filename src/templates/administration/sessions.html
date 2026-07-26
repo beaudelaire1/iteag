@@ -20,6 +20,33 @@
 {% endblock %}
 
 {% block portal_content %}
+{% comment %}Le nombre de sessions croît d'une année sur l'autre : la recherche évite de faire défiler l'historique.{% endcomment %}
+<form method="get" class="card-elevated mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
+    <div>
+        <label class="form-label" for="sessions-q">Rechercher</label>
+        <input type="search" id="sessions-q" name="q" value="{{ query }}" class="form-input" placeholder="Nom, année académique">
+    </div>
+    <div>
+        <label class="form-label" for="sessions-statut">État</label>
+        <select id="sessions-statut" name="statut" class="form-select">
+            <option value="">Tous</option>
+            {% for valeur, libelle in statut_choices %}
+            <option value="{{ valeur }}"{% if valeur == current_statut %} selected{% endif %}>{{ libelle }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="sessions-annee">Année</label>
+        <select id="sessions-annee" name="annee" class="form-select">
+            <option value="">Toutes</option>
+            {% for annee in annees %}
+            <option value="{{ annee }}"{% if annee == current_annee %} selected{% endif %}>{{ annee }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-primary justify-center">Filtrer</button>
+</form>
+
 {% if sessions %}
 <div class="space-y-4">
     {% for s in sessions %}
@@ -52,13 +79,13 @@
             </div>
             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
                 {% if s.statut == 'en_cours' %}bg-emerald-50 text-emerald-700
-                {% elif s.statut == 'planifiee' %}bg-blue-50 text-blue-700
-                {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {% elif s.statut == 'planifiee' %}badge-info
+                {% else %}badge-neutral{% endif %}">
                 {{ s.get_statut_display }}
             </span>
             <a href="{% url 'administration:session_update' s.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>
             {% if user.is_admin %}
-                <a href="{% url 'administration:session_delete' s.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+                <a href="{% url 'administration:session_delete' s.pk %}" class="lien-danger">Supprimer</a>
             {% endif %}
         </div>
     </div>
@@ -86,4 +113,6 @@
     <p style="color: var(--color-warm-400);">Aucune session académique créée.</p>
 </div>
 {% endif %}
+
+{% include "partials/pagination.html" %}
 {% endblock %}

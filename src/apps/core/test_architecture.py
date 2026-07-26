@@ -36,6 +36,10 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "elearning": {"core", "accounts", "formations", "academics"},
     "library": {"core", "formations"},
     "documents": {"core", "accounts", "academics"},
+    # Les portails agrègent plusieurs domaines : c'est leur raison d'être, et
+    # c'est pourquoi ils vivent hors des applications de domaine.
+    "portail_etudiant": {"core", "accounts", "formations", "academics", "lms", "documents", "elearning"},
+    "portail_enseignant": {"core", "accounts", "formations", "academics", "lms", "elearning"},
     # website est un portail : comme administration, il agrège des domaines.
     "website": {"core", "formations", "elearning"},
 }
@@ -53,8 +57,10 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
 # Ce jeu ne peut que DIMINUER : test_dette_ne_grandit_pas échoue aussi bien si
 # une nouvelle entorse apparaît que si une entorse résorbée y reste déclarée.
 DETTE_ARCHITECTURE: set[tuple[str, str]] = {
+    # Reste après l'extraction du portail étudiant : le service qui porte les
+    # crédits ECTS au dossier lit les évaluations, qui vivent dans « lms ».
+    # L'arête « academics → documents » a disparu avec le portail.
     ("academics", "lms"),
-    ("academics", "documents"),
 }
 
 

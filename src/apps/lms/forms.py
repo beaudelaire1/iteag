@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.core.formulaires import FormulaireModeleITEAG
+
 from .models import Annonce, Evaluation, RessourcePedagogique
 
 # Classes du système de design ITEAG (assets/css/input.css).
@@ -10,7 +12,7 @@ INPUT_COURT = "form-input w-24"
 FICHIER = "form-file"
 
 
-class RessourceUploadForm(forms.ModelForm):
+class RessourceUploadForm(FormulaireModeleITEAG):
     """ENS-002 — Upload de ressource pédagogique."""
 
     class Meta:
@@ -23,7 +25,7 @@ class RessourceUploadForm(forms.ModelForm):
         }
 
 
-class GradeForm(forms.ModelForm):
+class GradeForm(FormulaireModeleITEAG):
     """ENS-004 — Saisie de note par l'enseignant."""
 
     class Meta:
@@ -56,7 +58,7 @@ class GradeForm(forms.ModelForm):
         return note
 
 
-class AnnonceForm(forms.ModelForm):
+class AnnonceForm(FormulaireModeleITEAG):
     """ENS-006 — Publication d'annonce."""
 
     class Meta:

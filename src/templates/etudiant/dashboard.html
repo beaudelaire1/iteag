@@ -3,10 +3,10 @@
 {% block title %}Mon espace — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
-{% with nav='dashboard' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% with nav='dashboard' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
 {% endblock %}
 {% block portal_nav_mobile %}
-{% with nav='dashboard' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% with nav='dashboard' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}
 {% endblock %}
 
 {% block portal_header %}
@@ -19,12 +19,12 @@
 
 {% block portal_content %}
 {% if cours_catalogue_count %}
-<div class="mb-8 flex flex-col justify-between gap-4 rounded border border-blue-200 bg-blue-50 p-5 sm:flex-row sm:items-center">
+<div class="mb-8 flex flex-col justify-between gap-4 rounded border border-navy-200 bg-navy-50 p-5 sm:flex-row sm:items-center">
     <div>
         <p class="font-semibold text-navy-900">{{ cours_catalogue_count }} cours disponible{{ cours_catalogue_count|pluralize }} pour votre parcours</p>
         <p class="mt-1 text-sm text-warm-600">Consultez le programme et transmettez votre demande d’inscription au secrétariat.</p>
     </div>
-    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary whitespace-nowrap">Voir le catalogue</a>
+    <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary whitespace-nowrap">Voir le catalogue</a>
 </div>
 {% endif %}
 
@@ -51,15 +51,71 @@
         <p class="stat-label">Documents</p>
         <p class="stat-number mt-2" data-counter="{{ documents_count }}" data-counter-suffix="">{{ documents_count }}</p>
     </div>
-    <a href="{% url 'academics:enrollment_requests' %}" class="card-elevated">
+    <a href="{% url 'etudiant:enrollment_requests' %}" class="card-elevated">
         <p class="stat-label">Demandes en cours</p>
         <p class="stat-number mt-2">{{ demandes_en_cours }}</p>
     </a>
-    <a href="{% url 'academics:payments' %}" class="card-elevated">
+    <a href="{% url 'etudiant:payments' %}" class="card-elevated">
         <p class="stat-label">Paiements requis</p>
         <p class="stat-number mt-2">{{ demandes_paiement }}</p>
     </a>
 </div>
+
+{# ── Formation vidéo ── #}
+{% if modules_total %}
+<div class="card-elevated mb-8" style="padding: 0;">
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b" style="border-color: var(--color-warm-100);">
+        <div>
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Ma formation vidéo</h2>
+            <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                {{ modules_total }} module{{ modules_total|pluralize }} · {{ modules_termines }} terminé{{ modules_termines|pluralize }}
+            </p>
+        </div>
+        <a href="{% url 'elearning:mes_formations' %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Tout voir →</a>
+    </div>
+
+    <div class="divide-y" style="border-color: var(--color-warm-100);">
+        {% for acces in modules_en_cours %}
+        <a href="{{ acces.module.get_absolute_url }}" class="block px-5 py-4 hover:bg-warm-50 transition-colors">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ acces.module.titre }}</p>
+                    <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                        {% if acces.module.discipline %}{{ acces.module.discipline }} · {% endif %}
+                        {{ acces.module.duree_minutes }} min
+                        {% if acces.date_fin_acces %} · accès jusqu'au {{ acces.date_fin_acces|date:"d/m/Y" }}{% endif %}
+                    </p>
+                </div>
+                <span class="shrink-0 text-sm font-semibold" style="color: var(--color-navy-800);">{{ acces.progression_percent }} %</span>
+            </div>
+            <div class="progress-bar mt-3">
+                <div class="progress-bar-fill" style="width: {{ acces.progression_percent }}%"></div>
+            </div>
+        </a>
+        {% empty %}
+        <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">
+            Aucun module en cours. <a href="{% url 'elearning:catalogue' %}" class="link-reveal">Parcourir le catalogue</a>
+        </p>
+        {% endfor %}
+    </div>
+
+    {% if attestations %}
+    <div class="px-5 py-4 border-t" style="border-color: var(--color-warm-100); background: var(--color-warm-50);">
+        <p class="overline mb-2">Attestations obtenues</p>
+        <ul class="space-y-1" role="list">
+            {% for attestation in attestations %}
+            <li class="text-sm">
+                <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}" class="link-reveal">
+                    {{ attestation.inscription.module.titre }}
+                </a>
+                <span class="text-xs" style="color: var(--color-warm-500);"> — {{ attestation.numero }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
 
 <div class="grid lg:grid-cols-2 gap-8">
     {# ── Cours inscrits ── #}

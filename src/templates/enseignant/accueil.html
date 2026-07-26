@@ -1,0 +1,167 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Espace enseignant — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block portal_nav %}{% with nav='dashboard' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='dashboard' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Espace enseignant</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+        Bonjour {% if professeur %}{{ professeur.prenom }}{% else %}{{ user.first_name|default:user.username }}{% endif %}
+    </h1>
+    {% if not sans_fiche %}
+    <p class="mt-1 text-sm text-warm-500">
+        Vos enseignements en présentiel et en vidéo, réunis.
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if sans_fiche %}
+{% comment %}
+   Un compte enseignant sans fiche professeur : dire quoi faire plutôt que
+   d'afficher une page de compteurs à zéro, qui laisserait croire à une panne.
+{% endcomment %}
+<div class="card-elevated py-12 text-center">
+    <p class="text-base font-semibold" style="color: var(--color-navy-900);">Votre fiche enseignant n'est pas encore créée.</p>
+    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">
+        Le secrétariat doit la rattacher à votre compte pour que vos cours et vos modules apparaissent ici.
+    </p>
+</div>
+
+{% else %}
+
+{# ── Chiffres clés, les deux modes confondus ── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="card-elevated">
+        <p class="overline">Étudiants suivis</p>
+        <p class="stat-number mt-2">{{ etudiants_suivis|add:apprenants_video }}</p>
+        <p class="text-xs mt-1" style="color: var(--color-warm-500);">
+            {{ etudiants_suivis }} en présentiel · {{ apprenants_video }} en vidéo
+        </p>
+    </div>
+    <a href="{% url 'lms:evaluations_list' %}" class="card-elevated hover:shadow-elevated transition-shadow">
+        <p class="overline">À corriger</p>
+        <p class="stat-number mt-2">{{ evaluations_a_corriger }}</p>
+        <p class="text-xs mt-1" style="color: var(--color-warm-500);">copie{{ evaluations_a_corriger|pluralize }} remise{{ evaluations_a_corriger|pluralize }}</p>
+    </a>
+    <a href="{% url 'elearning:enseignant_modules' %}" class="card-elevated hover:shadow-elevated transition-shadow">
+        <p class="overline">Modules vidéo</p>
+        <p class="stat-number mt-2">{{ modules_total }}</p>
+        <p class="text-xs mt-1" style="color: var(--color-warm-500);">
+            {{ modules_publies }} publié{{ modules_publies|pluralize }} · {{ modules_brouillons }} brouillon{{ modules_brouillons|pluralize }}
+        </p>
+    </a>
+    <a href="{% url 'lms:courses_list' %}" class="card-elevated hover:shadow-elevated transition-shadow">
+        <p class="overline">Cours en session</p>
+        <p class="stat-number mt-2">{{ cours_total }}</p>
+        <p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ ressources_deposees }} ressource{{ ressources_deposees|pluralize }} déposée{{ ressources_deposees|pluralize }}</p>
+    </a>
+</div>
+
+{% if videos_en_attente %}
+<div class="card-elevated mb-8" style="border-left: 3px solid var(--color-gold-500);">
+    <p class="text-sm" style="color: var(--color-navy-900);">
+        <strong>{{ videos_en_attente }}</strong> vidéo{{ videos_en_attente|pluralize }} en cours de préparation.
+        Un module ne peut pas être publié tant que ses vidéos ne sont pas prêtes —
+        <a href="{% url 'elearning:enseignant_videos' %}" class="link-reveal">voir la bibliothèque</a>.
+    </p>
+</div>
+{% endif %}
+
+<div class="grid lg:grid-cols-2 gap-8">
+
+    {# ── Présentiel ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 flex items-center justify-between border-b" style="border-color: var(--color-warm-100);">
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Prochains cours</h2>
+            <a href="{% url 'lms:courses_list' %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Tout voir →</a>
+        </div>
+        <div class="divide-y" style="border-color: var(--color-warm-100);">
+            {% for cours in cours_a_venir %}
+            <a href="{% url 'lms:course_detail' cours.pk %}" class="block px-5 py-3 hover:bg-warm-50 transition-colors">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ cours.cours.titre }}</p>
+                        <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                            {{ cours.session.nom }} · du {{ cours.session.date_debut|date:"d/m" }} au {{ cours.session.date_fin|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        <p class="text-sm font-semibold" style="color: var(--color-navy-800);">{{ cours.nombre_inscrits }}</p>
+                        <p class="text-xs" style="color: var(--color-warm-400);">inscrit{{ cours.nombre_inscrits|pluralize }}</p>
+                    </div>
+                </div>
+                {% if cours.a_corriger %}
+                <p class="mt-1.5 text-xs font-semibold" style="color: var(--color-gold-600);">
+                    {{ cours.a_corriger }} copie{{ cours.a_corriger|pluralize }} à corriger
+                </p>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucun cours programmé à venir.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Vidéo ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 flex items-center justify-between border-b" style="border-color: var(--color-warm-100);">
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Mes modules vidéo</h2>
+            <a href="{% url 'elearning:enseignant_module_creer' %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">+ Créer</a>
+        </div>
+        <div class="divide-y" style="border-color: var(--color-warm-100);">
+            {% for module in modules_recents %}
+            <a href="{% url 'elearning:enseignant_structure' module.slug %}" class="block px-5 py-3 hover:bg-warm-50 transition-colors">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ module.titre }}</p>
+                        <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                            {% if module.discipline %}{{ module.discipline }} · {% endif %}{{ module.nombre_inscrits }} apprenant{{ module.nombre_inscrits|pluralize }}
+                        </p>
+                    </div>
+                    <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                        {% if module.statut == 'publie' %}bg-emerald-50 text-emerald-700
+                        {% elif module.statut == 'relecture' %}bg-amber-50 text-amber-700
+                        {% else %}bg-warm-100 text-warm-600{% endif %}">
+                        {{ module.get_statut_display }}
+                    </span>
+                </div>
+            </a>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">
+                Aucun module. <a href="{% url 'elearning:enseignant_module_creer' %}" class="link-reveal">En créer un</a>
+            </p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{# ── Annonces ── #}
+{% if annonces_recentes %}
+<div class="card-elevated mt-8" style="padding: 0;">
+    <div class="px-5 py-4 flex items-center justify-between border-b" style="border-color: var(--color-warm-100);">
+        <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Mes dernières annonces</h2>
+        <a href="{% url 'lms:annonces_list' %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Tout voir →</a>
+    </div>
+    <div class="divide-y" style="border-color: var(--color-warm-100);">
+        {% for annonce in annonces_recentes %}
+        <div class="px-5 py-3">
+            <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
+            <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                {{ annonce.cours_session.cours.titre }} · {{ annonce.created_at|date:"d/m/Y" }}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

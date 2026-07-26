@@ -242,14 +242,14 @@ class TestPaiementModel:
 @pytest.mark.django_db
 class TestStudentDashboardAccess:
     def test_anonymous_redirect(self, client: Client):
-        url = reverse("academics:dashboard")
+        url = reverse("etudiant:dashboard")
         response = client.get(url)
         assert response.status_code == 302
         assert "connexion" in response.url or "login" in response.url
 
     def test_student_access(self, client: Client, profil_etudiant):
         client.force_login(profil_etudiant.utilisateur)
-        url = reverse("academics:dashboard")
+        url = reverse("etudiant:dashboard")
         response = client.get(url)
         assert response.status_code == 200
 
@@ -261,25 +261,25 @@ class TestStudentDashboardAccess:
             role="admin",
         )
         client.force_login(staff)
-        url = reverse("academics:dashboard")
+        url = reverse("etudiant:dashboard")
         response = client.get(url)
         assert response.status_code == 403
 
     def test_progress_view(self, client: Client, profil_etudiant):
         client.force_login(profil_etudiant.utilisateur)
-        url = reverse("academics:progress")
+        url = reverse("etudiant:progress")
         response = client.get(url)
         assert response.status_code == 200
 
     def test_courses_view(self, client: Client, profil_etudiant):
         client.force_login(profil_etudiant.utilisateur)
-        url = reverse("academics:courses")
+        url = reverse("etudiant:courses")
         response = client.get(url)
         assert response.status_code == 200
 
     def test_grades_view(self, client: Client, profil_etudiant):
         client.force_login(profil_etudiant.utilisateur)
-        url = reverse("academics:grades")
+        url = reverse("etudiant:grades")
         response = client.get(url)
         assert response.status_code == 200
 
@@ -411,7 +411,7 @@ class TestEvaluationWorkflow:
 
         client.force_login(profil_etudiant.utilisateur)
         response = client.post(
-            reverse("academics:submit_evaluation", kwargs={"pk": evaluation.pk}),
+            reverse("etudiant:submit_evaluation", kwargs={"pk": evaluation.pk}),
             {
                 "fichier_soumis": SimpleUploadedFile(
                     "devoir.pdf",

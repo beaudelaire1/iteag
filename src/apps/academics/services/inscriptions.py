@@ -217,7 +217,7 @@ def traiter_demande(
         _titre_notification(demande.statut),
         type_notification=Notification.Type.RAPPEL_SESSION,
         message=f"{demande.cours_session.cours.titre} — {demande.get_statut_display()}.",
-        url_cible=reverse("academics:enrollment_requests"),
+        url_cible=reverse("etudiant:enrollment_requests"),
     )
     return demande
 

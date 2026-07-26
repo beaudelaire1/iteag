@@ -17,6 +17,6 @@
 <form method="post" class="card-elevated max-w-xl">
     {% csrf_token %}
     <p class="text-sm leading-6 text-warm-600">Cette suppression est définitive. Vérifiez que les étudiants n’ont plus besoin de ce contenu.</p>
-    <div class="mt-6 flex gap-4"><button type="submit" class="btn-primary">Confirmer la suppression</button><a href="{% url 'lms:dashboard' %}" class="btn-secondary">Annuler</a></div>
+    <div class="mt-6 flex gap-4"><button type="submit" class="btn-primary">Confirmer la suppression</button><a href="{% url 'enseignant:accueil' %}" class="btn-secondary">Annuler</a></div>
 </form>
 {% endblock %}

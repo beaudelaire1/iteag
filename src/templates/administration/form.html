@@ -24,44 +24,25 @@
     <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
         {% csrf_token %}
 
-        {% if form.non_field_errors %}
-        <div class="rounded-lg p-4 text-sm font-medium" style="background: #fef2f2; color: #991b1b;">
-            {% for error in form.non_field_errors %}
-            <p>{{ error }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
+        {% include "partials/erreurs_formulaire.html" %}
 
         {% for field in form %}
-        <div>
-            <label class="form-label {% if field.field.required %}after:content-['*'] after:text-red-500 after:ml-0.5{% endif %}" for="{{ field.id_for_label }}">
-                {{ field.label }}
-            </label>
-
-            {% if field.field.widget.input_type == 'checkbox' and not field.field.widget.attrs.allow_multiple_selected %}
-            <div class="flex items-center gap-2 mt-1">
-                {{ field }}
-                <span class="text-sm" style="color: var(--color-warm-600);">{{ field.help_text }}</span>
-            </div>
-            {% elif field.name == 'disciplines' %}
-            <div class="flex flex-wrap gap-3 mt-1">
+        {% if field.name == 'disciplines' %}
+        <div class="champ">
+            <label class="form-label">{{ field.label }}</label>
+            <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-1">
                 {% for choice in field %}
                 <label class="inline-flex items-center gap-2 text-sm cursor-pointer" style="color: var(--color-navy-800);">
                     {{ choice.tag }} {{ choice.choice_label }}
                 </label>
                 {% endfor %}
             </div>
-            {% else %}
-            {{ field }}
-            {% if field.help_text %}
-            <p class="text-xs mt-1" style="color: var(--color-warm-400);">{{ field.help_text }}</p>
-            {% endif %}
-            {% endif %}
-
-            {% if field.errors %}
-            <p class="text-xs mt-1 font-medium" style="color: #dc2626;">{{ field.errors.0 }}</p>
-            {% endif %}
+            {% if field.help_text %}<p class="form-aide">{{ field.help_text }}</p>{% endif %}
+            {% for erreur in field.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
         </div>
+        {% else %}
+        {% include "partials/champ.html" %}
+        {% endif %}
         {% endfor %}
 
         <div class="flex items-center gap-4 pt-2">

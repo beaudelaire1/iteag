@@ -27,9 +27,9 @@
             <div class="mt-4 flex items-center justify-between text-xs" style="color: var(--color-warm-500);">
                 <span>{{ cs.cours.ects }} ECTS</span>
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                    {% if cs.statut == 'en_cours' %}bg-green-100 text-green-700
-                    {% elif cs.statut == 'planifie' %}bg-blue-100 text-blue-700
-                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {% if cs.statut == 'en_cours' %}bg-green-100 text-emerald-700
+                    {% elif cs.statut == 'planifie' %}badge-info
+                    {% else %}badge-neutral{% endif %}">
                     {{ cs.get_statut_display }}
                 </span>
             </div>

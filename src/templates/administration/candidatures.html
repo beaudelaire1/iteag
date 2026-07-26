@@ -71,10 +71,10 @@
                     <td class="px-5 py-3" style="color: var(--color-warm-500);">{{ d.date_soumission|date:"d/m/Y" }}</td>
                     <td class="px-5 py-3">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                            {% if d.statut == 'soumis' %}bg-blue-50 text-blue-700
+                            {% if d.statut == 'soumis' %}badge-info
                             {% elif d.statut == 'en_examen' %}bg-amber-50 text-amber-700
                             {% elif d.statut == 'accepte' %}bg-emerald-50 text-emerald-700
-                            {% elif d.statut == 'refuse' %}bg-red-50 text-red-700
+                            {% elif d.statut == 'refuse' %}bg-red-50 text-rose-700
                             {% else %}bg-orange-50 text-orange-700{% endif %}">
                             {{ d.get_statut_display }}
                         </span>
@@ -105,4 +105,6 @@
     {% endif %}
 </div>
 {% endif %}
+
+{% include "partials/pagination.html" %}
 {% endblock %}

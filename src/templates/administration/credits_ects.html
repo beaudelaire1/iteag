@@ -73,7 +73,7 @@
                 <td class="px-4 py-3 text-right">
                     <a href="{% url 'administration:credit_ects_update' credit.pk %}" class="btn-secondary text-sm">Corriger</a>
                     {% if user.is_admin %}
-                    <a href="{% url 'administration:credit_ects_delete' credit.pk %}" class="ml-3 text-sm font-semibold text-red-700">Retirer</a>
+                    <a href="{% url 'administration:credit_ects_delete' credit.pk %}" class="ml-3 text-sm font-semibold text-rose-700">Retirer</a>
                     {% endif %}
                 </td>
             </tr>

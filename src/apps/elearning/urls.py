@@ -82,6 +82,13 @@ urlpatterns = [
     ),
     # Module et leçons
     path("<slug:slug>/", views.ModuleDetailView.as_view(), name="module_detail"),
+    # Doit précéder « lecon_detail », qui capterait sinon « demander-acces »
+    # comme s'il s'agissait du slug d'une leçon.
+    path(
+        "<slug:slug>/demander-acces/",
+        views.DemandeAccesModuleView.as_view(),
+        name="module_demander_acces",
+    ),
     path("<slug:slug>/<slug:lecon_slug>/", views.LeconDetailView.as_view(), name="lecon_detail"),
     path("<slug:slug>/<slug:lecon_slug>/lecture/", views.playback_url, name="lecon_playback"),
     path("<slug:slug>/<slug:lecon_slug>/progression/", views.ProgressionView.as_view(), name="lecon_progression"),

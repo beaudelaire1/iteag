@@ -19,7 +19,129 @@
 
 {% block portal_content %}
 
+{% comment %}
+    Aucun chiffre de cet écran n'est estimé : chacun se déduit d'une donnée
+    saisie. Un indicateur qu'on ne sait pas calculer proprement n'y figure pas.
+{% endcomment %}
+
+{# ── Ce qui attend une décision ── #}
+{% if alertes %}
+<div class="card-elevated mb-10" style="padding: 0; border-left: 3px solid var(--color-gold-500);">
+    <div class="px-5 py-4" style="border-bottom: 1px solid var(--color-warm-100);">
+        <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">À traiter</h2>
+        <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">Seuls les points qui appellent une action apparaissent ici.</p>
+    </div>
+    <ul class="divide-y" style="border-color: var(--color-warm-100);" role="list">
+        {% for alerte in alertes %}
+        <li>
+            <a href="{{ alerte.url }}" class="flex items-center justify-between gap-4 px-5 py-3 hover:bg-warm-50 transition-colors">
+                <span class="text-sm" style="color: var(--color-navy-900);">
+                    <strong>{{ alerte.nombre }}</strong> {{ alerte.libelle }}
+                </span>
+                <span class="badge {% if alerte.urgent %}badge-gold{% else %}badge-neutral{% endif %} shrink-0">
+                    {% if alerte.urgent %}Prioritaire{% else %}À suivre{% endif %}
+                </span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{# ── Finances ── #}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4" style="color: var(--color-warm-500);">Finances</h2>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+    <a href="{% url 'administration:payments' %}" class="card-elevated">
+        <p class="stat-label">Encaissé</p>
+        <p class="mt-2 text-2xl font-bold" style="color: var(--color-navy-800);">{{ encaisse_total|floatformat:2 }} €</p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">
+            {{ encaisse_nombre }} paiement{{ encaisse_nombre|pluralize }} confirmé{{ encaisse_nombre|pluralize }}
+        </p>
+    </a>
+    <a href="{% url 'administration:payments' %}" class="card-elevated">
+        <p class="stat-label">Annoncé, à vérifier</p>
+        <p class="mt-2 text-2xl font-bold" style="color: var(--color-gold-600);">{{ annonce_total|floatformat:2 }} €</p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">
+            {{ annonce_nombre }} paiement{{ annonce_nombre|pluralize }} en attente
+        </p>
+    </a>
+    <a href="{% url 'administration:enrollment_requests' %}" class="card-elevated">
+        <p class="stat-label">Restant dû</p>
+        <p class="mt-2 text-2xl font-bold" style="color: var(--color-navy-800);">{{ restant_du_total|floatformat:2 }} €</p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">
+            sur {{ restant_du_nombre }} demande{{ restant_du_nombre|pluralize }} non soldée{{ restant_du_nombre|pluralize }}
+        </p>
+    </a>
+    <div class="card-elevated">
+        <p class="stat-label">{% if session_finances %}Session {{ session_finances.nom }}{% else %}À relancer{% endif %}</p>
+        <p class="mt-2 text-2xl font-bold" style="color: var(--color-navy-800);">
+            {% if session_finances %}{{ encaisse_session|floatformat:2 }}{% else %}{{ relance_total|floatformat:2 }}{% endif %} €
+        </p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">
+            {% if session_finances %}encaissé sur la session en cours{% else %}règlement réclamé, non reçu{% endif %}
+        </p>
+    </div>
+</div>
+
+{# ── Activité et résultats ── #}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4" style="color: var(--color-warm-500);">Activité pédagogique</h2>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+    <a href="{% url 'administration:course_offerings' %}" class="card-elevated">
+        <p class="stat-label">Cours en cours</p>
+        <p class="stat-number mt-2">{{ cours_en_cours }}</p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">{{ cours_a_venir }} à venir · {{ cours_termines }} terminé{{ cours_termines|pluralize }}</p>
+    </a>
+    <a href="{% url 'administration:etudiants' %}" class="card-elevated">
+        <p class="stat-label">Étudiants inscrits à un cours</p>
+        <p class="stat-number mt-2">{{ inscriptions_actives }}</p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">sur une session non achevée</p>
+    </a>
+    <div class="card-elevated">
+        <p class="stat-label">Moyenne des notes publiées</p>
+        {% if note_moyenne is not None %}
+        <p class="stat-number mt-2">{{ note_moyenne|floatformat:2 }}<span class="text-base font-normal" style="color: var(--color-warm-400);">/20</span></p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">{{ reussite_nombre }} note{{ reussite_nombre|pluralize }} ≥ 10 sur {{ notes_publiees }}</p>
+        {% else %}
+        <p class="mt-3 text-sm" style="color: var(--color-warm-400);">Aucune note publiée à ce jour.</p>
+        {% endif %}
+    </div>
+    <div class="card-elevated">
+        <p class="stat-label">Copies à corriger</p>
+        <p class="stat-number mt-2">{{ copies_a_corriger }}</p>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">remises, en attente d'un enseignant</p>
+    </div>
+</div>
+
+{# ── Échéances ── #}
+{% if echeances %}
+<div class="card-elevated mb-10" style="padding: 0;">
+    <div class="px-5 py-4" style="border-bottom: 1px solid var(--color-warm-100);">
+        <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Prochaines échéances</h2>
+        <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">Clôtures d'inscription et ouvertures de session des soixante prochains jours.</p>
+    </div>
+    <ul class="divide-y" style="border-color: var(--color-warm-100);" role="list">
+        {% for echeance in echeances %}
+        <li>
+            <a href="{{ echeance.url }}" class="flex items-center justify-between gap-4 px-5 py-3 hover:bg-warm-50 transition-colors">
+                <span class="min-w-0">
+                    <span class="block truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ echeance.libelle }}</span>
+                    <span class="block text-xs" style="color: var(--color-warm-500);">{{ echeance.detail }}</span>
+                </span>
+                <span class="shrink-0 text-right">
+                    <span class="block text-sm font-semibold" style="color: var(--color-navy-800);">{{ echeance.date|date:"d/m/Y" }}</span>
+                    <span class="block text-xs" style="color: {% if echeance.jours_restants <= 7 %}var(--color-gold-600){% else %}var(--color-warm-400){% endif %};">
+                        {% if echeance.jours_restants == 0 %}aujourd'hui{% else %}dans {{ echeance.jours_restants }} jour{{ echeance.jours_restants|pluralize }}{% endif %}
+                    </span>
+                </span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 {# ── Stats principales ── #}
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4" style="color: var(--color-warm-500);">Référentiel</h2>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
     <a href="{% url 'administration:candidatures' %}" class="card-elevated group">
         <div class="flex items-center justify-between mb-2">
@@ -147,10 +269,10 @@
                         <p class="text-xs" style="color: var(--color-warm-500);">{{ d.parcours_souhaite }} — {{ d.date_soumission|date:"d/m/Y" }}</p>
                     </div>
                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                        {% if d.statut == 'soumis' %}bg-blue-50 text-blue-700
+                        {% if d.statut == 'soumis' %}badge-info
                         {% elif d.statut == 'en_examen' %}bg-amber-50 text-amber-700
                         {% elif d.statut == 'accepte' %}bg-emerald-50 text-emerald-700
-                        {% elif d.statut == 'refuse' %}bg-red-50 text-red-700
+                        {% elif d.statut == 'refuse' %}bg-red-50 text-rose-700
                         {% else %}bg-orange-50 text-orange-700{% endif %}">
                         {{ d.get_statut_display }}
                     </span>
@@ -179,7 +301,7 @@
                     <p class="text-xs mt-0.5
                         {% if p.statut == 'confirme' %}text-emerald-600
                         {% elif p.statut == 'en_attente' %}text-amber-600
-                        {% else %}text-red-600{% endif %}">{{ p.get_statut_display }}</p>
+                        {% else %}text-rose-700{% endif %}">{{ p.get_statut_display }}</p>
                 </div>
             </div>
             {% empty %}

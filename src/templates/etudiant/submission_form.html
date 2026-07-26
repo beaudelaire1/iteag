@@ -1,12 +1,12 @@
 {% extends "partials/portal_base.html" %}
 
 {% block title %}Remettre mon travail — {{ SITE_NAME }}{% endblock %}
-{% block portal_nav %}{% with nav='grades' %}{% include "academics/partials/student_nav.html" %}{% endwith %}{% endblock %}
-{% block portal_nav_mobile %}{% with nav='grades' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}{% endblock %}
+{% block portal_nav %}{% with nav='grades' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='grades' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}{% endblock %}
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'academics:grades' %}" class="text-sm font-medium text-navy-600">← Retour aux évaluations</a>
+    <a href="{% url 'etudiant:grades' %}" class="text-sm font-medium text-navy-600">← Retour aux évaluations</a>
     <p class="overline mt-5 mb-2">Remise de devoir</p>
     <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ evaluation.cours_session.cours.titre }}</h1>
     <p class="mt-1 text-sm text-warm-500">{{ evaluation.get_type_evaluation_display }} · {{ evaluation.cours_session.session.nom }}</p>
@@ -19,10 +19,10 @@
         {% csrf_token %}
         <label for="{{ form.fichier_soumis.id_for_label }}" class="form-label">Fichier à remettre</label>
         {{ form.fichier_soumis }}
-        {% for error in form.fichier_soumis.errors %}<p class="mt-2 text-sm text-red-700">{{ error }}</p>{% endfor %}
+        {% for error in form.fichier_soumis.errors %}<p class="mt-2 text-sm text-rose-700">{{ error }}</p>{% endfor %}
         <div class="mt-6 flex items-center gap-4">
             <button type="submit" class="btn-primary">Confirmer la remise</button>
-            <a href="{% url 'academics:grades' %}" class="btn-ghost">Annuler</a>
+            <a href="{% url 'etudiant:grades' %}" class="btn-ghost">Annuler</a>
         </div>
     </form>
     <aside class="card">

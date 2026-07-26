@@ -115,12 +115,50 @@
                         <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}"
                            class="btn-gold w-full justify-center mt-3">Télécharger l'attestation</a>
                         {% endif %}
+                    {% elif demande_en_attente %}
+                        <p class="text-sm font-semibold" style="color: var(--color-navy-900);">Demande transmise</p>
+                        <p class="mt-1 text-sm text-warm-600">
+                            Le secrétariat examine votre demande d'accès. Vous serez averti dès qu'elle est traitée.
+                        </p>
+                        <a href="{% url 'elearning:mes_formations' %}" class="btn-ghost w-full justify-center mt-4">
+                            Suivre mes formations
+                        </a>
+                    {% elif profil_etudiant and not motif_refus_demande %}
+                        {% comment %}Déjà connu de l'institut : un clic suffit, ses coordonnées sont au dossier.{% endcomment %}
+                        <p class="text-sm text-warm-600 mb-4">
+                            Ce module est réservé aux étudiants inscrits. Vous l'êtes : demandez son
+                            ouverture, sans nouveau dossier à constituer.
+                        </p>
+                        <form method="post" action="{% url 'elearning:module_demander_acces' module.slug %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-primary w-full justify-center">
+                                Demander l'accès
+                            </button>
+                        </form>
+                        <p class="mt-3 text-xs text-warm-500">
+                            Demande au nom de {{ user.get_full_name|default:user.username }}
+                            {% if profil_etudiant.numero_etudiant %} · {{ profil_etudiant.numero_etudiant }}{% endif %}
+                        </p>
+                    {% elif profil_etudiant %}
+                        <p class="text-sm text-warm-600">{{ motif_refus_demande }}</p>
+                        <a href="{% url 'elearning:mes_formations' %}" class="btn-ghost w-full justify-center mt-4">
+                            Mes formations
+                        </a>
+                    {% elif user.is_authenticated %}
+                        <p class="text-sm text-warm-600 mb-4">
+                            Ce module est réservé aux étudiants inscrits. Contactez le secrétariat
+                            pour rattacher un dossier étudiant à votre compte.
+                        </p>
+                        <a href="/contact/" class="btn-ghost w-full justify-center">Contacter le secrétariat</a>
                     {% else %}
                         <p class="text-sm text-warm-600 mb-4">
-                            Ce module est réservé aux étudiants inscrits. Déposez une candidature
-                            ou contactez le secrétariat.
+                            Ce module est réservé aux étudiants inscrits. Connectez-vous, ou déposez
+                            une candidature si vous ne l'êtes pas encore.
                         </p>
-                        <a href="{% url 'admissions:candidature_form' %}" class="btn-primary w-full justify-center">
+                        <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" class="btn-primary w-full justify-center">
+                            Se connecter
+                        </a>
+                        <a href="{% url 'admissions:candidature_form' %}" class="btn-ghost w-full justify-center mt-3">
                             Déposer une candidature
                         </a>
                     {% endif %}

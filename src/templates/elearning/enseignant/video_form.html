@@ -3,7 +3,7 @@
 {% block title %}Mes vidéos — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
-{% block portal_nav_mobile %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='videos' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
 
 {% block portal_header %}
 <div class="mb-8">
@@ -33,7 +33,7 @@
                 <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
                 {{ champ }}
                 {% if champ.help_text %}<p class="mt-1 text-xs" style="color: var(--color-warm-500);">{{ champ.help_text }}</p>{% endif %}
-                {% for erreur in champ.errors %}<p class="mt-1 text-sm text-danger">{{ erreur }}</p>{% endfor %}
+                {% for erreur in champ.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
             </div>
             {% endfor %}
 

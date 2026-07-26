@@ -20,6 +20,22 @@
 {% endblock %}
 
 {% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 sm:grid-cols-3 items-end">
+    <div class="sm:col-span-1">
+        <label class="form-label" for="profs-q">Rechercher</label>
+        <input type="search" id="profs-q" name="q" value="{{ query }}" class="form-input" placeholder="Nom, prénom, spécialité">
+    </div>
+    <div>
+        <label class="form-label" for="profs-actif">Statut</label>
+        <select id="profs-actif" name="actif" class="form-select">
+            <option value="">Tous</option>
+            <option value="1"{% if current_actif == "1" %} selected{% endif %}>En activité</option>
+            <option value="0"{% if current_actif == "0" %} selected{% endif %}>Retirés</option>
+        </select>
+    </div>
+    <button type="submit" class="btn-primary justify-center">Filtrer</button>
+</form>
+
 {# ── Grille ── #}
 {% if professeurs %}
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -40,7 +56,7 @@
                 {% endif %}
             </div>
             <span class="ml-auto shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs
-                {% if prof.actif %}bg-emerald-50 text-emerald-600{% else %}bg-gray-100 text-gray-400{% endif %}">
+                {% if prof.actif %}badge-success{% else %}badge-neutral{% endif %}">
                 {% if prof.actif %}✓{% else %}—{% endif %}
             </span>
         </div>
@@ -61,7 +77,7 @@
 
         <div class="flex items-center gap-3 mt-4 pt-3" style="border-top: 1px solid var(--color-warm-100);">
             <a href="{% url 'administration:professeur_update' prof.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>
-            <a href="{% url 'administration:professeur_delete' prof.pk %}" class="text-xs font-medium" style="color: #dc2626;">Supprimer</a>
+            <a href="{% url 'administration:professeur_delete' prof.pk %}" class="lien-danger">Supprimer</a>
         </div>
     </div>
     {% endfor %}
@@ -88,4 +104,6 @@
     <p style="color: var(--color-warm-400);">Aucun professeur trouvé.</p>
 </div>
 {% endif %}
+
+{% include "partials/pagination.html" %}
 {% endblock %}

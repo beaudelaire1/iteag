@@ -146,7 +146,7 @@ class TestCloisonnementDesPortails:
 
     def test_l_espace_etudiant_est_ferme_aux_autres(self, client, comptes):
         client.force_login(comptes[User.Role.ENSEIGNANT])
-        for nom_route in ("academics:dashboard", "academics:grades", "documents:list"):
+        for nom_route in ("etudiant:dashboard", "etudiant:grades", "documents:list"):
             assert client.get(reverse(nom_route)).status_code != 200, nom_route
 
 
@@ -215,4 +215,4 @@ class TestRenduSousStockageDeProduction:
 
     def test_une_page_de_portail_se_rend(self, client, comptes):
         client.force_login(comptes[User.Role.ETUDIANT])
-        assert client.get(reverse("academics:dashboard")).status_code == 200
+        assert client.get(reverse("etudiant:dashboard")).status_code == 200

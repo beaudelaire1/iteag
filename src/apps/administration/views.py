@@ -20,6 +20,8 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
+from apps.administration.services import pilotage
+from apps.administration.suppression import SuppressionProtegee
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
 from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
@@ -93,13 +95,23 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 **self._production_pedagogique(),
             }
         )
+        # Finances, échéances, activité, résultats et alertes. Le calcul vit
+        # dans un service : ce sont des règles de gestion, pas de l'affichage.
+        ctx.update(pilotage.finances(session_en_cours=ctx["session_en_cours"]))
+        ctx.update(pilotage.formations())
+        ctx.update(pilotage.resultats())
+        ctx["echeances"] = pilotage.echeances()
+        ctx["alertes"] = pilotage.alertes()
         return ctx
 
     def _production_pedagogique(self) -> dict:
-        from apps.elearning.models import ModuleFormation
+        from apps.elearning.models import InscriptionModule, ModuleFormation
 
         modules = ModuleFormation.objects.select_related("responsable", "discipline")
         return {
+            "demandes_acces_video": InscriptionModule.objects.filter(
+                statut=InscriptionModule.StatutAcces.DEMANDE
+            ).count(),
             "modules_en_relecture": modules.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count(),
             "modules_brouillon": modules.filter(statut=ModuleFormation.StatutPublication.BROUILLON).count(),
             "modules_publies": modules.filter(statut=ModuleFormation.StatutPublication.PUBLIE).count(),
@@ -147,9 +159,22 @@ class SecretariatDashboardView(SecretariatRoleRequiredMixin, TemplateView):
                 "session_en_cours": SessionAcademique.objects.filter(
                     Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
                 ).first(),
+                **self._demandes_acces_video(),
             }
         )
         return ctx
+
+    def _demandes_acces_video(self) -> dict:
+        """Les demandes d'accès aux modules attendent le secrétariat, comme les autres."""
+        from apps.elearning.models import InscriptionModule
+
+        demandes = InscriptionModule.objects.filter(statut=InscriptionModule.StatutAcces.DEMANDE)
+        return {
+            "demandes_acces_video": demandes.count(),
+            "demandes_acces_video_recentes": demandes.select_related("module", "etudiant__utilisateur").order_by(
+                "created_at"
+            )[:8],
+        }
 
 
 # ──────────────────────────────────────────────
@@ -303,7 +328,22 @@ class AdminProfesseurListView(AdminRoleRequiredMixin, ListView):
     template_name = "administration/professeurs.html"
     context_object_name = "professeurs"
     paginate_by = 20
-    queryset = Professeur.objects.prefetch_related("disciplines")
+
+    def get_queryset(self):
+        qs = Professeur.objects.prefetch_related("disciplines")
+        q = self.request.GET.get("q", "").strip()
+        actif = self.request.GET.get("actif", "")
+        if q:
+            qs = qs.filter(Q(nom__icontains=q) | Q(prenom__icontains=q) | Q(specialite__icontains=q))
+        if actif in ("1", "0"):
+            qs = qs.filter(actif=actif == "1")
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["query"] = self.request.GET.get("q", "")
+        ctx["current_actif"] = self.request.GET.get("actif", "")
+        return ctx
 
 
 # ──────────────────────────────────────────────
@@ -332,6 +372,39 @@ class AdminSessionListView(StaffRoleRequiredMixin, ListView):
     template_name = "administration/sessions.html"
     context_object_name = "sessions"
     paginate_by = 20
+
+    def get_queryset(self):
+        # Le nombre de sessions croît d'une année sur l'autre : sans filtre, la
+        # session de l'an dernier se retrouve à la même distance que celle qui
+        # commence la semaine prochaine.
+        # L'ordre est réaffirmé après l'annotation : sans lui, la pagination
+        # rendrait des pages qui se recouvrent.
+        qs = SessionAcademique.objects.annotate(nombre_cours=Count("cours_de_session")).order_by("-date_debut")
+        q = self.request.GET.get("q", "").strip()
+        statut = self.request.GET.get("statut", "")
+        annee = self.request.GET.get("annee", "")
+        if q:
+            qs = qs.filter(Q(nom__icontains=q) | Q(annee_academique__icontains=q))
+        if statut:
+            qs = qs.filter(statut=statut)
+        if annee:
+            qs = qs.filter(annee_academique=annee)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(
+            {
+                "query": self.request.GET.get("q", ""),
+                "statut_choices": SessionAcademique.StatutSession.choices,
+                "current_statut": self.request.GET.get("statut", ""),
+                "annees": SessionAcademique.objects.values_list("annee_academique", flat=True)
+                .distinct()
+                .order_by("-annee_academique"),
+                "current_annee": self.request.GET.get("annee", ""),
+            }
+        )
+        return ctx
 
 
 # ──────────────────────────────────────────────
@@ -404,20 +477,41 @@ class AdminUserUpdateView(AdminRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminUserDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminUserDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """
+    Supprimer un compte emportait le profil étudiant en cascade, et avec lui
+    inscriptions, notes, crédits ECTS et historique de paiements. En deux clics,
+    sans avertissement.
+    """
+
     model = User
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:utilisateurs")
+    url_retour = "administration:utilisateurs"
+
+    def libelle(self):
+        return f"l'utilisateur « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.pk == self.request.user.pk:
+            return "Vous ne pouvez pas supprimer votre propre compte."
+        if hasattr(self.object, "profil_etudiant"):
+            return (
+                "Ce compte porte un dossier étudiant : sa suppression effacerait notes, crédits et "
+                "paiements. Désactivez le compte, ou supprimez d'abord le dossier."
+            )
+        if hasattr(self.object, "profil_professeur"):
+            return "Ce compte est rattaché à une fiche professeur : détachez-la d'abord, ou désactivez le compte."
+        if self.object.is_active and self.object.role == User.Role.ADMIN:
+            restants = User.objects.filter(is_active=True, role=User.Role.ADMIN).exclude(pk=self.object.pk).count()
+            if restants == 0:
+                return "C'est le dernier compte d'administration actif : le supprimer fermerait le portail à tous."
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"l'utilisateur « {self.object} »"
         ctx["nav"] = "utilisateurs"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Utilisateur « {self.object} » supprimé.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
@@ -461,20 +555,29 @@ class AdminSessionUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminSessionDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminSessionDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """Supprimer une session emportait en cascade tous ses cours programmés."""
+
     model = SessionAcademique
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:sessions")
+    url_retour = "administration:sessions"
+
+    def libelle(self):
+        return f"la session « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.cours_de_session.exists():
+            return (
+                "Cette session porte des cours programmés : leur suppression entraînerait "
+                "inscriptions, notes et annonces. Retirez d'abord la programmation, ou clôturez la session."
+            )
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"la session « {self.object} »"
         ctx["nav"] = "sessions"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Session « {self.object} » supprimée.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
@@ -518,20 +621,31 @@ class AdminProfesseurUpdateView(AdminRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminProfesseurDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminProfesseurDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """
+    « CoursDeSession.enseignant » est en PROTECT : sans ce garde-fou, la
+    suppression produisait une erreur de base opaque au lieu d'une explication.
+    """
+
     model = Professeur
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:professeurs")
+    url_retour = "administration:professeurs"
+
+    def libelle(self):
+        return f"le professeur « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.cours_de_session.exists():
+            return "Ce professeur est rattaché à des cours programmés : décochez « actif » plutôt que de supprimer."
+        if self.object.modules_video.exists():
+            return "Ce professeur est responsable de modules vidéo : réattribuez-les d'abord."
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"le professeur « {self.object} »"
         ctx["nav"] = "professeurs"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Professeur « {self.object} » supprimé.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════
@@ -575,20 +689,34 @@ class AdminEtudiantUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminEtudiantDeleteView(AdminRoleRequiredMixin, DeleteView):
+class AdminEtudiantDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+    """
+    Un dossier étudiant porte des notes, des crédits et des paiements. Un
+    étudiant qui s'en va se désactive : il ne s'efface pas, sans quoi
+    l'institut perdrait la trace de ce qu'il a délivré.
+    """
+
     model = ProfilEtudiant
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:etudiants")
+    url_retour = "administration:etudiants"
+
+    def libelle(self):
+        return f"le profil étudiant « {self.object} »"
+
+    def raison_de_bloquer(self):
+        if self.object.credits_ects.exists():
+            return "Ce dossier porte des crédits ECTS acquis : passez le statut à « inactif » au lieu de supprimer."
+        if self.object.paiements.exists():
+            return "Ce dossier porte un historique de paiements : passez le statut à « inactif » au lieu de supprimer."
+        if self.object.evaluations.exists():
+            return "Ce dossier porte des évaluations : passez le statut à « inactif » au lieu de supprimer."
+        return ""
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["object_label"] = f"le profil étudiant « {self.object} »"
         ctx["nav"] = "etudiants"
         return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Profil étudiant « {self.object} » supprimé.")
-        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════

@@ -3,10 +3,11 @@ from pathlib import Path
 from django import forms
 
 from apps.academics.models import DemandeInscriptionCours
+from apps.core.formulaires import FormulaireModeleITEAG
 from apps.lms.models import Evaluation
 
 
-class StudentSubmissionForm(forms.ModelForm):
+class StudentSubmissionForm(FormulaireModeleITEAG):
     class Meta:
         model = Evaluation
         fields = ["fichier_soumis"]
@@ -25,7 +26,7 @@ class StudentSubmissionForm(forms.ModelForm):
         return uploaded
 
 
-class EnrollmentRequestForm(forms.ModelForm):
+class EnrollmentRequestForm(FormulaireModeleITEAG):
     class Meta:
         model = DemandeInscriptionCours
         fields = ["note_etudiant", "reference_paiement", "justificatif_paiement"]
