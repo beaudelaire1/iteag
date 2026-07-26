@@ -156,14 +156,36 @@
             <p class="overline mb-3">Notre équipe</p>
             <h2>Équipe professorale</h2>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-motion-stagger>
+        {% comment %}
+            Les visages doivent se voir dès l'accueil. Le gabarit affichait des
+            initiales dans un rond, et la fonction lisait « titre_academique »,
+            un champ qui n'existe pas sur le modèle : la condition était donc
+            toujours fausse et rien ne s'affichait sous les noms.
+        {% endcomment %}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8" data-motion-stagger>
             {% for prof in featured_professeurs %}
-            <article class="text-center reveal">
-                <div class="h-24 w-24 mx-auto mb-4 rounded-full flex items-center justify-center font-bold text-xl" style="background: var(--color-navy-100); color: var(--color-navy-700);">
-                    {{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}
+            <article class="text-center reveal relative">
+                {% if prof.photo %}
+                <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}"
+                     class="h-32 w-32 mx-auto mb-4 rounded-full object-cover"
+                     width="128" height="128" loading="lazy"
+                     style="box-shadow: 0 0 0 3px rgba(234, 182, 62, 0.25);">
+                {% else %}
+                <div class="h-32 w-32 mx-auto mb-4 rounded-full flex items-center justify-center font-bold text-2xl"
+                     style="background: var(--color-navy-100); color: var(--color-navy-700);" aria-hidden="true">
+                    {{ prof.prenom|slice:":1" }}{{ prof.nom|slice:":1" }}
                 </div>
-                <h3 class="text-base mb-1" style="color: var(--color-navy-900);">{{ prof.prenom }} {{ prof.nom }}</h3>
-                {% if prof.titre_academique %}<p class="text-xs" style="color: var(--color-warm-500);">{{ prof.titre_academique }}</p>{% endif %}
+                {% endif %}
+                <h3 class="text-base mb-1" style="color: var(--color-navy-900);">
+                    <a href="{{ prof.get_absolute_url }}" class="stretched-link">{{ prof.nom_complet }}</a>
+                </h3>
+                {% if prof.specialite %}
+                <p class="text-xs" style="color: var(--color-warm-500);">{{ prof.specialite }}</p>
+                {% elif prof.disciplines.all %}
+                <p class="text-xs" style="color: var(--color-warm-500);">
+                    {% for discipline in prof.disciplines.all %}{{ discipline.nom }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                </p>
+                {% endif %}
             </article>
             {% endfor %}
         </div>

@@ -112,7 +112,19 @@ class HomePage(Page):
         from apps.formations.models import Parcours, Professeur
 
         context["featured_parcours"] = Parcours.objects.filter(actif=True)[:4]
-        context["featured_professeurs"] = Professeur.objects.filter(actif=True).prefetch_related("disciplines")[:4]
+        # La sélection d'accueil montre des visages : à ordre égal, les fiches
+        # illustrées passent devant, faute de quoi la section pouvait n'afficher
+        # que des initiales alors que des photos existaient plus loin.
+        from django.db.models import Case, IntegerField, Value, When
+
+        context["featured_professeurs"] = (
+            Professeur.objects.filter(actif=True)
+            .annotate(
+                sans_photo=Case(When(photo="", then=Value(1)), default=Value(0), output_field=IntegerField()),
+            )
+            .prefetch_related("disciplines")
+            .order_by("sans_photo", "ordre", "nom")[:4]
+        )
         context["latest_news"] = NewsPage.objects.live().public().order_by("-date")[:3]
         context["upcoming_events"] = (
             EventPage.objects.live().public().filter(date_debut__gte=timezone.now()).order_by("date_debut")[:3]
