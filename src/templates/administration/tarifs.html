@@ -1,0 +1,65 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Grille tarifaire — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='tarifs' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='tarifs' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Tarification</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Grille tarifaire</h1>
+        <p class="mt-1 text-sm text-warm-500">
+            Ces montants sont affichés sur le site public. Toute modification y est immédiate.
+        </p>
+    </div>
+    {% if user.is_admin %}
+    <a href="{% url 'administration:tarif_create' %}" class="btn-primary">+ Ajouter un tarif</a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card-elevated overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-warm-200 text-left">
+                <th class="px-4 py-3 font-semibold text-navy-900">Formule</th>
+                <th class="px-4 py-3 font-semibold text-navy-900">Type de membre</th>
+                <th class="px-4 py-3 text-right font-semibold text-navy-900">Montant / session</th>
+                <th class="px-4 py-3 font-semibold text-navy-900">État</th>
+                <th class="px-4 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tarif in tarifs %}
+            <tr class="border-b border-warm-100">
+                <td class="px-4 py-3">{{ tarif.get_formule_display }}</td>
+                <td class="px-4 py-3 text-warm-600">{{ tarif.get_type_membre_display }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-navy-900">{{ tarif.montant_session }} €</td>
+                <td class="px-4 py-3">
+                    <span class="badge {% if tarif.actif %}badge-success{% else %}badge-gold{% endif %}">
+                        {% if tarif.actif %}Affiché{% else %}Masqué{% endif %}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    {% if user.is_admin %}
+                    <a href="{% url 'administration:tarif_update' tarif.pk %}" class="btn-secondary text-sm">Modifier</a>
+                    <a href="{% url 'administration:tarif_delete' tarif.pk %}" class="ml-3 text-sm font-semibold text-red-700">Supprimer</a>
+                    {% else %}
+                    <span class="text-xs text-warm-400">Lecture seule</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-4 py-12 text-center text-warm-400">Aucun tarif défini.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

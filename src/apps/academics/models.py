@@ -364,6 +364,19 @@ class CreditECTS(TimeStampedModel):
         verbose_name = "Crédit ECTS"
         verbose_name_plural = "Crédits ECTS"
         ordering = ["-date_validation"]
+        constraints = [
+            # Un cours donné, sur une session donnée, ne se valide qu'une fois.
+            # La règle est portée par le schéma et pas seulement par le service :
+            # une republication, un import ou une saisie manuelle passent tous
+            # par ici, et aucun ne doit pouvoir doubler un dossier académique.
+            # La condition écarte les crédits externes, dont le cours et la
+            # session ne sont pas renseignés.
+            models.UniqueConstraint(
+                fields=["etudiant", "cours", "session", "source"],
+                condition=models.Q(cours__isnull=False, session__isnull=False),
+                name="credit_ects_unique_par_cours_et_session",
+            )
+        ]
 
     def __str__(self):
         label = self.cours.titre if self.cours else "Crédit externe"

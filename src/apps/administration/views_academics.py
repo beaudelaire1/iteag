@@ -11,12 +11,28 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from apps.academics.models import CoursDeSession, DemandeInscriptionCours, Paiement, SessionAcademique
+from apps.academics.models import (
+    CoursDeSession,
+    CreditECTS,
+    DemandeInscriptionCours,
+    Paiement,
+    Promotion,
+    SessionAcademique,
+)
 from apps.academics.services.inscriptions import traiter_demande
 from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
-from apps.formations.models import Cours, Discipline
+from apps.core.services.audit import journaliser
+from apps.formations.models import Cours, Discipline, Tarif
 
-from .forms import AdminCoursForm, CoursDeSessionForm, EnrollmentDecisionForm, PaiementForm
+from .forms import (
+    AdminCoursForm,
+    CoursDeSessionForm,
+    CreditECTSForm,
+    EnrollmentDecisionForm,
+    PaiementForm,
+    PromotionForm,
+    TarifForm,
+)
 
 
 class EnrollmentRequestListView(StaffRoleRequiredMixin, ListView):
@@ -443,4 +459,267 @@ class CourseDeleteView(AdminRoleRequiredMixin, DeleteView):
         if self.object.sessions.exists():
             messages.error(self.request, "Ce cours a déjà été programmé : désactivez-le au lieu de le supprimer.")
             return redirect("administration:courses")
+        return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# Promotions
+# ══════════════════════════════════════════════
+
+
+class PromotionListView(StaffRoleRequiredMixin, ListView):
+    model = Promotion
+    template_name = "administration/promotions.html"
+    context_object_name = "promotions"
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = (
+            Promotion.objects.select_related("parcours")
+            .annotate(nombre_etudiants=Count("etudiants", distinct=True))
+            .order_by("-annee_debut", "nom")
+        )
+        recherche = self.request.GET.get("q", "").strip()
+        if recherche:
+            queryset = queryset.filter(Q(nom__icontains=recherche) | Q(parcours__nom__icontains=recherche))
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["query"] = self.request.GET.get("q", "")
+        return context
+
+
+class PromotionCreateView(StaffRoleRequiredMixin, CreateView):
+    model = Promotion
+    form_class = PromotionForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:promotions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": "Créer une promotion",
+                "nav": "promotions",
+                "cancel_url": reverse("administration:promotions"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Promotion créée. Elle est désormais proposée à l'admission.")
+        return super().form_valid(form)
+
+
+class PromotionUpdateView(StaffRoleRequiredMixin, UpdateView):
+    model = Promotion
+    form_class = PromotionForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:promotions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": f"Modifier — {self.object}",
+                "nav": "promotions",
+                "cancel_url": reverse("administration:promotions"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Promotion mise à jour.")
+        return super().form_valid(form)
+
+
+class PromotionDeleteView(AdminRoleRequiredMixin, DeleteView):
+    model = Promotion
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:promotions")
+
+    def form_valid(self, form):
+        # La clé étrangère est en PROTECT : supprimer lèverait une erreur de
+        # base opaque. On explique plutôt ce qu'il faut faire.
+        if self.object.etudiants.exists():
+            messages.error(
+                self.request,
+                "Cette promotion compte des étudiants : désactivez-la au lieu de la supprimer.",
+            )
+            return redirect("administration:promotions")
+        messages.success(self.request, "Promotion supprimée.")
+        return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# Grille tarifaire
+# ══════════════════════════════════════════════
+
+
+class TarifListView(StaffRoleRequiredMixin, ListView):
+    model = Tarif
+    template_name = "administration/tarifs.html"
+    context_object_name = "tarifs"
+
+    def get_queryset(self):
+        return Tarif.objects.order_by("formule", "type_membre")
+
+
+class TarifCreateView(AdminRoleRequiredMixin, CreateView):
+    model = Tarif
+    form_class = TarifForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:tarifs")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {"form_title": "Ajouter un tarif", "nav": "tarifs", "cancel_url": reverse("administration:tarifs")}
+        )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Tarif ajouté. Il est visible sur le site public.")
+        return super().form_valid(form)
+
+
+class TarifUpdateView(AdminRoleRequiredMixin, UpdateView):
+    model = Tarif
+    form_class = TarifForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:tarifs")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": f"Modifier — {self.object}",
+                "nav": "tarifs",
+                "cancel_url": reverse("administration:tarifs"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Tarif mis à jour. Le site public reflète la nouvelle grille.")
+        return super().form_valid(form)
+
+
+class TarifDeleteView(AdminRoleRequiredMixin, DeleteView):
+    model = Tarif
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:tarifs")
+
+    def form_valid(self, form):
+        messages.success(self.request, "Tarif supprimé.")
+        return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# Crédits ECTS
+# ══════════════════════════════════════════════
+
+
+class CreditECTSListView(StaffRoleRequiredMixin, ListView):
+    """
+    Les crédits ITEAG arrivent seuls à la publication des notes ; cet écran
+    sert aux crédits FLTE et aux corrections de dossier.
+    """
+
+    model = CreditECTS
+    template_name = "administration/credits_ects.html"
+    context_object_name = "credits"
+    paginate_by = 30
+
+    def get_queryset(self):
+        queryset = CreditECTS.objects.select_related("etudiant__utilisateur", "cours", "session").order_by(
+            "-date_validation"
+        )
+        source = self.request.GET.get("source", "")
+        recherche = self.request.GET.get("q", "").strip()
+        if source:
+            queryset = queryset.filter(source=source)
+        if recherche:
+            queryset = queryset.filter(
+                Q(etudiant__utilisateur__last_name__icontains=recherche)
+                | Q(etudiant__numero_etudiant__icontains=recherche)
+                | Q(cours__titre__icontains=recherche)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "sources": CreditECTS.SourceCredit.choices,
+                "current_source": self.request.GET.get("source", ""),
+                "query": self.request.GET.get("q", ""),
+            }
+        )
+        return context
+
+
+class CreditECTSCreateView(StaffRoleRequiredMixin, CreateView):
+    model = CreditECTS
+    form_class = CreditECTSForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:credits_ects")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": "Porter un crédit au dossier",
+                "nav": "credits_ects",
+                "cancel_url": reverse("administration:credits_ects"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Crédit porté au dossier de l'étudiant.")
+        return super().form_valid(form)
+
+
+class CreditECTSUpdateView(StaffRoleRequiredMixin, UpdateView):
+    model = CreditECTS
+    form_class = CreditECTSForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:credits_ects")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": f"Corriger — {self.object}",
+                "nav": "credits_ects",
+                "cancel_url": reverse("administration:credits_ects"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Crédit corrigé.")
+        return super().form_valid(form)
+
+
+class CreditECTSDeleteView(AdminRoleRequiredMixin, DeleteView):
+    """
+    Retirer un crédit modifie un dossier académique : réservé à
+    l'administration, et tracé comme tout ce qui touche au dossier.
+    """
+
+    model = CreditECTS
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:credits_ects")
+
+    def form_valid(self, form):
+        journaliser(
+            "suppression",
+            request=self.request,
+            objet=self.object,
+            objet_libelle=f"Retrait de crédit ECTS : {self.object}",
+        )
+        messages.success(self.request, "Crédit retiré du dossier.")
         return super().form_valid(form)
