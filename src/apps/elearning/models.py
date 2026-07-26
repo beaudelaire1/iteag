@@ -464,6 +464,11 @@ class InscriptionModule(UUIDModel, TimeStampedModel):
         LIBRE = "libre", "Accès libre"
 
     class StatutAcces(models.TextChoices):
+        # Un étudiant déjà inscrit à l'institut demande lui-même l'ouverture
+        # d'un module : le droit existe alors sans être exerçable. Sans ce
+        # statut, la seule voie offerte à l'étudiant était de redéposer une
+        # candidature complète, coordonnées comprises.
+        DEMANDE = "demande", "Demande en attente"
         ACTIF = "actif", "Actif"
         SUSPENDU = "suspendu", "Suspendu"
         EXPIRE = "expire", "Expiré"

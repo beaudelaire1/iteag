@@ -96,10 +96,13 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
         return ctx
 
     def _production_pedagogique(self) -> dict:
-        from apps.elearning.models import ModuleFormation
+        from apps.elearning.models import InscriptionModule, ModuleFormation
 
         modules = ModuleFormation.objects.select_related("responsable", "discipline")
         return {
+            "demandes_acces_video": InscriptionModule.objects.filter(
+                statut=InscriptionModule.StatutAcces.DEMANDE
+            ).count(),
             "modules_en_relecture": modules.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count(),
             "modules_brouillon": modules.filter(statut=ModuleFormation.StatutPublication.BROUILLON).count(),
             "modules_publies": modules.filter(statut=ModuleFormation.StatutPublication.PUBLIE).count(),
@@ -147,9 +150,22 @@ class SecretariatDashboardView(SecretariatRoleRequiredMixin, TemplateView):
                 "session_en_cours": SessionAcademique.objects.filter(
                     Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
                 ).first(),
+                **self._demandes_acces_video(),
             }
         )
         return ctx
+
+    def _demandes_acces_video(self) -> dict:
+        """Les demandes d'accès aux modules attendent le secrétariat, comme les autres."""
+        from apps.elearning.models import InscriptionModule
+
+        demandes = InscriptionModule.objects.filter(statut=InscriptionModule.StatutAcces.DEMANDE)
+        return {
+            "demandes_acces_video": demandes.count(),
+            "demandes_acces_video_recentes": demandes.select_related("module", "etudiant__utilisateur").order_by(
+                "created_at"
+            )[:8],
+        }
 
 
 # ──────────────────────────────────────────────

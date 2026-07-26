@@ -17,8 +17,18 @@
 
 {% block portal_content %}
 
+{% if demandes_en_attente %}
+<div class="card-elevated mb-6" style="border-left: 3px solid var(--color-gold-500);">
+    <p class="text-sm" style="color: var(--color-navy-900);">
+        <strong>{{ demandes_en_attente }}</strong> demande{{ demandes_en_attente|pluralize }} d'accès
+        en attente de décision —
+        <a href="?statut=demande" class="link-reveal">les traiter</a>.
+    </p>
+</div>
+{% endif %}
+
 {# Compteurs par état #}
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     {% for valeur, libelle in statuts %}
     <a href="?statut={{ valeur }}" class="card-elevated text-center py-4 {% if statut_courant == valeur %}shadow-gold{% endif %}">
         <p class="stat-number" style="font-size: 1.5rem;">{% for cle, nb in compteurs.items %}{% if cle == valeur %}{{ nb }}{% endif %}{% endfor %}</p>
@@ -102,6 +112,8 @@
         <div>
             <label class="form-label" for="action">Action sur la sélection</label>
             <select name="action" id="action" class="form-select">
+                <option value="accorder">Accorder la demande</option>
+                <option value="refuser">Refuser la demande</option>
                 <option value="suspendre">Suspendre</option>
                 <option value="reactiver">Réactiver</option>
                 <option value="prolonger">Prolonger</option>
@@ -109,11 +121,11 @@
             </select>
         </div>
         <div>
-            <label class="form-label" for="jours">Jours (prolongation)</label>
+            <label class="form-label" for="jours">Jours (octroi, prolongation)</label>
             <input type="number" name="jours" id="jours" value="90" min="1" class="form-input" style="width: 8rem;">
         </div>
         <div class="flex-1 min-w-48">
-            <label class="form-label" for="motif">Motif (révocation)</label>
+            <label class="form-label" for="motif">Motif (refus, révocation)</label>
             <input type="text" name="motif" id="motif" class="form-input" placeholder="Impayé, décision…">
         </div>
         <button type="submit" class="btn-primary">Appliquer</button>
@@ -145,7 +157,8 @@
                     </td>
                     <td>{{ inscription.module.titre }}</td>
                     <td>
-                        {% if inscription.statut == "actif" %}<span class="badge badge-info">Actif</span>
+                        {% if inscription.statut == "demande" %}<span class="badge badge-gold">Demande</span>
+                        {% elif inscription.statut == "actif" %}<span class="badge badge-info">Actif</span>
                         {% elif inscription.statut == "termine" %}<span class="badge badge-success">Terminé</span>
                         {% elif inscription.statut == "revoque" %}<span class="badge badge-danger">Révoqué</span>
                         {% else %}<span class="badge badge-warning">{{ inscription.get_statut_display }}</span>{% endif %}

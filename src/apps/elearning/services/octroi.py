@@ -8,6 +8,9 @@ secrétariat produisent exactement le même objet.
 
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.models import Notification
@@ -45,6 +48,7 @@ def octroyer(
     )
 
     if not creee and inscription.statut in (
+        InscriptionModule.StatutAcces.DEMANDE,
         InscriptionModule.StatutAcces.REVOQUE,
         InscriptionModule.StatutAcces.EXPIRE,
         InscriptionModule.StatutAcces.SUSPENDU,
@@ -83,6 +87,131 @@ def octroyer(
                 url_cible=module.get_absolute_url(),
             )
 
+    return inscription
+
+
+# ──────────────────────────────────────────────
+# Demande d'accès à l'initiative de l'étudiant
+# ──────────────────────────────────────────────
+
+
+def motif_refus_demande(profil, module: ModuleFormation) -> str:
+    """Pourquoi cet étudiant ne peut pas demander ce module — vide s'il le peut.
+
+    L'ordre compte : le premier motif rencontré est celui qu'on affiche, et
+    c'est celui qui explique le mieux la situation à l'étudiant.
+    """
+    from apps.academics.models import ProfilEtudiant
+
+    if profil is None:
+        return "Un dossier étudiant est nécessaire pour demander l'accès à un module."
+    if profil.statut_inscription in {
+        ProfilEtudiant.StatutInscription.SUSPENDU,
+        ProfilEtudiant.StatutInscription.INACTIF,
+    }:
+        return "Votre statut administratif ne permet pas d'ouvrir un nouveau module."
+    if not module.est_publie:
+        return "Ce module n'est pas encore ouvert aux inscriptions."
+    if module.politique_acces in {
+        ModuleFormation.PolitiqueAcces.PUBLIC,
+        ModuleFormation.PolitiqueAcces.AUTHENTIFIE,
+    }:
+        return "Ce module est déjà accessible : aucune demande n'est nécessaire."
+
+    existante = InscriptionModule.objects.filter(etudiant=profil, module=module).first()
+    if existante is None:
+        return ""
+    if existante.statut == InscriptionModule.StatutAcces.DEMANDE:
+        return "Votre demande est déjà enregistrée ; le secrétariat la traite."
+    if existante.statut == InscriptionModule.StatutAcces.REVOQUE:
+        return ""  # une demande peut être renouvelée après un refus
+    return "Vous avez déjà accès à ce module."
+
+
+@transaction.atomic
+def demander(profil, module: ModuleFormation, *, request=None) -> InscriptionModule:
+    """Enregistre la demande d'accès d'un étudiant déjà inscrit à l'institut.
+
+    L'institut détient déjà l'identité de cet étudiant : la demande ne
+    redemande donc aucune coordonnée, elle ne porte que le fait d'avoir été
+    formulée. Le droit est créé sans être exerçable — `est_active()` est faux
+    tant que le secrétariat n'a pas tranché.
+    """
+    motif = motif_refus_demande(profil, module)
+    if motif:
+        raise ValidationError(motif)
+
+    inscription, creee = InscriptionModule.objects.get_or_create(
+        etudiant=profil,
+        module=module,
+        defaults={
+            "source": InscriptionModule.SourceAcces.OCTROI_MANUEL,
+            "statut": InscriptionModule.StatutAcces.DEMANDE,
+        },
+    )
+    if not creee:
+        # Renouvellement après refus : on repart d'une demande propre.
+        inscription.statut = InscriptionModule.StatutAcces.DEMANDE
+        inscription.motif_revocation = ""
+        inscription.date_debut_acces = timezone.localdate()
+        inscription.date_fin_acces = None
+        inscription.save(
+            update_fields=["statut", "motif_revocation", "date_debut_acces", "date_fin_acces", "updated_at"]
+        )
+
+    journaliser(
+        "demande_acces",
+        utilisateur=profil.utilisateur,
+        request=request,
+        objet=inscription,
+        objet_libelle=f"{profil} → {module.titre}",
+    )
+    _prevenir_le_secretariat(profil, module)
+    return inscription
+
+
+def _prevenir_le_secretariat(profil, module: ModuleFormation) -> None:
+    """Une demande sans destinataire resterait sans réponse."""
+    from apps.accounts.models import User
+
+    destinataires = User.objects.filter(
+        is_active=True,
+        role__in=[User.Role.SECRETARIAT, User.Role.ADMIN],
+    )
+    for destinataire in destinataires:
+        notifier(
+            destinataire,
+            "Demande d'accès à un module",
+            type_notification=Notification.Type.ACCES_OCTROYE,
+            message=f"{profil} demande l'accès à « {module.titre} ».",
+            url_cible=f"{reverse('administration:acces')}?statut={InscriptionModule.StatutAcces.DEMANDE}",
+        )
+
+
+def refuser_demande(inscription: InscriptionModule, *, motif: str, par=None) -> InscriptionModule:
+    """Refuse une demande. Le motif est obligatoire : un refus muet est inexploitable."""
+    if inscription.statut != InscriptionModule.StatutAcces.DEMANDE:
+        raise ValidationError("Cette demande a déjà été traitée.")
+    if not motif.strip():
+        raise ValidationError("Précisez le motif du refus.")
+
+    inscription.statut = InscriptionModule.StatutAcces.REVOQUE
+    inscription.motif_revocation = motif
+    inscription.save(update_fields=["statut", "motif_revocation", "updated_at"])
+    journaliser(
+        "revocation_acces",
+        utilisateur=par,
+        objet=inscription,
+        objet_libelle=f"{inscription.etudiant} → {inscription.module.titre}",
+        motif=motif,
+    )
+    notifier(
+        inscription.etudiant.utilisateur,
+        f"Demande d'accès non retenue — {inscription.module.titre}",
+        type_notification=Notification.Type.ACCES_OCTROYE,
+        message=motif,
+        url_cible=inscription.module.get_absolute_url(),
+    )
     return inscription
 
 

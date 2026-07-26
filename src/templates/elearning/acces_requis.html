@@ -21,6 +21,16 @@
                 <a href="{% url 'admissions:candidature_form' %}" class="btn-ghost">
                     Déposer une candidature
                 </a>
+            {% elif demande_en_attente %}
+                <a href="{% url 'elearning:mes_formations' %}" class="btn-primary">Suivre ma demande</a>
+                <a href="{{ module.get_absolute_url }}" class="btn-ghost">Revenir au module</a>
+            {% elif peut_demander %}
+                {# Étudiant déjà inscrit : son dossier existe, on ne le redemande pas. #}
+                <form method="post" action="{% url 'elearning:module_demander_acces' module.slug %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary">Demander l'accès à ce module</button>
+                </form>
+                <a href="{% url 'elearning:mes_formations' %}" class="btn-ghost">Mes formations</a>
             {% elif motif == "refuse_expire" %}
                 <a href="/contact/" class="btn-primary">Demander une prolongation</a>
                 <a href="{% url 'elearning:mes_formations' %}" class="btn-ghost">Mes formations</a>
