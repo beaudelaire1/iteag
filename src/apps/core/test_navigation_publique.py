@@ -37,7 +37,7 @@ def barre_bureau(html: str) -> str:
 
 
 def test_la_barre_reste_courte():
-    contenu = barre_bureau(ENTETE.read_text())
+    contenu = barre_bureau(ENTETE.read_text(encoding="utf-8"))
     # Une entrée = un lien de premier niveau, rubrique ou page.
     entrees = len(re.findall(r'class="nav-link"', contenu))
     assert entrees <= MAXIMUM_ENTREES, f"{entrees} entrées dans la barre publique — au-delà de {MAXIMUM_ENTREES}"
@@ -45,7 +45,7 @@ def test_la_barre_reste_courte():
 
 def test_la_video_est_dans_la_rubrique_formations():
     """Elle ne doit plus voisiner « Formations » au premier niveau."""
-    contenu = barre_bureau(ENTETE.read_text())
+    contenu = barre_bureau(ENTETE.read_text(encoding="utf-8"))
     for panneau in re.findall(r'<div class="nav-groupe-panneau">(.*?)</div>', contenu, re.S):
         if "elearning:catalogue" in panneau:
             return
@@ -57,7 +57,7 @@ def test_chaque_rubrique_mene_quelque_part():
     Un intitulé de rubrique qui n'est qu'un déclencheur laisse sans recours
     celui dont le panneau ne s'ouvre pas.
     """
-    contenu = barre_bureau(ENTETE.read_text())
+    contenu = barre_bureau(ENTETE.read_text(encoding="utf-8"))
     groupes = re.findall(r'<div class="nav-groupe">(.*?)</div>\s*</div>', contenu, re.S)
     assert groupes, "Aucune rubrique trouvée dans la barre"
     for groupe in groupes:
@@ -71,7 +71,7 @@ def test_les_panneaux_ne_dependent_pas_du_javascript():
     « display: none » ou l'attribut « hidden » rendrait les liens inatteignables
     sans script. L'ouverture se fait en CSS, au survol et à la prise de focus.
     """
-    contenu = barre_bureau(ENTETE.read_text())
+    contenu = barre_bureau(ENTETE.read_text(encoding="utf-8"))
     assert "data-dropdown" not in contenu, "La barre publique ne doit pas dépendre du menu déroulant JavaScript"
     # L'attribut « hidden » sur une balise, à ne pas confondre avec la classe
     # utilitaire « hidden lg:flex » qui masque la barre entière sur mobile.
@@ -80,7 +80,7 @@ def test_les_panneaux_ne_dependent_pas_du_javascript():
             f"Un panneau masqué par l'attribut « hidden » serait perdu sans script : {balise}"
         )
 
-    styles = (RACINE / "assets" / "css" / "input.css").read_text()
+    styles = (RACINE / "assets" / "css" / "input.css").read_text(encoding="utf-8")
     depart = styles.index(".nav-groupe-panneau {")
     regle = styles[depart : styles.index("\n  }", depart)]
     # Les commentaires parlent de « display: none » pour expliquer qu'on

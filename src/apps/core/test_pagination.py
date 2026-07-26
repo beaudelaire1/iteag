@@ -31,7 +31,7 @@ def vues_paginees() -> list[tuple[str, str]]:
     for fichier in sorted((RACINE / "apps").rglob("*.py")):
         if fichier.name.startswith("test") or "migrations" in fichier.parts:
             continue
-        texte = fichier.read_text()
+        texte = fichier.read_text(encoding="utf-8")
         if "paginate_by" not in texte:
             continue
         for bloc in re.split(r"\n(?=class )", texte):
@@ -56,7 +56,7 @@ def test_chaque_liste_paginee_offre_ses_commandes(classe, gabarit):
     chemin = RACINE / "templates" / gabarit
     if not chemin.exists():
         pytest.skip(f"Gabarit introuvable : {gabarit}")
-    texte = chemin.read_text()
+    texte = chemin.read_text(encoding="utf-8")
     a_les_commandes = "partials/pagination.html" in texte or "page_obj.has_other_pages" in texte
     assert a_les_commandes, f"{classe} pagine mais « {gabarit} » n'affiche aucune commande"
 
