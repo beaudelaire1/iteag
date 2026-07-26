@@ -60,6 +60,20 @@
     }
     </script>
     {% endblock %}
+    {% comment %}
+        Sans JavaScript, les éléments d'apparition resteraient à opacité nulle :
+        la page s'afficherait presque vide. Le repli est posé ici, où il ne peut
+        pas être oublié — il vaut pour tous les gabarits.
+    {% endcomment %}
+    <noscript>
+        <style>
+            .reveal, .reveal-left, .reveal-right, .reveal-scale,
+            .reveal-fade, .reveal-blur, .text-reveal-line, .border-draw {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        </style>
+    </noscript>
 </head>
 <body class="min-h-screen flex flex-col antialiased bg-warm text-warm-900">
     {# Skip to content — accessibilité WCAG AA #}

@@ -843,6 +843,36 @@
   opacity: 1;
   transform: translateY(0) scale(1);
 }
+/* Les animations d'apparition partent d'une opacité nulle : sans JavaScript,
+   ou sans observateur d'intersection, la page resterait blanche. Le repli est
+   déclaré ici plutôt que laissé au hasard du navigateur.
+
+   Le même repli sert à qui demande moins d'animation : le réglage système est
+   une demande, pas une préférence esthétique. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-left,
+  .reveal-right,
+  .reveal-scale,
+  .reveal-fade,
+  .reveal-blur,
+  .text-reveal-line,
+  .border-draw {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .reveal-delay-1 { transition-delay: 150ms; }
 .reveal-delay-2 { transition-delay: 300ms; }
 .reveal-delay-3 { transition-delay: 450ms; }
