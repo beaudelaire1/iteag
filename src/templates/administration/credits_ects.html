@@ -1,0 +1,88 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Crédits ECTS — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='credits_ects' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='credits_ects' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Dossier académique</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Crédits ECTS</h1>
+        <p class="mt-1 text-sm text-warm-500">
+            Les crédits ITEAG sont portés automatiquement à la publication des notes. Cet écran sert
+            aux crédits FLTE et aux corrections.
+        </p>
+    </div>
+    <a href="{% url 'administration:credit_ects_create' %}" class="btn-primary">+ Porter un crédit</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[2fr_1fr_auto]">
+    <div>
+        <label class="form-label" for="credit-q">Étudiant, numéro ou cours</label>
+        <input id="credit-q" class="form-input" name="q" value="{{ query }}" type="search">
+    </div>
+    <div>
+        <label class="form-label" for="credit-source">Source</label>
+        <select id="credit-source" class="form-input" name="source">
+            <option value="">Toutes</option>
+            {% for value, label in sources %}
+            <option value="{{ value }}"{% if current_source == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="card-elevated overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-warm-200 text-left">
+                <th class="px-4 py-3 font-semibold text-navy-900">Étudiant</th>
+                <th class="px-4 py-3 font-semibold text-navy-900">Cours</th>
+                <th class="px-4 py-3 font-semibold text-navy-900">Session</th>
+                <th class="px-4 py-3 text-right font-semibold text-navy-900">ECTS</th>
+                <th class="px-4 py-3 font-semibold text-navy-900">Source</th>
+                <th class="px-4 py-3 font-semibold text-navy-900">Validé le</th>
+                <th class="px-4 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for credit in credits %}
+            <tr class="border-b border-warm-100">
+                <td class="px-4 py-3">
+                    <span class="font-semibold text-navy-900">{{ credit.etudiant.utilisateur.get_full_name }}</span>
+                    <span class="block text-xs text-warm-500">{{ credit.etudiant.numero_etudiant }}</span>
+                </td>
+                <td class="px-4 py-3 text-warm-600">{{ credit.cours.titre|default:"Crédit externe" }}</td>
+                <td class="px-4 py-3 text-warm-600">{{ credit.session|default:"—" }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-navy-900">{{ credit.ects_obtenus }}</td>
+                <td class="px-4 py-3">
+                    <span class="badge {% if credit.source == 'iteag' %}badge-success{% else %}badge-gold{% endif %}">
+                        {{ credit.get_source_display }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-warm-500">{{ credit.date_validation|date:"d/m/Y" }}</td>
+                <td class="px-4 py-3 text-right">
+                    <a href="{% url 'administration:credit_ects_update' credit.pk %}" class="btn-secondary text-sm">Corriger</a>
+                    {% if user.is_admin %}
+                    <a href="{% url 'administration:credit_ects_delete' credit.pk %}" class="ml-3 text-sm font-semibold text-red-700">Retirer</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="px-4 py-12 text-center text-warm-400">Aucun crédit enregistré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

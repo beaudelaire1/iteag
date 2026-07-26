@@ -97,6 +97,12 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
             "cours_session__session",
         )
         paiements = profil.paiements.filter(statut=Paiement.StatutPaiement.CONFIRME).select_related("session")
+        # Le relevé est porté par les crédits, pas par les évaluations : c'est
+        # le dossier académique qui fait foi, et lui seul contient les acquis
+        # hors cours — stage validé, VAE accordée, équivalences FLTE. Totaliser
+        # les crédits en ne listant que les évaluations ferait diverger le
+        # total de ses lignes.
+        credits = profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by("date_validation")
 
         html = render_to_string(
             "documents/pdf/document.html",
@@ -108,6 +114,7 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
                 "generated_at": timezone.now(),
                 "evaluations": evaluations,
                 "paiements": paiements,
+                "credits": credits,
             },
             request=request,
         )

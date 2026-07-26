@@ -94,6 +94,44 @@
 </div>
 
 <div class="grid lg:grid-cols-2 gap-8">
+    {# ── Production pédagogique des enseignants ── #}
+    <div class="card-elevated" style="padding: 0;">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--color-warm-100);">
+            <div>
+                <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Production pédagogique</h2>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
+                    {{ modules_en_relecture }} en relecture · {{ modules_brouillon }} en brouillon · {{ modules_publies }} publié{{ modules_publies|pluralize }}
+                </p>
+            </div>
+            <a href="{% url 'administration:acces' %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Accès →</a>
+        </div>
+        <div class="divide-y" style="--tw-divide-opacity: 1; border-color: var(--color-warm-100);">
+            {% for module in modules_recents %}
+            <a href="{{ module.get_absolute_url }}" class="block px-5 py-3 hover:bg-warm-50 transition-colors">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ module.titre }}</p>
+                        <p class="text-xs" style="color: var(--color-warm-500);">
+                            {% if module.responsable %}{{ module.responsable }}{% else %}Sans responsable{% endif %}
+                            {% if module.discipline %} — {{ module.discipline }}{% endif %}
+                        </p>
+                    </div>
+                    <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                        {% if module.statut == 'publie' %}bg-emerald-50 text-emerald-700
+                        {% elif module.statut == 'relecture' %}bg-amber-50 text-amber-700
+                        {% else %}bg-warm-100 text-warm-600{% endif %}">
+                        {{ module.get_statut_display }}
+                    </span>
+                </div>
+            </a>
+            {% empty %}
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">
+                Aucun module créé par les enseignants.
+            </p>
+            {% endfor %}
+        </div>
+    </div>
+
     {# ── Dernières candidatures ── #}
     <div class="card-elevated" style="padding: 0;">
         <div class="px-5 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--color-warm-100);">

@@ -1,0 +1,69 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Promotions — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='promotions' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='promotions' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Cohortes</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Promotions</h1>
+        <p class="mt-1 text-sm text-warm-500">
+            Toute admission rattache l'étudiant à une promotion : sans promotion active, aucune
+            candidature ne peut être acceptée.
+        </p>
+    </div>
+    <a href="{% url 'administration:promotion_create' %}" class="btn-primary">+ Créer une promotion</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[3fr_auto]">
+    <div>
+        <label class="form-label" for="promo-q">Nom ou parcours</label>
+        <input id="promo-q" class="form-input" name="q" value="{{ query }}" type="search">
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="space-y-4">
+    {% for promotion in promotions %}
+    <article class="card-elevated flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="min-w-0">
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                <span class="badge {% if promotion.actif %}badge-success{% else %}badge-gold{% endif %}">
+                    {% if promotion.actif %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+            <h2 class="truncate text-lg font-semibold text-navy-900">{{ promotion.nom }}</h2>
+            <p class="mt-1 text-sm text-warm-500">
+                {{ promotion.parcours.nom }} · {{ promotion.annee_debut }}–{{ promotion.annee_fin }}
+            </p>
+        </div>
+        <div class="text-center text-sm">
+            <p class="text-xl font-bold text-navy-900">{{ promotion.nombre_etudiants }}</p>
+            <p class="text-xs text-warm-500">étudiants</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'administration:etudiants' %}?promotion={{ promotion.pk }}" class="btn-secondary text-sm">Étudiants</a>
+            <a href="{% url 'administration:promotion_update' promotion.pk %}" class="btn-secondary text-sm">Modifier</a>
+            {% if user.is_admin %}
+            <a href="{% url 'administration:promotion_delete' promotion.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a>
+            {% endif %}
+        </div>
+    </article>
+    {% empty %}
+    <div class="card-elevated py-12 text-center text-warm-400">
+        Aucune promotion. Créez-en une avant d'accepter des candidatures.
+    </div>
+    {% endfor %}
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

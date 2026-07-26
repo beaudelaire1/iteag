@@ -105,6 +105,23 @@ pytest --cov=apps            # avec couverture
 Ces trois commandes sont celles de l'intégration continue. Un commit qui les casse
 casse la CI.
 
+### Tester comme la CI, sur PostgreSQL
+
+Par défaut la suite tourne sur SQLite, pour la vélocité (décision D7). L'intégration
+continue, elle, tourne sur **PostgreSQL 16** — et les deux moteurs ne se comportent pas
+pareil. Une suite verte en local ne prouve donc rien sur ce qui dépend du moteur.
+
+```bash
+DATABASE_URL="postgres://user@localhost/postgres" pytest -q
+```
+
+À faire systématiquement avant de pousser dès qu'on touche à un verrou, une contrainte,
+une transaction ou une requête complexe. Le piège déjà rencontré : `select_for_update()`
+combiné à un `select_related()` sur une relation **facultative** produit une jointure
+externe, que PostgreSQL refuse de verrouiller et que SQLite accepte en silence. Se
+limiter à `select_for_update(of=("self",))` quand seule la ligne principale doit être
+protégée.
+
 ### Architecture
 
 Les dépendances entre applications sont **déclarées** dans

@@ -73,6 +73,31 @@ urlpatterns = [
         name="enrollment_proof_download",
     ),
     # Paiements
+    # Promotions
+    path("promotions/", views_academics.PromotionListView.as_view(), name="promotions"),
+    path("promotions/nouvelle/", views_academics.PromotionCreateView.as_view(), name="promotion_create"),
+    path("promotions/<int:pk>/modifier/", views_academics.PromotionUpdateView.as_view(), name="promotion_update"),
+    path("promotions/<int:pk>/supprimer/", views_academics.PromotionDeleteView.as_view(), name="promotion_delete"),
+    # Stages
+    path("stages/", views_academics.StageListView.as_view(), name="stages"),
+    path("stages/nouveau/", views_academics.StageCreateView.as_view(), name="stage_create"),
+    path("stages/<int:pk>/modifier/", views_academics.StageUpdateView.as_view(), name="stage_update"),
+    path("stages/<int:pk>/supprimer/", views_academics.StageDeleteView.as_view(), name="stage_delete"),
+    # Validation des acquis
+    path("vae/", views_academics.VAEListView.as_view(), name="vae"),
+    path("vae/nouveau/", views_academics.VAECreateView.as_view(), name="vae_create"),
+    path("vae/<int:pk>/modifier/", views_academics.VAEUpdateView.as_view(), name="vae_update"),
+    path("vae/<int:pk>/supprimer/", views_academics.VAEDeleteView.as_view(), name="vae_delete"),
+    # Grille tarifaire
+    path("tarifs/", views_academics.TarifListView.as_view(), name="tarifs"),
+    path("tarifs/nouveau/", views_academics.TarifCreateView.as_view(), name="tarif_create"),
+    path("tarifs/<int:pk>/modifier/", views_academics.TarifUpdateView.as_view(), name="tarif_update"),
+    path("tarifs/<int:pk>/supprimer/", views_academics.TarifDeleteView.as_view(), name="tarif_delete"),
+    # Crédits ECTS
+    path("credits-ects/", views_academics.CreditECTSListView.as_view(), name="credits_ects"),
+    path("credits-ects/nouveau/", views_academics.CreditECTSCreateView.as_view(), name="credit_ects_create"),
+    path("credits-ects/<int:pk>/modifier/", views_academics.CreditECTSUpdateView.as_view(), name="credit_ects_update"),
+    path("credits-ects/<int:pk>/supprimer/", views_academics.CreditECTSDeleteView.as_view(), name="credit_ects_delete"),
     path("paiements/", views_academics.PaymentListView.as_view(), name="payments"),
     path("paiements/ajouter/", views_academics.PaymentCreateView.as_view(), name="payment_create"),
     path("paiements/<int:pk>/modifier/", views_academics.PaymentUpdateView.as_view(), name="payment_update"),

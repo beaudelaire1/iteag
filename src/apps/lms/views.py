@@ -281,11 +281,21 @@ class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
         return CoursDeSession.objects.filter(enseignant=prof)
 
     def post(self, request, *args, **kwargs):
+        from apps.academics.services.credits import crediter_publication
+
         cours_session = self.get_object()
         updated = cours_session.evaluations.filter(statut=Evaluation.StatutEvaluation.NOTE).update(
             statut=Evaluation.StatutEvaluation.PUBLIE
         )
-        messages.success(request, f"{updated} évaluation(s) publiée(s).")
+        # Publier une note, c'est arrêter un résultat : le crédit ECTS est
+        # porté au dossier dans le même geste, sinon le relevé de l'étudiant
+        # reste vierge quoi qu'il valide.
+        credites = crediter_publication(cours_session)
+
+        message = f"{updated} évaluation(s) publiée(s)."
+        if credites:
+            message += f" {credites} crédit(s) ECTS porté(s) au dossier."
+        messages.success(request, message)
         return redirect(reverse("lms:course_detail", kwargs={"pk": cours_session.pk}))
 
 

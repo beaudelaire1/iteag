@@ -360,10 +360,30 @@ class CreditECTS(TimeStampedModel):
     source = models.CharField(max_length=10, choices=SourceCredit.choices, default=SourceCredit.ITEAG)
     date_validation = models.DateField()
 
+    # Origine du crédit lorsqu'il ne vient pas d'un cours. Le lien est unique :
+    # un stage validé ou une VAE accordée ne peut créditer le dossier qu'une
+    # fois, quel que soit le nombre d'enregistrements successifs. Il rend aussi
+    # le crédit traçable — on sait quel acte l'a produit.
+    stage = models.OneToOneField("Stage", on_delete=models.SET_NULL, null=True, blank=True, related_name="credit")
+    vae = models.OneToOneField("VAE", on_delete=models.SET_NULL, null=True, blank=True, related_name="credit")
+
     class Meta:
         verbose_name = "Crédit ECTS"
         verbose_name_plural = "Crédits ECTS"
         ordering = ["-date_validation"]
+        constraints = [
+            # Un cours donné, sur une session donnée, ne se valide qu'une fois.
+            # La règle est portée par le schéma et pas seulement par le service :
+            # une republication, un import ou une saisie manuelle passent tous
+            # par ici, et aucun ne doit pouvoir doubler un dossier académique.
+            # La condition écarte les crédits externes, dont le cours et la
+            # session ne sont pas renseignés.
+            models.UniqueConstraint(
+                fields=["etudiant", "cours", "session", "source"],
+                condition=models.Q(cours__isnull=False, session__isnull=False),
+                name="credit_ects_unique_par_cours_et_session",
+            )
+        ]
 
     def __str__(self):
         label = self.cours.titre if self.cours else "Crédit externe"

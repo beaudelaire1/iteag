@@ -33,3 +33,26 @@ def test_balises_appariees(gabarit):
             f"pour {fermantes} </{balise}>. Une balise non refermée dans une "
             "boucle imbrique les itérations suivantes."
         )
+
+
+def test_aucun_commentaire_multiligne_en_syntaxe_courte():
+    """
+    « {# … #} » est mono-ligne en Django. Sur plusieurs lignes, la balise n'est
+    pas interprétée et le commentaire s'affiche en clair au visiteur — une faute
+    qui ne se voit qu'en regardant la page rendue. Les commentaires longs
+    doivent utiliser « {% comment %} ».
+    """
+    fautifs = []
+    for chemin in sorted(TEMPLATES.rglob("*.html")):
+        contenu = chemin.read_text(encoding="utf-8")
+        position = 0
+        while (ouverture := contenu.find("{#", position)) != -1:
+            fermeture = contenu.find("#}", ouverture)
+            if fermeture == -1:
+                break
+            if "\n" in contenu[ouverture:fermeture]:
+                ligne = contenu[:ouverture].count("\n") + 1
+                fautifs.append(f"{chemin.relative_to(TEMPLATES)}:{ligne}")
+            position = fermeture + 2
+
+    assert not fautifs, "Commentaires multilignes rendus en clair :\n" + "\n".join(fautifs)

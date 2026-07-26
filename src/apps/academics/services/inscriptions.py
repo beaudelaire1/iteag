@@ -135,8 +135,14 @@ def traiter_demande(
     request=None,
 ):
     """Applique une transition staff et crée l'inscription lors de la confirmation."""
+    # Le verrou ne porte que sur la demande elle-même. « formule_tarif » est
+    # facultatif : sa jointure est externe, et PostgreSQL refuse un FOR UPDATE
+    # sur le côté nullable d'une jointure externe. SQLite l'acceptait
+    # silencieusement — d'où un échec visible seulement en intégration.
+    # Verrouiller les lignes jointes n'était de toute façon pas l'intention :
+    # c'est la demande qu'on protège d'un traitement concurrent.
     demande = (
-        DemandeInscriptionCours.objects.select_for_update()
+        DemandeInscriptionCours.objects.select_for_update(of=("self",))
         .select_related(
             "etudiant__utilisateur",
             "etudiant__formule_tarif",
