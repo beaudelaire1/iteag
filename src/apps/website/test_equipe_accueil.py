@@ -56,7 +56,11 @@ class TestEquipeVisibleDesLAccueil:
             photo=photo(),
         )
         contenu = client.get(accueil.url).content.decode()
-        assert "<img" in contenu.split("Équipe professorale", 1)[1].split("</section>", 1)[0]
+        # Ancré sur « Notre équipe », propre à cette section : depuis le
+        # regroupement de la barre publique, « Équipe professorale » y figure
+        # aussi et serait rencontré en premier.
+        section = contenu.split("Notre équipe", 1)[1].split("</section>", 1)[0]
+        assert "<img" in section
 
     def test_la_fonction_est_affichee(self, client, accueil):
         """C'est ce que « titre_academique », champ inexistant, empêchait."""

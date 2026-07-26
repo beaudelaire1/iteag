@@ -9,15 +9,50 @@
                 <img src="{% static 'img/logo.png' %}" alt="" class="h-11 w-auto transition-transform duration-300 group-hover:scale-105" width="44" height="44">
             </a>
 
-            {# Desktop nav #}
-            <div class="hidden lg:flex lg:items-center lg:gap-7">
-                <a href="/" class="nav-link">Accueil</a>
-                <a href="{% url 'formations:parcours_list' %}" class="nav-link">Formations</a>
-                <a href="{% url 'formations:professeur_list' %}" class="nav-link">Professeurs</a>
-                <a href="{% url 'elearning:catalogue' %}" class="nav-link">Formations vidéo</a>
+            {% comment %}
+                Barre publique. Sept entrées à plat l'encombraient, et
+                « Formations vidéo » y voisinait « Formations » comme s'il
+                s'agissait d'une autre offre — alors que la vidéo est un format
+                d'enseignement. Elle est désormais dans la rubrique Formations.
+
+                Chaque intitulé de rubrique est un lien vers sa page
+                principale : rien ne dépend de l'ouverture du panneau.
+            {% endcomment %}
+            <div class="hidden lg:flex lg:items-center lg:gap-8">
+
+                <div class="nav-groupe">
+                    <a href="{% url 'formations:parcours_list' %}" class="nav-link" aria-haspopup="true">
+                        Formations
+                        <svg class="chevron" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                    </a>
+                    <div class="nav-groupe-panneau">
+                        <a href="{% url 'formations:parcours_list' %}" class="nav-groupe-lien">
+                            Parcours et cours
+                            <span class="detail">Diplômant, Bachelor FLTE, libre, ITEAG Pro</span>
+                        </a>
+                        <a href="{% url 'elearning:catalogue' %}" class="nav-groupe-lien">
+                            Formations vidéo
+                            <span class="detail">Modules à suivre à votre rythme</span>
+                        </a>
+                        <a href="{% url 'formations:professeur_list' %}" class="nav-groupe-lien">
+                            Équipe professorale
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-groupe">
+                    <a href="/presentation/" class="nav-link" aria-haspopup="true">
+                        L'institut
+                        <svg class="chevron" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                    </a>
+                    <div class="nav-groupe-panneau">
+                        <a href="/presentation/" class="nav-groupe-lien">Découvrir l'ITEAG</a>
+                        <a href="/actualites/" class="nav-groupe-lien">Actualités</a>
+                        <a href="/contact/" class="nav-groupe-lien">Nous contacter</a>
+                    </div>
+                </div>
+
                 <a href="{% url 'library:catalogue' %}" class="nav-link">Bibliothèque</a>
-                <a href="/actualites/" class="nav-link">Actualités</a>
-                <a href="/contact/" class="nav-link">Contact</a>
             </div>
 
             {# Actions droite #}
@@ -87,13 +122,21 @@
              class="lg:hidden"
              data-nav-panel hidden>
             <div class="py-4 space-y-1 border-t border-white/15">
+                {% comment %}Mêmes rubriques que la barre, dépliées : sur mobile un panneau qui s'ouvre en cacherait un autre.{% endcomment %}
                 <a href="/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Accueil</a>
-                <a href="{% url 'formations:parcours_list' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Formations</a>
-                <a href="{% url 'formations:professeur_list' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Professeurs</a>
-                <a href="{% url 'elearning:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Formations vidéo</a>
-                <a href="{% url 'library:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Bibliothèque</a>
-                <a href="/actualites/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Actualités</a>
-                <a href="/contact/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Contact</a>
+
+                <p class="nav-mobile-groupe">Formations</p>
+                <a href="{% url 'formations:parcours_list' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Parcours et cours</a>
+                <a href="{% url 'elearning:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Formations vidéo</a>
+                <a href="{% url 'formations:professeur_list' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Équipe professorale</a>
+
+                <p class="nav-mobile-groupe">L'institut</p>
+                <a href="/presentation/" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Découvrir l'ITEAG</a>
+                <a href="/actualites/" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Actualités</a>
+                <a href="/contact/" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Nous contacter</a>
+
+                <p class="nav-mobile-groupe">Ressources</p>
+                <a href="{% url 'library:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Bibliothèque</a>
 
                 {% if user.is_authenticated %}
                 <hr class="my-3 border-white/15">
@@ -109,7 +152,7 @@
                 {% elif user.is_admin %}
                 <a href="{% url 'administration:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Administration</a>
                 {% endif %}
-                <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left rounded px-4 py-2.5 text-sm font-medium text-red-300 hover:text-white">Déconnexion</button></form>
+                <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left rounded px-4 py-2.5 text-sm font-medium text-gold-300 hover:text-white">Déconnexion</button></form>
                 {% else %}
                 <hr class="my-3 border-white/15">
                 <a href="{% url 'accounts:login' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Connexion</a>
