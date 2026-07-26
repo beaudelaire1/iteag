@@ -104,6 +104,19 @@ class TestCycleDeVieDUnModule:
         chapitre = Chapitre.objects.get(module=module, titre="Premiers principes")
         assert chapitre.ordre == 1  # renseigné automatiquement
 
+    def test_ordre_automatique_du_chapitre_utilise_la_plus_grande_position(self, client, enseignant, module):
+        Chapitre.objects.create(module=module, titre="Premier", ordre=1)
+        Chapitre.objects.create(module=module, titre="Troisième", ordre=3)
+        client.force_login(enseignant.user)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_chapitre_creer", kwargs={"slug": module.slug}),
+            {"titre": "À la fin", "ordre": 0},
+        )
+
+        assert reponse.status_code == 302
+        assert Chapitre.objects.get(module=module, titre="À la fin").ordre == 4
+
     def test_ajout_d_une_lecon_video(self, client, enseignant, chapitre, video_prete):
         video_prete.uploade_par = enseignant.user
         video_prete.save(update_fields=["uploade_par"])
@@ -121,6 +134,118 @@ class TestCycleDeVieDUnModule:
             },
         )
         assert Lecon.objects.filter(chapitre=chapitre, titre="Le contexte historique").exists()
+
+    def test_ordre_automatique_de_la_lecon_utilise_la_plus_grande_position(self, client, enseignant, chapitre, lecon):
+        Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Troisième",
+            slug="troisieme",
+            type_lecon=Lecon.TypeLecon.TEXTE,
+            ordre=3,
+        )
+        client.force_login(enseignant.user)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {
+                "titre": "À la fin",
+                "type_lecon": Lecon.TypeLecon.TEXTE,
+                "ordre": 0,
+                "contenu_texte": "Contenu",
+            },
+        )
+
+        assert reponse.status_code == 302
+        assert Lecon.objects.get(chapitre=chapitre, titre="À la fin").ordre == 4
+
+    def test_une_position_de_lecon_deja_utilisee_affiche_une_erreur(self, client, enseignant, chapitre, lecon):
+        client.force_login(enseignant.user)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {
+                "titre": "Position en double",
+                "type_lecon": Lecon.TypeLecon.TEXTE,
+                "ordre": lecon.ordre,
+            },
+        )
+
+        assert reponse.status_code == 200
+        assert "position est déjà utilisée" in reponse.content.decode()
+        assert not Lecon.objects.filter(chapitre=chapitre, titre="Position en double").exists()
+
+    def test_deux_titres_de_lecon_identiques_recoivent_des_slugs_distincts(self, client, enseignant, chapitre, lecon):
+        premiere = Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Titre identique",
+            slug="titre-identique",
+            type_lecon=Lecon.TypeLecon.TEXTE,
+            ordre=3,
+        )
+        client.force_login(enseignant.user)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {
+                "titre": premiere.titre,
+                "type_lecon": Lecon.TypeLecon.TEXTE,
+                "ordre": 0,
+            },
+        )
+
+        assert reponse.status_code == 302
+        assert Lecon.objects.filter(chapitre=chapitre, slug=f"{premiere.slug}-2").exists()
+
+    def test_youtube_est_utilisable_sur_un_module_protege_uniquement_en_dev(
+        self, client, enseignant, chapitre, settings
+    ):
+        settings.DEBUG = True
+        settings.ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
+        video = VideoAsset.objects.create(
+            titre="Essai YouTube",
+            cle_stockage="dQw4w9WgXcQ",
+            fournisseur="youtube",
+            statut_traitement=VideoAsset.StatutTraitement.PRET,
+            uploade_par=enseignant.user,
+        )
+        client.force_login(enseignant.user)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {
+                "titre": "Essai YouTube",
+                "type_lecon": Lecon.TypeLecon.VIDEO,
+                "ordre": 0,
+                "video": video.pk,
+            },
+        )
+
+        assert reponse.status_code == 302
+        assert Lecon.objects.filter(chapitre=chapitre, video=video).exists()
+
+    def test_youtube_reste_refuse_sur_un_module_protege_hors_dev(self, client, enseignant, chapitre, settings):
+        settings.DEBUG = False
+        settings.ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
+        video = VideoAsset.objects.create(
+            titre="YouTube interdit",
+            cle_stockage="abcdefghijk",
+            fournisseur="youtube",
+            statut_traitement=VideoAsset.StatutTraitement.PRET,
+            uploade_par=enseignant.user,
+        )
+        client.force_login(enseignant.user)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", kwargs={"chapitre_pk": chapitre.pk}),
+            {
+                "titre": "YouTube interdit",
+                "type_lecon": Lecon.TypeLecon.VIDEO,
+                "ordre": 0,
+                "video": video.pk,
+            },
+        )
+
+        assert reponse.status_code == 200
+        assert "ne protège pas assez" in reponse.content.decode()
+        assert not Lecon.objects.filter(chapitre=chapitre, video=video).exists()
 
     def test_une_lecon_video_sans_fichier_est_refusee(self, client, enseignant, chapitre):
         client.force_login(enseignant.user)

@@ -345,6 +345,10 @@ ELEARNING_STOCKAGE_VIDEO = ELEARNING_DIFFUSION_VIDEO
 # restreint, cette liste ne sert qu'à autoriser leurs origines dans la CSP.
 ELEARNING_DIFFUSION_PUBLIQUE = env.list("ELEARNING_DIFFUSION_PUBLIQUE", default=["youtube", "vimeo"])
 
+# Dérogation de démonstration lue par le modèle uniquement lorsque DEBUG=True.
+# Elle ne peut donc jamais assouplir la sécurité d'une instance de production.
+ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = False
+
 AWS_STORAGE_BUCKET_NAME_VIDEOS = env("AWS_STORAGE_BUCKET_NAME_VIDEOS", default="iteag-videos")
 
 # Bunny Stream. La clé de signature ne quitte jamais le serveur : elle sert à

@@ -8,10 +8,12 @@ dispersées dans les gabarits.
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Avg, Count, Q
+from django.db import IntegrityError, transaction
+from django.db.models import Avg, Count, Max, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils.text import slugify
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
@@ -125,7 +127,7 @@ class ModuleStructureView(ProfesseurMixin, DetailView):
                 "publiable": publiable,
                 "motif_blocage": motif,
                 "videos": VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:20],
-                "form_chapitre": ChapitreForm(),
+                "form_chapitre": ChapitreForm(module=self.object),
             }
         )
         return contexte
@@ -170,16 +172,23 @@ class ChapitreCreateView(ProfesseurMixin, View):
 
     def post(self, request, slug):
         module = self.module_ou_404(slug)
-        formulaire = ChapitreForm(request.POST)
+        formulaire = ChapitreForm(request.POST, module=module)
         if formulaire.is_valid():
-            chapitre = formulaire.save(commit=False)
-            chapitre.module = module
-            if not chapitre.ordre:
-                chapitre.ordre = module.chapitres.count() + 1
-            chapitre.save()
-            messages.success(request, "Chapitre ajouté.")
+            try:
+                with transaction.atomic():
+                    module = ModuleFormation.objects.select_for_update().get(pk=module.pk)
+                    chapitre = formulaire.save(commit=False)
+                    chapitre.module = module
+                    if not chapitre.ordre:
+                        dernier_ordre = module.chapitres.aggregate(maximum=Max("ordre"))["maximum"] or 0
+                        chapitre.ordre = dernier_ordre + 1
+                    chapitre.save()
+            except IntegrityError:
+                messages.error(request, "Cette position vient d'être utilisée. Réessayez avec une autre position.")
+            else:
+                messages.success(request, "Chapitre ajouté.")
         else:
-            messages.error(request, "Le chapitre n'a pas pu être ajouté : vérifiez le titre et l'ordre.")
+            messages.error(request, " ".join(erreur for erreurs in formulaire.errors.values() for erreur in erreurs))
         return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": slug}))
 
 
@@ -211,7 +220,11 @@ class LeconFormMixin(ProfesseurMixin):
     template_name = "elearning/enseignant/lecon_form.html"
 
     def get_form_kwargs(self):
-        return {**super().get_form_kwargs(), "enseignant": self.request.user}
+        return {
+            **super().get_form_kwargs(),
+            "enseignant": self.request.user,
+            "chapitre": self.chapitre,
+        }
 
     def get_success_url(self):
         return reverse("elearning:enseignant_structure", kwargs={"slug": self.chapitre.module.slug})
@@ -231,14 +244,47 @@ class LeconCreateView(LeconFormMixin, CreateView):
         return {**super().get_context_data(**kwargs), "chapitre": self.chapitre}
 
     def form_valid(self, form):
-        lecon = form.save(commit=False)
-        lecon.chapitre = self.chapitre
-        if not lecon.ordre:
-            lecon.ordre = self.chapitre.lecons.count() + 1
-        lecon.save()
+        try:
+            with transaction.atomic():
+                self.chapitre = Chapitre.objects.select_for_update().select_related("module").get(pk=self.chapitre.pk)
+                lecon = form.save(commit=False)
+                lecon.chapitre = self.chapitre
+                if not lecon.ordre:
+                    dernier_ordre = self.chapitre.lecons.aggregate(maximum=Max("ordre"))["maximum"] or 0
+                    lecon.ordre = dernier_ordre + 1
+                lecon.slug = self._slug_unique(lecon.titre)
+                lecon.full_clean()
+                lecon.save()
+        except ValidationError as erreur:
+            self._ajouter_erreurs_validation(form, erreur)
+            return self.form_invalid(form)
+        except IntegrityError:
+            form.add_error("ordre", "Cette position vient d'être utilisée. Choisissez-en une autre.")
+            return self.form_invalid(form)
         self.chapitre.module.recalculer_duree()
         messages.success(self.request, "Leçon ajoutée.")
         return redirect(self.get_success_url())
+
+    def _slug_unique(self, titre):
+        base = slugify(titre)[:240] or "lecon"
+        slug = base
+        suffixe = 2
+        while self.chapitre.lecons.filter(slug=slug).exists():
+            terminaison = f"-{suffixe}"
+            slug = f"{base[: 250 - len(terminaison)]}{terminaison}"
+            suffixe += 1
+        return slug
+
+    @staticmethod
+    def _ajouter_erreurs_validation(form, erreur):
+        if hasattr(erreur, "error_dict"):
+            for champ, erreurs in erreur.error_dict.items():
+                cible = champ if champ in form.fields else None
+                for detail in erreurs:
+                    form.add_error(cible, detail)
+            return
+        for detail in erreur.error_list:
+            form.add_error(None, detail)
 
 
 class LeconUpdateView(LeconFormMixin, UpdateView):

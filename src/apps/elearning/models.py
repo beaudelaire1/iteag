@@ -27,7 +27,7 @@ from apps.elearning.diffusion import (
     PROTECTION_PAR_FOURNISSEUR,
     Lecture,
     NiveauProtection,
-    protection_suffisante,
+    fournisseur_compatible,
 )
 
 # ══════════════════════════════════════════════
@@ -190,7 +190,7 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
                     return False, f"La vidéo de « {lecon.titre} » est encore en préparation."
                 # Dernier filet avant la mise en ligne : la politique d'accès a
                 # pu être resserrée après le rattachement de la vidéo.
-                if not protection_suffisante(lecon.video.protection, self.politique_acces):
+                if not fournisseur_compatible(lecon.video.fournisseur, self.politique_acces):
                     return False, (
                         f"La vidéo de « {lecon.titre} » est hébergée chez "
                         f"« {lecon.video.get_fournisseur_display()} », qui ne permet pas de retirer "
@@ -294,7 +294,7 @@ class Lecon(UUIDModel, TimeStampedModel):
         if self.video_id is None or self.chapitre_id is None:
             return
         politique = self.module.politique_acces
-        if protection_suffisante(self.video.protection, politique):
+        if fournisseur_compatible(self.video.fournisseur, politique):
             return
         raise ValidationError(
             {

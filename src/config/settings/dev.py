@@ -5,6 +5,7 @@ Django settings — Development environment.
 from .base import *  # noqa: F401, F403
 
 DEBUG = True
+ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
 # "0.0.0.0" est nécessaire pour joindre le conteneur de développement depuis l'hôte.
 # Ce réglage est propre à l'environnement de développement ; la production lit
 # DJANGO_ALLOWED_HOSTS depuis l'environnement.

@@ -26,6 +26,13 @@
     <div class="note alert" style="max-width: none;">{{ form.non_field_errors }}</div>
     {% endif %}
 
+    {% if DEBUG and chapitre.module.politique_acces != "public" %}
+    <div class="note alert" style="max-width: none;">
+        Mode développement : YouTube et Vimeo peuvent être essayés dans ce module protégé.
+        En production, utilisez Bunny Stream ou rendez le module public.
+    </div>
+    {% endif %}
+
     {% for champ in form %}
     <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-start gap-3{% endif %}">
         {% if champ.field.widget.input_type == 'checkbox' %}

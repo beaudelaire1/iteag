@@ -374,6 +374,24 @@ def protection_suffisante(protection: str, politique: str) -> bool:
         return False
 
 
+def fournisseur_compatible(nom: str, politique: str) -> bool:
+    """
+    Le fournisseur peut-il servir cette politique d'accès ?
+
+    En développement uniquement, une dérogation explicite permet d'essayer
+    YouTube ou Vimeo dans un module protégé. Elle reste impossible en
+    production, même si la variable est accidentellement activée.
+    """
+    protection = PROTECTION_PAR_FOURNISSEUR.get(nom)
+    if protection is not None and protection_suffisante(protection, politique):
+        return True
+    return bool(
+        settings.DEBUG
+        and getattr(settings, "ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV", False)
+        and nom in {YouTubeVideo.nom, VimeoVideo.nom}
+    )
+
+
 def fournisseur(nom: str = "") -> FournisseurVideo:
     """
     Fournisseur demandé, ou celui du réglage `ELEARNING_DIFFUSION_VIDEO`.

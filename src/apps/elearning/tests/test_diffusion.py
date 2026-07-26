@@ -23,6 +23,7 @@ from apps.elearning.diffusion import (
     VimeoVideo,
     YouTubeVideo,
     fournisseur,
+    fournisseur_compatible,
     origines_actives,
     protection_suffisante,
 )
@@ -219,6 +220,16 @@ class TestProtectionSuffisante:
 
     def test_une_protection_inconnue_est_refusee(self):
         assert protection_suffisante("protection-inventee", "public") is False
+
+    def test_youtube_peut_etre_essaye_sur_un_module_protege_en_dev(self, settings):
+        settings.DEBUG = True
+        settings.ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
+        assert fournisseur_compatible("youtube", "inscrit_parcours") is True
+
+    def test_la_derogation_dev_ne_s_applique_jamais_sans_debug(self, settings):
+        settings.DEBUG = False
+        settings.ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
+        assert fournisseur_compatible("youtube", "inscrit_parcours") is False
 
 
 @pytest.mark.django_db

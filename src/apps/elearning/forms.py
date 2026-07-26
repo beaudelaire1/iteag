@@ -78,6 +78,21 @@ class ChapitreForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"class": INPUT, "rows": 2}),
             "ordre": forms.NumberInput(attrs={"class": INPUT, "min": 0}),
         }
+        help_texts = {"ordre": "Laisser 0 pour placer automatiquement le chapitre à la fin."}
+
+    def __init__(self, *args, module=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.module = module
+
+    def clean_ordre(self):
+        ordre = self.cleaned_data["ordre"]
+        if (
+            ordre
+            and self.module is not None
+            and self.module.chapitres.filter(ordre=ordre).exclude(pk=self.instance.pk).exists()
+        ):
+            raise forms.ValidationError("Cette position est déjà utilisée dans le module.")
+        return ordre
 
 
 class LeconForm(forms.ModelForm):
@@ -108,21 +123,37 @@ class LeconForm(forms.ModelForm):
             "duree_secondes": forms.NumberInput(attrs={"class": INPUT, "min": 0}),
         }
         help_texts = {
+            "ordre": "Laisser 0 pour placer automatiquement la leçon à la fin.",
             "apercu_gratuit": "Visible sans compte ni droit — sert de vitrine au module.",
             "obligatoire": "Compte dans le calcul de complétion du module.",
         }
 
-    def __init__(self, *args, enseignant=None, **kwargs):
+    def __init__(self, *args, enseignant=None, chapitre=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.chapitre = chapitre
+        self.fields["duree_secondes"].required = False
         # Un enseignant ne rattache que ses propres vidéos.
         if enseignant is not None:
             self.fields["video"].queryset = VideoAsset.objects.filter(uploade_par=enseignant).order_by("-created_at")
+
+    def clean_ordre(self):
+        ordre = self.cleaned_data["ordre"]
+        if (
+            ordre
+            and self.chapitre is not None
+            and self.chapitre.lecons.filter(ordre=ordre).exclude(pk=self.instance.pk).exists()
+        ):
+            raise forms.ValidationError("Cette position est déjà utilisée dans le chapitre.")
+        return ordre
+
+    def clean_duree_secondes(self):
+        return self.cleaned_data.get("duree_secondes") or 0
 
     def clean(self):
         donnees = super().clean()
         type_lecon = donnees.get("type_lecon")
         if type_lecon == Lecon.TypeLecon.VIDEO and not donnees.get("video"):
-            self.add_error("video", "Une leçon vidéo doit référencer un fichier déjà déposé.")
+            self.add_error("video", "Une leçon vidéo doit référencer un lien vidéo déjà enregistré.")
         if type_lecon == Lecon.TypeLecon.LIEN_EXTERNE and not donnees.get("lien_externe"):
             self.add_error("lien_externe", "Indiquez l'adresse de la ressource.")
         if type_lecon == Lecon.TypeLecon.DOCUMENT and not (donnees.get("document") or self.instance.document):
