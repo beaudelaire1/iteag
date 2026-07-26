@@ -1,7 +1,7 @@
 # ITEAG — Plateforme académique et institutionnelle
 
 Refonte du site de l'Institut de Théologie Évangélique des Antilles et de la Guyane :
-migration WordPress → Django 5 / Wagtail 6, avec quatre portails (public, étudiant,
+migration WordPress → Django 5 / Wagtail 7, avec quatre portails (public, étudiant,
 enseignant, administratif) et un module de formation vidéo à accès contrôlé.
 
 **Maître d'ouvrage** : ITEAG · **Maître d'œuvre** : Trait d'Union Studio
@@ -16,6 +16,7 @@ enseignant, administratif) et un module de formation vidéo à accès contrôlé
 | [`docs/architecture/uml.md`](docs/architecture/uml.md) | Dossier de conception UML |
 | [`docs/architecture/adr/`](docs/architecture/adr/) | Décisions d'architecture |
 | [`docs/plan/plan-finalisation.md`](docs/plan/plan-finalisation.md) | Plan de finalisation par lots |
+| [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
 
 ---
 
@@ -76,6 +77,7 @@ src/
 │   ├── library/             Catalogue de la bibliothèque
 │   ├── documents/           Documents administratifs PDF
 │   ├── website/             Pages éditoriales Wagtail
+│   ├── elearning/           Formation vidéo — modules, accès, progression
 │   └── administration/      Portail administratif
 ├── assets/css/input.css     Source Tailwind (jamais servie telle quelle)
 ├── static/                  Fichiers servis — main.css y est généré
