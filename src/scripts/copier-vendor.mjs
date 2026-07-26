@@ -9,7 +9,7 @@
  * lecteur vaut mieux découverte à la construction qu'en production.
  */
 
-import { copyFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,7 +29,12 @@ for (const [source, cible] of FICHIERS) {
     erreurs += 1;
     continue;
   }
-  copyFileSync(chemin, resolve(racine, cible));
+  // La référence à la source map est retirée. Elle pointe vers un fichier que
+  // nous ne livrons pas — le manifeste de production refuse alors la collecte,
+  // et l'image ne se construit plus. Livrer la map à la place exposerait le
+  // source d'une dépendance sans rien apporter en production.
+  const source_js = readFileSync(chemin, "utf8").replace(/\n?\/\/# sourceMappingURL=.*$/m, "\n");
+  writeFileSync(resolve(racine, cible), source_js);
   console.log(`✓ ${cible}`);
 }
 

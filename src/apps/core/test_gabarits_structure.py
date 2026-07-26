@@ -56,3 +56,36 @@ def test_aucun_commentaire_multiligne_en_syntaxe_courte():
             position = fermeture + 2
 
     assert not fautifs, "Commentaires multilignes rendus en clair :\n" + "\n".join(fautifs)
+
+
+def test_toutes_les_references_statiques_existent():
+    """
+    Chaque « {% static %} » doit désigner un fichier réellement livré.
+
+    En production, `ManifestStaticFilesStorage` refuse une référence qu'il ne
+    peut pas résoudre : la page lève une erreur 500, ou la collecte échoue et
+    l'image ne se construit plus. Rien de tout cela ne se voit en
+    développement, où le stockage est permissif.
+    """
+    import re
+
+    from django.contrib.staticfiles import finders
+
+    motif = re.compile(r"""\{%\s*static\s+['"]([^'"]+)['"]""")
+    introuvables = []
+
+    for chemin in sorted(TEMPLATES.rglob("*.html")):
+        contenu = chemin.read_text(encoding="utf-8")
+        for reference in motif.findall(contenu):
+            # Les chemins construits dynamiquement ne sont pas vérifiables ici.
+            if "{{" in reference or "{%" in reference:
+                continue
+            if finders.find(reference) is None:
+                introuvables.append(f"{chemin.relative_to(TEMPLATES)} → {reference}")
+
+    assert not introuvables, (
+        "Références statiques non résolues :\n"
+        + "\n".join(introuvables)
+        + "\n\nSi la référence porte sur « css/main.css » ou « js/vendor/ », les "
+        "assets n'ont pas été construits : lancer « npm run build » depuis src/."
+    )

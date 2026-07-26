@@ -55,6 +55,18 @@ jobs:
           cache: pip
           cache-dependency-path: src/requirements/dev.txt
       - run: pip install -r requirements/dev.txt
+      # La suite vérifie que chaque « {% static %} » désigne un fichier livré.
+      # Sans les bibliothèques tierces, elle échouerait sur une référence
+      # pourtant valide en production. Elles sont construites plutôt que
+      # versionnées : un fichier commité dériverait en silence de la version
+      # épinglée dans package.json au premier changement de version.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      # « build » et non « vendor:build » : la feuille compilée est elle aussi
+      # un artefact généré, et « base.html » la référence sur chaque page.
+      - run: npm run build
       - name: Run tests
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
@@ -91,8 +103,14 @@ jobs:
           cache: pip
           cache-dependency-path: src/requirements/prod.txt
       - run: npm install --no-audit --no-fund
-      - name: Compiler les feuilles de style
-        run: npm run css:build && test -s static/css/main.css
+      # « npm run build » et non « css:build » : c'est la commande qu'exécute
+      # Dockerfile.prod. Vérifier autre chose que ce qui est déployé laisserait
+      # passer une rupture de la copie des bibliothèques tierces.
+      - name: Construire les assets comme en production
+        run: |
+          npm run build
+          test -s static/css/main.css
+          test -s static/js/vendor/hls.min.js
       - run: pip install -r requirements/prod.txt
       # Détecte au commit la rupture de chaîne qui, sinon, ne se voit qu'au
       # déploiement : référence statique non résolue, feuille absente.

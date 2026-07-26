@@ -7,3 +7,6 @@ pytest-cov>=6.0,<7.0
 ruff>=0.8,<1.0
 factory-boy>=3.3,<4.0
 django-browser-reload>=1.16,<2.0
+# Lecture des PDF produits : les tests vérifient le texte réellement imprimé
+# plutôt que le gabarit qui l'a produit.
+PyMuPDF>=1.24,<2.0

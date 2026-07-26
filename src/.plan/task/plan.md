@@ -68,6 +68,8 @@ l'externalisation de la diffusion vidéo demandée en cours de projet.
 | 7 | Qualité, sécurité, couverture | Livré |
 | 8 | Exploitation | Livré côté technique ; voir le manuel pour ce qui relève de l'infrastructure |
 | 9 | Diffusion vidéo externalisée | Livré — ADR-005 |
+| 10 | Dossier académique, référentiel, stages et VAE | Livré |
+| 11 | Fiabilisation du déploiement et test de fumée | Livré |
 
 ## Suite immédiate
 
@@ -95,8 +97,10 @@ l'externalisation de la diffusion vidéo demandée en cours de projet.
 
 | Domaine | Mesure | Cible |
 |---------|--------|-------|
-| Tests | 582 verts | ≥ 200 |
+| Tests | 1041 verts, sur PostgreSQL 16 **et** SQLite | ≥ 200 |
 | Couverture | 92 % | ≥ 90 % |
+| Routes vérifiées | 74 sans paramètre × 5 profils de visiteur | toutes |
+| Cloisonnement des portails | vérifié route par route | 0 fuite |
 | Couverture du contrôle d'accès | 100 % | 100 % |
 | Lint et format | 0 erreur | 0 |
 | Vulnérabilités des dépendances | 0 | 0 |
