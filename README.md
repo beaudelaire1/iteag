@@ -156,6 +156,24 @@ Le système de design vit dans `assets/css/input.css` : utiliser ses composants
 (`.btn-primary`, `.form-input`, `.card`, `.accordeon`…) plutôt que des classes
 Tailwind ad hoc, afin que l'interface reste conforme à la charte ITEAG.
 
+### Navigation publique
+
+Les rubriques de la barre du site sont **déclarées** dans
+`apps/core/navigation.py`, pas écrites dans le gabarit. La barre de bureau et
+le menu mobile parcourent la même déclaration : ajouter une entrée à un seul
+des deux rendus n'est plus possible. C'est aussi cette déclaration qui indique
+la rubrique courante — chacune connaît les chemins qu'elle revendique.
+
+Les panneaux s'ouvrent en CSS, au survol et à la prise de focus, et chaque
+intitulé de rubrique reste un lien vers sa page principale : sans JavaScript,
+aucune destination n'est hors d'atteinte. Le script n'ajoute qu'un cas,
+l'ouverture au doigt là où `:hover` ne se déclenche pas.
+
+> **Une page dont le gabarit rend la barre ne peut pas passer par `cache_page`.**
+> La barre porte le prénom, les initiales, le rôle et les liens d'espace de qui
+> est connecté ; le cache de page mémorise le HTML complet sous une clé qui
+> ignore la session. `apps/formations/test_cache_pages.py` verrouille le cas.
+
 ---
 
 ## Déploiement

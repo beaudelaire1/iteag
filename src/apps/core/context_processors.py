@@ -1,5 +1,17 @@
 from django.conf import settings
 
+from apps.core.navigation import rubriques_pour
+
+
+def navigation_publique(request):
+    """Rubriques de la barre publique, celle de la page courante marquée active.
+
+    Évaluée paresseusement, comme le compteur de notifications : une page qui
+    n'affiche pas la barre — un PDF, un fragment HTMX — ne résout aucune URL.
+    """
+    chemin = getattr(request, "path", "/")
+    return {"navigation_publique": lambda: rubriques_pour(chemin)}
+
 
 def site_context(request):
     """Global template context for all pages."""

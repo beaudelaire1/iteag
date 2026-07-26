@@ -52,7 +52,7 @@
                     <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-28 w-28 rounded-full object-cover" width="112" height="112" loading="lazy" style="box-shadow: var(--shadow-card);">
                     {% else %}
                     <div class="mx-auto h-28 w-28 rounded-full flex items-center justify-center" style="background: var(--color-navy-700);">
-                        <span class="text-3xl font-bold text-white">{{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}</span>
+                        <span class="text-3xl font-bold text-white">{{ prof.prenom|slice:":1"|upper }}{{ prof.nom|slice:":1"|upper }}</span>
                     </div>
                     {% endif %}
                 </div>

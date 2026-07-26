@@ -15,6 +15,10 @@ db.sqlite3
 staticfiles/
 
 # Environment
+# Le README installe l'environnement virtuel ici : sans cette ligne, la
+# première commande du guide de démarrage salit l'état du dépôt.
+.venv/
+venv/
 .env
 .env.local
 .env.production
