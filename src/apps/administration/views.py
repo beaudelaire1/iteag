@@ -85,9 +85,26 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                     statut=CoursDeSession.StatutCours.PROGRAMME,
                     session__date_fin__gte=today,
                 ).count(),
+                # Production pédagogique des enseignants. Sans cette remontée,
+                # un module créé côté enseignant n'existe pour l'administration
+                # qu'une fois publié — trop tard pour relire quoi que ce soit.
+                **self._production_pedagogique(),
             }
         )
         return ctx
+
+    def _production_pedagogique(self) -> dict:
+        from apps.elearning.models import ModuleFormation
+
+        modules = ModuleFormation.objects.select_related("responsable", "discipline")
+        return {
+            "modules_en_relecture": modules.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count(),
+            "modules_brouillon": modules.filter(statut=ModuleFormation.StatutPublication.BROUILLON).count(),
+            "modules_publies": modules.filter(statut=ModuleFormation.StatutPublication.PUBLIE).count(),
+            "modules_recents": modules.exclude(statut=ModuleFormation.StatutPublication.ARCHIVE).order_by(
+                "-updated_at"
+            )[:5],
+        }
 
 
 class SecretariatDashboardView(SecretariatRoleRequiredMixin, TemplateView):

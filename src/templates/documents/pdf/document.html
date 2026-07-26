@@ -1,3 +1,11 @@
+{% comment %}
+    Document administratif imprimable.
+
+    Les polices sont installées dans l'image de production (voir Dockerfile.prod).
+    Sans elles, WeasyPrint retomberait sur un substitut arbitraire et le document
+    imprimé ne ressemblerait pas à celui qui a été validé. Aucune famille n'est
+    nommée ici sans être présente dans l'image.
+{% endcomment %}
 <!doctype html>
 <html lang="fr">
 <head>
@@ -5,96 +13,362 @@
     <style>
         @page {
             size: A4;
-            margin: 22mm 20mm 20mm;
+            /* Marges généreuses : un document officiel se relie et s'annote. */
+            margin: 24mm 22mm 22mm;
+
+            @bottom-left {
+                content: "ITEAG · Édité le {{ generated_at|date:'d/m/Y' }}";
+                color: #9a9489;
+                font-family: "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                letter-spacing: 0.04em;
+            }
             @bottom-center {
-                content: "ITEAG - {{ document_label }} - Page " counter(page) " / " counter(pages);
-                color: #6f6a61;
-                font-size: 8pt;
+                content: "Toute rature ou surcharge rend ce document nul.";
+                color: #9a9489;
+                font-family: "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                font-style: italic;
+            }
+            @bottom-right {
+                content: counter(page) " / " counter(pages);
+                color: #8a857c;
+                font-family: "Liberation Sans", sans-serif;
+                font-size: 7pt;
             }
         }
+
         * { box-sizing: border-box; }
-        body { color: #15263f; font: 10.5pt/1.55 Arial, sans-serif; }
-        header { border-bottom: 2px solid #d8ad58; padding-bottom: 12px; margin-bottom: 30px; }
-        .brand { font-size: 22pt; font-weight: bold; letter-spacing: 2px; }
-        .institution { color: #6f6a61; font-size: 8.5pt; margin-top: 2px; }
-        h1 { font-size: 19pt; margin: 0 0 24px; text-align: center; text-transform: uppercase; }
-        .meta { background: #f7f3ea; border-left: 4px solid #d8ad58; padding: 13px 16px; margin: 0 0 24px; }
-        .meta p { margin: 2px 0; }
-        .lead { margin: 26px 0; text-align: justify; }
-        table { border-collapse: collapse; margin: 18px 0; width: 100%; }
-        th { background: #15263f; color: white; font-size: 8.5pt; text-align: left; }
-        th, td { border: 1px solid #d8d2c8; padding: 7px 8px; }
-        td.number { text-align: right; white-space: nowrap; }
-        .total { font-size: 12pt; font-weight: bold; margin-top: 18px; text-align: right; }
-        .signature { margin-left: auto; margin-top: 50px; text-align: center; width: 230px; }
-        .signature-line { border-top: 1px solid #15263f; margin-top: 48px; padding-top: 5px; }
-        footer { color: #6f6a61; font-size: 8.5pt; margin-top: 44px; text-align: center; }
+
+        body {
+            color: #1a2b47;
+            font-family: "Liberation Serif", "DejaVu Serif", serif;
+            font-size: 10.5pt;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* ── En-tête ── */
+
+        .lettre-tete {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            border-bottom: 0.6pt solid #c9c2b6;
+            padding-bottom: 7mm;
+        }
+        .marque {
+            font-family: "EB Garamond", "Liberation Serif", serif;
+            font-size: 24pt;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            line-height: 1;
+            color: #14243d;
+        }
+        .marque-filet {
+            width: 22mm;
+            height: 1.6pt;
+            background: #b08d3f;
+            margin-top: 3mm;
+        }
+        .coordonnees {
+            color: #6f6a61;
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 7.5pt;
+            line-height: 1.7;
+            text-align: right;
+            max-width: 62mm;
+        }
+
+        /* ── Titre ── */
+
+        .titre-document {
+            margin: 7mm 0 6mm;
+            text-align: center;
+        }
+        .titre-document .surtitre {
+            color: #b08d3f;
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 7.5pt;
+            font-weight: bold;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+        .titre-document h1 {
+            font-family: "EB Garamond", "Liberation Serif", serif;
+            font-size: 22pt;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            margin: 3mm 0 0;
+        }
+        .titre-document .reference {
+            color: #8a857c;
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 7.5pt;
+            margin-top: 2mm;
+        }
+
+        /* ── Identité de l'étudiant ── */
+
+        .identite {
+            border-top: 0.6pt solid #e0dbd2;
+            border-bottom: 0.6pt solid #e0dbd2;
+            padding: 5mm 0;
+            margin-bottom: 6mm;
+        }
+        .identite table { width: 100%; border-collapse: collapse; }
+        .identite td { padding: 1.2mm 0; vertical-align: top; border: none; }
+        .identite .etiquette {
+            color: #8a857c;
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 7.5pt;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            width: 34mm;
+        }
+        .identite .valeur { font-size: 10.5pt; }
+        .identite .valeur strong { font-weight: 600; }
+
+        /* ── Corps ── */
+
+        .attendu {
+            margin: 0 0 6mm;
+            text-align: justify;
+            text-indent: 8mm;
+        }
+        .mention {
+            color: #55606f;
+            font-size: 9.5pt;
+            font-style: italic;
+            margin-top: 5mm;
+        }
+
+        /* ── Tableaux ── */
+
+        table.releve {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0 0 6mm;
+            font-size: 9.5pt;
+        }
+        table.releve thead th {
+            border-bottom: 1pt solid #14243d;
+            color: #14243d;
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 7.5pt;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            padding: 0 3mm 2mm 0;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        table.releve tbody tr { break-inside: avoid; }
+        table.releve tbody td {
+            border-bottom: 0.4pt solid #e8e4dc;
+            padding: 2.6mm 3mm 2.6mm 0;
+            vertical-align: top;
+        }
+        table.releve tbody tr:last-child td { border-bottom: none; }
+        table.releve .nombre { text-align: right; white-space: nowrap; padding-right: 0; }
+        table.releve .secondaire { color: #7d776d; font-size: 8.5pt; }
+        table.releve .origine {
+            color: #8a857c;
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 7pt;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .total {
+            border-top: 1pt solid #14243d;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2mm;
+            padding-top: 3mm;
+        }
+        .total .libelle {
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 8pt;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding-top: 1.5mm;
+        }
+        .total .valeur {
+            font-family: "EB Garamond", "Liberation Serif", serif;
+            font-size: 16pt;
+            font-weight: 600;
+        }
+        .total .valeur .unite { font-size: 9pt; letter-spacing: 0.08em; }
+
+        .vide {
+            color: #8a857c;
+            font-style: italic;
+            padding: 8mm 0;
+            text-align: center;
+        }
+
+        /* ── Signature ── */
+
+        .signature {
+            /* Une signature scindée entre deux pages n'a aucune valeur :
+               le lieu, la date et la qualité du signataire restent solidaires. */
+            break-inside: avoid;
+            margin-top: 9mm;
+            margin-left: auto;
+            width: 70mm;
+        }
+        .signature .lieu {
+            color: #55606f;
+            font-size: 9.5pt;
+            margin-bottom: 9mm;
+        }
+        .signature .trait {
+            border-top: 0.6pt solid #14243d;
+            padding-top: 2mm;
+        }
+        .signature .qualite {
+            font-family: "Liberation Sans", sans-serif;
+            font-size: 8pt;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
     </style>
 </head>
 <body>
-    <header>
-        <div class="brand">ITEAG</div>
-        <div class="institution">{{ SITE_FULL_NAME }}<br>{{ SITE_ADDRESS }} · {{ SITE_EMAIL }} · {{ SITE_PHONE }}</div>
-    </header>
 
-    <h1>{{ document_label }}</h1>
+    <div class="lettre-tete">
+        <div>
+            <div class="marque">ITEAG</div>
+            <div class="marque-filet"></div>
+        </div>
+        <div class="coordonnees">
+            {{ SITE_FULL_NAME }}<br>
+            {{ SITE_ADDRESS }}<br>
+            {{ SITE_EMAIL }} · {{ SITE_PHONE }}
+        </div>
+    </div>
 
-    <div class="meta">
-        <p><strong>Étudiant :</strong> {{ user.get_full_name|default:user.username }}</p>
-        <p><strong>Numéro :</strong> {{ profil.numero_etudiant }}</p>
-        <p><strong>Parcours :</strong> {{ profil.parcours }}</p>
-        <p><strong>Promotion :</strong> {{ profil.promotion }}</p>
+    <div class="titre-document">
+        <p class="surtitre">Document officiel</p>
+        <h1>{{ document_label }}</h1>
+        <p class="reference">Délivré le {{ generated_at|date:"d F Y" }}</p>
+    </div>
+
+    <div class="identite">
+        <table>
+            <tr>
+                <td class="etiquette">Étudiant</td>
+                <td class="valeur"><strong>{{ user.get_full_name|default:user.username }}</strong></td>
+            </tr>
+            <tr>
+                <td class="etiquette">Numéro</td>
+                <td class="valeur">{{ profil.numero_etudiant }}</td>
+            </tr>
+            <tr>
+                <td class="etiquette">Parcours</td>
+                <td class="valeur">{{ profil.parcours }}</td>
+            </tr>
+            <tr>
+                <td class="etiquette">Promotion</td>
+                <td class="valeur">{{ profil.promotion }}</td>
+            </tr>
+        </table>
     </div>
 
     {% if document_type == "attestation" or document_type == "certificat" %}
-    <p class="lead">
-        Je soussigné(e), représentant(e) habilité(e) de l'ITEAG, certifie que
-        <strong>{{ user.get_full_name|default:user.username }}</strong>, numéro étudiant
-        <strong>{{ profil.numero_etudiant }}</strong>, est régulièrement inscrit(e) au parcours
-        <strong>{{ profil.parcours }}</strong> pour la promotion {{ profil.promotion }}.
+    <p class="attendu">
+        Je soussigné(e), représentant(e) habilité(e) de l'Institut de Théologie Évangélique des
+        Antilles et de la Guyane, certifie que
+        <strong>{{ user.get_full_name|default:user.username }}</strong>, portant le numéro
+        étudiant <strong>{{ profil.numero_etudiant }}</strong>, est régulièrement inscrit(e) au
+        parcours <strong>{{ profil.parcours }}</strong> au titre de la promotion
+        {{ profil.promotion }}.
     </p>
-    <p>La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</p>
+    <p class="attendu">
+        La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.
+    </p>
+
     {% elif document_type == "releve_notes" %}
-    <table>
+    <table class="releve">
         <thead>
-            <tr><th>Cours</th><th>Session</th><th>Évaluation</th><th>Note</th><th>ECTS</th></tr>
+            <tr>
+                <th style="width: 46%;">Enseignement</th>
+                <th style="width: 28%;">Session</th>
+                <th style="width: 14%;">Origine</th>
+                <th style="width: 12%;" class="nombre">ECTS</th>
+            </tr>
         </thead>
         <tbody>
-            {% for evaluation in evaluations %}
+            {% for credit in credits %}
             <tr>
-                <td>{{ evaluation.cours_session.cours.titre }}</td>
-                <td>{{ evaluation.cours_session.session.nom }}</td>
-                <td>{{ evaluation.get_type_evaluation_display }}</td>
-                <td class="number">{{ evaluation.note }}/20</td>
-                <td class="number">{{ evaluation.ects_valides }}</td>
+                <td>
+                    {% if credit.cours %}{{ credit.cours.titre }}
+                    {% elif credit.stage %}{{ credit.stage.type_stage }}
+                        <span class="secondaire">— {{ credit.stage.lieu }}</span>
+                    {% elif credit.vae %}Validation des acquis de l'expérience
+                    {% else %}Équivalence{% endif %}
+                </td>
+                <td class="secondaire">
+                    {% if credit.session %}{{ credit.session.nom }}
+                    {% else %}{{ credit.date_validation|date:"F Y" }}{% endif %}
+                </td>
+                <td class="origine">{{ credit.get_source_display }}</td>
+                <td class="nombre">{{ credit.ects_obtenus }}</td>
             </tr>
+            {% empty %}
+            <tr><td colspan="4" class="vide">Aucun crédit acquis à ce jour.</td></tr>
             {% endfor %}
         </tbody>
     </table>
-    <p class="total">Total acquis : {{ profil.total_ects_acquis }} ECTS</p>
+
+    <div class="total">
+        <span class="libelle">Total acquis</span>
+        <span class="valeur">{{ profil.total_ects_acquis }} <span class="unite">ECTS</span></span>
+    </div>
+    <p class="mention">
+        Ce relevé recense les crédits définitivement acquis. Le parcours
+        {{ profil.parcours }} en requiert {{ profil.parcours.ects_requis }} ;
+        il en reste {{ profil.ects_restants }} à valider.
+    </p>
+
     {% elif document_type == "recu" %}
-    <table>
+    <table class="releve">
         <thead>
-            <tr><th>Date</th><th>Session</th><th>Mode</th><th>Référence</th><th>Montant</th></tr>
+            <tr>
+                <th style="width: 20%;">Date</th>
+                <th style="width: 32%;">Session</th>
+                <th style="width: 18%;">Mode</th>
+                <th style="width: 16%;">Référence</th>
+                <th style="width: 14%;" class="nombre">Montant</th>
+            </tr>
         </thead>
         <tbody>
             {% for paiement in paiements %}
             <tr>
                 <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
-                <td>{{ paiement.session|default:"-" }}</td>
-                <td>{{ paiement.get_mode_display }}</td>
-                <td>{{ paiement.reference|default:"-" }}</td>
-                <td class="number">{{ paiement.montant }} €</td>
+                <td class="secondaire">{{ paiement.session|default:"—" }}</td>
+                <td class="secondaire">{{ paiement.get_mode_display }}</td>
+                <td class="secondaire">{{ paiement.reference|default:"—" }}</td>
+                <td class="nombre">{{ paiement.montant }} €</td>
             </tr>
+            {% empty %}
+            <tr><td colspan="5" class="vide">Aucun paiement confirmé.</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    <p class="mention">
+        Reçu délivré pour les seuls versements encaissés et confirmés à la date d'édition.
+    </p>
     {% endif %}
 
     <div class="signature">
-        <p>Fait aux Abymes, le {{ generated_at|date:"d/m/Y" }}</p>
-        <div class="signature-line">Le secrétariat de l'ITEAG</div>
+        <p class="lieu">Fait aux Abymes, le {{ generated_at|date:"d F Y" }}</p>
+        <div class="trait">
+            <span class="qualite">Le secrétariat de l'ITEAG</span>
+        </div>
     </div>
-    <footer>Document généré depuis l'espace étudiant ITEAG le {{ generated_at|date:"d/m/Y à H:i" }}.</footer>
+
+
 </body>
 </html>

@@ -12,12 +12,14 @@ from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from apps.academics.models import (
+    VAE,
     CoursDeSession,
     CreditECTS,
     DemandeInscriptionCours,
     Paiement,
     Promotion,
     SessionAcademique,
+    Stage,
 )
 from apps.academics.services.inscriptions import traiter_demande
 from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
@@ -31,7 +33,9 @@ from .forms import (
     EnrollmentDecisionForm,
     PaiementForm,
     PromotionForm,
+    StageForm,
     TarifForm,
+    VAEForm,
 )
 
 
@@ -722,4 +726,233 @@ class CreditECTSDeleteView(AdminRoleRequiredMixin, DeleteView):
             objet_libelle=f"Retrait de crédit ECTS : {self.object}",
         )
         messages.success(self.request, "Crédit retiré du dossier.")
+        return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# Stages — tenus par le secrétariat
+# ══════════════════════════════════════════════
+
+
+class _CreditAutomatiqueMixin:
+    """
+    Répercute la décision sur le dossier académique.
+
+    Un stage validé ou une VAE accordée vaut des ECTS. Sans ce pont, le relevé
+    de l'étudiant divergerait de la décision — c'est le défaut qui existait
+    déjà entre la notation et les crédits, il ne doit pas se reproduire ici.
+    Le retour en arrière est traité aussi : une décision reprise retire le
+    crédit, sinon le dossier resterait crédité à tort.
+    """
+
+    champ_credit = ""
+
+    def _repercuter(self, objet):
+        from apps.academics.services import credits
+
+        synchroniser = credits.synchroniser_stage if self.champ_credit == "stage" else credits.synchroniser_vae
+        resultat = synchroniser(objet)
+        if resultat == "porte":
+            messages.info(self.request, "Les ECTS correspondants ont été portés au dossier de l'étudiant.")
+        elif resultat == "retire":
+            messages.warning(self.request, "La décision ayant changé, les ECTS ont été retirés du dossier.")
+
+
+class StageListView(StaffRoleRequiredMixin, ListView):
+    model = Stage
+    template_name = "administration/stages.html"
+    context_object_name = "stages"
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = Stage.objects.select_related("etudiant__utilisateur", "tuteur").order_by("-date_debut")
+        statut = self.request.GET.get("statut", "")
+        recherche = self.request.GET.get("q", "").strip()
+        if statut:
+            queryset = queryset.filter(statut=statut)
+        if recherche:
+            queryset = queryset.filter(
+                Q(etudiant__utilisateur__last_name__icontains=recherche)
+                | Q(etudiant__numero_etudiant__icontains=recherche)
+                | Q(lieu__icontains=recherche)
+                | Q(type_stage__icontains=recherche)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "statuts": Stage.StatutStage.choices,
+                "current_statut": self.request.GET.get("statut", ""),
+                "query": self.request.GET.get("q", ""),
+            }
+        )
+        return context
+
+
+class StageCreateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, CreateView):
+    model = Stage
+    form_class = StageForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:stages")
+    champ_credit = "stage"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": "Enregistrer un stage",
+                "nav": "stages",
+                "cancel_url": reverse("administration:stages"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        reponse = super().form_valid(form)
+        messages.success(self.request, "Stage enregistré.")
+        self._repercuter(self.object)
+        return reponse
+
+
+class StageUpdateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, UpdateView):
+    model = Stage
+    form_class = StageForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:stages")
+    champ_credit = "stage"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": f"Modifier — {self.object}",
+                "nav": "stages",
+                "cancel_url": reverse("administration:stages"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        reponse = super().form_valid(form)
+        messages.success(self.request, "Stage mis à jour.")
+        self._repercuter(self.object)
+        return reponse
+
+
+class StageDeleteView(AdminRoleRequiredMixin, DeleteView):
+    model = Stage
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:stages")
+
+    def form_valid(self, form):
+        journaliser(
+            "suppression",
+            request=self.request,
+            objet=self.object,
+            objet_libelle=f"Suppression de stage : {self.object}",
+        )
+        messages.success(self.request, "Stage supprimé.")
+        return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# VAE — réservée à l'administration
+# ══════════════════════════════════════════════
+
+
+class VAEListView(AdminRoleRequiredMixin, ListView):
+    model = VAE
+    template_name = "administration/vae.html"
+    context_object_name = "dossiers"
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = VAE.objects.select_related("etudiant__utilisateur").order_by("-date_soumission")
+        statut = self.request.GET.get("statut", "")
+        recherche = self.request.GET.get("q", "").strip()
+        if statut:
+            queryset = queryset.filter(statut=statut)
+        if recherche:
+            queryset = queryset.filter(
+                Q(etudiant__utilisateur__last_name__icontains=recherche)
+                | Q(etudiant__numero_etudiant__icontains=recherche)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "statuts": VAE.StatutVAE.choices,
+                "current_statut": self.request.GET.get("statut", ""),
+                "query": self.request.GET.get("q", ""),
+            }
+        )
+        return context
+
+
+class VAECreateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, CreateView):
+    model = VAE
+    form_class = VAEForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:vae")
+    champ_credit = "vae"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {"form_title": "Ouvrir un dossier VAE", "nav": "vae", "cancel_url": reverse("administration:vae")}
+        )
+        return context
+
+    def form_valid(self, form):
+        reponse = super().form_valid(form)
+        messages.success(self.request, "Dossier VAE enregistré.")
+        self._repercuter(self.object)
+        return reponse
+
+
+class VAEUpdateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, UpdateView):
+    model = VAE
+    form_class = VAEForm
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:vae")
+    champ_credit = "vae"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": f"Instruire — {self.object}",
+                "nav": "vae",
+                "cancel_url": reverse("administration:vae"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        reponse = super().form_valid(form)
+        journaliser(
+            "modification",
+            request=self.request,
+            objet=self.object,
+            objet_libelle=f"Décision VAE : {self.object}",
+        )
+        messages.success(self.request, "Dossier VAE mis à jour.")
+        self._repercuter(self.object)
+        return reponse
+
+
+class VAEDeleteView(AdminRoleRequiredMixin, DeleteView):
+    model = VAE
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:vae")
+
+    def form_valid(self, form):
+        journaliser(
+            "suppression", request=self.request, objet=self.object, objet_libelle=f"Suppression de VAE : {self.object}"
+        )
+        messages.success(self.request, "Dossier VAE supprimé.")
         return super().form_valid(form)

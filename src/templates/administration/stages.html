@@ -1,0 +1,80 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Stages — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='stages' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='stages' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Parcours diplômant</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Stages</h1>
+        <p class="mt-1 text-sm text-warm-500">Le stage vaut 30 ECTS. Passer un stage en « validé » porte automatiquement les ECTS au dossier de l'étudiant.</p>
+    </div>
+    <a href="{% url 'administration:stage_create' %}" class="btn-primary">+ Enregistrer un stage</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[2fr_1fr_auto]">
+    <div>
+        <label class="form-label" for="stages-q">Étudiant, lieu ou type</label>
+        <input id="stages-q" class="form-input" name="q" value="{{ query }}" type="search">
+    </div>
+    <div>
+        <label class="form-label" for="stages-statut">Statut</label>
+        <select id="stages-statut" class="form-input" name="statut">
+            <option value="">Tous</option>
+            {% for value, label in statuts %}
+            <option value="{{ value }}"{% if current_statut == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="space-y-4">
+    {% for stage in stages %}
+    <article class="card-elevated flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="min-w-0">
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                <span class="badge {% if stage.statut == 'valide' %}badge-success{% elif stage.statut == 'non_valide' %}badge-danger{% else %}badge-gold{% endif %}">
+                    {{ stage.get_statut_display }}
+                </span>
+                {% if stage.credit %}<span class="text-xs text-warm-500">ECTS portés au dossier</span>{% endif %}
+            </div>
+            <h2 class="truncate text-lg font-semibold text-navy-900">{{ stage.etudiant.utilisateur.get_full_name }}</h2>
+            <p class="mt-1 text-sm text-warm-500">
+                {{ stage.type_stage }} · {{ stage.lieu }}
+                {% if stage.tuteur %} · tuteur : {{ stage.tuteur }}{% endif %}
+            </p>
+        </div>
+        <div class="grid grid-cols-2 gap-5 text-center text-sm">
+            <div>
+                <p class="text-xl font-bold text-navy-900">{{ stage.ects }}</p>
+                <p class="text-xs text-warm-500">ECTS</p>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-navy-900">{{ stage.date_debut|date:"d/m/y" }}</p>
+                <p class="text-xs text-warm-500">au {{ stage.date_fin|date:"d/m/y" }}</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'administration:stage_update' stage.pk %}" class="btn-secondary text-sm">Modifier</a>
+            {% if user.is_admin %}
+            <a href="{% url 'administration:stage_delete' stage.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a>
+            {% endif %}
+        </div>
+    </article>
+    {% empty %}
+    <div class="card-elevated py-12 text-center text-warm-400">Aucun stage enregistré.</div>
+    {% endfor %}
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

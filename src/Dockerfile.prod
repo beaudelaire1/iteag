@@ -55,6 +55,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     curl \
+    # Polices des documents PDF. Sans elles, WeasyPrint retombe sur un
+    # substitut arbitraire : les relevés et attestations imprimés ne
+    # ressemblent alors pas à ce qui a été validé. EB Garamond porte les
+    # titres, Liberation le corps et les tableaux.
+    fonts-ebgaramond \
+    fonts-liberation2 \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/* \
     && addgroup --system iteag && adduser --system --ingroup iteag iteag
 

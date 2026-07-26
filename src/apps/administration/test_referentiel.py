@@ -250,3 +250,52 @@ class TestCreditsECTS:
         reponse = client.get(reverse("administration:credits_ects"), {"source": CreditECTS.SourceCredit.FLTE})
         assert reponse.status_code == 200
         assert "Sainte-Rose" in reponse.content.decode()
+
+
+@pytest.mark.django_db
+class TestRemonteeDeLaProductionPedagogique:
+    """
+    Un module créé par un enseignant doit être visible de l'administration
+    avant sa publication. Sans cette remontée, il n'existe pour elle qu'une
+    fois en ligne — trop tard pour le relire.
+    """
+
+    @pytest.fixture
+    def module_en_relecture(self, db):
+        from apps.elearning.models import ModuleFormation
+        from apps.formations.models import Professeur
+
+        enseignant_utilisateur = User.objects.create_user(
+            username="prof_tdb", email="prof_tdb@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        )
+        professeur = Professeur.objects.create(
+            user=enseignant_utilisateur, nom="Bernard", prenom="Élie", slug="elie-bernard"
+        )
+        return ModuleFormation.objects.create(
+            titre="Herméneutique biblique",
+            slug="hermeneutique-biblique",
+            responsable=professeur,
+            statut=ModuleFormation.StatutPublication.RELECTURE,
+        )
+
+    def test_le_module_apparait_au_tableau_de_bord(self, client, admin, module_en_relecture):
+        client.force_login(admin)
+        contenu = client.get(reverse("administration:dashboard")).content.decode()
+        assert "Herméneutique biblique" in contenu
+        assert "Bernard" in contenu
+
+    def test_les_compteurs_par_statut_sont_exposes(self, client, admin, module_en_relecture):
+        client.force_login(admin)
+        contexte = client.get(reverse("administration:dashboard")).context
+        assert contexte["modules_en_relecture"] == 1
+        assert contexte["modules_brouillon"] == 0
+        assert contexte["modules_publies"] == 0
+
+    def test_un_module_archive_n_encombre_pas_la_liste(self, client, admin, module_en_relecture):
+        from apps.elearning.models import ModuleFormation
+
+        module_en_relecture.statut = ModuleFormation.StatutPublication.ARCHIVE
+        module_en_relecture.save(update_fields=["statut"])
+        client.force_login(admin)
+        contexte = client.get(reverse("administration:dashboard")).context
+        assert list(contexte["modules_recents"]) == []

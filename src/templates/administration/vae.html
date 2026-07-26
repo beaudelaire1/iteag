@@ -1,0 +1,75 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Validation des acquis — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='vae' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='vae' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Décision d'équivalence</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Validation des acquis</h1>
+        <p class="mt-1 text-sm text-warm-500">Seuls les ECTS accordés comptent. Accorder un dossier porte les ECTS au dossier de l'étudiant ; revenir sur la décision les retire.</p>
+    </div>
+    <a href="{% url 'administration:vae_create' %}" class="btn-primary">+ Ouvrir un dossier</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[2fr_1fr_auto]">
+    <div>
+        <label class="form-label" for="vae-q">Étudiant ou numéro</label>
+        <input id="vae-q" class="form-input" name="q" value="{{ query }}" type="search">
+    </div>
+    <div>
+        <label class="form-label" for="vae-statut">Statut</label>
+        <select id="vae-statut" class="form-input" name="statut">
+            <option value="">Tous</option>
+            {% for value, label in statuts %}
+            <option value="{{ value }}"{% if current_statut == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="space-y-4">
+    {% for dossier in dossiers %}
+    <article class="card-elevated flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="min-w-0">
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                <span class="badge {% if dossier.statut == 'accorde' %}badge-success{% elif dossier.statut == 'refuse' %}badge-danger{% else %}badge-gold{% endif %}">
+                    {{ dossier.get_statut_display }}
+                </span>
+                {% if dossier.credit %}<span class="text-xs text-warm-500">ECTS portés au dossier</span>{% endif %}
+            </div>
+            <h2 class="truncate text-lg font-semibold text-navy-900">{{ dossier.etudiant.utilisateur.get_full_name }}</h2>
+            <p class="mt-1 line-clamp-2 text-sm text-warm-500">{{ dossier.description_experience|truncatewords:24 }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-5 text-center text-sm">
+            <div>
+                <p class="text-xl font-bold text-warm-500">{{ dossier.ects_demandes }}</p>
+                <p class="text-xs text-warm-500">demandés</p>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-navy-900">{{ dossier.ects_accordes }}</p>
+                <p class="text-xs text-warm-500">accordés</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'administration:vae_update' dossier.pk %}" class="btn-secondary text-sm">Instruire</a>
+            <a href="{% url 'administration:vae_delete' dossier.pk %}" class="text-sm font-semibold text-red-700">Supprimer</a>
+        </div>
+    </article>
+    {% empty %}
+    <div class="card-elevated py-12 text-center text-warm-400">Aucun dossier de validation des acquis.</div>
+    {% endfor %}
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

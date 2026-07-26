@@ -55,3 +55,68 @@ def crediter_publication(cours_session) -> int:
             )
             inscrits += int(cree)
     return inscrits
+
+
+def _synchroniser(objet, champ: str, eligible: bool, valeurs: dict) -> str:
+    """
+    Aligne le dossier sur la décision courante.
+
+    Retourne « porte », « retire » ou « inchange ». Le tri-état est nécessaire :
+    un booléen confondrait « déjà crédité » et « non éligible », et le second
+    enregistrement d'une décision inchangée retirerait le crédit.
+    """
+    existant = CreditECTS.objects.filter(**{champ: objet}).first()
+    if eligible:
+        if existant:
+            return "inchange"
+        CreditECTS.objects.create(**{champ: objet}, **valeurs)
+        return "porte"
+    if existant:
+        existant.delete()
+        return "retire"
+    return "inchange"
+
+
+def synchroniser_stage(stage) -> str:
+    """
+    Porte ou retire les ECTS d'un stage selon qu'il est validé.
+
+    Un stage vaut 30 ECTS au CDC : sans ce pont, un étudiant pourrait valider
+    son stage sans en voir la trace sur son relevé. Le retour en arrière est
+    traité aussi — une décision reprise doit rendre le dossier conforme.
+    """
+    from apps.academics.models import Stage
+
+    return _synchroniser(
+        stage,
+        "stage",
+        eligible=stage.statut == Stage.StatutStage.VALIDE and stage.ects > 0,
+        valeurs={
+            "etudiant": stage.etudiant,
+            "ects_obtenus": stage.ects,
+            "source": CreditECTS.SourceCredit.ITEAG,
+            "date_validation": stage.date_fin,
+        },
+    )
+
+
+def synchroniser_vae(vae) -> str:
+    """
+    Porte ou retire les ECTS d'une VAE selon la décision.
+
+    Seuls les ECTS **accordés** comptent, jamais les ECTS demandés : la
+    décision appartient au jury, pas au candidat.
+    """
+    from apps.academics.models import VAE
+
+    return _synchroniser(
+        vae,
+        "vae",
+        eligible=vae.statut == VAE.StatutVAE.ACCORDE and vae.ects_accordes > 0,
+        valeurs={
+            "etudiant": vae.etudiant,
+            "ects_obtenus": vae.ects_accordes,
+            "source": CreditECTS.SourceCredit.ITEAG,
+            "date_validation": vae.date_decision or timezone.now().date(),
+        },
+    )

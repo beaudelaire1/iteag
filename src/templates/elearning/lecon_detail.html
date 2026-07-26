@@ -20,17 +20,17 @@
                 <h1 class="text-2xl mb-5">{{ lecon.titre }}</h1>
 
                 {% if lecon.type_lecon == "video" and lecon.video %}
-                {#
+                {% comment %}
                     Le lecteur ne reçoit aucune adresse de fichier : il la demande
                     au serveur, qui revérifie le droit puis délivre une adresse
                     signée à durée de vie courte (ADR-001, ADR-005).
-                #}
+                {% endcomment %}
                 {% if lecon.video.mode_lecture == "iframe" %}
-                {#
+                {% comment %}
                     Fournisseur public lu dans un cadre tiers. Le modèle
                     interdit ce cas sur un module protégé : s'il apparaît ici,
                     c'est que la leçon est en accès libre.
-                #}
+                {% endcomment %}
                 <div class="bg-navy-950 rounded overflow-hidden shadow-elevated">
                     <iframe src="{{ lecture_publique.url }}"
                             class="w-full aspect-video border-0"
@@ -156,8 +156,10 @@
 {% endblock %}
 
 {% block extra_js %}
-{# hls.js est servi depuis notre origine, jamais depuis un CDN : la CSP reste
-   `script-src 'self'`. Chargé seulement quand la leçon en a besoin. #}
+{% comment %}
+   hls.js est servi depuis notre origine, jamais depuis un CDN : la CSP reste
+   « script-src 'self' ». Chargé seulement quand la leçon en a besoin.
+{% endcomment %}
 {% if lecon.video.mode_lecture == "hls" %}
 <script src="{% static 'js/vendor/hls.min.js' %}" defer></script>
 {% endif %}

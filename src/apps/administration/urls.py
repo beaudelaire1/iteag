@@ -78,6 +78,16 @@ urlpatterns = [
     path("promotions/nouvelle/", views_academics.PromotionCreateView.as_view(), name="promotion_create"),
     path("promotions/<int:pk>/modifier/", views_academics.PromotionUpdateView.as_view(), name="promotion_update"),
     path("promotions/<int:pk>/supprimer/", views_academics.PromotionDeleteView.as_view(), name="promotion_delete"),
+    # Stages
+    path("stages/", views_academics.StageListView.as_view(), name="stages"),
+    path("stages/nouveau/", views_academics.StageCreateView.as_view(), name="stage_create"),
+    path("stages/<int:pk>/modifier/", views_academics.StageUpdateView.as_view(), name="stage_update"),
+    path("stages/<int:pk>/supprimer/", views_academics.StageDeleteView.as_view(), name="stage_delete"),
+    # Validation des acquis
+    path("vae/", views_academics.VAEListView.as_view(), name="vae"),
+    path("vae/nouveau/", views_academics.VAECreateView.as_view(), name="vae_create"),
+    path("vae/<int:pk>/modifier/", views_academics.VAEUpdateView.as_view(), name="vae_update"),
+    path("vae/<int:pk>/supprimer/", views_academics.VAEDeleteView.as_view(), name="vae_delete"),
     # Grille tarifaire
     path("tarifs/", views_academics.TarifListView.as_view(), name="tarifs"),
     path("tarifs/nouveau/", views_academics.TarifCreateView.as_view(), name="tarif_create"),

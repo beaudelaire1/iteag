@@ -18,6 +18,8 @@
 {% url 'administration:payments' as url_paiements %}
 {% url 'administration:promotions' as url_promotions %}
 {% url 'administration:credits_ects' as url_credits %}
+{% url 'administration:stages' as url_stages %}
+{% url 'administration:vae' as url_vae %}
 {% url 'administration:tarifs' as url_tarifs %}
 
 <a href="{{ url_dashboard }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors duration-150 {% if nav == 'dashboard' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">
@@ -55,6 +57,8 @@
 <a href="{{ url_paiements }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors duration-150 {% if nav == 'payments' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">
 <a href="{{ url_promotions }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors {% if nav == 'promotions' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">Promotions</a>
 <a href="{{ url_credits }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors {% if nav == 'credits_ects' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">Crédits ECTS</a>
+<a href="{{ url_stages }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors {% if nav == 'stages' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">Stages</a>
+<a href="{{ url_vae }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors {% if nav == 'vae' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">Validation des acquis</a>
 <a href="{{ url_tarifs }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors {% if nav == 'tarifs' %}bg-navy-50 text-navy-800{% else %}text-warm-600 hover:bg-warm-100{% endif %}">Grille tarifaire</a>
     <span class="inline-flex h-4.5 w-4.5 items-center justify-center" aria-hidden="true">€</span>
     Paiements

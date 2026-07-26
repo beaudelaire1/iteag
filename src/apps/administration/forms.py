@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth.password_validation import validate_password
 
 from apps.academics.models import (
+    VAE,
     CoursDeSession,
     CreditECTS,
     DemandeInscriptionCours,
@@ -11,6 +12,7 @@ from apps.academics.models import (
     ProfilEtudiant,
     Promotion,
     SessionAcademique,
+    Stage,
 )
 from apps.accounts.models import User
 from apps.formations.models import Cours, Professeur, Tarif
@@ -328,4 +330,66 @@ class CreditECTSForm(forms.ModelForm):
                 doublons = doublons.exclude(pk=self.instance.pk)
             if doublons.exists():
                 raise forms.ValidationError("Ce cours est déjà crédité pour cet étudiant sur cette session.")
+        return donnees
+
+
+class StageForm(forms.ModelForm):
+    """Convention de stage — CDC §2.5, 30 ECTS. Tenue par le secrétariat."""
+
+    class Meta:
+        model = Stage
+        fields = ["etudiant", "type_stage", "lieu", "tuteur", "date_debut", "date_fin", "ects", "statut"]
+        widgets = {
+            "etudiant": forms.Select(attrs={"class": "form-input"}),
+            "type_stage": forms.TextInput(attrs={"class": "form-input", "placeholder": "Stage pastoral"}),
+            "lieu": forms.TextInput(attrs={"class": "form-input"}),
+            "tuteur": forms.Select(attrs={"class": "form-input"}),
+            "date_debut": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
+            "date_fin": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
+            "ects": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.5"}),
+            "statut": forms.Select(attrs={"class": "form-input"}),
+        }
+
+    def clean(self):
+        donnees = super().clean()
+        debut, fin = donnees.get("date_debut"), donnees.get("date_fin")
+        if debut and fin and fin < debut:
+            raise forms.ValidationError({"date_fin": "La fin du stage ne peut pas précéder son début."})
+        return donnees
+
+
+class VAEForm(forms.ModelForm):
+    """
+    Validation des acquis — CDC §2.5. Réservée à l'administration.
+
+    Les ECTS accordés sont bornés par les ECTS demandés : accorder plus que
+    demandé n'a pas de sens et signalerait une erreur de saisie.
+    """
+
+    class Meta:
+        model = VAE
+        fields = ["etudiant", "description_experience", "ects_demandes", "ects_accordes", "statut", "date_decision"]
+        widgets = {
+            "etudiant": forms.Select(attrs={"class": "form-input"}),
+            "description_experience": forms.Textarea(attrs={"class": "form-input", "rows": 6}),
+            "ects_demandes": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.5"}),
+            "ects_accordes": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.5"}),
+            "statut": forms.Select(attrs={"class": "form-input"}),
+            "date_decision": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
+        }
+
+    def clean(self):
+        donnees = super().clean()
+        demandes, accordes = donnees.get("ects_demandes"), donnees.get("ects_accordes")
+        if demandes is not None and accordes is not None and accordes > demandes:
+            raise forms.ValidationError(
+                {"ects_accordes": "On ne peut pas accorder plus d'ECTS que le candidat n'en a demandé."}
+            )
+        if donnees.get("statut") == VAE.StatutVAE.ACCORDE:
+            if not accordes:
+                raise forms.ValidationError(
+                    {"ects_accordes": "Une VAE accordée doit porter un nombre d'ECTS supérieur à zéro."}
+                )
+            if not donnees.get("date_decision"):
+                raise forms.ValidationError({"date_decision": "Une décision accordée doit être datée."})
         return donnees

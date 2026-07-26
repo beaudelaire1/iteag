@@ -14,6 +14,8 @@
 {% url 'administration:payments' as url_paiements %}
 {% url 'administration:promotions' as url_promotions %}
 {% url 'administration:credits_ects' as url_credits %}
+{% url 'administration:stages' as url_stages %}
+{% url 'administration:vae' as url_vae %}
 {% url 'administration:tarifs' as url_tarifs %}
 
 <a href="{{ url_dashboard }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'dashboard' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Tableau de bord</a>
@@ -27,6 +29,8 @@
 <a href="{{ url_paiements }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'payments' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Paiements</a>
 <a href="{{ url_promotions }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'promotions' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Promotions</a>
 <a href="{{ url_credits }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'credits_ects' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">ECTS</a>
+<a href="{{ url_stages }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'stages' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Stages</a>
+<a href="{{ url_vae }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'vae' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">VAE</a>
 <a href="{{ url_tarifs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'tarifs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Tarifs</a>
 <a href="{{ url_utilisateurs }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors {% if nav == 'utilisateurs' %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200{% endif %}">Utilisateurs</a>
 {% endif %}
