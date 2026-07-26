@@ -135,6 +135,21 @@ class TestCycleDeVieDUnModule:
         )
         assert Lecon.objects.filter(chapitre=chapitre, titre="Le contexte historique").exists()
 
+    def test_la_page_de_modification_recoit_le_chapitre(self, client, enseignant, lecon):
+        client.force_login(enseignant.user)
+
+        reponse = client.get(reverse("elearning:enseignant_lecon_modifier", kwargs={"pk": lecon.pk}))
+
+        assert reponse.status_code == 200
+        assert reponse.context["chapitre"] == lecon.chapitre
+        assert (
+            reverse(
+                "elearning:enseignant_structure",
+                kwargs={"slug": lecon.chapitre.module.slug},
+            )
+            in reponse.content.decode()
+        )
+
     def test_ordre_automatique_de_la_lecon_utilise_la_plus_grande_position(self, client, enseignant, chapitre, lecon):
         Lecon.objects.create(
             chapitre=chapitre,

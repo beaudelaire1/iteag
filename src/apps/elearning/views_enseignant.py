@@ -226,6 +226,9 @@ class LeconFormMixin(ProfesseurMixin):
             "chapitre": self.chapitre,
         }
 
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "chapitre": self.chapitre}
+
     def get_success_url(self):
         return reverse("elearning:enseignant_structure", kwargs={"slug": self.chapitre.module.slug})
 
@@ -239,9 +242,6 @@ class LeconCreateView(LeconFormMixin, CreateView):
                 Chapitre.objects.filter(module__in=self.mes_modules()), pk=kwargs["chapitre_pk"]
             )
         return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        return {**super().get_context_data(**kwargs), "chapitre": self.chapitre}
 
     def form_valid(self, form):
         try:
