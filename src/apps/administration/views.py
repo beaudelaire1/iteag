@@ -20,6 +20,7 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
+from apps.administration.services import pilotage
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
 from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
@@ -93,6 +94,13 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 **self._production_pedagogique(),
             }
         )
+        # Finances, échéances, activité, résultats et alertes. Le calcul vit
+        # dans un service : ce sont des règles de gestion, pas de l'affichage.
+        ctx.update(pilotage.finances(session_en_cours=ctx["session_en_cours"]))
+        ctx.update(pilotage.formations())
+        ctx.update(pilotage.resultats())
+        ctx["echeances"] = pilotage.echeances()
+        ctx["alertes"] = pilotage.alertes()
         return ctx
 
     def _production_pedagogique(self) -> dict:
