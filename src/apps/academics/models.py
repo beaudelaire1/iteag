@@ -83,6 +83,17 @@ class ProfilEtudiant(TimeStampedModel):
 
     @property
     def total_ects_acquis(self):
+        """
+        Total des crédits acquis.
+
+        L'annotation `ects_acquis_annotes` est utilisée si la vue l'a posée.
+        Sans elle, la propriété interroge la base à chaque appel : sur une liste
+        de vingt étudiants, cela faisait vingt agrégations — le coût de la page
+        croissait avec le nombre de lignes affichées.
+        """
+        annote = getattr(self, "ects_acquis_annotes", None)
+        if annote is not None:
+            return annote
         return self.credits_ects.aggregate(total=models.Sum("ects_obtenus"))["total"] or 0
 
     @property
