@@ -1,19 +1,34 @@
+"""
+Vues de l'espace étudiant.
+
+Ce portail agrège plusieurs domaines — scolarité, évaluations, documents,
+formation vidéo. Il vit hors des applications de domaine pour cette raison :
+logé dans « academics », il ne pouvait pas montrer la formation vidéo sans
+créer une dépendance interdite, et le tableau de bord de l'étudiant ignorait
+la moitié de ce à quoi il a accès.
+"""
+
 from django.contrib import messages
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.generic import TemplateView, UpdateView
 
+from apps.academics.forms import StudentSubmissionForm
+from apps.academics.models import (
+    CoursDeSession,
+    CreditECTS,
+    DemandeInscriptionCours,
+    InscriptionSession,
+    SessionAcademique,
+)
 from apps.core.mixins import StudentRoleRequiredMixin
 from apps.documents.models import DocumentAdministratif
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
 
-from .forms import StudentSubmissionForm
-from .models import CoursDeSession, CreditECTS, DemandeInscriptionCours, InscriptionSession, SessionAcademique
-
 
 class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
-    template_name = "academics/dashboard.html"
+    template_name = "etudiant/dashboard.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -60,6 +75,11 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                     )
                 )[:6],
                 "documents_count": DocumentAdministratif.objects.filter(etudiant=self.request.user).count(),
+                # Formation vidéo. Absente du tableau de bord tant que ces vues
+                # vivaient dans « academics », qui n'a pas le droit de dépendre
+                # d'« elearning » : l'étudiant devait deviner qu'un autre écran
+                # existait. C'est ce que l'extraction du portail débloque.
+                **self._formation_video(profil),
                 "latest_payments": profil.paiements.select_related("session")[:4],
                 "demandes_en_cours": profil.demandes_inscription.filter(
                     statut__in=[
@@ -83,9 +103,29 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
         )
         return context
 
+    def _formation_video(self, profil) -> dict:
+        """Modules vidéo en cours, reprise de lecture et attestations obtenues."""
+        from apps.elearning.models import AttestationModule, InscriptionModule
+
+        acces = (
+            InscriptionModule.objects.filter(etudiant=profil)
+            .select_related("module", "module__discipline")
+            .order_by("-updated_at")
+        )
+        en_cours = [i for i in acces if i.statut == InscriptionModule.StatutAcces.ACTIF][:4]
+
+        return {
+            "modules_en_cours": en_cours,
+            "modules_termines": sum(1 for i in acces if i.statut == InscriptionModule.StatutAcces.TERMINE),
+            "modules_total": len(acces),
+            "attestations": AttestationModule.objects.filter(inscription__etudiant=profil)
+            .select_related("inscription__module")
+            .order_by("-created_at")[:3],
+        }
+
 
 class StudentProgressView(StudentRoleRequiredMixin, TemplateView):
-    template_name = "academics/progress.html"
+    template_name = "etudiant/progress.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -108,7 +148,7 @@ class StudentProgressView(StudentRoleRequiredMixin, TemplateView):
 class StudentCoursesView(StudentRoleRequiredMixin, TemplateView):
     """ETU-003 — Accès aux cours et ressources."""
 
-    template_name = "academics/courses.html"
+    template_name = "etudiant/courses.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -132,7 +172,7 @@ class StudentCoursesView(StudentRoleRequiredMixin, TemplateView):
 class StudentGradesView(StudentRoleRequiredMixin, TemplateView):
     """ETU-006 — Consultation des notes et appréciations."""
 
-    template_name = "academics/grades.html"
+    template_name = "etudiant/grades.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -150,7 +190,7 @@ class StudentGradesView(StudentRoleRequiredMixin, TemplateView):
 
 class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
     form_class = StudentSubmissionForm
-    template_name = "academics/submission_form.html"
+    template_name = "etudiant/submission_form.html"
     context_object_name = "evaluation"
 
     def get_object(self, queryset=None):
@@ -167,4 +207,4 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
         evaluation.date_soumission = timezone.now()
         evaluation.save(update_fields=["fichier_soumis", "statut", "date_soumission", "updated_at"])
         messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
-        return redirect("academics:grades")
+        return redirect("etudiant:grades")

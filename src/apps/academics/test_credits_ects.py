@@ -143,6 +143,6 @@ class TestPublicationCrediteLeReleve:
         client.post(reverse("lms:publish_grades", kwargs={"pk": evaluation.cours_session.pk}))
 
         client.force_login(etudiant.utilisateur)
-        reponse = client.get(reverse("academics:progress"))
+        reponse = client.get(reverse("etudiant:progress"))
         assert reponse.status_code == 200
         assert "Doctrine de la grâce" in reponse.content.decode()

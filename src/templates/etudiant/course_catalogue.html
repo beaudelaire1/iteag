@@ -3,10 +3,10 @@
 {% block title %}Catalogue des cours — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
-{% with nav='catalogue' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% with nav='catalogue' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
 {% endblock %}
 {% block portal_nav_mobile %}
-{% with nav='catalogue' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% with nav='catalogue' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}
 {% endblock %}
 
 {% block portal_header %}
@@ -16,7 +16,7 @@
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Catalogue des cours</h1>
         <p class="mt-2 max-w-2xl text-sm text-warm-500">Consultez le programme, les modalités, les places et le tarif qui s’applique à votre dossier avant de demander votre inscription.</p>
     </div>
-    <a href="{% url 'academics:enrollment_requests' %}" class="btn-secondary">Suivre mes demandes</a>
+    <a href="{% url 'etudiant:enrollment_requests' %}" class="btn-secondary">Suivre mes demandes</a>
 </div>
 {% endblock %}
 
@@ -55,7 +55,7 @@
     </div>
     <div class="flex items-end gap-3 xl:col-span-5">
         <button type="submit" class="btn-primary">Filtrer le catalogue</button>
-        <a href="{% url 'academics:course_catalogue' %}" class="text-sm font-semibold text-navy-600">Réinitialiser</a>
+        <a href="{% url 'etudiant:course_catalogue' %}" class="text-sm font-semibold text-navy-600">Réinitialiser</a>
     </div>
 </form>
 
@@ -88,7 +88,7 @@
             {% else %}
             <span class="badge badge-success">Demandes ouvertes</span>
             {% endif %}
-            <a href="{% url 'academics:course_offering_detail' offre.pk %}" class="btn-secondary text-sm">Voir le cours</a>
+            <a href="{% url 'etudiant:course_offering_detail' offre.pk %}" class="btn-secondary text-sm">Voir le cours</a>
         </div>
     </article>
     {% empty %}

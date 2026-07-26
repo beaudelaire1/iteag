@@ -3,10 +3,10 @@
 {% block title %}Mes notes — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
-{% with nav='grades' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% with nav='grades' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
 {% endblock %}
 {% block portal_nav_mobile %}
-{% with nav='grades' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% with nav='grades' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}
 {% endblock %}
 
 {% block portal_header %}
@@ -79,7 +79,7 @@
                 {{ eval.get_statut_display }}
             </span>
             {% if eval.statut == 'en_attente' %}
-            <a href="{% url 'academics:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Remettre</a>
+            <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Remettre</a>
             {% endif %}
             </div>
         </div>

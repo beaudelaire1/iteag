@@ -22,7 +22,7 @@ from apps.formations.models import Discipline
 
 
 class CourseCatalogueView(StudentRoleRequiredMixin, ListView):
-    template_name = "academics/course_catalogue.html"
+    template_name = "etudiant/course_catalogue.html"
     context_object_name = "offres"
     paginate_by = 12
 
@@ -97,7 +97,7 @@ class CourseCatalogueView(StudentRoleRequiredMixin, ListView):
 
 class CourseOfferingDetailView(StudentRoleRequiredMixin, DetailView):
     model = CoursDeSession
-    template_name = "academics/course_offering_detail.html"
+    template_name = "etudiant/course_offering_detail.html"
     context_object_name = "offre"
 
     def get_queryset(self):
@@ -142,7 +142,7 @@ class EnrollmentRequestCreateView(StudentRoleRequiredMixin, View):
             for erreurs in form.errors.values():
                 for erreur in erreurs:
                     messages.error(request, erreur)
-            return redirect("academics:course_offering_detail", pk=offre.pk)
+            return redirect("etudiant:course_offering_detail", pk=offre.pk)
         try:
             demande = soumettre_demande(
                 etudiant=profil,
@@ -157,11 +157,11 @@ class EnrollmentRequestCreateView(StudentRoleRequiredMixin, View):
                 request,
                 f"Votre demande pour « {demande.cours_session.cours.titre} » a été transmise au secrétariat.",
             )
-        return redirect("academics:enrollment_requests")
+        return redirect("etudiant:enrollment_requests")
 
 
 class MyEnrollmentRequestsView(StudentRoleRequiredMixin, ListView):
-    template_name = "academics/enrollment_requests.html"
+    template_name = "etudiant/enrollment_requests.html"
     context_object_name = "demandes"
     paginate_by = 20
 
@@ -188,11 +188,11 @@ class EnrollmentRequestCancelView(StudentRoleRequiredMixin, View):
             messages.error(request, exc.messages[0])
         else:
             messages.success(request, "La demande d'inscription a été annulée.")
-        return redirect("academics:enrollment_requests")
+        return redirect("etudiant:enrollment_requests")
 
 
 class StudentPaymentsView(StudentRoleRequiredMixin, TemplateView):
-    template_name = "academics/payments.html"
+    template_name = "etudiant/payments.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

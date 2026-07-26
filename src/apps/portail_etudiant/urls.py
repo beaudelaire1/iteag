@@ -1,13 +1,13 @@
 from django.urls import path
 
-from .views import (
+from .vues import (
     StudentCoursesView,
     StudentDashboardView,
     StudentEvaluationSubmitView,
     StudentGradesView,
     StudentProgressView,
 )
-from .views_enrollment import (
+from .vues_inscription import (
     CourseCatalogueView,
     CourseOfferingDetailView,
     EnrollmentRequestCancelView,
@@ -16,7 +16,7 @@ from .views_enrollment import (
     StudentPaymentsView,
 )
 
-app_name = "academics"
+app_name = "etudiant"
 
 urlpatterns = [
     path("", StudentDashboardView.as_view(), name="dashboard"),

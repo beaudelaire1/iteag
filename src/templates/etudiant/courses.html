@@ -3,10 +3,10 @@
 {% block title %}Mes cours — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
-{% with nav='courses' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% with nav='courses' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
 {% endblock %}
 {% block portal_nav_mobile %}
-{% with nav='courses' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% with nav='courses' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}
 {% endblock %}
 
 {% block portal_header %}
@@ -16,7 +16,7 @@
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
         <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Cours auxquels vous êtes inscrit(e) et ressources associées</p>
     </div>
-    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary">Choisir un cours</a>
+    <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary">Choisir un cours</a>
 </div>
 {% endblock %}
 
@@ -69,7 +69,7 @@
 {% empty %}
 <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
     <p class="text-gray-500">Vous n'êtes inscrit(e) à aucun cours pour le moment.</p>
-    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary mt-5">Consulter le catalogue</a>
+    <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary mt-5">Consulter le catalogue</a>
 </div>
 {% endfor %}
 {% endblock %}

@@ -224,9 +224,9 @@ def cas_de_test(monde) -> list[tuple[str, str, dict]]:
         (enseignant, "lms:resource_upload", {"cours_pk": monde["cours_session"].pk}),
         (enseignant, "lms:announcement_create", {"cours_pk": monde["cours_session"].pk}),
         # ── Espace étudiant ──
-        (etudiant, "academics:course_offering_detail", {"pk": monde["cours_session"].pk}),
-        (etudiant, "academics:enrollment_request_create", {"pk": monde["cours_session"].pk}),
-        (etudiant, "academics:submit_evaluation", {"pk": monde["evaluation"].pk}),
+        (etudiant, "etudiant:course_offering_detail", {"pk": monde["cours_session"].pk}),
+        (etudiant, "etudiant:enrollment_request_create", {"pk": monde["cours_session"].pk}),
+        (etudiant, "etudiant:submit_evaluation", {"pk": monde["evaluation"].pk}),
         # ── Pages publiques ──
         ("", "elearning:module_detail", {"slug": monde["module"].slug}),
         ("", "formations:cours_detail", {"slug": monde["cours"].slug}),

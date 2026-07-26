@@ -18,7 +18,7 @@ from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
 def tableau_de_bord(utilisateur) -> str:
     """Espace d'accueil correspondant au rôle. Un seul endroit en décide."""
     if utilisateur.is_etudiant:
-        return reverse("academics:dashboard")
+        return reverse("etudiant:dashboard")
     if utilisateur.is_enseignant:
         return reverse("lms:dashboard")
     if utilisateur.is_admin:

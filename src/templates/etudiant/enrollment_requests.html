@@ -3,10 +3,10 @@
 {% block title %}Mes demandes d’inscription — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
-{% with nav='enrollments' %}{% include "academics/partials/student_nav.html" %}{% endwith %}
+{% with nav='enrollments' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
 {% endblock %}
 {% block portal_nav_mobile %}
-{% with nav='enrollments' %}{% include "academics/partials/student_nav_mobile.html" %}{% endwith %}
+{% with nav='enrollments' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}
 {% endblock %}
 
 {% block portal_header %}
@@ -16,7 +16,7 @@
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes demandes d’inscription</h1>
         <p class="mt-1 text-sm text-warm-500">Chaque étape, du dépôt jusqu’à l’accès au cours.</p>
     </div>
-    <a href="{% url 'academics:course_catalogue' %}" class="btn-primary">Voir le catalogue</a>
+    <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary">Voir le catalogue</a>
 </div>
 {% endblock %}
 
@@ -41,10 +41,10 @@
             </div>
         </div>
         <div class="mt-5 flex flex-wrap items-center gap-3 border-t border-warm-100 pt-4">
-            <a href="{% url 'academics:course_offering_detail' demande.cours_session.pk %}" class="btn-secondary text-sm">Voir le cours</a>
-            {% if demande.statut == 'paiement_attente' %}<a href="{% url 'academics:payments' %}" class="btn-primary text-sm">Consulter les instructions de paiement</a>{% endif %}
+            <a href="{% url 'etudiant:course_offering_detail' demande.cours_session.pk %}" class="btn-secondary text-sm">Voir le cours</a>
+            {% if demande.statut == 'paiement_attente' %}<a href="{% url 'etudiant:payments' %}" class="btn-primary text-sm">Consulter les instructions de paiement</a>{% endif %}
             {% if demande.peut_etre_annulee %}
-            <form method="post" action="{% url 'academics:enrollment_request_cancel' demande.pk %}" onsubmit="return confirm('Annuler cette demande d’inscription ?');">
+            <form method="post" action="{% url 'etudiant:enrollment_request_cancel' demande.pk %}" onsubmit="return confirm('Annuler cette demande d’inscription ?');">
                 {% csrf_token %}
                 <button type="submit" class="text-sm font-semibold text-red-700">Annuler la demande</button>
             </form>
@@ -55,7 +55,7 @@
     <div class="card-elevated py-14 text-center">
         <h2 class="text-lg font-semibold text-navy-900">Aucune demande déposée</h2>
         <p class="mt-2 text-sm text-warm-500">Le catalogue présente les prochaines sessions ouvertes à votre parcours.</p>
-        <a href="{% url 'academics:course_catalogue' %}" class="btn-primary mt-5">Découvrir les cours</a>
+        <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary mt-5">Découvrir les cours</a>
     </div>
     {% endfor %}
 </div>
