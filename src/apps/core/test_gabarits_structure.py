@@ -86,6 +86,6 @@ def test_toutes_les_references_statiques_existent():
     assert not introuvables, (
         "Références statiques non résolues :\n"
         + "\n".join(introuvables)
-        + "\n\nSi la référence porte sur « js/vendor/ », les bibliothèques tierces "
-        "n'ont pas été construites : lancer « npm run build » depuis src/."
+        + "\n\nSi la référence porte sur « css/main.css » ou « js/vendor/ », les "
+        "assets n'ont pas été construits : lancer « npm run build » depuis src/."
     )

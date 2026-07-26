@@ -64,7 +64,9 @@ jobs:
         with:
           node-version: "22"
       - run: npm install --no-audit --no-fund
-      - run: npm run vendor:build
+      # « build » et non « vendor:build » : la feuille compilée est elle aussi
+      # un artefact généré, et « base.html » la référence sur chaque page.
+      - run: npm run build
       - name: Run tests
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
