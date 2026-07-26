@@ -95,5 +95,5 @@ administratif, conversion publique, qualité et exploitation.
 | Couverture | 92 % | ≥ 90 % |
 | Couverture du contrôle d'accès | 100 % | 100 % |
 | Lint et format | 0 erreur | 0 |
-| Vulnérabilités des dépendances | 1 résiduelle, sans correctif amont, non exploitable ici | 0 exploitable |
+| Vulnérabilités des dépendances | 0 | 0 |
 | Build de production | Vérifié à chaque commit | Vérifié |
