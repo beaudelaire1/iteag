@@ -1,8 +1,20 @@
 # ADR-001 — Stratégie de diffusion vidéo sécurisée
 
-- **Statut** : Accepté
+- **Statut** : **Remplacé par [ADR-005](ADR-005-fournisseurs-video-externes.md)** le 2026-07-26
 - **Contexte CDC** : §2.1 (distanciel Martinique/Guyane), V1 « stratégie vidéo à arbitrer »
 - **Décideur** : direction technique Trait d'Union Studio
+
+> **Ce qui a changé.** La maîtrise d'ouvrage a demandé de ne pas héberger les
+> fichiers. L'examen a par ailleurs montré une lacune de la présente décision :
+> un MP4 servi depuis S3 se lit à débit constant, sans adaptation à la bande
+> passante réelle — le risque R4 (débit en Guyane et en Martinique) restait
+> donc entier. L'ADR-005 retient un fournisseur externe à adresse signée.
+>
+> **Ce qui reste valable** et n'est pas remis en cause : la revérification du
+> droit à chaque demande de lecture, l'adresse à durée de vie courte, l'absence
+> de toute adresse de fichier dans le HTML, et l'abstraction de diffusion — qui
+> a précisément permis ce changement sans toucher aux vues ni aux gabarits. Le
+> backend S3 décrit ici est conservé et testé comme chemin de retour.
 
 ## Contexte
 

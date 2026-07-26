@@ -4,9 +4,11 @@
 # Voir docs/architecture/adr/ADR-004-pipeline-assets-production.md
 # ═══════════════════════════════════════════════════
 
-# ── Étape 1 : feuilles de style ──
+# ── Étape 1 : feuilles de style et bibliothèques tierces ──
 # Tailwind 4 balaie les templates pour déterminer les classes réellement
 # utilisées : sans eux, la feuille produite serait amputée.
+# Les bibliothèques tierces (hls.js) sont copiées depuis node_modules et
+# servies depuis notre origine — jamais depuis un CDN (ADR-005).
 FROM node:22-alpine AS assets
 
 WORKDIR /app
@@ -16,8 +18,10 @@ RUN npm install --no-audit --no-fund
 COPY assets/ assets/
 COPY static/ static/
 COPY templates/ templates/
-RUN npm run css:build \
-    && test -s static/css/main.css
+COPY scripts/ scripts/
+RUN npm run build \
+    && test -s static/css/main.css \
+    && test -s static/js/vendor/hls.min.js
 
 # ── Étape 2 : dépendances Python ──
 FROM python:3.12-slim AS deps
@@ -63,6 +67,7 @@ COPY . .
 
 # Feuille de style compilée à l'étape 1 (jamais commitée : elle est reproductible)
 COPY --from=assets /app/static/css/main.css static/css/main.css
+COPY --from=assets /app/static/js/vendor/ static/js/vendor/
 
 # Collecte des statiques — sans masquage d'erreur : un échec ici doit arrêter
 # le build, pas produire une image qui servira un site sans style.

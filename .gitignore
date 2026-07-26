@@ -46,3 +46,5 @@ htmlcov/
 
 # Tailwind output (regenerated)
 static/css/main.css
+# Bibliothèques tierces copiées depuis node_modules par « npm run vendor:build ».
+static/js/vendor/

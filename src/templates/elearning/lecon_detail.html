@@ -23,8 +23,27 @@
                 {#
                     Le lecteur ne reçoit aucune adresse de fichier : il la demande
                     au serveur, qui revérifie le droit puis délivre une adresse
-                    signée à durée de vie courte (ADR-001).
+                    signée à durée de vie courte (ADR-001, ADR-005).
                 #}
+                {% if lecon.video.mode_lecture == "iframe" %}
+                {#
+                    Fournisseur public lu dans un cadre tiers. Le modèle
+                    interdit ce cas sur un module protégé : s'il apparaît ici,
+                    c'est que la leçon est en accès libre.
+                #}
+                <div class="bg-navy-950 rounded overflow-hidden shadow-elevated">
+                    <iframe src="{{ lecture_publique.url }}"
+                            class="w-full aspect-video border-0"
+                            title="{{ lecon.titre }}"
+                            loading="lazy"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                            allowfullscreen></iframe>
+                </div>
+                <p class="mt-3 text-sm text-warm-500">
+                    Cette vidéo est hébergée par un service externe : la progression n'y est pas mesurée.
+                </p>
+                {% else %}
                 <div class="bg-navy-950 rounded overflow-hidden shadow-elevated"
                      data-lecteur-video
                      data-url-lecture="{% url 'elearning:lecon_playback' module.slug lecon.slug %}"
@@ -47,6 +66,7 @@
                        class="hidden px-4 py-3 text-sm text-white bg-navy-800"
                        role="status" aria-live="polite"></p>
                 </div>
+                {% endif %}
 
                 {% if position_reprise %}
                 <p class="mt-3 text-sm text-warm-500" data-reprise-info>
@@ -136,5 +156,10 @@
 {% endblock %}
 
 {% block extra_js %}
+{# hls.js est servi depuis notre origine, jamais depuis un CDN : la CSP reste
+   `script-src 'self'`. Chargé seulement quand la leçon en a besoin. #}
+{% if lecon.video.mode_lecture == "hls" %}
+<script src="{% static 'js/vendor/hls.min.js' %}" defer></script>
+{% endif %}
 <script src="{% static 'js/lecteur-video.js' %}" defer></script>
 {% endblock %}

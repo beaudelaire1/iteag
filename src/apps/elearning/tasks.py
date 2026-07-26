@@ -57,7 +57,7 @@ def _duree_secondes(video) -> int:
     L'absence de ffprobe ne doit pas bloquer la publication : la durée reste
     alors celle saisie par l'enseignant.
     """
-    from apps.elearning.storage import LocalStockageVideo, stockage_video
+    from apps.elearning.diffusion import LocalStockageVideo, stockage_video
 
     stockage = stockage_video()
     if not isinstance(stockage, LocalStockageVideo):

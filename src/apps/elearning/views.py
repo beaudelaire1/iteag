@@ -3,7 +3,7 @@ Vues de la formation vidéo.
 
 Règle absolue : aucune adresse de fichier n'est rendue dans un gabarit. Le
 lecteur la demande par un appel authentifié distinct, et le droit est
-revérifié à chaque demande (ADR-001).
+revérifié à chaque demande (ADR-001, ADR-005).
 """
 
 import json
@@ -17,6 +17,9 @@ from django.views import View
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import DetailView, ListView, TemplateView
 
+from apps.core.services.audit import adresse_ip
+from apps.elearning.csp import CspLectureVideoMixin
+from apps.elearning.diffusion import LocalStockageVideo, stockage_video
 from apps.elearning.models import (
     AttestationModule,
     InscriptionModule,
@@ -26,7 +29,6 @@ from apps.elearning.models import (
 )
 from apps.elearning.services import progression as service_progression
 from apps.elearning.services.acces import journaliser_acces, verifier_acces
-from apps.elearning.storage import LocalStockageVideo, stockage_video
 
 TTL_LECTURE = 300
 
@@ -72,8 +74,12 @@ class CataloguePublicView(ListView):
         return contexte
 
 
-class ModuleDetailView(DetailView):
-    """Fiche d'un module : sommaire, progression, appel à l'action."""
+class ModuleDetailView(CspLectureVideoMixin, DetailView):
+    """Fiche d'un module : sommaire, progression, appel à l'action.
+
+    La CSP y est élargie pour l'aperçu gratuit, qui peut être hébergé chez un
+    fournisseur public.
+    """
 
     model = ModuleFormation
     template_name = "elearning/module_detail.html"
@@ -168,7 +174,7 @@ class MesFormationsView(LoginRequiredMixin, TemplateView):
         return contexte
 
 
-class LeconDetailView(DetailView):
+class LeconDetailView(CspLectureVideoMixin, DetailView):
     """Page du lecteur. Ne contient aucune adresse de fichier."""
 
     model = Lecon
@@ -223,6 +229,13 @@ class LeconDetailView(DetailView):
                 "chapitres": module.chapitres.prefetch_related("lecons"),
                 "sous_titres": lecon.video.sous_titres.all() if lecon.video else [],
                 "intervalle_signal": getattr(settings, "ELEARNING_INTERVALLE_SIGNAL", 15),
+                # Un fournisseur en cadre n'a rien à signer : son adresse peut
+                # figurer dans la page, puisqu'elle ne protège rien de toute
+                # façon. Le modèle garantit qu'on n'arrive ici que sur du
+                # contenu public.
+                "lecture_publique": (
+                    lecon.video.lecture() if lecon.video and lecon.video.mode_lecture == "iframe" else None
+                ),
             }
         )
         return contexte
@@ -270,10 +283,12 @@ class PlaybackUrlView(View):
             statut = 429 if decision.motif == "refuse_quota" else 403
             return JsonResponse({"erreur": decision.message, "motif": decision.motif}, status=statut)
 
+        lecture = lecon.video.lecture(ttl=TTL_LECTURE, adresse_ip=adresse_ip(request))
         return JsonResponse(
             {
-                "url": lecon.video.url_lecture_signee(ttl=TTL_LECTURE),
-                "expire_dans": TTL_LECTURE,
+                "url": lecture.url,
+                "mode": lecture.mode,
+                "expire_dans": lecture.expire_dans,
                 "poster": lecon.video.poster.url if lecon.video.poster else "",
             }
         )

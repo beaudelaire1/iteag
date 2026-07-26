@@ -339,3 +339,81 @@ class TestValidationDuFichierVideo:
     )
     def test_reconnaissance_des_entetes(self, entete, attendu):
         assert VideoUploadForm._entete_video(entete) is attendu
+
+
+@pytest.mark.django_db
+class TestReferencementVideoExterne:
+    """
+    Avec un fournisseur externe, l'enseignant ne téléverse plus : il colle un
+    identifiant. Le geste change, la restriction de propriété non.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _fournisseur_externe(self, settings):
+        settings.ELEARNING_DIFFUSION_VIDEO = "bunny"
+        settings.BUNNY_ZONE_DIFFUSION = "https://iteag.b-cdn.net"
+        settings.BUNNY_CLE_SIGNATURE = "cle-de-test"
+
+    def test_la_page_propose_le_referencement(self, client, enseignant):
+        client.force_login(enseignant.user)
+        reponse = client.get(reverse("elearning:enseignant_videos"))
+        assert reponse.status_code == 200
+        assert "Référencer" in reponse.content.decode()
+
+    def test_un_identifiant_cree_la_video(self, client, enseignant):
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Introduction", "identifiant": "8f2c1e94abcd", "transcription": ""},
+        )
+        video = VideoAsset.objects.get(titre="Introduction")
+        assert video.cle_stockage == "8f2c1e94abcd"
+        assert video.fournisseur == "bunny"
+        # Rien à préparer chez nous : l'encodage est fait chez le fournisseur.
+        assert video.statut_traitement == VideoAsset.StatutTraitement.PRET
+
+    def test_une_adresse_youtube_collee_est_reduite_a_son_identifiant(self, client, enseignant, settings):
+        settings.ELEARNING_DIFFUSION_VIDEO = "youtube"
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Bande-annonce", "identifiant": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+        )
+        assert VideoAsset.objects.get(titre="Bande-annonce").cle_stockage == "dQw4w9WgXcQ"
+
+    def test_une_adresse_vimeo_collee_est_reduite_a_son_identifiant(self, client, enseignant, settings):
+        settings.ELEARNING_DIFFUSION_VIDEO = "vimeo"
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Extrait", "identifiant": "https://vimeo.com/123456789"},
+        )
+        assert VideoAsset.objects.get(titre="Extrait").cle_stockage == "123456789"
+
+    def test_un_identifiant_fautif_est_refuse(self, client, enseignant):
+        """Sinon l'erreur n'apparaîtrait qu'au moment où un étudiant tente de lire."""
+        client.force_login(enseignant.user)
+        reponse = client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Cassée", "identifiant": "id avec espaces !"},
+        )
+        assert reponse.status_code == 200
+        assert not VideoAsset.objects.filter(titre="Cassée").exists()
+
+    def test_un_identifiant_deja_reference_est_refuse(self, client, enseignant):
+        VideoAsset.objects.create(titre="Déjà là", cle_stockage="doublon12345", fournisseur="bunny")
+        client.force_login(enseignant.user)
+        client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Doublon", "identifiant": "doublon12345"},
+        )
+        assert not VideoAsset.objects.filter(titre="Doublon").exists()
+
+    def test_un_etudiant_ne_reference_rien(self, client, utilisateur_etudiant):
+        client.force_login(utilisateur_etudiant)
+        reponse = client.post(
+            reverse("elearning:enseignant_videos"),
+            {"titre": "Intrusion", "identifiant": "abcdef123456"},
+        )
+        assert reponse.status_code in (302, 403)
+        assert not VideoAsset.objects.filter(titre="Intrusion").exists()

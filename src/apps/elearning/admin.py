@@ -88,8 +88,8 @@ class LeconAdmin(admin.ModelAdmin):
 
 @admin.register(VideoAsset)
 class VideoAssetAdmin(admin.ModelAdmin):
-    list_display = ["titre", "statut_traitement", "duree_secondes", "backend_stockage", "created_at"]
-    list_filter = ["statut_traitement", "backend_stockage"]
+    list_display = ["titre", "statut_traitement", "duree_secondes", "fournisseur", "created_at"]
+    list_filter = ["statut_traitement", "fournisseur"]
     search_fields = ["titre", "nom_origine"]
     readonly_fields = ["cle_stockage", "checksum_sha256", "taille_octets", "message_erreur"]
     inlines = [SousTitreInline]

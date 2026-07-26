@@ -10,12 +10,13 @@
 - **Dépôt** : `github.com/beaudelaire1/iteag`
 
 ## Phase active
-**Finalisation achevée — lots 0 à 8 livrés**
+**Finalisation achevée — lots 0 à 9 livrés**
 
-Les phases 1 à 3 du CDC étaient implémentées à la reprise. Les neuf lots du plan
+Les phases 1 à 3 du CDC étaient implémentées à la reprise. Les dix lots du plan
 de finalisation ont été menés à terme : remise à niveau du socle, socle
 transverse, domaine e-learning vidéo, portails étudiant, enseignant et
-administratif, conversion publique, qualité et exploitation.
+administratif, conversion publique, qualité, exploitation, puis
+l'externalisation de la diffusion vidéo demandée en cours de projet.
 
 ## Architecture retenue
 - **Pattern** : Modular Monolith (Django)
@@ -29,12 +30,12 @@ administratif, conversion publique, qualité et exploitation.
 | D1 | Modular Monolith | Proportionné, maintenable, déployable simplement |
 | D2 | Wagtail = CMS éditorial, portail Django custom = métier | Séparation claire des responsabilités |
 | D3 | PostgreSQL full-text (pas Elasticsearch) | Volume insuffisant pour justifier ES |
-| D4 | S3 en prod, MinIO en dev local | Compatibilité API, simplicité |
+| D4 | S3 en prod pour les documents, MinIO en dev local | Compatibilité API, simplicité |
 | D5 | Tailwind CSS 4 + design system propriétaire | Standard TUS, léger, cohérent |
 | D6 | HTMX seul, sans framework client | Voir ADR-003 — CSP stricte préservée |
 | D7 | SQLite en dev rapide, PostgreSQL en staging/prod | Vélocité dev sans sacrifier la prod |
 | D8 | GitHub Actions CI/CD | Intégrée au dépôt existant |
-| D9 | Vidéo : S3 privé + URL présignée courte | Voir ADR-001 — protection sans DRM |
+| D9 | Vidéo : fournisseur externe à adresse signée (Bunny Stream) | Voir ADR-005 — remplace l'ADR-001 |
 | D10 | Accès module = donnée, pas règle codée | Voir ADR-002 — autonomie du secrétariat |
 
 ## Applications
@@ -66,6 +67,7 @@ administratif, conversion publique, qualité et exploitation.
 | 6 | Catalogue public et conversion | Livré |
 | 7 | Qualité, sécurité, couverture | Livré |
 | 8 | Exploitation | Livré côté technique ; voir le manuel pour ce qui relève de l'infrastructure |
+| 9 | Diffusion vidéo externalisée | Livré — ADR-005 |
 
 ## Suite immédiate
 
@@ -74,8 +76,10 @@ administratif, conversion publique, qualité et exploitation.
 | Export du catalogue bibliothèque | ITEAG |
 | Contenus textuels validés | ITEAG |
 | Table de redirections depuis l'ancien site | ITEAG |
+| Compte Bunny Stream et clé de signature | ITEAG |
 | Exercice de restauration chronométré | Exploitant |
 | Sauvegardes déportées et versionnage S3 | Exploitant |
+| Mesure du volume de diffusion réel après un mois | Exploitant |
 
 ## Risques actifs
 
@@ -83,15 +87,15 @@ administratif, conversion publique, qualité et exploitation.
 |---|--------|--------|-------------|
 | R1 | Contenus textuels ITEAG non fournis | Retard des lots 6 et 8 | Contenu de démonstration structuré |
 | R2 | Export bibliothèque au format inconnu | Bloque l'import des 2 635 notices | Importeur tolérant, correspondance configurable |
-| R3 | Volume vidéo supérieur aux prévisions | Coût de stockage et de trafic | Mesure dès la mise en service ; bascule HLS prévue |
-| R4 | Débit insuffisant en Guyane et Martinique | Abandon des étudiants distants | Vidéos plafonnées en 720p, supports téléchargeables |
+| R3 | Volume vidéo supérieur aux prévisions | Coût de diffusion facturé au transfert | Mesure dès la mise en service ; HLS adaptatif déjà en place |
+| R4 | Débit insuffisant en Guyane et Martinique | Abandon des étudiants distants | HLS adaptatif sur CDN (ADR-005), supports téléchargeables |
 | R5 | Dette : portails encore dans les apps de domaine | Couplage `academics` ↔ `lms` | Cliquet en place ; extraction planifiée |
 
 ## Qualité mesurée
 
 | Domaine | Mesure | Cible |
 |---------|--------|-------|
-| Tests | 529 verts | ≥ 200 |
+| Tests | 582 verts | ≥ 200 |
 | Couverture | 92 % | ≥ 90 % |
 | Couverture du contrôle d'accès | 100 % | 100 % |
 | Lint et format | 0 erreur | 0 |

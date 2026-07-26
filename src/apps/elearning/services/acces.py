@@ -183,7 +183,7 @@ def journaliser_acces(decision: DecisionAcces, *, utilisateur, lecon, request=No
     """Consigne la demande de lecture, qu'elle ait abouti ou non."""
     import hashlib
 
-    from apps.core.services.audit import _adresse_ip
+    from apps.core.services.audit import adresse_ip
 
     empreinte = ""
     if request is not None:
@@ -195,7 +195,7 @@ def journaliser_acces(decision: DecisionAcces, *, utilisateur, lecon, request=No
         lecon=lecon,
         video=lecon.video if lecon else None,
         resultat=JournalAccesVideo.Resultat.AUTORISE if decision.autorise else decision.motif,
-        adresse_ip=_adresse_ip(request),
+        adresse_ip=adresse_ip(request),
         user_agent_hash=empreinte,
         ttl_accorde=ttl,
     )

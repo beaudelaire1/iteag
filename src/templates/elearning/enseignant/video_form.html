@@ -20,8 +20,15 @@
         <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
             {% csrf_token %}
             <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
-                Déposer une vidéo
+                {% if televersement %}Déposer une vidéo{% else %}Référencer une vidéo{% endif %}
             </h2>
+
+            {% if not televersement %}
+            <p class="text-sm" style="color: var(--color-warm-600);">
+                Les vidéos ne sont pas hébergées sur le site. Déposez-la d'abord dans la console
+                du fournisseur, puis collez ici son identifiant ou son adresse.
+            </p>
+            {% endif %}
 
             {% for champ in form %}
             <div>
@@ -32,12 +39,16 @@
             </div>
             {% endfor %}
 
+            {% if televersement %}
             <p class="text-xs" style="color: var(--color-warm-500);">
                 Formats acceptés : MP4, MOV, WebM. Définition recommandée : 720p, pour rester
                 confortable depuis la Martinique et la Guyane.
             </p>
+            {% endif %}
 
-            <button type="submit" class="btn-primary w-full justify-center">Déposer</button>
+            <button type="submit" class="btn-primary w-full justify-center">
+                {% if televersement %}Déposer{% else %}Référencer{% endif %}
+            </button>
         </form>
     </section>
 
