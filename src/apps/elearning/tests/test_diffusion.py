@@ -70,7 +70,13 @@ class TestJetonBunny:
         settings.BUNNY_LIER_ADRESSE_IP = False
 
     def test_le_jeton_suit_l_algorithme_documente(self):
-        """Le condensé porte sur clé + chemin + expiration, en base64 URL-safe."""
+        """
+        Le condensé porte sur clé + chemin + expiration, en base64 URL-safe.
+
+        Ce test dit que le jeton est *formé* comme nous l'avons décidé. Il ne
+        peut pas dire que le CDN l'*accepte* : cela ne se vérifie que contre le
+        compte réel, ce que fait « manage.py verifier_bunny ».
+        """
         backend = BunnyStreamVideo()
         chemin = "/abc/playlist.m3u8"
         expiration = 1800000000
@@ -81,6 +87,43 @@ class TestJetonBunny:
         attendu = attendu.replace("+", "-").replace("/", "_").replace("=", "")
 
         assert backend.jeton(chemin, expiration) == attendu
+
+    def test_la_signature_porte_sur_le_repertoire_et_non_sur_le_manifeste(self):
+        """
+        Le défaut que ce test verrouille : un flux HLS n'est pas un fichier.
+        Après le manifeste, le lecteur demande les segments un par un. Signer
+        « /abc/playlist.m3u8 » laisse charger le manifeste puis fait refuser
+        chaque segment — la lecture s'arrête après avoir paru fonctionner.
+        """
+        backend = BunnyStreamVideo()
+        requete = backend.requete_signee("abc", 1800000000)
+
+        assert "token_path=" in requete, "Sans « token_path », les segments seront refusés"
+        assert "token_path=%2Fabc%2F" in requete, "Le répertoire signé doit être encodé dans l'adresse"
+
+        # Le jeton doit être celui du répertoire, pas celui du manifeste.
+        jeton_repertoire = backend.jeton("/abc/", 1800000000, "", {"token_path": "/abc/"})
+        assert f"token={jeton_repertoire}" in requete
+
+    def test_la_meme_requete_vaut_pour_le_manifeste_et_ses_segments(self):
+        """C'est ce que le lecteur réapplique à chaque téléchargement."""
+        backend = BunnyStreamVideo()
+        expiration = 1800000000
+        requete = backend.requete_signee("abc", expiration)
+        lecture = backend.lecture("abc", ttl=300)
+        # L'adresse de lecture porte la même chaîne, à l'expiration près.
+        assert "token_path=%2Fabc%2F" in lecture.url
+        assert requete.split("&token_path=")[1].split("&")[0] in lecture.url
+
+    def test_le_repertoire_signe_est_normalise(self):
+        """Un identifiant collé avec des barres obliques ne doit pas changer la signature."""
+        assert BunnyStreamVideo.repertoire("abc") == "/abc/"
+        assert BunnyStreamVideo.repertoire("/abc/") == "/abc/"
+
+    def test_deux_videos_ne_partagent_pas_le_meme_jeton(self):
+        """Sans quoi l'accès à une vidéo ouvrirait toute la bibliothèque."""
+        backend = BunnyStreamVideo()
+        assert backend.requete_signee("abc", 1800000000) != backend.requete_signee("def", 1800000000)
 
     def test_le_jeton_ne_contient_aucun_caractere_hostile_a_une_url(self):
         jeton = BunnyStreamVideo().jeton("/abc/playlist.m3u8", 1800000000)

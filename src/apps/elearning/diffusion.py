@@ -15,6 +15,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import quote
 
 from django.conf import settings
 from django.core import signing
@@ -195,6 +196,28 @@ class S3StockageVideo:
             return False
 
 
+def base_a_signer(cle_secrete: str, chemin_signe: str, expiration: int, parametres: dict, adresse_ip: str) -> str:
+    """
+    Chaîne condensée par l'authentification par jeton de Bunny.
+
+    Isolée du reste pour deux raisons : elle est la seule chose qui doive
+    correspondre au caractère près à ce qu'attend le CDN, et elle doit pouvoir
+    être éprouvée contre un compte réel sans passer par une vue.
+
+    Ordre : clé, chemin signé, expiration, adresse du demandeur, puis les
+    paramètres triés par nom et joints par « & ». Les paramètres entrent dans
+    le condensé sous leur forme brute, et dans l'adresse sous forme encodée.
+    """
+    donnees = "&".join(f"{nom}={parametres[nom]}" for nom in sorted(parametres))
+    return f"{cle_secrete}{chemin_signe}{expiration}{adresse_ip}{donnees}"
+
+
+def condenser(base: str) -> str:
+    """SHA-256, base64 URL-safe sans remplissage — la forme attendue par le CDN."""
+    condense = hashlib.sha256(base.encode()).digest()
+    return base64.b64encode(condense).decode().replace("+", "-").replace("/", "_").replace("=", "")
+
+
 class BunnyStreamVideo:
     """
     Bunny Stream — fournisseur retenu pour les modules protégés (ADR-005).
@@ -202,6 +225,14 @@ class BunnyStreamVideo:
     L'adresse du manifeste HLS est signée par un jeton à expiration, calculé
     localement : délivrer une lecture ne demande aucun appel réseau, ce qui
     laisse le chemin critique sans dépendance externe.
+
+    **Le jeton porte sur le répertoire de la vidéo, pas sur le manifeste.**
+    Un flux HLS n'est pas un fichier : le manifeste ne fait que désigner des
+    segments, demandés ensuite un par un. Signer « /identifiant/playlist.m3u8 »
+    laisse donc charger le manifeste, puis fait refuser chaque segment — la
+    lecture échoue quelques secondes après avoir paru fonctionner. Bunny prévoit
+    pour cela le jeton de répertoire : on signe « /identifiant/ » et on le
+    déclare dans « token_path ».
 
     La liaison à l'adresse IP du demandeur est activable. Elle resserre la
     protection mais coupe la lecture des étudiants dont l'adresse change en
@@ -226,28 +257,34 @@ class BunnyStreamVideo:
     def origine_csp(cls) -> str:
         return getattr(settings, "BUNNY_ZONE_DIFFUSION", "").rstrip("/")
 
+    @staticmethod
+    def repertoire(cle: str) -> str:
+        """Répertoire de la vidéo — c'est lui qui est signé, pas le manifeste."""
+        return f"/{cle.strip('/')}/"
+
     def _chemin(self, cle: str) -> str:
-        return f"/{cle.strip('/')}/playlist.m3u8"
+        return f"{self.repertoire(cle)}playlist.m3u8"
 
-    def jeton(self, chemin: str, expiration: int, adresse_ip: str = "") -> str:
-        """
-        Jeton d'authentification Bunny.
+    def jeton(self, chemin_signe: str, expiration: int, adresse_ip: str = "", parametres: dict | None = None) -> str:
+        """Jeton d'authentification pour `chemin_signe`, valable jusqu'à `expiration`."""
+        return condenser(base_a_signer(self._cle, chemin_signe, expiration, parametres or {}, adresse_ip))
 
-        Le condensé porte sur la clé secrète, le chemin signé, l'expiration et
-        — si la liaison est active — l'adresse du demandeur. Le résultat est
-        transposé en base64 URL-safe sans remplissage, comme l'attend le CDN.
+    def requete_signee(self, cle: str, expiration: int, adresse_ip: str = "") -> str:
+        """Chaîne de requête ouvrant tout le répertoire de la vidéo.
+
+        La même chaîne vaut pour le manifeste et pour chacun de ses segments :
+        c'est ce que le lecteur réapplique à chaque téléchargement.
         """
-        base = f"{self._cle}{chemin}{expiration}{adresse_ip}"
-        condense = hashlib.sha256(base.encode()).digest()
-        return base64.b64encode(condense).decode().replace("+", "-").replace("/", "_").replace("=", "")
+        repertoire = self.repertoire(cle)
+        parametres = {"token_path": repertoire}
+        jeton = self.jeton(repertoire, expiration, adresse_ip, parametres)
+        return f"token={jeton}&token_path={quote(repertoire, safe='')}&expires={expiration}"
 
     def lecture(self, cle: str, ttl: int = 300, adresse_ip: str = "") -> Lecture:
-        chemin = self._chemin(cle)
         expiration = int(time.time()) + ttl
         ip = adresse_ip if self._lier_ip else ""
-        jeton = self.jeton(chemin, expiration, ip)
         return Lecture(
-            url=f"{self._zone}{chemin}?token={jeton}&expires={expiration}",
+            url=f"{self._zone}{self._chemin(cle)}?{self.requete_signee(cle, expiration, ip)}",
             mode=self.mode,
             expire_dans=ttl,
             origine=self._zone,
