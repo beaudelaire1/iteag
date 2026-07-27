@@ -35,6 +35,7 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "lms": {"core", "academics", "formations"},
     "elearning": {"core", "accounts", "formations", "academics"},
     "library": {"core", "formations"},
+    "commerce": {"core", "accounts", "library"},
     "documents": {"core", "accounts", "academics"},
     # Les portails agrègent plusieurs domaines : c'est leur raison d'être, et
     # c'est pourquoi ils vivent hors des applications de domaine.

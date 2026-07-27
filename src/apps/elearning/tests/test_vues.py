@@ -50,6 +50,12 @@ class TestPageDeLecon:
         client.force_login(utilisateur_etudiant)
         assert client.get(url_lecon(lecon)).status_code == 200
 
+    def test_le_lecteur_propose_un_bouton_de_demarrage(self, client, utilisateur_etudiant, lecon, acces):
+        client.force_login(utilisateur_etudiant)
+        contenu = client.get(url_lecon(lecon)).content.decode()
+        assert "data-demarrer-video" in contenu
+        assert "lecteur-video.js" in contenu
+
     def test_aucune_adresse_de_fichier_dans_le_html(self, client, utilisateur_etudiant, lecon, acces, video_prete):
         """L'invariant central : la page ne doit rien révéler du stockage."""
         client.force_login(utilisateur_etudiant)

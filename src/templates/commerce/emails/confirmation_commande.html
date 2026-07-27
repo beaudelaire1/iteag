@@ -1,0 +1,9 @@
+{% extends "core/emails/base_email.html" %}
+
+{% block email_content %}
+<h1>Commande {{ numero }} reçue</h1>
+<p>Bonjour {{ nom }},</p>
+<p>Votre commande d'un montant de <strong>{{ total }} €</strong> a bien été enregistrée.</p>
+<p>Mode de règlement : {{ mode_paiement }}.</p>
+<p><a href="{{ suivi_url }}">Consulter le suivi de ma commande</a></p>
+{% endblock %}

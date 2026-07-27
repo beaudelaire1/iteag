@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Passer ma commande — Boutique {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide">
+        <div class="mb-10"><p class="overline mb-2">Boutique</p><h1>Passer ma commande</h1></div>
+        <div class="grid grid-cols-1 gap-10 lg:grid-cols-3">
+            <form method="post" class="card-elevated p-7 lg:col-span-2">
+                {% csrf_token %}
+                {% include "partials/erreurs_formulaire.html" with form=form %}
+                <h2 class="text-xl mb-6">Coordonnées et livraison</h2>
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    {% for champ in form %}
+                    {% if champ.name == "site_web" %}
+                    <div class="sr-only" aria-hidden="true">{{ champ }}</div>
+                    {% elif champ.name == "adresse" or champ.name == "complement_adresse" or champ.name == "commentaire" or champ.name == "mode_paiement" or champ.name == "accepte_conditions" %}
+                    <div class="sm:col-span-2">{% with field=champ %}{% include "partials/champ.html" %}{% endwith %}</div>
+                    {% else %}
+                    <div>{% with field=champ %}{% include "partials/champ.html" %}{% endwith %}</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn-primary mt-8">Confirmer la commande</button>
+            </form>
+
+            <aside class="card h-fit">
+                <h2 class="text-lg mb-5">Récapitulatif</h2>
+                <ul class="space-y-4">
+                    {% for ligne in lignes %}
+                    <li class="flex justify-between gap-4 text-sm">
+                        <span>{{ ligne.produit.titre }} × {{ ligne.quantite }}</span>
+                        <strong class="shrink-0">{{ ligne.total }} €</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <hr class="my-5 border-warm-200">
+                <div class="space-y-2 text-sm">
+                    <p class="flex justify-between"><span>Livres</span><strong>{{ total_produits }} €</strong></p>
+                    <p class="flex justify-between"><span>Livraison</span><strong>{{ frais_livraison }} €</strong></p>
+                    <p class="flex justify-between text-lg pt-3"><span>Total</span><strong>{{ total_commande }} €</strong></p>
+                </div>
+                <p class="mt-5 text-xs leading-5 text-warm-500">
+                    Le stock est réservé dès la validation. Le secrétariat confirme ensuite le règlement et la préparation.
+                </p>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

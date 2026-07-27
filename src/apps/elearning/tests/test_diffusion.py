@@ -10,6 +10,7 @@ YouTube sur un module payant suffirait à tout ouvrir.
 
 import base64
 import hashlib
+import hmac
 import time
 
 import pytest
@@ -71,22 +72,31 @@ class TestJetonBunny:
 
     def test_le_jeton_suit_l_algorithme_documente(self):
         """
-        Le condensé porte sur clé + chemin + expiration, en base64 URL-safe.
+        Le condensé est un HMAC-SHA256, en base64 URL-safe.
 
         Ce test dit que le jeton est *formé* comme nous l'avons décidé. Il ne
         peut pas dire que le CDN l'*accepte* : cela ne se vérifie que contre le
         compte réel, ce que fait « manage.py verifier_bunny ».
         """
         backend = BunnyStreamVideo()
-        chemin = "/abc/playlist.m3u8"
+        chemin = "/abc/"
         expiration = 1800000000
+        parametres = {"token_path": chemin}
+        message = f"{chemin}{expiration}token_path={chemin}"
 
-        attendu = base64.b64encode(
-            hashlib.sha256(f"cle-de-test-ne-servant-a-rien{chemin}{expiration}".encode()).digest()
-        ).decode()
-        attendu = attendu.replace("+", "-").replace("/", "_").replace("=", "")
+        attendu = (
+            base64.urlsafe_b64encode(
+                hmac.new(
+                    b"cle-de-test-ne-servant-a-rien",
+                    message.encode(),
+                    hashlib.sha256,
+                ).digest()
+            )
+            .decode()
+            .rstrip("=")
+        )
 
-        assert backend.jeton(chemin, expiration) == attendu
+        assert backend.jeton(chemin, expiration, parametres=parametres) == f"HS256-{attendu}"
 
     def test_la_signature_porte_sur_le_repertoire_et_non_sur_le_manifeste(self):
         """
@@ -96,24 +106,23 @@ class TestJetonBunny:
         chaque segment — la lecture s'arrête après avoir paru fonctionner.
         """
         backend = BunnyStreamVideo()
-        requete = backend.requete_signee("abc", 1800000000)
+        segment = backend.requete_signee("abc", 1800000000)
 
-        assert "token_path=" in requete, "Sans « token_path », les segments seront refusés"
-        assert "token_path=%2Fabc%2F" in requete, "Le répertoire signé doit être encodé dans l'adresse"
+        assert segment.startswith("bcdn_token=HS256-")
+        assert "token_path=%2Fabc%2F" in segment, "Le répertoire signé doit être encodé dans l'adresse"
 
         # Le jeton doit être celui du répertoire, pas celui du manifeste.
         jeton_repertoire = backend.jeton("/abc/", 1800000000, "", {"token_path": "/abc/"})
-        assert f"token={jeton_repertoire}" in requete
+        assert f"bcdn_token={jeton_repertoire}" in segment
 
-    def test_la_meme_requete_vaut_pour_le_manifeste_et_ses_segments(self):
-        """C'est ce que le lecteur réapplique à chaque téléchargement."""
+    def test_le_jeton_est_place_dans_le_chemin_du_manifeste(self):
+        """Les segments relatifs héritent ainsi du même chemin signé."""
         backend = BunnyStreamVideo()
-        expiration = 1800000000
-        requete = backend.requete_signee("abc", expiration)
         lecture = backend.lecture("abc", ttl=300)
-        # L'adresse de lecture porte la même chaîne, à l'expiration près.
+        assert lecture.url.startswith("https://iteag.b-cdn.net/bcdn_token=HS256-")
         assert "token_path=%2Fabc%2F" in lecture.url
-        assert requete.split("&token_path=")[1].split("&")[0] in lecture.url
+        assert lecture.url.endswith("/abc/playlist.m3u8")
+        assert "?" not in lecture.url
 
     def test_le_repertoire_signe_est_normalise(self):
         """Un identifiant collé avec des barres obliques ne doit pas changer la signature."""
@@ -139,12 +148,12 @@ class TestJetonBunny:
         lecture = BunnyStreamVideo().lecture("abc", ttl=300)
         assert lecture.mode == ModeLecture.HLS
         assert "/abc/playlist.m3u8" in lecture.url
-        assert "token=" in lecture.url and "expires=" in lecture.url
+        assert "bcdn_token=HS256-" in lecture.url and "expires=" in lecture.url
         assert lecture.expire_dans == 300
 
     def test_l_expiration_est_dans_le_futur_proche(self):
         lecture = BunnyStreamVideo().lecture("abc", ttl=300)
-        expiration = int(lecture.url.split("expires=")[1])
+        expiration = int(lecture.url.split("&expires=")[1].split("/", 1)[0])
         assert 0 < expiration - int(time.time()) <= 300
 
     def test_deux_ttl_differents_donnent_deux_jetons_differents(self):

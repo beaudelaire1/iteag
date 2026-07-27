@@ -44,7 +44,7 @@
                     Cette vidéo est hébergée par un service externe : la progression n'y est pas mesurée.
                 </p>
                 {% else %}
-                <div class="bg-navy-950 rounded overflow-hidden shadow-elevated"
+                <div class="relative bg-navy-950 rounded overflow-hidden shadow-elevated"
                      data-lecteur-video
                      data-url-lecture="{% url 'elearning:lecon_playback' module.slug lecon.slug %}"
                      data-url-progression="{% url 'elearning:lecon_progression' module.slug lecon.slug %}"
@@ -61,6 +61,17 @@
                         {% endfor %}
                         Votre navigateur ne peut pas lire cette vidéo.
                     </video>
+
+                    <button type="button"
+                            data-demarrer-video
+                            class="absolute inset-0 flex items-center justify-center bg-black/20 text-white transition hover:bg-black/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+                            aria-label="Lire la vidéo « {{ lecon.titre }} »">
+                        <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gold-500 shadow-lg" aria-hidden="true">
+                            <svg class="h-7 w-7 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </span>
+                    </button>
 
                     <p data-lecteur-message
                        class="hidden px-4 py-3 text-sm text-white bg-navy-800"

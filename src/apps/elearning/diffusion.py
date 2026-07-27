@@ -10,6 +10,7 @@ documentation — voir `NiveauProtection` et l'invariant du modèle.
 
 import base64
 import hashlib
+import hmac
 import time
 import uuid
 from dataclasses import dataclass
@@ -196,26 +197,22 @@ class S3StockageVideo:
             return False
 
 
-def base_a_signer(cle_secrete: str, chemin_signe: str, expiration: int, parametres: dict, adresse_ip: str) -> str:
+def base_a_signer(chemin_signe: str, expiration: int, parametres: dict, adresse_ip: str) -> str:
     """
-    Chaîne condensée par l'authentification par jeton de Bunny.
+    Message signé par l'authentification avancée de Bunny.
 
-    Isolée du reste pour deux raisons : elle est la seule chose qui doive
-    correspondre au caractère près à ce qu'attend le CDN, et elle doit pouvoir
-    être éprouvée contre un compte réel sans passer par une vue.
-
-    Ordre : clé, chemin signé, expiration, adresse du demandeur, puis les
-    paramètres triés par nom et joints par « & ». Les paramètres entrent dans
-    le condensé sous leur forme brute, et dans l'adresse sous forme encodée.
+    La clé n'entre jamais dans le message : elle sert de clé HMAC. Bunny signe
+    le chemin, l'expiration, les paramètres triés puis l'adresse IP éventuelle.
+    Les valeurs restent brutes ici et ne sont encodées que dans l'URL.
     """
     donnees = "&".join(f"{nom}={parametres[nom]}" for nom in sorted(parametres))
-    return f"{cle_secrete}{chemin_signe}{expiration}{adresse_ip}{donnees}"
+    return f"{chemin_signe}{expiration}{donnees}{adresse_ip}"
 
 
-def condenser(base: str) -> str:
-    """SHA-256, base64 URL-safe sans remplissage — la forme attendue par le CDN."""
-    condense = hashlib.sha256(base.encode()).digest()
-    return base64.b64encode(condense).decode().replace("+", "-").replace("/", "_").replace("=", "")
+def condenser(cle_secrete: str, base: str) -> str:
+    """HMAC-SHA256 en base64 URL-safe, préfixé comme l'exige Bunny."""
+    condense = hmac.new(cle_secrete.encode("utf-8"), base.encode("utf-8"), hashlib.sha256).digest()
+    return f"HS256-{base64.urlsafe_b64encode(condense).decode('ascii').rstrip('=')}"
 
 
 class BunnyStreamVideo:
@@ -231,8 +228,10 @@ class BunnyStreamVideo:
     segments, demandés ensuite un par un. Signer « /identifiant/playlist.m3u8 »
     laisse donc charger le manifeste, puis fait refuser chaque segment — la
     lecture échoue quelques secondes après avoir paru fonctionner. Bunny prévoit
-    pour cela le jeton de répertoire : on signe « /identifiant/ » et on le
-    déclare dans « token_path ».
+    pour cela le jeton de répertoire : on signe « /identifiant/ », on le
+    déclare dans « token_path » et on place le jeton dans le chemin. Ce dernier
+    point est requis par Bunny pour que les URL relatives des segments HLS
+    héritent automatiquement de l'autorisation.
 
     La liaison à l'adresse IP du demandeur est activable. Elle resserre la
     protection mais coupe la lecture des étudiants dont l'adresse change en
@@ -267,24 +266,32 @@ class BunnyStreamVideo:
 
     def jeton(self, chemin_signe: str, expiration: int, adresse_ip: str = "", parametres: dict | None = None) -> str:
         """Jeton d'authentification pour `chemin_signe`, valable jusqu'à `expiration`."""
-        return condenser(base_a_signer(self._cle, chemin_signe, expiration, parametres or {}, adresse_ip))
+        base = base_a_signer(chemin_signe, expiration, parametres or {}, adresse_ip)
+        return condenser(self._cle, base)
 
     def requete_signee(self, cle: str, expiration: int, adresse_ip: str = "") -> str:
-        """Chaîne de requête ouvrant tout le répertoire de la vidéo.
+        """Segment d'URL ouvrant tout le répertoire de la vidéo.
 
-        La même chaîne vaut pour le manifeste et pour chacun de ses segments :
-        c'est ce que le lecteur réapplique à chaque téléchargement.
+        Contrairement à une requête « ?token=… », ce segment devient un niveau
+        du chemin. Les URL relatives du manifeste conservent donc le jeton sans
+        réécriture JavaScript.
         """
         repertoire = self.repertoire(cle)
         parametres = {"token_path": repertoire}
         jeton = self.jeton(repertoire, expiration, adresse_ip, parametres)
-        return f"token={jeton}&token_path={quote(repertoire, safe='')}&expires={expiration}"
+        donnees = "&".join(f"{nom}={quote(str(parametres[nom]), safe='')}" for nom in sorted(parametres))
+        suffixe = f"&{donnees}" if donnees else ""
+        return f"bcdn_token={jeton}{suffixe}&expires={expiration}"
+
+    def url_signee(self, cle: str, expiration: int, adresse_ip: str = "") -> str:
+        """URL HLS complète au format de répertoire exigé par Bunny."""
+        return f"{self._zone}/{self.requete_signee(cle, expiration, adresse_ip)}{self._chemin(cle)}"
 
     def lecture(self, cle: str, ttl: int = 300, adresse_ip: str = "") -> Lecture:
         expiration = int(time.time()) + ttl
         ip = adresse_ip if self._lier_ip else ""
         return Lecture(
-            url=f"{self._zone}{self._chemin(cle)}?{self.requete_signee(cle, expiration, ip)}",
+            url=self.url_signee(cle, expiration, ip),
             mode=self.mode,
             expire_dans=ttl,
             origine=self._zone,

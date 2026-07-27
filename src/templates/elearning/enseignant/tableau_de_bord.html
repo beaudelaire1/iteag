@@ -1,6 +1,6 @@
 {% extends "partials/portal_base.html" %}
 
-{% block title %}Formation vidéo — {{ SITE_NAME }}{% endblock %}
+{% block title %}E-Learning — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}{% with nav='tableau' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
 {% block portal_nav_mobile %}{% with nav='tableau' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
@@ -8,7 +8,7 @@
 {% block portal_header %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
-        <p class="overline mb-2">Formation vidéo</p>
+        <p class="overline mb-2">E-Learning</p>
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Bonjour {{ professeur.prenom }}</h1>
     </div>
     <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Nouveau module</a>
@@ -66,7 +66,7 @@
 </div>
 {% else %}
 <div class="card text-center py-12">
-    <p class="text-warm-600 mb-4">Vous n'avez pas encore de module de formation vidéo.</p>
+    <p class="text-warm-600 mb-4">Vous n'avez pas encore de module E-Learning.</p>
     <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Créer mon premier module</a>
 </div>
 {% endif %}

@@ -1,0 +1,59 @@
+name: iteag
+
+x-application: &application
+  build:
+    context: .
+    dockerfile: Dockerfile.prod
+  env_file:
+    - .env
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-iteag}
+      POSTGRES_USER: ${POSTGRES_USER:-iteag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iteag} -d ${POSTGRES_DB:-iteag}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    <<: *application
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    <<: *application
+    command: celery -A config worker --loglevel=info
+
+  beat:
+    <<: *application
+    command: celery -A config beat --loglevel=info
+
+volumes:
+  postgres_data:
+  redis_data:

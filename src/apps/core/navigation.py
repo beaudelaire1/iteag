@@ -65,7 +65,7 @@ def rubriques() -> list[Rubrique]:
                     detail="Diplômant, Bachelor FLTE, libre, ITEAG Pro",
                 ),
                 Entree(
-                    libelle="Formations vidéo",
+                    libelle="E-Learning",
                     url=reverse("elearning:catalogue"),
                     detail="Modules à suivre à votre rythme",
                 ),
@@ -88,6 +88,11 @@ def rubriques() -> list[Rubrique]:
             cle="bibliotheque",
             libelle="Bibliothèque",
             url=reverse("library:catalogue"),
+        ),
+        Rubrique(
+            cle="boutique",
+            libelle="Boutique",
+            url=reverse("commerce:catalogue"),
         ),
     ]
 
