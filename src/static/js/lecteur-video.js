@@ -30,6 +30,43 @@
   let minuteur = null;
   let hls = null;
 
+  /* ── Budget de reprises ──
+     Une erreur de lecture signifie le plus souvent un jeton périmé, et
+     redemander une adresse est la bonne réponse. Mais si l'échec est
+     structurel — source illisible, vidéo absente chez le fournisseur — la
+     nouvelle adresse échoue identiquement, et la reprise se rappelle
+     elle-même : on a mesuré une demande toutes les 3 ms, l'onglet figé et la
+     table d'audit qui se remplit à vue d'œil. Un serveur ne doit jamais
+     pouvoir être martelé par sa propre page.
+
+     D'où trois verrous : un plafond, un délai croissant, et un compteur remis
+     à zéro dès qu'une lecture repart pour de bon. */
+  const REPRISES_MAX = 3;
+  const DELAI_REPRISE_MS = 1000;
+  let reprises = 0;
+  let repriseEnCours = false;
+
+  function reprendreApresErreur() {
+    if (repriseEnCours) return;
+    if (reprises >= REPRISES_MAX) {
+      afficherMessage("La lecture de cette vidéo a échoué. Rechargez la page ou signalez-le au secrétariat.");
+      montrerBouton();
+      return;
+    }
+    repriseEnCours = true;
+    const attente = DELAI_REPRISE_MS * 2 ** reprises;
+    reprises += 1;
+    adresseObtenue = false;
+    setTimeout(async () => {
+      repriseEnCours = false;
+      if (await preparerLecture()) {
+        video.play().catch(() => montrerBouton());
+      } else {
+        montrerBouton();
+      }
+    }, attente);
+  }
+
   function jetonCsrf() {
     const champ = document.querySelector("[name=csrfmiddlewaretoken]");
     if (champ) return champ.value;
@@ -94,9 +131,19 @@
   /* ── Rattachement de la source selon le mode ── */
 
   // Safari lit le HLS nativement : lui imposer hls.js dégraderait la lecture
-  // et couperait l'AirPlay.
+  // et couperait l'AirPlay. Encore faut-il reconnaître Safari.
+  //
+  // `canPlayType("application/vnd.apple.mpegurl")` ne le fait plus : Chrome y
+  // répond « maybe » alors qu'il est incapable de lire un manifeste HLS. Sur
+  // cette seule réponse, le lecteur collait l'adresse dans `video.src`,
+  // n'utilisait jamais hls.js, et échouait en MediaError 4 — sur Chrome et
+  // Edge, donc sur l'essentiel du public, donc sur tout le contenu Bunny.
+  //
+  // `webkitCurrentPlaybackTargetIsWireless` est propre à WebKit et c'est
+  // précisément la propriété AirPlay que l'on cherche à préserver : le test
+  // porte enfin sur ce qui motive l'exception.
   function hlsNatif() {
-    return video.canPlayType("application/vnd.apple.mpegurl") !== "";
+    return "webkitCurrentPlaybackTargetIsWireless" in video && video.canPlayType("application/vnd.apple.mpegurl") !== "";
   }
 
   function attacherHls(adresse) {
@@ -105,6 +152,12 @@
       return true;
     }
     if (typeof Hls === "undefined" || !Hls.isSupported()) {
+      // Dernier recours : un navigateur sans MSE qui prétend lire le HLS vaut
+      // mieux qu'un refus sec.
+      if (video.canPlayType("application/vnd.apple.mpegurl") !== "") {
+        video.src = adresse;
+        return true;
+      }
       afficherMessage("Votre navigateur ne permet pas la lecture de cette vidéo.");
       return false;
     }
@@ -122,12 +175,10 @@
       if (!donnees.fatal) return;
       // Une erreur réseau fatale signifie le plus souvent un jeton périmé :
       // on redemande une adresse plutôt que d'afficher un échec.
-      adresseObtenue = false;
       if (donnees.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        preparerLecture().then((pret) => {
-          if (pret) video.play().catch(() => {});
-        });
+        reprendreApresErreur();
       } else {
+        adresseObtenue = false;
         afficherMessage("La lecture a été interrompue. Rechargez la page.");
       }
     });
@@ -253,14 +304,24 @@
   });
 
   // Une adresse expirée provoque une erreur réseau : on en redemande une.
-  video.addEventListener("error", async () => {
+  video.addEventListener("error", () => {
     if (!adresseObtenue) return;
-    adresseObtenue = false;
-    if (await preparerLecture()) {
-      video.play().catch(() => montrerBouton());
-    } else {
+    // `MEDIA_ERR_SRC_NOT_SUPPORTED` ne dit pas « adresse périmée » mais « je ne
+    // sais pas lire ce format ». Une adresse neuve ne changerait rien : c'est
+    // exactement l'échec qui bouclait à l'infini.
+    if (video.error && video.error.code === 4) {
+      adresseObtenue = false;
+      afficherMessage("Le format de cette vidéo n'est pas lisible par votre navigateur.");
       montrerBouton();
+      return;
     }
+    reprendreApresErreur();
+  });
+
+  // Une lecture qui repart pour de bon solde le budget de reprises : la panne
+  // suivante, éventuelle, repart d'un compteur neuf.
+  video.addEventListener("playing", () => {
+    reprises = 0;
   });
 
   // Dernier signal avant de quitter la page, pour ne pas perdre la position.
