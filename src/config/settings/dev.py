@@ -37,6 +37,12 @@ DATABASES = {  # noqa: F811
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
+        # SQLite ne tolère qu'un écrivain à la fois. Avec `runserver` en
+        # arrière-plan, une commande qui écrit longuement — un peuplement, une
+        # migration de données — se heurte au verrou et abandonne au bout des
+        # 5 secondes par défaut, sur un « database is locked » qui n'apprend
+        # rien. On laisse le temps d'attendre son tour.
+        "OPTIONS": {"timeout": 30},
     }
 }
 

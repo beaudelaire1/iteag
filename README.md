@@ -72,6 +72,33 @@ python manage.py seed_formations       # parcours, disciplines, cours, tarifs
 python manage.py seed_profs_detail     # fiches professeurs détaillées
 ```
 
+### Jeu de démonstration complet
+
+Une seule commande peuple toute la plateforme — comptes, candidatures,
+étudiants, sessions, classes, copies à corriger, bibliothèque, boutique,
+accès e-learning :
+
+```bash
+python manage.py seed_demo                      # tout, référentiel compris
+python manage.py seed_demo --sans-referentiel   # si seed_formations est déjà passé
+```
+
+Elle est **idempotente** : la relancer complète le jeu sans le dupliquer.
+Chaque sous-commande reste utilisable seule (`seed_boutique`,
+`seed_vie_academique`, `seed_lms`, `seed_candidatures`, `seed_bibliotheque`,
+`seed_comptes`, `seed_elearning_demo`).
+
+Le jeu est composé pour que **chaque écran montre au moins un cas de chaque
+état qu'il sait afficher** : des candidatures dans les cinq statuts du
+workflow d'admission, des copies dans les cinq états du cycle de correction,
+des stocks au-dessus et au-dessous du seuil d'alerte. Une liste dont toutes
+les lignes se ressemblent ne démontre ni ses filtres ni ses actions.
+
+> Les comptes créés partagent un mot de passe de démonstration
+> (`DemoIteag!2026`), acceptable sur un poste de travail et **nulle part
+> ailleurs**. Sur un environnement accessible depuis l'extérieur, passer
+> `python manage.py seed_comptes --mot-de-passe "…"`.
+
 ---
 
 ## Organisation du dépôt
