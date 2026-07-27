@@ -1,0 +1,96 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Copies et documents — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='documents' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='documents' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Suivi des étudiants</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Copies et documents</h1>
+    <p class="mt-1 text-sm text-warm-500">
+        {{ total_remises }} copie{{ total_remises|pluralize }} remise{{ total_remises|pluralize }} ·
+        {{ total_corriges }} corrigée{{ total_corriges|pluralize }} rendue{{ total_corriges|pluralize }}
+        {% if total_sans_remise %} · <span class="text-rose-700">{{ total_sans_remise }} sans remise</span>{% endif %}
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 md:grid-cols-[2fr_1fr_auto]">
+    <div>
+        <label class="form-label" for="doc-cours">Cours</label>
+        <select id="doc-cours" class="form-input" name="cours">
+            <option value="">Tous mes cours</option>
+            {% for cs in mes_cours %}
+            <option value="{{ cs.pk }}"{% if cours_courant == cs.pk|stringformat:"s" %} selected{% endif %}>
+                {{ cs.cours.titre }} — {{ cs.session.nom }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="doc-etat">État</label>
+        <select id="doc-etat" class="form-input" name="etat">
+            <option value="">Tous</option>
+            <option value="a_corriger"{% if etat_courant == "a_corriger" %} selected{% endif %}>À corriger</option>
+            <option value="corrigees"{% if etat_courant == "corrigees" %} selected{% endif %}>Corrigées rendues</option>
+            <option value="sans_remise"{% if etat_courant == "sans_remise" %} selected{% endif %}>Sans remise</option>
+        </select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="card-elevated" style="overflow-x: auto;">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-xs uppercase tracking-wider text-warm-500">
+                <th class="pb-3 pr-4">Étudiant</th>
+                <th class="pb-3 pr-4">Cours</th>
+                <th class="pb-3 pr-4">Type</th>
+                <th class="pb-3 pr-4">État</th>
+                <th class="pb-3 pr-4">Note</th>
+                <th class="pb-3 text-right">Documents</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for evaluation in evaluations %}
+            <tr class="border-t border-warm-100">
+                <td class="py-3 pr-4">
+                    <span class="font-medium text-navy-900">{{ evaluation.etudiant.utilisateur.get_full_name|default:evaluation.etudiant.utilisateur.username }}</span>
+                    <span class="block text-xs text-warm-500">{{ evaluation.etudiant.numero_etudiant }}</span>
+                </td>
+                <td class="py-3 pr-4 text-warm-600">{{ evaluation.cours_session.cours.titre }}</td>
+                <td class="py-3 pr-4 text-warm-600">{{ evaluation.get_type_evaluation_display }}</td>
+                <td class="py-3 pr-4">
+                    <span class="badge {% if evaluation.statut == 'publie' %}badge-success{% elif evaluation.statut == 'note' %}badge-info{% elif evaluation.statut == 'en_attente' %}badge-gold{% else %}badge-warning{% endif %}">
+                        {{ evaluation.get_statut_display }}
+                    </span>
+                </td>
+                <td class="py-3 pr-4 font-semibold text-navy-900">
+                    {% if evaluation.note is not None %}{{ evaluation.note|floatformat:1 }}/20{% else %}—{% endif %}
+                </td>
+                <td class="py-3 text-right whitespace-nowrap">
+                    {% if evaluation.fichier_soumis %}
+                    <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'remise' %}" class="text-sm font-semibold text-navy-600">Copie remise</a>
+                    {% else %}
+                    <span class="text-xs text-warm-400">rien remis</span>
+                    {% endif %}
+                    {% if evaluation.fichier_corrige %}
+                    <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'corrige' %}" class="ml-4 text-sm font-semibold text-emerald-700">Corrigé</a>
+                    {% endif %}
+                    <a href="{% url 'lms:grade_evaluation' evaluation.pk %}" class="ml-4 text-sm font-semibold text-navy-600">
+                        {% if evaluation.note is not None %}Modifier{% else %}Noter{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="py-12 text-center text-warm-400">Aucune copie ne correspond à ce filtre.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

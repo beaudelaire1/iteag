@@ -9,4 +9,9 @@ urlpatterns = [
     path("candidature/parcours-apercu/", views.parcours_preview, name="parcours_preview"),
     path("candidature/confirmation/<str:token>/", views.candidature_confirmation, name="candidature_confirmation"),
     path("candidature/suivi/<str:token>/", views.candidature_suivi, name="candidature_suivi"),
+    path(
+        "candidature/suivi/<str:token>/piece/<int:piece_id>/",
+        views.deposer_piece,
+        name="deposer_piece",
+    ),
 ]

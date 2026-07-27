@@ -378,7 +378,7 @@ class PaymentDeleteView(AdminRoleRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
-class CourseListView(AdminRoleRequiredMixin, ListView):
+class CourseListView(StaffRoleRequiredMixin, ListView):
     model = Cours
     template_name = "administration/courses.html"
     context_object_name = "cours_list"
@@ -414,7 +414,7 @@ class CourseListView(AdminRoleRequiredMixin, ListView):
         return context
 
 
-class CourseCreateView(AdminRoleRequiredMixin, CreateView):
+class CourseCreateView(StaffRoleRequiredMixin, CreateView):
     model = Cours
     form_class = AdminCoursForm
     template_name = "administration/form.html"
@@ -436,7 +436,7 @@ class CourseCreateView(AdminRoleRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class CourseUpdateView(AdminRoleRequiredMixin, UpdateView):
+class CourseUpdateView(StaffRoleRequiredMixin, UpdateView):
     model = Cours
     form_class = AdminCoursForm
     template_name = "administration/form.html"

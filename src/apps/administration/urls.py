@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_academics, views_elearning
+from . import views, views_academics, views_elearning, views_pieces
 
 app_name = "administration"
 
@@ -9,6 +9,9 @@ urlpatterns = [
     # Candidatures
     path("candidatures/", views.AdminCandidatureListView.as_view(), name="candidatures"),
     path("candidatures/<int:pk>/", views.AdminCandidatureDetailView.as_view(), name="candidature_detail"),
+    path("candidatures/<int:pk>/pieces/", views_pieces.DemanderPiecesView.as_view(), name="demander_pieces"),
+    path("pieces/<int:pk>/decision/", views_pieces.PieceDecisionView.as_view(), name="piece_decision"),
+    path("pieces/<int:pk>/fichier/", views_pieces.PieceTelechargementView.as_view(), name="piece_fichier"),
     # Étudiants
     path("etudiants/", views.AdminEtudiantListView.as_view(), name="etudiants"),
     path("etudiants/ajouter/", views.AdminEtudiantCreateView.as_view(), name="etudiant_create"),

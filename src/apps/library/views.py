@@ -1,7 +1,13 @@
+from django.contrib import messages
 from django.db.models import Q
-from django.views.generic import DetailView, ListView
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from django.views import View
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
 from apps.formations.models import Discipline
+from apps.library.formulaires import NoticeForm
 
 from .models import NoticeBibliographique
 
@@ -79,3 +85,146 @@ class NoticeDetailView(DetailView):
     model = NoticeBibliographique
     template_name = "library/notice_detail.html"
     context_object_name = "notice"
+
+
+# ══════════════════════════════════════════════
+# Back-office — gestion des notices
+# ══════════════════════════════════════════════
+#
+# La bibliothèque n'avait aucun écran de gestion : le catalogue se consultait
+# mais ne s'administrait que par l'interface Django. Or tenir le fonds fait
+# partie du travail courant du secrétariat, au même titre que la boutique.
+
+
+class GestionNoticesView(StaffRoleRequiredMixin, ListView):
+    """Fonds documentaire, avec recherche et état de disponibilité."""
+
+    model = NoticeBibliographique
+    template_name = "library/gestion.html"
+    context_object_name = "notices"
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = NoticeBibliographique.objects.select_related("discipline").order_by("cote", "titre")
+        recherche = self.request.GET.get("q", "").strip()
+        discipline = self.request.GET.get("discipline", "").strip()
+        disponibilite = self.request.GET.get("disponible", "").strip()
+
+        if recherche:
+            queryset = queryset.filter(
+                Q(titre__icontains=recherche)
+                | Q(auteur__icontains=recherche)
+                | Q(cote__icontains=recherche)
+                | Q(isbn__icontains=recherche)
+            )
+        if discipline:
+            queryset = queryset.filter(discipline_id=discipline)
+        if disponibilite in ("oui", "non"):
+            queryset = queryset.filter(disponible=disponibilite == "oui")
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        fonds = NoticeBibliographique.objects.all()
+        contexte.update(
+            {
+                "disciplines": Discipline.objects.order_by("ordre", "nom"),
+                "query": self.request.GET.get("q", ""),
+                "current_discipline": self.request.GET.get("discipline", ""),
+                "current_disponible": self.request.GET.get("disponible", ""),
+                "total_fonds": fonds.count(),
+                "total_sorties": fonds.filter(disponible=False).count(),
+                "total_sans_cote": fonds.filter(cote="").count(),
+            }
+        )
+        return contexte
+
+
+class NoticeCreateView(StaffRoleRequiredMixin, CreateView):
+    model = NoticeBibliographique
+    form_class = NoticeForm
+    template_name = "administration/form.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.update(
+            {
+                "form_title": "Nouvelle notice",
+                "nav": "bibliotheque",
+                "cancel_url": reverse("library:gestion"),
+            }
+        )
+        return contexte
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Notice « {form.instance.titre} » ajoutée au fonds.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("library:gestion")
+
+
+class NoticeUpdateView(StaffRoleRequiredMixin, UpdateView):
+    model = NoticeBibliographique
+    form_class = NoticeForm
+    template_name = "administration/form.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.update(
+            {
+                "form_title": f"Modifier « {self.object.titre} »",
+                "nav": "bibliotheque",
+                "cancel_url": reverse("library:gestion"),
+            }
+        )
+        return contexte
+
+    def form_valid(self, form):
+        messages.success(self.request, "Notice mise à jour.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("library:gestion")
+
+
+class NoticeDisponibiliteView(StaffRoleRequiredMixin, View):
+    """Bascule « en rayon / sorti » en un clic.
+
+    Le geste le plus fréquent du fonds mérite de ne pas passer par un
+    formulaire complet : c'est un prêt ou un retour, pas une correction de
+    notice.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        notice = get_object_or_404(NoticeBibliographique, pk=pk)
+        notice.disponible = not notice.disponible
+        notice.save(update_fields=["disponible", "updated_at"])
+        etat = "de retour en rayon" if notice.disponible else "sortie du fonds"
+        messages.success(request, f"« {notice.titre} » {etat}.")
+        return redirect(request.META.get("HTTP_REFERER") or reverse("library:gestion"))
+
+
+class NoticeDeleteView(AdminRoleRequiredMixin, DeleteView):
+    """Retrait définitif — réservé à la direction, comme toute suppression."""
+
+    model = NoticeBibliographique
+    template_name = "administration/confirm_delete.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.update(
+            {
+                "objet": self.object,
+                "titre": "Retirer cette notice du fonds",
+                "cancel_url": reverse("library:gestion"),
+                "nav": "bibliotheque",
+            }
+        )
+        return contexte
+
+    def get_success_url(self):
+        messages.success(self.request, "Notice retirée du fonds.")
+        return reverse("library:gestion")

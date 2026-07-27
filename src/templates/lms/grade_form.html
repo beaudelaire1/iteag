@@ -40,15 +40,36 @@
         {% if evaluation.fichier_soumis %}
         <div class="col-span-2">
             <p class="font-medium" style="color: var(--color-warm-500);">Fichier remis</p>
-            <a href="{{ evaluation.fichier_soumis.url }}" class="hover:underline" style="color: var(--color-navy-600);" download>Télécharger le fichier</a>
+            {% comment %}
+                Servi par une vue qui revérifie le droit, et non par l'adresse
+                média : la copie d'un étudiant n'est pas un document public.
+            {% endcomment %}
+            <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'remise' %}" class="hover:underline" style="color: var(--color-navy-600);">Télécharger la copie remise</a>
+        </div>
+        {% endif %}
+        {% if evaluation.fichier_corrige %}
+        <div class="col-span-2">
+            <p class="font-medium" style="color: var(--color-warm-500);">Copie corrigée déjà déposée</p>
+            <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'corrige' %}" class="hover:underline" style="color: var(--color-navy-600);">Télécharger le corrigé</a>
         </div>
         {% endif %}
     </div>
 </div>
 
+{% if deja_publiee %}
+<div class="note alert mb-6" style="max-width: 42rem;">
+    <span class="lbl">Note déjà publiée</span>
+    <p>
+        L'étudiant l'a déjà vue. Toute correction lui sera visible immédiatement,
+        sans qu'il en soit averti : prévenez-le si le changement est significatif.
+    </p>
+</div>
+{% endif %}
+
 {# ── Formulaire de notation ── #}
 <div class="card-elevated max-w-2xl">
-    <form method="post" class="space-y-5">
+    {# « enctype » est requis : sans lui la copie corrigée ne serait pas transmise. #}
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
         {% csrf_token %}
         {% include "partials/erreurs_formulaire.html" %}
         {% for field in form %}{% include "partials/champ.html" %}{% endfor %}

@@ -425,9 +425,18 @@ class TestEvaluationWorkflow:
         assert evaluation.statut == Evaluation.StatutEvaluation.SOUMIS
         assert evaluation.date_soumission is not None
 
-    def test_teacher_cannot_grade_unsubmitted_evaluation(
-        self, client: Client, professeur, profil_etudiant, cours_session
-    ):
+    def test_teacher_can_grade_unsubmitted_evaluation(self, client: Client, professeur, profil_etudiant, cours_session):
+        """Une évaluation sans remise reste notable — et doit l'être.
+
+        Le refus antérieur partait d'une bonne intention : ne pas noter une
+        copie qu'on n'a pas reçue. Mais il rendait un **examen** définitivement
+        impossible à noter : il se compose en salle, rien n'est déposé par le
+        portail, et l'évaluation restait « en attente » pour toujours. Il
+        empêchait aussi de porter un zéro après une non-remise.
+
+        La garde utile n'est pas là : elle est dans le fait que l'enseignant ne
+        voit que les copies de ses propres cours.
+        """
         teacher = User.objects.create_user(
             username="teacher-grade-guard",
             password="valid-password-123",
@@ -442,4 +451,4 @@ class TestEvaluationWorkflow:
         )
         client.force_login(teacher)
         response = client.get(reverse("lms:grade_evaluation", kwargs={"pk": evaluation.pk}))
-        assert response.status_code == 404
+        assert response.status_code == 200

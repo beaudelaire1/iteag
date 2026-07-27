@@ -80,3 +80,56 @@ def send_statut_change_email(dossier):
         recipient_list=[dossier.email],
         fail_silently=True,
     )
+
+
+def envoyer_demande_de_pieces(dossier, pieces):
+    """Prévient le candidat des pièces qui lui sont réclamées.
+
+    Un seul message pour l'ensemble : un courriel par pièce noierait la demande
+    et donnerait l'impression d'un automate.
+    """
+    suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
+    liste = "\n".join(
+        f"  - {piece.libelle}" + (f"\n      {piece.precisions}" if piece.precisions else "") for piece in pieces
+    )
+    echeances = {piece.date_limite for piece in pieces if piece.date_limite}
+    echeance = f"\nCes pièces sont attendues avant le {min(echeances):%d/%m/%Y}.\n" if echeances else ""
+
+    send_mail(
+        subject="ITEAG — Pièces à fournir pour votre dossier",
+        message=(
+            f"Bonjour {dossier.prenom},\n\n"
+            f"Pour finaliser votre dossier, le secrétariat vous demande de fournir "
+            f"{'la pièce suivante' if len(pieces) == 1 else 'les pièces suivantes'} :\n\n"
+            f"{liste}\n"
+            f"{echeance}\n"
+            f"Vous pouvez les déposer directement depuis votre page de suivi, "
+            f"sans créer de compte :\n{suivi_url}\n\n"
+            f"Cordialement,\n"
+            f"Le secrétariat de l'ITEAG"
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[dossier.email],
+        fail_silently=True,
+    )
+
+
+def envoyer_refus_de_piece(piece):
+    """Explique au candidat pourquoi une pièce déposée ne convient pas."""
+    dossier = piece.dossier
+    suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
+
+    send_mail(
+        subject=f"ITEAG — La pièce « {piece.libelle} » est à refournir",
+        message=(
+            f"Bonjour {dossier.prenom},\n\n"
+            f"Le document que vous avez déposé pour « {piece.libelle} » n'a pas pu être retenu.\n\n"
+            f"Motif : {piece.motif_refus}\n\n"
+            f"Vous pouvez en déposer un nouveau depuis votre page de suivi :\n{suivi_url}\n\n"
+            f"Cordialement,\n"
+            f"Le secrétariat de l'ITEAG"
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[dossier.email],
+        fail_silently=True,
+    )

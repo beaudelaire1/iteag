@@ -1,0 +1,51 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Calendrier d'évaluation — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='courses' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='courses' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:course_detail' cours_session.pk %}"
+       class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+        ← {{ cours_session.cours.titre }}
+    </a>
+    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">Calendrier d'évaluation</h1>
+    <p class="mt-2 text-sm text-warm-500">
+        {{ cours_session.cours.titre }} — {{ cours_session.session }}
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl">
+
+    <div class="card-elevated mb-6">
+        <p class="overline mb-2">État de la remise</p>
+        {% if cours_session.depot_est_ouvert %}
+        <p class="text-sm font-semibold text-emerald-700">Ouverte — les étudiants peuvent déposer.</p>
+        {% else %}
+        <p class="text-sm font-semibold text-rose-700">Fermée — {{ cours_session.motif_depot_ferme }}</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'lms:basculer_depot' cours_session.pk %}" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost">
+                {% if cours_session.depot_est_ouvert %}Fermer la remise maintenant{% else %}Rouvrir la remise{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <form method="post" class="card-elevated space-y-5">
+        {% csrf_token %}
+        {% include "partials/erreurs_formulaire.html" %}
+        {% for champ in form %}{% with field=champ %}{% include "partials/champ.html" %}{% endwith %}{% endfor %}
+
+        <div class="flex flex-wrap gap-4 pt-2">
+            <button type="submit" class="btn-primary">Enregistrer le calendrier</button>
+            <a href="{% url 'lms:course_detail' cours_session.pk %}" class="btn-ghost">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

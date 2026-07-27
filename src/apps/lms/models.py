@@ -92,6 +92,15 @@ class Evaluation(TimeStampedModel):
         validators=[MinValueValidator(0), MaxValueValidator(20)],
     )
     appreciation = models.TextField(blank=True, verbose_name="Appréciation")
+    # La copie annotée rendue à l'étudiant. Une note sans la copie corrigée
+    # n'apprend rien : c'est l'annotation qui fait le retour pédagogique, et
+    # elle se transmettait jusqu'ici de la main à la main ou par courriel.
+    fichier_corrige = models.FileField(
+        upload_to="lms/copies-corrigees/%Y/%m/",
+        blank=True,
+        verbose_name="Copie corrigée",
+        help_text="Rendue à l'étudiant en même temps que la note, à la publication.",
+    )
     ects_valides = models.DecimalField(
         max_digits=4,
         decimal_places=1,

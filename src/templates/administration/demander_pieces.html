@@ -1,0 +1,74 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Réclamer des pièces — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='candidatures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='candidatures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'administration:candidature_detail' dossier.pk %}"
+       class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+        ← Dossier de {{ dossier.prenom }} {{ dossier.nom }}
+    </a>
+    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">Réclamer des pièces justificatives</h1>
+    <p class="mt-2 text-sm text-warm-500">
+        {{ dossier.prenom }} recevra un courriel unique récapitulant tout ce qui lui est demandé,
+        avec le lien de dépôt. Aucun compte ne lui est nécessaire.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl">
+
+    {% if deja_demandees %}
+    <div class="card-elevated mb-6">
+        <p class="overline mb-3">Déjà réclamé</p>
+        <ul class="space-y-2 text-sm">
+            {% for piece in deja_demandees %}
+            <li class="flex items-center justify-between gap-3">
+                <span class="text-warm-700">{{ piece.libelle }}</span>
+                <span class="badge {% if piece.statut == 'validee' %}badge-success{% elif piece.statut == 'deposee' %}badge-info{% elif piece.statut == 'refusee' %}badge-warning{% else %}badge-gold{% endif %}">
+                    {{ piece.get_statut_display }}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" class="card-elevated space-y-5">
+        {% csrf_token %}
+        {% include "partials/erreurs_formulaire.html" %}
+
+        <div class="champ">
+            <label class="form-label">{{ form.pieces.label }}</label>
+            {% if form.pieces.field.choices %}
+            <div class="mt-2 space-y-2.5">
+                {% for choix in form.pieces %}
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                    {{ choix.tag }}
+                    <span class="text-sm" style="color: var(--color-warm-700);">{{ choix.choice_label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="form-aide">Toutes les pièces courantes ont déjà été réclamées à ce candidat.</p>
+            {% endif %}
+            {% for erreur in form.pieces.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+        </div>
+
+        {% for champ in form %}
+            {% if champ.name != 'pieces' %}
+            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
+            {% endif %}
+        {% endfor %}
+
+        <div class="flex flex-wrap gap-4 pt-2">
+            <button type="submit" class="btn-primary">Réclamer et prévenir le candidat</button>
+            <a href="{% url 'administration:candidature_detail' dossier.pk %}" class="btn-ghost">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

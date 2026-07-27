@@ -20,7 +20,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.admissions.models import DossierCandidature, HistoriqueStatut
+from apps.admissions.models import DossierCandidature, HistoriqueStatut, PieceDemandee
 from apps.formations.models import Parcours
 
 # (prénom, nom, ville, église, fondatrice, statut, jours d'ancienneté)
@@ -116,8 +116,61 @@ class Command(BaseCommand):
                     }[statut],
                 )
 
+        pieces = self._seed_pieces()
+
         self.stdout.write(
             self.style.SUCCESS(
-                f"Admissions : {crees} dossier(s) créé(s), {DossierCandidature.objects.count()} au total."
+                f"Admissions : {crees} dossier(s) créé(s), {DossierCandidature.objects.count()} au total, "
+                f"{pieces} pièce(s) réclamée(s)."
             )
         )
+
+    def _seed_pieces(self) -> int:
+        """Pièces réclamées aux dossiers acceptés, dans les quatre états.
+
+        C'est ce qui rend l'écran démonstratif : une pièce encore attendue, une
+        déposée à vérifier, une validée, une refusée à refournir. Une liste où
+        tout est au même stade ne montre pas ce que l'écran sait faire.
+        """
+        from django.core.files.base import ContentFile
+
+        modeles = [
+            ("Acte de naissance", "Copie intégrale de moins de trois mois.", PieceDemandee.Statut.VALIDEE),
+            ("Copie du dernier diplôme", "Avec relevé de notes si disponible.", PieceDemandee.Statut.DEPOSEE),
+            ("Photo d'identité", "Format identité, sur fond clair.", PieceDemandee.Statut.DEMANDEE),
+            (
+                "Justificatif de domicile",
+                "De moins de trois mois : facture, quittance ou attestation.",
+                PieceDemandee.Statut.REFUSEE,
+            ),
+        ]
+        maintenant = timezone.now()
+        total = 0
+
+        for dossier in DossierCandidature.objects.filter(statut=DossierCandidature.Statut.ACCEPTE):
+            for libelle, precisions, statut in modeles:
+                if dossier.pieces_demandees.filter(libelle=libelle).exists():
+                    continue
+                piece = PieceDemandee(
+                    dossier=dossier,
+                    libelle=libelle,
+                    precisions=precisions,
+                    statut=statut,
+                    date_limite=timezone.localdate() + timedelta(days=21),
+                    motif_refus=(
+                        "Le document date de plus de trois mois." if statut == PieceDemandee.Statut.REFUSEE else ""
+                    ),
+                    date_depot=maintenant if statut != PieceDemandee.Statut.DEMANDEE else None,
+                    date_decision=(
+                        maintenant if statut in (PieceDemandee.Statut.VALIDEE, PieceDemandee.Statut.REFUSEE) else None
+                    ),
+                )
+                if statut != PieceDemandee.Statut.DEMANDEE:
+                    piece.fichier.save(
+                        f"{dossier.pk}-{libelle[:20].lower().replace(' ', '-')}.pdf",
+                        ContentFile(b"%PDF-1.4 piece de demonstration\n%%EOF\n"),
+                        save=False,
+                    )
+                piece.save()
+                total += 1
+        return total

@@ -1,3 +1,26 @@
+"""
+Contrôle d'accès par rôle.
+
+**Doctrine de partage entre secrétariat et direction.** L'ITEAG compte quatre
+personnes hors enseignants : le secrétariat *est* le back-office, et le traiter
+comme un rôle diminué crée des impasses quotidiennes — quelqu'un doit
+interrompre la direction pour un acte courant.
+
+La ligne de partage ne porte donc pas sur l'importance de l'écran mais sur la
+nature du pouvoir qu'il confère :
+
+* `StaffRoleRequiredMixin` — **l'opérationnel** : tout ce qui fait tourner
+  l'institut au jour le jour. Dossiers, étudiants, professeurs, cours,
+  sessions, inscriptions, encaissements, stages, VAE, bibliothèque, boutique.
+* `AdminRoleRequiredMixin` — **le régalien**, trois cas et trois seulement :
+  ce qui donne des droits (comptes utilisateurs), ce qui engage
+  financièrement l'institut (grille tarifaire), et ce qui détruit
+  (suppressions). Une erreur y est coûteuse ou irréversible.
+
+Ajouter un écran au régalien se justifie contre ces trois critères ; à défaut,
+il relève de l'opérationnel.
+"""
+
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 

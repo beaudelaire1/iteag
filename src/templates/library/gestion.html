@@ -1,0 +1,107 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Fonds de la bibliothèque — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='bibliotheque' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='bibliotheque' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Bibliothèque</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Fonds documentaire</h1>
+        <p class="mt-1 text-sm text-warm-500">
+            {{ total_fonds }} notice{{ total_fonds|pluralize }} ·
+            {{ total_sorties }} sortie{{ total_sorties|pluralize }} du rayon
+            {% if total_sans_cote %} · <span class="text-rose-700">{{ total_sans_cote }} sans cote</span>{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'library:notice_creer' %}" class="btn-primary">+ Nouvelle notice</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto]">
+    <div>
+        <label class="form-label" for="notice-q">Titre, auteur, cote ou ISBN</label>
+        <input id="notice-q" class="form-input" name="q" value="{{ query }}" type="search">
+    </div>
+    <div>
+        <label class="form-label" for="notice-discipline">Discipline</label>
+        <select id="notice-discipline" class="form-input" name="discipline">
+            <option value="">Toutes</option>
+            {% for discipline in disciplines %}
+            <option value="{{ discipline.pk }}"{% if current_discipline == discipline.pk|stringformat:"s" %} selected{% endif %}>{{ discipline.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="form-label" for="notice-dispo">Disponibilité</label>
+        <select id="notice-dispo" class="form-input" name="disponible">
+            <option value="">Toutes</option>
+            <option value="oui"{% if current_disponible == "oui" %} selected{% endif %}>En rayon</option>
+            <option value="non"{% if current_disponible == "non" %} selected{% endif %}>Sortie</option>
+        </select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="card-elevated" style="overflow-x: auto;">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-xs uppercase tracking-wider text-warm-500">
+                <th class="pb-3 pr-4">Cote</th>
+                <th class="pb-3 pr-4">Titre</th>
+                <th class="pb-3 pr-4">Auteur</th>
+                <th class="pb-3 pr-4">Discipline</th>
+                <th class="pb-3 pr-4">État</th>
+                <th class="pb-3 text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for notice in notices %}
+            <tr class="border-t border-warm-100">
+                <td class="py-3 pr-4 font-mono text-xs">
+                    {% if notice.cote %}{{ notice.cote }}{% else %}<span class="text-rose-700">à coter</span>{% endif %}
+                </td>
+                <td class="py-3 pr-4">
+                    <a href="{% url 'library:notice_detail' notice.pk %}" class="font-medium text-navy-900 link-reveal">{{ notice.titre }}</a>
+                    {% if notice.produit_boutique %}
+                    <span class="badge badge-gold ml-2">En vente</span>
+                    {% endif %}
+                </td>
+                <td class="py-3 pr-4 text-warm-600">{{ notice.auteur|default:"—" }}</td>
+                <td class="py-3 pr-4 text-warm-600">{{ notice.discipline|default:"—" }}</td>
+                <td class="py-3 pr-4">
+                    {% if notice.disponible %}
+                    <span class="badge badge-success">En rayon</span>
+                    {% else %}
+                    <span class="badge badge-warning">Sortie</span>
+                    {% endif %}
+                </td>
+                <td class="py-3 text-right whitespace-nowrap">
+                    <form method="post" action="{% url 'library:notice_disponibilite' notice.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm font-semibold text-navy-600">
+                            {% if notice.disponible %}Sortir{% else %}Rentrer{% endif %}
+                        </button>
+                    </form>
+                    <a href="{% url 'library:notice_modifier' notice.pk %}" class="ml-4 text-sm font-semibold text-navy-600">Modifier</a>
+                    {% if user.is_admin %}
+                    <a href="{% url 'library:notice_supprimer' notice.pk %}" class="ml-4 text-sm font-semibold text-rose-700">Retirer</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="py-12 text-center text-warm-400">Aucune notice ne correspond à cette recherche.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}
