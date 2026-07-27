@@ -18,6 +18,7 @@ boutique de livres avec commandes, suivi et gestion de stock.
 | [`docs/architecture/adr/`](docs/architecture/adr/) | Décisions d'architecture |
 | [`docs/plan/plan-finalisation.md`](docs/plan/plan-finalisation.md) | Plan de finalisation par lots |
 | [`docs/architecture/adr/ADR-005-fournisseurs-video-externes.md`](docs/architecture/adr/ADR-005-fournisseurs-video-externes.md) | Choix du fournisseur de diffusion vidéo |
+| [`docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md`](docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md) | Paiement en ligne : Stripe, webhook, TVA |
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
 
 ---
@@ -87,6 +88,7 @@ src/
 │   ├── lms/                 Ressources, évaluations, annonces (présentiel)
 │   ├── library/             Catalogue de la bibliothèque
 │   ├── commerce/            Boutique, commandes, stocks et alertes
+│   ├── paiements/           Encaissement Stripe — modules, frais, commandes
 │   ├── documents/           Documents administratifs PDF
 │   ├── website/             Pages éditoriales Wagtail
 │   ├── elearning/           E-Learning — modules, accès, progression

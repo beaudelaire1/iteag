@@ -78,6 +78,7 @@ LOCAL_APPS = [
     "apps.documents",
     "apps.elearning",
     "apps.commerce",
+    "apps.paiements",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -360,6 +361,30 @@ CELERY_BEAT_SCHEDULE = {
 # Boutique de livres
 COMMERCE_FRAIS_LIVRAISON = env("COMMERCE_FRAIS_LIVRAISON", default="0.00")
 COMMERCE_ALERTE_EMAIL = env("COMMERCE_ALERTE_EMAIL", default="")
+
+# ──────────────────────────────────────────────
+# Paiement en ligne — Stripe
+# ──────────────────────────────────────────────
+#
+# Aucune donnée bancaire ne transite par nos serveurs : le paiement se fait sur
+# une page hébergée par Stripe (Checkout). L'application ne voit jamais un
+# numéro de carte, ce qui ramène le périmètre PCI au plus simple et laisse
+# l'authentification forte à Stripe.
+#
+# La clé secrète et le secret de signature ne quittent jamais le serveur. Le
+# secret de signature est ce qui distingue une notification réellement émise
+# par Stripe d'un appel forgé : sans lui, n'importe qui pourrait déclarer un
+# paiement abouti.
+STRIPE_CLE_PUBLIABLE = env("STRIPE_CLE_PUBLIABLE", default="")
+STRIPE_CLE_SECRETE = env("STRIPE_CLE_SECRETE", default="")
+STRIPE_SECRET_WEBHOOK = env("STRIPE_SECRET_WEBHOOK", default="")
+STRIPE_DEVISE = env("STRIPE_DEVISE", default="EUR")
+
+# Taux de TVA proposé par défaut dans les formulaires de tarification. Il est
+# saisi article par article : l'ITEAG peut relever de l'exonération de la
+# formation professionnelle (taux 0) pour ses modules tout en facturant la TVA
+# sur les livres.
+PAIEMENTS_TAUX_TVA_DEFAUT = env("PAIEMENTS_TAUX_TVA_DEFAUT", default="0.00")
 
 # ──────────────────────────────────────────────
 # Formation vidéo (voir ADR-001 et ADR-002)

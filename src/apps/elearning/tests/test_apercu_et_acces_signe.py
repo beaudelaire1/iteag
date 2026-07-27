@@ -262,3 +262,138 @@ class TestUnFournisseurFaibleNeSertPasUnModuleProtege:
             video=_video("Bunny", "abc", professeur),
         )
         lecon.full_clean()  # ne lève pas
+
+
+# ══════════════════════════════════════════════
+# Un module tout en aperçu ne protège rien
+# ══════════════════════════════════════════════
+
+
+@pytest.mark.django_db
+class TestUnModuleNePeutPasEtreEntierementEnApercu:
+    """
+    L'aperçu court-circuite le contrôle d'accès : c'est voulu, et c'est sans
+    danger tant qu'il porte sur une partie du module. Coché sur *toutes* les
+    leçons, il rend gratuit un module annoncé comme réservé — sans qu'aucun
+    écran ne le dise. C'est ainsi que « test-formation-video » s'est retrouvé
+    ouvert à tous, ses trois leçons cochées une à une.
+    """
+
+    def test_toutes_les_lecons_en_apercu_bloquent_la_publication(self, module, lecons):
+        for lecon in lecons.values():
+            lecon.apercu_gratuit = True
+            lecon.save(update_fields=["apercu_gratuit"])
+
+        publiable, motif = module.peut_etre_publie()
+        assert publiable is False
+        assert "aperçu gratuit" in motif
+
+    def test_une_seule_lecon_protegee_suffit(self, module, lecons):
+        """La règle interdit le module intégralement gratuit, pas l'aperçu."""
+        assert lecons["apercu"].apercu_gratuit is True
+        assert lecons["protegee"].apercu_gratuit is False
+        publiable, _motif = module.peut_etre_publie()
+        assert publiable is True
+
+    def test_un_module_public_peut_tout_offrir(self, module, lecons):
+        """Rien à protéger, donc rien à trahir : la règle ne s'y applique pas."""
+        module.politique_acces = ModuleFormation.PolitiqueAcces.PUBLIC
+        module.save(update_fields=["politique_acces"])
+        for lecon in lecons.values():
+            lecon.apercu_gratuit = True
+            lecon.save(update_fields=["apercu_gratuit"])
+
+        publiable, _motif = module.peut_etre_publie()
+        assert publiable is True
+
+    def test_un_module_sans_lecon_n_est_pas_dit_tout_en_apercu(self, module):
+        """Le motif de refus doit rester celui qui explique vraiment la situation."""
+        assert module.apercus_couvrent_tout() is False
+        _publiable, motif = module.peut_etre_publie()
+        assert "aucune leçon" in motif
+
+
+# ══════════════════════════════════════════════
+# La politique d'accès, entre les mains du responsable
+# ══════════════════════════════════════════════
+
+
+@pytest.mark.django_db
+class TestLeResponsableChoisitLaPolitiqueDAcces:
+    def test_le_champ_est_propose(self):
+        from apps.elearning.forms import ModuleForm
+
+        assert "politique_acces" in ModuleForm().fields
+
+    def test_un_envoi_sans_politique_ne_relache_rien(self, module):
+        """Un champ absent doit retomber sur le plus fermé, jamais sur « public »."""
+        from apps.elearning.forms import ModuleForm
+
+        formulaire = ModuleForm(
+            instance=module,
+            data={
+                "titre": module.titre,
+                "niveau": ModuleFormation.Niveau.INITIATION,
+                "ects": "0",
+                "seuil_completion": "80",
+            },
+        )
+        assert formulaire.is_valid() is True
+        assert formulaire.cleaned_data["politique_acces"] == ModuleFormation.PolitiqueAcces.SUR_OCTROI
+
+    def test_un_module_neuf_sans_politique_prend_le_defaut_du_modele(self):
+        from apps.elearning.forms import ModuleForm
+
+        formulaire = ModuleForm(
+            data={
+                "titre": "Module neuf",
+                "niveau": ModuleFormation.Niveau.INITIATION,
+                "ects": "0",
+                "seuil_completion": "80",
+            }
+        )
+        assert formulaire.is_valid() is True
+        assert formulaire.cleaned_data["politique_acces"] == ModuleFormation.PolitiqueAcces.INSCRIT_PARCOURS
+
+    def test_resserrer_la_politique_est_refuse_si_une_video_ne_suit_pas(self, module, professeur, settings):
+        """
+        Le modèle vérifie la compatibilité du côté de la leçon. Sans ce
+        garde-fou, resserrer la politique après coup laissait des leçons
+        servies par un fournisseur incapable de retirer un accès.
+        """
+        from apps.elearning.forms import ModuleForm
+
+        settings.DEBUG = False
+        module.politique_acces = ModuleFormation.PolitiqueAcces.PUBLIC
+        module.save(update_fields=["politique_acces"])
+        chapitre = Chapitre.objects.create(module=module, titre="Chapitre", ordre=1)
+        Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Bande-annonce",
+            slug="bande-annonce",
+            ordre=1,
+            video=VideoAsset.objects.create(
+                titre="Sur YouTube",
+                cle_stockage="dQw4w9WgXcQ",
+                fournisseur="youtube",
+                uploade_par=professeur.user,
+                statut_traitement=VideoAsset.StatutTraitement.PRET,
+            ),
+        )
+
+        formulaire = ModuleForm(
+            instance=module,
+            data={
+                "titre": module.titre,
+                "code": "",
+                "description": "",
+                "objectifs": "",
+                "niveau": ModuleFormation.Niveau.INITIATION,
+                "ects": "0",
+                "politique_acces": ModuleFormation.PolitiqueAcces.SUR_OCTROI,
+                "seuil_completion": "80",
+            },
+        )
+        assert formulaire.is_valid() is False
+        assert "politique_acces" in formulaire.errors
+        assert "Bande-annonce" in formulaire.errors["politique_acces"][0]

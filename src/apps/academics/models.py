@@ -408,11 +408,16 @@ class Paiement(TimeStampedModel):
         VIREMENT = "virement", "Virement"
         ESPECES = "especes", "Espèces"
         CHEQUE = "cheque", "Chèque"
+        CARTE = "carte", "Carte bancaire"
         AUTRE = "autre", "Autre"
 
     class StatutPaiement(models.TextChoices):
         EN_ATTENTE = "en_attente", "En attente"
         CONFIRME = "confirme", "Confirmé"
+        # Un encaissement par carte peut se défaire — remboursement ou
+        # contestation. Sans cet état, un règlement annulé resterait « confirmé »
+        # au dossier de l'étudiant.
+        REMBOURSE = "rembourse", "Remboursé"
 
     etudiant = models.ForeignKey(ProfilEtudiant, on_delete=models.CASCADE, related_name="paiements")
     session = models.ForeignKey(SessionAcademique, on_delete=models.SET_NULL, null=True, blank=True)

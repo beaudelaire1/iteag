@@ -110,6 +110,8 @@ class JournalAudit(TimeStampedModel):
         REVOCATION_ACCES = "revocation_acces", "Révocation d'accès"
         EXPORT = "export", "Export de données"
         CONSULTATION_SENSIBLE = "consultation_sensible", "Consultation sensible"
+        PAIEMENT_RECU = "paiement_recu", "Paiement reçu"
+        PAIEMENT_REMBOURSE = "paiement_rembourse", "Paiement remboursé"
 
     utilisateur = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -115,6 +115,41 @@
                         <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}"
                            class="btn-gold w-full justify-center mt-3">Télécharger l'attestation</a>
                         {% endif %}
+                    {% elif module.est_vendu %}
+                        {% comment %}
+                            Module vendu à l'unité. L'achat n'est proposé qu'à un
+                            étudiant identifié : c'est son dossier qui portera
+                            l'accès, et l'accès acheté ne s'éteint jamais.
+                        {% endcomment %}
+                        <p class="text-3xl font-semibold" style="color: var(--color-navy-900);">
+                            {{ module.prix_ttc|floatformat:2 }} €
+                        </p>
+                        <p class="mt-1 text-xs text-warm-500">
+                            {% if module.taux_tva %}TTC, dont {{ module.taux_tva|floatformat:2 }} % de TVA{% else %}Exonéré de TVA{% endif %}
+                            · accès à vie
+                        </p>
+
+                        {% if profil_etudiant %}
+                        <form method="post" action="{% url 'paiements:acheter_module' module.slug %}" class="mt-4">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-primary w-full justify-center">
+                                Acheter cette formation
+                            </button>
+                        </form>
+                        <p class="mt-3 text-xs text-warm-500">
+                            Paiement sécurisé par Stripe. Aucune donnée bancaire ne transite par nos serveurs.
+                        </p>
+                        {% elif user.is_authenticated %}
+                        <p class="mt-4 text-sm text-warm-600">
+                            Un dossier étudiant est nécessaire pour acheter un module.
+                            Contactez le secrétariat pour le rattacher à votre compte.
+                        </p>
+                        {% else %}
+                        <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}"
+                           class="btn-primary w-full justify-center mt-4">
+                            Se connecter pour acheter
+                        </a>
+                        {% endif %}
                     {% elif demande_en_attente %}
                         <p class="text-sm font-semibold" style="color: var(--color-navy-900);">Demande transmise</p>
                         <p class="mt-1 text-sm text-warm-600">
