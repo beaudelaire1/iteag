@@ -1,0 +1,113 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Mon profil — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='profil' %}{% if gabarit_navigation %}{% include gabarit_navigation %}{% endif %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='profil' %}{% if gabarit_navigation_mobile %}{% include gabarit_navigation_mobile %}{% endif %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{{ retour }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Retour à mon espace
+    </a>
+    <p class="overline mb-2">{{ user.get_role_display }}</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mon profil</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+    {# ── Identité et coordonnées ── #}
+    <section class="lg:col-span-2">
+        <form method="post" enctype="multipart/form-data" class="card-elevated space-y-6" novalidate>
+            {% csrf_token %}
+            {% include "partials/erreurs_formulaire.html" with form=form_profil %}
+
+            <div class="flex items-center gap-5">
+                {% if user.photo %}
+                <img src="{{ user.photo.url }}" alt="Photo de {{ user.get_full_name|default:user.username }}"
+                     class="h-20 w-20 rounded-full object-cover" style="border: 2px solid var(--color-warm-200);">
+                {% else %}
+                <span class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-navy-700 text-lg font-bold text-white" aria-hidden="true">
+                    {{ user.initiales }}
+                </span>
+                {% endif %}
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-navy-900">{{ user.get_full_name|default:user.username }}</h2>
+                    <p class="text-sm text-warm-500">Identifiant de connexion : {{ user.username }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                {% include "partials/champ.html" with field=form_profil.first_name %}
+                {% include "partials/champ.html" with field=form_profil.last_name %}
+            </div>
+
+            {% include "partials/champ.html" with field=form_profil.email %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                {% include "partials/champ.html" with field=form_profil.phone %}
+                {% include "partials/champ.html" with field=form_profil.photo %}
+            </div>
+
+            <div class="pt-2" style="border-top: 1px solid var(--color-warm-200);">
+                <p class="overline mb-4" style="margin-top: 1rem;">Adresse postale</p>
+                {% include "partials/champ.html" with field=form_profil.adresse %}
+                {% include "partials/champ.html" with field=form_profil.complement_adresse %}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-1">
+                    {% include "partials/champ.html" with field=form_profil.code_postal %}
+                    {% include "partials/champ.html" with field=form_profil.ville %}
+                    {% include "partials/champ.html" with field=form_profil.pays %}
+                </div>
+            </div>
+
+            <button type="submit" name="enregistrer_profil" class="btn-primary">Enregistrer mes informations</button>
+        </form>
+    </section>
+
+    {# ── Sécurité ── #}
+    <section class="lg:col-span-1 space-y-6">
+        <form method="post" class="card-elevated space-y-5" novalidate>
+            {% csrf_token %}
+            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+                Mot de passe
+            </h2>
+            {% include "partials/erreurs_formulaire.html" with form=form_mot_de_passe %}
+            {% for field in form_mot_de_passe %}
+                {% include "partials/champ.html" %}
+            {% endfor %}
+            <button type="submit" name="changer_mot_de_passe" class="btn-primary w-full justify-center">
+                Changer le mot de passe
+            </button>
+        </form>
+
+        <div class="card">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">
+                Double authentification
+            </h2>
+            {% if second_facteur_actif %}
+            <p class="text-sm text-warm-600">
+                <span class="badge badge-success">Activée</span>
+                Un code à usage unique vous est demandé à chaque connexion.
+            </p>
+            {% else %}
+            <p class="text-sm text-warm-600 mb-4">
+                {% if second_facteur_requis %}
+                Votre rôle l'exige : elle vous sera demandée dès votre prochaine navigation.
+                {% else %}
+                Elle ajoute un code à usage unique à votre mot de passe.
+                {% endif %}
+            </p>
+            <a href="{% url 'accounts:otp_activation' %}" class="btn-ghost w-full justify-center">Activer</a>
+            {% endif %}
+        </div>
+    </section>
+
+</div>
+{% endblock %}

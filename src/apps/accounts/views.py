@@ -2,6 +2,7 @@ import base64
 import io
 
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import redirect
@@ -11,7 +12,7 @@ from django_otp import login as otp_login
 
 from apps.core.services.audit import journaliser
 
-from .forms import EmailOrUsernameAuthenticationForm
+from .forms import EmailOrUsernameAuthenticationForm, MotDePasseForm, ProfilForm
 from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
 
 
@@ -55,6 +56,83 @@ class IteagLoginView(LoginView):
 
 class IteagLogoutView(LogoutView):
     pass
+
+
+# ──────────────────────────────────────────────
+# Profil
+# ──────────────────────────────────────────────
+
+
+def gabarit_navigation(utilisateur) -> str:
+    """Barre latérale correspondant au rôle, pour les écrans transverses.
+
+    Le profil est le premier écran commun aux quatre espaces. Sans cette
+    correspondance, il faudrait le dupliquer une fois par portail — et il
+    dériverait quatre fois.
+    """
+    if utilisateur.is_etudiant:
+        return "etudiant/partials/student_nav.html"
+    if utilisateur.is_enseignant:
+        return "lms/partials/teacher_nav.html"
+    if utilisateur.is_admin:
+        return "administration/partials/admin_nav.html"
+    if utilisateur.is_secretariat:
+        return "administration/partials/secretariat_nav.html"
+    return ""
+
+
+class ProfilView(LoginRequiredMixin, TemplateView):
+    """Coordonnées et mot de passe, pour tous les rôles.
+
+    Deux formulaires sur un même écran, distingués par le nom du bouton :
+    changer d'adresse et changer de mot de passe sont deux gestes différents,
+    et l'un ne doit pas exiger l'autre.
+    """
+
+    template_name = "accounts/profil.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.setdefault("form_profil", ProfilForm(instance=self.request.user))
+        contexte.setdefault("form_mot_de_passe", MotDePasseForm(user=self.request.user))
+        navigation = gabarit_navigation(self.request.user)
+        contexte.update(
+            {
+                "gabarit_navigation": navigation,
+                "gabarit_navigation_mobile": navigation.replace("nav.html", "nav_mobile.html"),
+                "retour": tableau_de_bord(self.request.user) or "/",
+                "second_facteur_actif": appareil_confirme(self.request.user) is not None,
+                "second_facteur_requis": deux_facteurs_requis(self.request.user),
+            }
+        )
+        return contexte
+
+    def post(self, request, *args, **kwargs):
+        if "changer_mot_de_passe" in request.POST:
+            return self._mot_de_passe(request)
+        return self._coordonnees(request)
+
+    def _coordonnees(self, request):
+        form = ProfilForm(request.POST, request.FILES, instance=request.user)
+        if not form.is_valid():
+            return self.render_to_response(self.get_context_data(form_profil=form))
+
+        form.save()
+        journaliser("modification", request=request, objet=request.user, objet_libelle="Mise à jour du profil")
+        messages.success(request, "Vos informations ont été enregistrées.")
+        return redirect("accounts:profil")
+
+    def _mot_de_passe(self, request):
+        form = MotDePasseForm(user=request.user, data=request.POST)
+        if not form.is_valid():
+            return self.render_to_response(self.get_context_data(form_mot_de_passe=form))
+
+        form.save()
+        # Sans cela, changer son mot de passe déconnecte l'auteur du changement.
+        update_session_auth_hash(request, form.user)
+        journaliser("modification", request=request, objet=request.user, objet_libelle="Changement de mot de passe")
+        messages.success(request, "Votre mot de passe a été modifié.")
+        return redirect("accounts:profil")
 
 
 # ──────────────────────────────────────────────
