@@ -86,6 +86,12 @@ supprimée : chacune est le seul chemin vers son écran.
     Journal des accès
 </a>
 
+<p class="portal-nav-group">Bibliothèque</p>
+<a href="{% url 'library:gestion' %}" class="portal-nav-link {% if nav == 'bibliotheque' %}active{% endif %}">
+    <i class="fas fa-book w-5 shrink-0" aria-hidden="true"></i>
+    Fonds documentaire
+</a>
+
 <p class="portal-nav-group">Boutique</p>
 <a href="{% url 'commerce:gestion_commandes' %}" class="portal-nav-link {% if nav == 'commandes' %}active{% endif %}">
     <i class="fas fa-shopping-cart w-5 shrink-0" aria-hidden="true"></i>

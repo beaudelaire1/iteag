@@ -223,6 +223,7 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         ctx["promotions"] = Promotion.objects.filter(actif=True, parcours=self.object.parcours_souhaite).order_by(
             "-annee_debut"
         )
+        ctx["pieces_demandees"] = self.object.pieces_demandees.all()
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -323,7 +324,7 @@ class AdminEtudiantListView(StaffRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
-class AdminProfesseurListView(AdminRoleRequiredMixin, ListView):
+class AdminProfesseurListView(StaffRoleRequiredMixin, ListView):
     model = Professeur
     template_name = "administration/professeurs.html"
     context_object_name = "professeurs"
@@ -351,7 +352,7 @@ class AdminProfesseurListView(AdminRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
-class AdminFormationsView(AdminRoleRequiredMixin, TemplateView):
+class AdminFormationsView(StaffRoleRequiredMixin, TemplateView):
     template_name = "administration/formations.html"
 
     def get_context_data(self, **kwargs):
@@ -585,7 +586,7 @@ class AdminSessionDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, Delete
 # ══════════════════════════════════════════════
 
 
-class AdminProfesseurCreateView(AdminRoleRequiredMixin, CreateView):
+class AdminProfesseurCreateView(StaffRoleRequiredMixin, CreateView):
     model = Professeur
     form_class = AdminProfesseurForm
     template_name = "administration/form.html"
@@ -603,7 +604,7 @@ class AdminProfesseurCreateView(AdminRoleRequiredMixin, CreateView):
         return response
 
 
-class AdminProfesseurUpdateView(AdminRoleRequiredMixin, UpdateView):
+class AdminProfesseurUpdateView(StaffRoleRequiredMixin, UpdateView):
     model = Professeur
     form_class = AdminProfesseurForm
     template_name = "administration/form.html"

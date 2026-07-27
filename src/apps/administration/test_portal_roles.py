@@ -31,8 +31,12 @@ class TestPortalRoleSeparation:
         [
             "administration:dashboard",
             "administration:utilisateurs",
-            "administration:professeurs",
-            "administration:formations",
+            # « professeurs » et « formations » ont rejoint l'opérationnel :
+            # dans un institut de quatre personnes, tenir les fiches
+            # enseignants et consulter l'offre sont des gestes courants du
+            # secrétariat, pas des actes de gouvernance. Voir la doctrine
+            # énoncée dans « apps/core/mixins.py ».
+            "administration:vae",
         ],
     )
     def test_secretary_cannot_access_governance(self, client, secretary, route):
