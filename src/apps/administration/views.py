@@ -15,6 +15,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, T
 from apps.academics.models import (
     CoursDeSession,
     DemandeInscriptionCours,
+    InscriptionSession,
     Paiement,
     ProfilEtudiant,
     SessionAcademique,
@@ -316,6 +317,68 @@ class AdminEtudiantListView(StaffRoleRequiredMixin, ListView):
         ctx["current_statut"] = self.request.GET.get("statut", "")
         ctx["query"] = self.request.GET.get("q", "")
         return ctx
+
+
+class AdminEtudiantDetailView(StaffRoleRequiredMixin, DetailView):
+    """Fiche de scolarité complète — ce que le secrétariat cherchait dans cinq écrans.
+
+    Coordonnées, église, parcours suivi, notes, crédits, paiements, accès
+    e-learning et documents sont réunis ici. Chaque bloc est chargé en une
+    requête : la fiche coûte un nombre fixe de requêtes, quel que soit le
+    nombre de lignes affichées.
+    """
+
+    model = ProfilEtudiant
+    template_name = "administration/etudiant_detail.html"
+    context_object_name = "profil"
+
+    def get_queryset(self):
+        return ProfilEtudiant.objects.select_related("utilisateur", "parcours", "promotion", "formule_tarif")
+
+    def get_context_data(self, **kwargs):
+        from apps.documents.models import DocumentAdministratif
+        from apps.elearning.models import InscriptionModule
+        from apps.lms.models import Evaluation
+
+        contexte = super().get_context_data(**kwargs)
+        profil = self.object
+
+        inscriptions = (
+            InscriptionSession.objects.filter(etudiant=profil)
+            .select_related("cours_session__cours", "cours_session__session", "cours_session__enseignant")
+            .order_by("-cours_session__session__date_debut")
+        )
+        evaluations = (
+            Evaluation.objects.filter(etudiant=profil)
+            .select_related("cours_session__cours", "cours_session__session")
+            .order_by("-created_at")
+        )
+        contexte.update(
+            {
+                "compte": profil.utilisateur,
+                "inscriptions": inscriptions,
+                "demandes": (
+                    DemandeInscriptionCours.objects.filter(etudiant=profil)
+                    .select_related("cours_session__cours", "cours_session__session")
+                    .order_by("-created_at")[:10]
+                ),
+                "evaluations": evaluations,
+                "notes_publiees": [e for e in evaluations if e.statut == Evaluation.StatutEvaluation.PUBLIE],
+                "credits": profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by(
+                    "-date_validation"
+                ),
+                "paiements": profil.paiements.select_related("session").order_by("-date_paiement"),
+                "acces_modules": (
+                    InscriptionModule.objects.filter(etudiant=profil).select_related("module").order_by("-created_at")
+                ),
+                "documents": DocumentAdministratif.objects.filter(etudiant=profil.utilisateur).order_by("-created_at"),
+                "total_regle": profil.paiements.filter(statut=Paiement.StatutPaiement.CONFIRME).aggregate(
+                    total=Sum("montant")
+                )["total"]
+                or Decimal("0"),
+            }
+        )
+        return contexte
 
 
 # ──────────────────────────────────────────────

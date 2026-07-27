@@ -58,8 +58,18 @@
                 {% for e in etudiants %}
                 <tr class="hover:bg-warm-50 transition-colors">
                     <td class="px-6 py-3">
-                        <span class="font-medium" style="color: var(--color-navy-900);">{{ e.utilisateur.get_full_name|default:e.utilisateur.username }}</span>
-                        <span class="block text-xs mt-0.5" style="color: var(--color-warm-400);">{{ e.utilisateur.email }}</span>
+                        <span class="flex items-center gap-3">
+                            {% if e.utilisateur.photo %}
+                            <img src="{{ e.utilisateur.photo.url }}" alt=""
+                                 class="h-9 w-9 shrink-0 rounded-full object-cover" style="border: 1px solid var(--color-warm-200);">
+                            {% else %}
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-bold text-white" style="background: var(--color-navy-700);" aria-hidden="true">{{ e.utilisateur.initiales }}</span>
+                            {% endif %}
+                            <span class="min-w-0">
+                                <a href="{% url 'administration:etudiant_detail' e.pk %}" class="font-medium link-reveal" style="color: var(--color-navy-900);">{{ e.utilisateur.get_full_name|default:e.utilisateur.username }}</a>
+                                <span class="block text-xs mt-0.5" style="color: var(--color-warm-400);">{{ e.utilisateur.email }}</span>
+                            </span>
+                        </span>
                     </td>
                     <td class="px-6 py-3 font-mono text-xs" style="color: var(--color-navy-700);">{{ e.numero_etudiant }}</td>
                     <td class="px-6 py-3 hidden md:table-cell" style="color: var(--color-warm-600);">{{ e.parcours }}</td>
@@ -78,6 +88,7 @@
                         <span class="text-xs font-semibold" style="color: var(--color-navy-700);">{{ e.total_ects_acquis }}/{{ e.parcours.ects_requis }}</span>
                     </td>
                     <td class="px-6 py-3 text-right">
+                        <a href="{% url 'administration:etudiant_detail' e.pk %}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Fiche</a>
                         <a href="{% url 'administration:etudiant_update' e.pk %}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Modifier</a>
                         {% if user.is_admin %}
                         <a href="{% url 'administration:etudiant_delete' e.pk %}" class="lien-danger">Supprimer</a>

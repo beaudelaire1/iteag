@@ -1,0 +1,306 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ compte.get_full_name|default:compte.username }} — Scolarité — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='etudiants' %}
+    {% if user.is_secretariat %}{% include "administration/partials/secretariat_nav.html" %}
+    {% else %}{% include "administration/partials/admin_nav.html" %}{% endif %}
+{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='etudiants' %}
+    {% if user.is_secretariat %}{% include "administration/partials/secretariat_nav_mobile.html" %}
+    {% else %}{% include "administration/partials/admin_nav_mobile.html" %}{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'administration:etudiants' %}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Retour aux étudiants
+    </a>
+
+    <div class="flex flex-wrap items-start gap-5">
+        {% if compte.photo %}
+        <img src="{{ compte.photo.url }}" alt="Photo de {{ compte.get_full_name }}"
+             class="h-24 w-24 shrink-0 rounded object-cover" style="border: 1px solid var(--color-warm-200);">
+        {% else %}
+        <span class="inline-flex h-24 w-24 shrink-0 items-center justify-center rounded bg-navy-700 text-2xl font-bold text-white" aria-hidden="true">
+            {{ compte.initiales }}
+        </span>
+        {% endif %}
+
+        <div class="min-w-0">
+            <p class="overline mb-1">{{ profil.numero_etudiant }}</p>
+            <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ compte.get_full_name|default:compte.username }}</h1>
+            <p class="mt-2 flex flex-wrap items-center gap-2">
+                {% if profil.statut_inscription == 'actif' or profil.statut_inscription == 'inscrit' %}
+                <span class="badge badge-success">{{ profil.get_statut_inscription_display }}</span>
+                {% elif profil.statut_inscription == 'suspendu' or profil.statut_inscription == 'inactif' %}
+                <span class="badge badge-danger">{{ profil.get_statut_inscription_display }}</span>
+                {% elif profil.statut_inscription == 'diplome' %}
+                <span class="badge badge-gold">{{ profil.get_statut_inscription_display }}</span>
+                {% else %}
+                <span class="badge badge-warning">{{ profil.get_statut_inscription_display }}</span>
+                {% endif %}
+                <span class="badge badge-info">{{ profil.parcours.nom }}</span>
+                <span class="badge">{{ profil.promotion.nom }}</span>
+                {% if profil.eglise_fondatrice %}<span class="badge badge-gold">Église fondatrice</span>{% endif %}
+            </p>
+        </div>
+
+        <div class="ml-auto flex flex-wrap gap-3">
+            <a href="{% url 'administration:etudiant_update' profil.pk %}" class="btn-ghost">Modifier le dossier</a>
+            {% if compte.email %}<a href="mailto:{{ compte.email }}" class="btn-primary">Écrire</a>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+    {# ── Colonne latérale : coordonnées et chiffres ── #}
+    <aside class="lg:col-span-1 space-y-6">
+        <section class="card">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Coordonnées</h2>
+            <dl class="space-y-3 text-sm">
+                <div>
+                    <dt class="text-warm-500">Adresse électronique</dt>
+                    <dd class="font-medium text-navy-900 break-words">
+                        {% if compte.email %}<a href="mailto:{{ compte.email }}" class="link-reveal">{{ compte.email }}</a>{% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-warm-500">Téléphone</dt>
+                    <dd class="font-medium text-navy-900">
+                        {% if compte.phone %}<a href="tel:{{ compte.phone }}" class="link-reveal">{{ compte.phone }}</a>{% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-warm-500">Adresse postale</dt>
+                    <dd class="font-medium text-navy-900">
+                        {% if compte.adresse_postale %}{{ compte.adresse_postale }}{% if compte.pays %}<br>{{ compte.pays }}{% endif %}{% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-warm-500">Église d'appartenance</dt>
+                    <dd class="font-medium text-navy-900">{{ profil.eglise|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-warm-500">Formule tarifaire</dt>
+                    <dd class="font-medium text-navy-900">{{ profil.formule_tarif|default:"—" }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="card">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Parcours</h2>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-warm-500">Crédits acquis</dt>
+                    <dd class="font-semibold text-navy-900 num">{{ profil.total_ects_acquis }} / {{ profil.parcours.ects_requis }} ECTS</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-warm-500">Restant</dt>
+                    <dd class="font-medium text-navy-900 num">{{ profil.ects_restants }} ECTS</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-warm-500">Total réglé</dt>
+                    <dd class="font-semibold text-navy-900 num">{{ total_regle }} €</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-warm-500">Cours suivis</dt>
+                    <dd class="font-medium text-navy-900 num">{{ inscriptions|length }}</dd>
+                </div>
+            </dl>
+            <div class="progress-bar mt-4">
+                <div class="progress-bar-fill" style="width: {% widthratio profil.total_ects_acquis profil.parcours.ects_requis 100 %}%"></div>
+            </div>
+        </section>
+    </aside>
+
+    {# ── Colonne principale : historique ── #}
+    <div class="lg:col-span-2 space-y-8">
+
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Cours suivis</h2>
+            {% if inscriptions %}
+            <div class="tw overflow-x-auto">
+                <table class="table-premium">
+                    <thead><tr><th>Cours</th><th>Session</th><th>Enseignant</th><th>Inscrit le</th></tr></thead>
+                    <tbody>
+                        {% for inscription in inscriptions %}
+                        <tr>
+                            <td class="font-medium">{{ inscription.cours_session.cours.titre }}</td>
+                            <td>{{ inscription.cours_session.session }}</td>
+                            <td>{{ inscription.cours_session.enseignant }}</td>
+                            <td class="num">{{ inscription.created_at|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm text-warm-500">Aucune inscription à un cours pour l'instant.</p>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Notes et évaluations</h2>
+            {% if evaluations %}
+            <div class="tw overflow-x-auto">
+                <table class="table-premium">
+                    <thead><tr><th>Cours</th><th>Type</th><th>État</th><th class="num">Note</th><th class="num">ECTS</th></tr></thead>
+                    <tbody>
+                        {% for evaluation in evaluations %}
+                        <tr>
+                            <td class="font-medium">{{ evaluation.cours_session.cours.titre }}</td>
+                            <td>{{ evaluation.get_type_evaluation_display }}</td>
+                            <td>
+                                {% if evaluation.statut == 'publie' %}<span class="badge badge-success">Publiée</span>
+                                {% elif evaluation.statut == 'note' %}<span class="badge badge-info">Notée</span>
+                                {% elif evaluation.statut == 'en_correction' %}<span class="badge badge-warning">En correction</span>
+                                {% elif evaluation.statut == 'soumis' %}<span class="badge badge-warning">Remise</span>
+                                {% else %}<span class="badge">{{ evaluation.get_statut_display }}</span>{% endif %}
+                            </td>
+                            <td class="num">{% if evaluation.note is not None %}{{ evaluation.note }}/20{% else %}—{% endif %}</td>
+                            <td class="num">{{ evaluation.ects_valides }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm text-warm-500">Aucune évaluation enregistrée.</p>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Crédits ECTS</h2>
+            {% if credits %}
+            <div class="tw overflow-x-auto">
+                <table class="table-premium">
+                    <thead><tr><th>Origine</th><th>Session</th><th>Validé le</th><th class="num">ECTS</th></tr></thead>
+                    <tbody>
+                        {% for credit in credits %}
+                        <tr>
+                            <td class="font-medium">
+                                {% if credit.cours %}{{ credit.cours.titre }}
+                                {% elif credit.stage %}Stage — {{ credit.stage.lieu }}
+                                {% elif credit.vae %}Validation des acquis
+                                {% else %}{{ credit.get_source_display }}{% endif %}
+                            </td>
+                            <td>{{ credit.session|default:"—" }}</td>
+                            <td class="num">{{ credit.date_validation|date:"d/m/Y" }}</td>
+                            <td class="num font-semibold">{{ credit.ects_obtenus }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm text-warm-500">Aucun crédit validé.</p>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Paiements</h2>
+            {% if paiements %}
+            <div class="tw overflow-x-auto">
+                <table class="table-premium">
+                    <thead><tr><th>Date</th><th>Session</th><th>Mode</th><th>État</th><th class="num">Montant</th></tr></thead>
+                    <tbody>
+                        {% for paiement in paiements %}
+                        <tr>
+                            <td class="num">{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+                            <td>{{ paiement.session|default:"—" }}</td>
+                            <td>{{ paiement.get_mode_display }}</td>
+                            <td>
+                                {% if paiement.statut == 'confirme' %}<span class="badge badge-success">Confirmé</span>
+                                {% elif paiement.statut == 'rembourse' %}<span class="badge badge-danger">Remboursé</span>
+                                {% else %}<span class="badge badge-warning">{{ paiement.get_statut_display }}</span>{% endif %}
+                            </td>
+                            <td class="num font-semibold">{{ paiement.montant }} €</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm text-warm-500">Aucun paiement enregistré.</p>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Accès e-learning</h2>
+            {% if acces_modules %}
+            <div class="tw overflow-x-auto">
+                <table class="table-premium">
+                    <thead><tr><th>Module</th><th>Origine</th><th>État</th><th class="num">Progression</th></tr></thead>
+                    <tbody>
+                        {% for acces in acces_modules %}
+                        <tr>
+                            <td class="font-medium">{{ acces.module.titre }}</td>
+                            <td>{{ acces.get_source_display }}</td>
+                            <td>
+                                {% if acces.statut == 'actif' %}<span class="badge badge-success">Actif</span>
+                                {% elif acces.statut == 'termine' %}<span class="badge badge-info">Terminé</span>
+                                {% elif acces.statut == 'demande' %}<span class="badge badge-gold">Demande</span>
+                                {% else %}<span class="badge badge-warning">{{ acces.get_statut_display }}</span>{% endif %}
+                            </td>
+                            <td class="num">{{ acces.progression_percent }} %</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm text-warm-500">Aucun accès e-learning.</p>
+            {% endif %}
+        </section>
+
+        {% if demandes %}
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Demandes d'inscription récentes</h2>
+            <div class="tw overflow-x-auto">
+                <table class="table-premium">
+                    <thead><tr><th>Cours</th><th>Déposée le</th><th>État</th><th class="num">Montant dû</th></tr></thead>
+                    <tbody>
+                        {% for demande in demandes %}
+                        <tr>
+                            <td class="font-medium">
+                                <a href="{% url 'administration:enrollment_request_detail' demande.pk %}" class="link-reveal">
+                                    {{ demande.cours_session.cours.titre }}
+                                </a>
+                            </td>
+                            <td class="num">{{ demande.created_at|date:"d/m/Y" }}</td>
+                            <td>{{ demande.get_statut_display }}</td>
+                            <td class="num">{{ demande.montant_du }} €</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if documents %}
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Documents édités</h2>
+            <ul class="space-y-2 text-sm">
+                {% for document in documents %}
+                <li class="flex items-center justify-between gap-4 rounded border p-3" style="border-color: var(--color-warm-200);">
+                    <span class="font-medium text-navy-900">{{ document.get_type_document_display }}</span>
+                    <span class="text-warm-500 num">{{ document.created_at|date:"d/m/Y" }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
