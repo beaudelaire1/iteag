@@ -215,6 +215,22 @@
   }
 
   /* ── 10. Menu mobile ── */
+
+  /**
+   * Affiche ou masque un élément par l'attribut « hidden ».
+   *
+   * « element.hidden = true » ne vaut que pour le HTML : SVGElement n'expose
+   * pas cette propriété, l'affectation posait une propriété inerte sur l'objet
+   * et l'attribut ne bougeait pas. Les deux icônes du bouton étant des SVG, la
+   * croix ne s'affichait jamais et le trait triple ne disparaissait pas — le
+   * menu s'ouvrait sans que le bouton le dise.
+   */
+  function afficher(element, visible) {
+    if (!element) return;
+    if (visible) element.removeAttribute("hidden");
+    else element.setAttribute("hidden", "");
+  }
+
   function initMenuMobile() {
     const bouton = document.querySelector("[data-nav-toggle]");
     const panneau = document.querySelector("[data-nav-panel]");
@@ -222,12 +238,15 @@
 
     const iconeOuvrir = bouton.querySelector("[data-nav-icone-ouvrir]");
     const iconeFermer = bouton.querySelector("[data-nav-icone-fermer]");
+    const grandEcran = window.matchMedia("(min-width: 1024px)");
 
     function definir(ouvert) {
       bouton.setAttribute("aria-expanded", String(ouvert));
-      panneau.hidden = !ouvert;
-      if (iconeOuvrir) iconeOuvrir.hidden = ouvert;
-      if (iconeFermer) iconeFermer.hidden = !ouvert;
+      afficher(panneau, ouvert);
+      afficher(iconeOuvrir, !ouvert);
+      afficher(iconeFermer, ouvert);
+      // Le fond ne défile plus derrière le menu ouvert.
+      document.documentElement.classList.toggle("menu-ouvert", ouvert);
     }
 
     bouton.addEventListener("click", () => {
@@ -239,6 +258,72 @@
     // Un lien suivi referme le panneau.
     panneau.addEventListener("click", (e) => {
       if (e.target.closest("a")) definir(false);
+    });
+    // Passé en grand écran, le panneau est masqué par la mise en page mais son
+    // état resterait « ouvert » — et le défilement, bloqué.
+    grandEcran.addEventListener("change", (e) => {
+      if (e.matches) definir(false);
+    });
+  }
+
+  /* ── 10 bis. Rubriques de la barre publique ──
+     Les panneaux s'ouvrent en CSS, au survol et à la prise de focus : c'est ce
+     qui les rend atteignables sans script. Mais au doigt, « :hover » ne se
+     déclenche pas — sur une tablette assez large pour recevoir la barre de
+     bureau, le premier appui suivait le lien de l'intitulé et le panneau ne
+     s'ouvrait jamais. Ses entrées étaient alors hors de portée.
+
+     Le complément ci-dessous n'ajoute qu'un cas : sans survol, le premier
+     appui ouvre, le second suit le lien. Rien n'est retiré. */
+  function initRubriques() {
+    const rubriques = document.querySelectorAll("[data-rubrique]");
+    if (!rubriques.length) return;
+
+    function fermerTous(sauf) {
+      rubriques.forEach((rubrique) => {
+        if (rubrique === sauf) return;
+        rubrique.classList.remove("ouverte");
+        const intitule = rubrique.querySelector("[data-rubrique-intitule]");
+        if (intitule) intitule.setAttribute("aria-expanded", "false");
+      });
+    }
+
+    rubriques.forEach((rubrique) => {
+      const intitule = rubrique.querySelector("[data-rubrique-intitule]");
+      if (!intitule) return;
+      // L'état n'est annoncé que là où il existe, c'est-à-dire dès qu'il y a un
+      // script pour le tenir à jour.
+      intitule.setAttribute("aria-expanded", "false");
+
+      intitule.addEventListener("click", (e) => {
+        // Évalué à chaque fois : un appareil hybride change de mode d'entrée
+        // en cours de séance.
+        if (!window.matchMedia("(hover: none)").matches) return;
+        if (rubrique.classList.contains("ouverte")) return; // second appui : on suit le lien
+        e.preventDefault();
+        fermerTous(rubrique);
+        rubrique.classList.add("ouverte");
+        intitule.setAttribute("aria-expanded", "true");
+      });
+
+      // Le survol et le focus ouvrent le panneau en CSS ; l'état annoncé aux
+      // technologies d'assistance doit dire la même chose.
+      rubrique.addEventListener("mouseenter", () => intitule.setAttribute("aria-expanded", "true"));
+      rubrique.addEventListener("mouseleave", () => {
+        if (!rubrique.classList.contains("ouverte")) intitule.setAttribute("aria-expanded", "false");
+      });
+      rubrique.addEventListener("focusin", () => intitule.setAttribute("aria-expanded", "true"));
+      rubrique.addEventListener("focusout", (e) => {
+        if (rubrique.contains(e.relatedTarget)) return;
+        if (!rubrique.classList.contains("ouverte")) intitule.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("[data-rubrique]")) fermerTous(null);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") fermerTous(null);
     });
   }
 
@@ -312,8 +397,10 @@
           "aria-label",
           devientVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"
         );
-        if (iconeAffiche) iconeAffiche.hidden = devientVisible;
-        if (iconeMasque) iconeMasque.hidden = !devientVisible;
+        // Deux SVG : « afficher » passe par l'attribut, faute de quoi rien ne
+        // bougerait — voir le commentaire de la fonction.
+        afficher(iconeAffiche, !devientVisible);
+        afficher(iconeMasque, devientVisible);
       });
     });
   }
@@ -351,6 +438,7 @@
     initStagger();
     initParallax();
     initMenuMobile();
+    initRubriques();
     initMenusDeroulants();
     initMessagesFlash();
     initRevelationMotDePasse();

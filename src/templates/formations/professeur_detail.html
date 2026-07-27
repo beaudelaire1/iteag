@@ -22,7 +22,7 @@
                     <img src="{{ professeur.photo.url }}" alt="{{ professeur.nom_complet }}" class="h-40 w-40 rounded-full object-cover" width="160" height="160" style="box-shadow: 0 0 0 4px rgba(234,182,62,0.25);">
                     {% else %}
                     <div class="h-40 w-40 rounded-full flex items-center justify-center" style="background: var(--color-navy-600); box-shadow: 0 0 0 4px rgba(234,182,62,0.25);">
-                        <span class="text-5xl font-bold text-white">{{ professeur.prenom|truncatechars:1 }}{{ professeur.nom|truncatechars:1 }}</span>
+                        <span class="text-5xl font-bold text-white">{{ professeur.prenom|slice:":1"|upper }}{{ professeur.nom|slice:":1"|upper }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -190,7 +190,7 @@
                     <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-20 w-20 rounded-full object-cover" width="80" height="80" loading="lazy">
                     {% else %}
                     <div class="mx-auto h-20 w-20 rounded-full flex items-center justify-center" style="background: var(--color-navy-700);">
-                        <span class="text-2xl font-bold text-white">{{ prof.prenom|truncatechars:1 }}{{ prof.nom|truncatechars:1 }}</span>
+                        <span class="text-2xl font-bold text-white">{{ prof.prenom|slice:":1"|upper }}{{ prof.nom|slice:":1"|upper }}</span>
                     </div>
                     {% endif %}
                 </div>

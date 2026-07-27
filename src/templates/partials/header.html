@@ -1,71 +1,67 @@
 {% load static %}
 
+{% comment %}
+    Barre publique.
+
+    Les rubriques ne sont plus écrites ici : elles sont déclarées dans
+    « apps/core/navigation.py » et parcourues deux fois — une pour la barre,
+    une pour le menu mobile. Les deux listes avaient déjà divergé quand elles
+    étaient saisies à la main : « Bibliothèque » était une rubrique de premier
+    niveau en haut de page et une sous-entrée « Ressources » sur mobile.
+
+    Chaque intitulé de rubrique est un lien vers sa page principale : aucune
+    destination ne dépend de l'ouverture d'un panneau.
+{% endcomment %}
+
 <header class="nav-premium">
     <nav class="container-wide" aria-label="Navigation principale">
-        <div class="flex items-center justify-between" style="height: 4.5rem;">
+        <div class="nav-barre flex items-center justify-between gap-4">
 
             {# Logo + marque #}
             <a href="/" class="flex items-center gap-3 shrink-0 group" aria-label="Accueil {{ SITE_NAME }}">
                 <img src="{% static 'img/logo.png' %}" alt="" class="h-11 w-auto transition-transform duration-300 group-hover:scale-105" width="44" height="44">
             </a>
 
-            {% comment %}
-                Barre publique. Sept entrées à plat l'encombraient, et
-                « Formations vidéo » y voisinait « Formations » comme s'il
-                s'agissait d'une autre offre — alors que la vidéo est un format
-                d'enseignement. Elle est désormais dans la rubrique Formations.
-
-                Chaque intitulé de rubrique est un lien vers sa page
-                principale : rien ne dépend de l'ouverture du panneau.
-            {% endcomment %}
             <div class="hidden lg:flex lg:items-center lg:gap-8">
-
-                <div class="nav-groupe">
-                    <a href="{% url 'formations:parcours_list' %}" class="nav-link" aria-haspopup="true">
-                        Formations
+                {% for rubrique in navigation_publique %}
+                {% if rubrique.entrees %}
+                <div class="nav-groupe" data-rubrique>
+                    <a href="{{ rubrique.url }}"
+                       class="nav-link{% if rubrique.active %} active{% endif %}"
+                       {% if rubrique.active %}aria-current="true"{% endif %}
+                       aria-haspopup="true"
+                       aria-controls="rubrique-{{ rubrique.cle }}"
+                       data-rubrique-intitule>
+                        {{ rubrique.libelle }}
                         <svg class="chevron" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                     </a>
-                    <div class="nav-groupe-panneau">
-                        <a href="{% url 'formations:parcours_list' %}" class="nav-groupe-lien">
-                            Parcours et cours
-                            <span class="detail">Diplômant, Bachelor FLTE, libre, ITEAG Pro</span>
+                    <div class="nav-groupe-panneau" id="rubrique-{{ rubrique.cle }}">
+                        {% for entree in rubrique.entrees %}
+                        <a href="{{ entree.url }}" class="nav-groupe-lien">
+                            {{ entree.libelle }}
+                            {% if entree.detail %}<span class="detail">{{ entree.detail }}</span>{% endif %}
                         </a>
-                        <a href="{% url 'elearning:catalogue' %}" class="nav-groupe-lien">
-                            Formations vidéo
-                            <span class="detail">Modules à suivre à votre rythme</span>
-                        </a>
-                        <a href="{% url 'formations:professeur_list' %}" class="nav-groupe-lien">
-                            Équipe professorale
-                        </a>
+                        {% endfor %}
                     </div>
                 </div>
-
-                <div class="nav-groupe">
-                    <a href="/presentation/" class="nav-link" aria-haspopup="true">
-                        L'institut
-                        <svg class="chevron" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
-                    </a>
-                    <div class="nav-groupe-panneau">
-                        <a href="/presentation/" class="nav-groupe-lien">Découvrir l'ITEAG</a>
-                        <a href="/actualites/" class="nav-groupe-lien">Actualités</a>
-                        <a href="/contact/" class="nav-groupe-lien">Nous contacter</a>
-                    </div>
-                </div>
-
-                <a href="{% url 'library:catalogue' %}" class="nav-link">Bibliothèque</a>
+                {% else %}
+                <a href="{{ rubrique.url }}"
+                   class="nav-link{% if rubrique.active %} active{% endif %}"
+                   {% if rubrique.active %}aria-current="true"{% endif %}>{{ rubrique.libelle }}</a>
+                {% endif %}
+                {% endfor %}
             </div>
 
             {# Actions droite #}
-            <div class="hidden lg:flex lg:items-center lg:gap-4">
+            <div class="hidden lg:flex lg:items-center lg:gap-3">
                 {% if user.is_authenticated %}
+                {% include "partials/nav_notifications.html" %}
                 <div class="relative" data-dropdown>
                     <button type="button" data-dropdown-toggle aria-expanded="false" aria-haspopup="true"
-                            class="flex items-center gap-2.5 px-3 py-1.5 rounded transition-colors text-white/80 hover:text-white">
-                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold bg-white/20 text-white">
-                            {{ user.first_name|truncatechars:1 }}{{ user.last_name|truncatechars:1 }}
-                        </span>
+                            class="flex items-center gap-2.5 px-2 py-1.5 rounded transition-colors text-white/80 hover:text-white">
+                        <span class="nav-avatar">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
                         <span class="text-sm font-medium text-white">{{ user.first_name|default:user.username }}</span>
-                        <svg class="chevron h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <svg class="chevron h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
                         </svg>
                     </button>
@@ -95,48 +91,52 @@
                 </div>
                 {% else %}
                 <a href="{% url 'accounts:login' %}" class="nav-link">Connexion</a>
-                <a href="{% url 'admissions:candidature_form' %}" class="btn-gold" style="padding: 0.5rem 1.5rem; font-size: 0.6875rem;">
-                    S'inscrire
-                </a>
+                <a href="{% url 'admissions:candidature_form' %}" class="btn-gold btn-gold--compact">S'inscrire</a>
                 {% endif %}
             </div>
 
-            {# Mobile menu button #}
-            <button type="button"
-                    class="lg:hidden inline-flex items-center justify-center rounded p-2 transition-colors text-white/80 hover:text-white"
-                    data-nav-toggle
-                    aria-expanded="false"
-                    aria-controls="mobile-menu"
-                    aria-label="Menu de navigation">
-                <svg data-nav-icone-ouvrir class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
-                </svg>
-                <svg data-nav-icone-fermer hidden class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
+            {# Ouverture du menu mobile — la cloche reste visible à côté #}
+            <div class="flex items-center gap-1 lg:hidden">
+                {% if user.is_authenticated %}{% include "partials/nav_notifications.html" %}{% endif %}
+                <button type="button"
+                        class="inline-flex items-center justify-center rounded p-2 transition-colors text-white/80 hover:text-white"
+                        data-nav-toggle
+                        aria-expanded="false"
+                        aria-controls="mobile-menu"
+                        aria-label="Menu de navigation">
+                    <svg data-nav-icone-ouvrir class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                    </svg>
+                    <svg data-nav-icone-fermer hidden class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        {# ── Mobile menu ── #}
+        {# ── Menu mobile ── #}
         <div id="mobile-menu"
-             class="lg:hidden"
+             class="nav-mobile-panneau lg:hidden"
              data-nav-panel hidden>
             <div class="py-4 space-y-1 border-t border-white/15">
                 {% comment %}Mêmes rubriques que la barre, dépliées : sur mobile un panneau qui s'ouvre en cacherait un autre.{% endcomment %}
-                <a href="/" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Accueil</a>
+                <a href="/" class="nav-mobile-lien font-semibold uppercase tracking-wider">Accueil</a>
 
-                <p class="nav-mobile-groupe">Formations</p>
-                <a href="{% url 'formations:parcours_list' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Parcours et cours</a>
-                <a href="{% url 'elearning:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Formations vidéo</a>
-                <a href="{% url 'formations:professeur_list' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Équipe professorale</a>
-
-                <p class="nav-mobile-groupe">L'institut</p>
-                <a href="/presentation/" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Découvrir l'ITEAG</a>
-                <a href="/actualites/" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Actualités</a>
-                <a href="/contact/" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Nous contacter</a>
-
-                <p class="nav-mobile-groupe">Ressources</p>
-                <a href="{% url 'library:catalogue' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Bibliothèque</a>
+                {% comment %}
+                    La marque « active » porte sur l'entrée exacte, pas sur la
+                    rubrique : tout déplier puis tout souligner ne dirait plus
+                    rien.
+                {% endcomment %}
+                {% for rubrique in navigation_publique %}
+                {% if rubrique.entrees %}
+                <p class="nav-mobile-groupe">{{ rubrique.libelle }}</p>
+                {% for entree in rubrique.entrees %}
+                <a href="{{ entree.url }}" class="nav-mobile-lien{% if entree.url == request.path %} active{% endif %}">{{ entree.libelle }}</a>
+                {% endfor %}
+                {% else %}
+                <a href="{{ rubrique.url }}" class="nav-mobile-lien font-semibold uppercase tracking-wider{% if rubrique.active %} active{% endif %}">{{ rubrique.libelle }}</a>
+                {% endif %}
+                {% endfor %}
 
                 {% if user.is_authenticated %}
                 <hr class="my-3 border-white/15">
@@ -144,22 +144,24 @@
                     <span class="overline-light">{{ user.first_name|default:user.username }}</span>
                 </div>
                 {% if user.is_etudiant %}
-                <a href="{% url 'etudiant:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace étudiant</a>
+                <a href="{% url 'etudiant:dashboard' %}" class="nav-mobile-lien">Mon espace étudiant</a>
                 {% elif user.is_enseignant %}
-                <a href="{% url 'enseignant:accueil' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Mon espace enseignant</a>
+                <a href="{% url 'enseignant:accueil' %}" class="nav-mobile-lien">Mon espace enseignant</a>
                 {% elif user.is_secretariat %}
-                <a href="{% url 'secretariat:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Espace secrétariat</a>
+                <a href="{% url 'secretariat:dashboard' %}" class="nav-mobile-lien">Espace secrétariat</a>
                 {% elif user.is_admin %}
-                <a href="{% url 'administration:dashboard' %}" class="block rounded px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white">Administration</a>
+                <a href="{% url 'administration:dashboard' %}" class="nav-mobile-lien">Administration</a>
                 {% endif %}
-                <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="block w-full text-left rounded px-4 py-2.5 text-sm font-medium text-gold-300 hover:text-white">Déconnexion</button></form>
+                <a href="{% url 'core:notifications' %}" class="nav-mobile-lien">
+                    Mes notifications
+                    {% with nombre=notifications_non_lues %}{% if nombre %}<span class="nav-cloche-pastille">{{ nombre }}</span>{% endif %}{% endwith %}
+                </a>
+                <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="nav-mobile-lien w-full text-left text-gold-300">Déconnexion</button></form>
                 {% else %}
                 <hr class="my-3 border-white/15">
-                <a href="{% url 'accounts:login' %}" class="block rounded px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-white/80 hover:text-white">Connexion</a>
+                <a href="{% url 'accounts:login' %}" class="nav-mobile-lien font-semibold uppercase tracking-wider">Connexion</a>
                 <div class="px-4 pt-2">
-                    <a href="{% url 'admissions:candidature_form' %}" class="btn-gold block text-center" style="padding: 0.625rem 1.5rem; font-size: 0.6875rem;">
-                        S'inscrire
-                    </a>
+                    <a href="{% url 'admissions:candidature_form' %}" class="btn-gold btn-gold--compact block text-center">S'inscrire</a>
                 </div>
                 {% endif %}
             </div>

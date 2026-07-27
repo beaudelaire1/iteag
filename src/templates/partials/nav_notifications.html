@@ -1,0 +1,20 @@
+{% comment %}
+    Cloche des notifications.
+
+    Le service, le modèle et la page « /notifications/ » existaient, ainsi que
+    le compteur poussé dans le contexte de chaque page — mais aucune barre n'y
+    menait. Un utilisateur ne pouvait apprendre qu'on l'avait notifié qu'en
+    devinant l'adresse.
+
+    Le compteur est résolu une seule fois par rendu : « notifications_non_lues »
+    est une fonction, l'appeler deux fois compterait deux fois en base.
+{% endcomment %}
+{% with nombre=notifications_non_lues %}
+<a href="{% url 'core:notifications' %}" class="nav-cloche"
+   aria-label="Notifications{% if nombre %} — {{ nombre }} non lue{{ nombre|pluralize }}{% endif %}">
+    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+    </svg>
+    {% if nombre %}<span class="nav-cloche-pastille">{% if nombre > 9 %}9+{% else %}{{ nombre }}{% endif %}</span>{% endif %}
+</a>
+{% endwith %}

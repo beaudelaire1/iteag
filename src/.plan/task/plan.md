@@ -18,6 +18,12 @@ transverse, domaine e-learning vidéo, portails étudiant, enseignant et
 administratif, conversion publique, qualité, exploitation, puis
 l'externalisation de la diffusion vidéo demandée en cours de projet.
 
+Reste ouvert un **lot 12 — reprise de la navigation publique**, engagé après
+constat de terrain sur la barre du site : rubriques déclarées en un seul
+endroit, rubrique courante marquée, ouverture au doigt, cloche des
+notifications, et retrait du cache de page qui resservait l'en-tête d'un
+visiteur à un autre. Voir « Avancement des lots ».
+
 ## Architecture retenue
 - **Pattern** : Modular Monolith (Django)
 - **Stack** : Python 3.12 / Django 5.x / Wagtail 7.x / PostgreSQL 16 / Redis / Celery / Tailwind CSS 4 / HTMX
@@ -70,6 +76,7 @@ l'externalisation de la diffusion vidéo demandée en cours de projet.
 | 9 | Diffusion vidéo externalisée | Livré — ADR-005 |
 | 10 | Dossier académique, référentiel, stages et VAE | Livré |
 | 11 | Fiabilisation du déploiement et test de fumée | Livré |
+| 12 | Reprise de la navigation publique | Livré |
 
 ## Suite immédiate
 
@@ -92,16 +99,18 @@ l'externalisation de la diffusion vidéo demandée en cours de projet.
 | R3 | Volume vidéo supérieur aux prévisions | Coût de diffusion facturé au transfert | Mesure dès la mise en service ; HLS adaptatif déjà en place |
 | R4 | Débit insuffisant en Guyane et Martinique | Abandon des étudiants distants | HLS adaptatif sur CDN (ADR-005), supports téléchargeables |
 | R5 | Dette : portails encore dans les apps de domaine | Couplage `academics` ↔ `lms` | Cliquet en place ; extraction planifiée |
+| R6 | Le cache de page mémorisait la barre de navigation, qui n'est pas la même pour tous | Prénom et rôle d'un connecté servis à un visiteur anonyme | Levé : `cache_page` retiré des deux listes publiques, régression couverte par `apps/formations/test_cache_pages.py` |
 
 ## Qualité mesurée
 
 | Domaine | Mesure | Cible |
 |---------|--------|-------|
-| Tests | 1041 verts, sur PostgreSQL 16 **et** SQLite | ≥ 200 |
-| Couverture | 92 % | ≥ 90 % |
+| Tests | 1540 verts, 1 ignoré, sur PostgreSQL 16 **et** SQLite | ≥ 200 |
+| Couverture | 94 % | ≥ 90 % |
 | Routes vérifiées | 74 sans paramètre × 5 profils de visiteur | toutes |
 | Cloisonnement des portails | vérifié route par route | 0 fuite |
 | Couverture du contrôle d'accès | 100 % | 100 % |
 | Lint et format | 0 erreur | 0 |
-| Vulnérabilités des dépendances | 0 | 0 |
-| Build de production | Vérifié à chaque commit | Vérifié |
+| Vulnérabilités des dépendances de production | 0 (`pip-audit -r requirements/base.txt`) | 0 |
+| `check --deploy` en réglages de production | 0 alerte de sécurité | 0 |
+| Build de production | `collectstatic` avec manifeste : 322 fichiers, 1 542 post-traités | Vérifié |

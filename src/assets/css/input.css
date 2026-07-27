@@ -73,8 +73,19 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* La barre est collante : sans cette marge, tout lien d'ancre range sa
+       cible dessous, et l'on arrive sur un titre qu'on ne voit pas. La valeur
+       est la hauteur de « .nav-barre », plus un peu d'air. */
+    scroll-padding-top: 5.5rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Le menu mobile ouvert prend la main sur le défilement : sinon le fond
+     glisse sous les doigts pendant qu'on parcourt le menu. */
+  html.menu-ouvert,
+  html.menu-ouvert body {
+    overflow: hidden;
   }
 
   body {
@@ -196,6 +207,12 @@
     background-color: var(--color-gold-300);
     transform: translateY(-1px);
     box-shadow: var(--shadow-gold);
+  }
+  /* Format de barre. Ces dimensions vivaient en style en ligne dans l'en-tête,
+     répétées à deux endroits et déjà différentes l'une de l'autre. */
+  .btn-gold--compact {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.6875rem;
   }
 
   .btn-ghost {
@@ -332,6 +349,13 @@
     box-shadow: var(--shadow-soft);
   }
 
+  /* Hauteur de la barre. Elle était posée en style en ligne dans le gabarit,
+     donc invisible d'ici — et « scroll-padding-top » plus bas doit s'y
+     accorder pour qu'une ancre ne se range pas sous la barre. */
+  .nav-barre {
+    height: 4.5rem;
+  }
+
   .nav-link {
     font-size: 0.75rem;
     font-weight: 600;
@@ -342,9 +366,22 @@
     border-bottom: 2px solid transparent;
     transition: all var(--duration-fast) var(--ease-premium);
   }
-  .nav-link:hover, .nav-link.active {
+  .nav-link:hover {
+    color: #fff;
+    border-bottom-color: color-mix(in srgb, var(--color-gold-400) 45%, transparent);
+  }
+  /* La rubrique où l'on se trouve. Rien ne la marquait : aucun gabarit ne
+     posait la classe, et le visiteur ne savait jamais où il était. Le trait
+     est plein, là où celui du survol est translucide — l'un dit « ici »,
+     l'autre « là si vous cliquez ». */
+  .nav-link.active {
     color: #fff;
     border-bottom-color: var(--color-gold-400);
+  }
+  .nav-link:focus-visible {
+    outline: 2px solid var(--color-gold-300);
+    outline-offset: 4px;
+    border-radius: 2px;
   }
 
   /* ── Rubriques de la navigation publique ──
@@ -372,7 +409,8 @@
     transition: transform var(--duration-fast) var(--ease-premium);
   }
   .nav-groupe:hover .chevron,
-  .nav-groupe:focus-within .chevron {
+  .nav-groupe:focus-within .chevron,
+  .nav-groupe.ouverte .chevron {
     transform: rotate(180deg);
   }
 
@@ -403,8 +441,14 @@
     position: absolute;
     inset: -0.625rem 0 100% 0;
   }
+  /* « ouverte » est posée par le script sur les écrans sans survol : au doigt,
+     « :hover » ne se déclenche jamais et le panneau restait inatteignable —
+     le premier appui suivait le lien de l'intitulé. Voir « initRubriques »
+     dans « iteag.js ». Le survol et le focus restent la base, qui vaut sans
+     script. */
   .nav-groupe:hover .nav-groupe-panneau,
-  .nav-groupe:focus-within .nav-groupe-panneau {
+  .nav-groupe:focus-within .nav-groupe-panneau,
+  .nav-groupe.ouverte .nav-groupe-panneau {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -441,6 +485,88 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-gold-400);
+  }
+
+  /* Panneau mobile. Il tombait sous le pli dès que l'écran était bas — un
+     téléphone tenu à l'horizontale, par exemple : quatre entrées visibles sur
+     seize, et rien pour laisser deviner les autres. Il défile désormais
+     lui-même, et le fond ne bouge plus derrière lui. */
+  .nav-mobile-panneau {
+    max-height: calc(100dvh - 4.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .nav-mobile-lien {
+    display: block;
+    padding: 0.625rem 1rem;
+    border-radius: 2px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    transition: color var(--duration-fast) var(--ease-premium);
+  }
+  .nav-mobile-lien:hover,
+  .nav-mobile-lien:focus-visible {
+    color: #fff;
+  }
+  .nav-mobile-lien.active {
+    color: #fff;
+    box-shadow: inset 2px 0 0 var(--color-gold-400);
+  }
+
+  /* Cloche des notifications. Le compteur existait, la page existait, aucune
+     barre n'y menait. */
+  .nav-cloche {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 2px;
+    color: rgba(255, 255, 255, 0.8);
+    transition: color var(--duration-fast) var(--ease-premium);
+  }
+  .nav-cloche:hover,
+  .nav-cloche:focus-visible {
+    color: #fff;
+  }
+  .nav-cloche-pastille {
+    position: absolute;
+    top: 0.125rem;
+    right: 0;
+    min-width: 1.05rem;
+    padding: 0 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1.05rem;
+    text-align: center;
+    color: var(--color-navy-900);
+    background-color: var(--color-gold-400);
+    border-radius: 999px;
+  }
+  /* Dans le menu mobile la pastille suit son libellé plutôt que de flotter. */
+  .nav-mobile-lien .nav-cloche-pastille {
+    position: static;
+    display: inline-block;
+    margin-left: 0.5rem;
+  }
+
+  /* Initiales de l'utilisateur connecté. Elles s'affichaient « …… » : le
+     filtre « truncatechars:1 » rend l'ellipse, qui compte pour le caractère
+     autorisé. C'est « slice » qu'il fallait. */
+  .nav-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    width: 2rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.2);
   }
 
   /* ── Formulaires premium ── */
