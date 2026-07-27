@@ -11,6 +11,8 @@
 <head>
     <meta charset="utf-8">
     <style>
+        {% include "partials/pdf_polices.html" %}
+
         @page {
             size: A4;
             /* Marges généreuses : un document officiel se relie et s'annote. */
@@ -19,21 +21,21 @@
             @bottom-left {
                 content: "ITEAG · Édité le {{ generated_at|date:'d/m/Y' }}";
                 color: #9a9489;
-                font-family: "Liberation Sans", sans-serif;
+                font-family: "Inter", "Liberation Sans", sans-serif;
                 font-size: 7pt;
                 letter-spacing: 0.04em;
             }
             @bottom-center {
                 content: "Toute rature ou surcharge rend ce document nul.";
                 color: #9a9489;
-                font-family: "Liberation Sans", sans-serif;
+                font-family: "Inter", "Liberation Sans", sans-serif;
                 font-size: 7pt;
                 font-style: italic;
             }
             @bottom-right {
                 content: counter(page) " / " counter(pages);
                 color: #8a857c;
-                font-family: "Liberation Sans", sans-serif;
+                font-family: "Inter", "Liberation Sans", sans-serif;
                 font-size: 7pt;
             }
         }
@@ -42,7 +44,7 @@
 
         body {
             color: #1a2b47;
-            font-family: "Liberation Serif", "DejaVu Serif", serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 10.5pt;
             line-height: 1.6;
             margin: 0;
@@ -57,8 +59,13 @@
             border-bottom: 0.6pt solid #c9c2b6;
             padding-bottom: 7mm;
         }
+        .marque-logo {
+            display: block;
+            height: 16mm;
+            margin-bottom: 3mm;
+        }
         .marque {
-            font-family: "EB Garamond", "Liberation Serif", serif;
+            font-family: "Playfair Display", "Liberation Serif", serif;
             font-size: 24pt;
             font-weight: 600;
             letter-spacing: 0.16em;
@@ -73,7 +80,7 @@
         }
         .coordonnees {
             color: #6f6a61;
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 7.5pt;
             line-height: 1.7;
             text-align: right;
@@ -88,14 +95,14 @@
         }
         .titre-document .surtitre {
             color: #b08d3f;
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 7.5pt;
             font-weight: bold;
             letter-spacing: 0.22em;
             text-transform: uppercase;
         }
         .titre-document h1 {
-            font-family: "EB Garamond", "Liberation Serif", serif;
+            font-family: "Playfair Display", "Liberation Serif", serif;
             font-size: 22pt;
             font-weight: 600;
             letter-spacing: 0.02em;
@@ -103,7 +110,7 @@
         }
         .titre-document .reference {
             color: #8a857c;
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 7.5pt;
             margin-top: 2mm;
         }
@@ -120,7 +127,7 @@
         .identite td { padding: 1.2mm 0; vertical-align: top; border: none; }
         .identite .etiquette {
             color: #8a857c;
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 7.5pt;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -154,7 +161,7 @@
         table.releve thead th {
             border-bottom: 1pt solid #14243d;
             color: #14243d;
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 7.5pt;
             font-weight: bold;
             letter-spacing: 0.1em;
@@ -173,7 +180,7 @@
         table.releve .secondaire { color: #7d776d; font-size: 8.5pt; }
         table.releve .origine {
             color: #8a857c;
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 7pt;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -187,14 +194,14 @@
             padding-top: 3mm;
         }
         .total .libelle {
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 8pt;
             letter-spacing: 0.12em;
             text-transform: uppercase;
             padding-top: 1.5mm;
         }
         .total .valeur {
-            font-family: "EB Garamond", "Liberation Serif", serif;
+            font-family: "Playfair Display", "Liberation Serif", serif;
             font-size: 16pt;
             font-weight: 600;
         }
@@ -227,7 +234,7 @@
             padding-top: 2mm;
         }
         .signature .qualite {
-            font-family: "Liberation Sans", sans-serif;
+            font-family: "Inter", "Liberation Sans", sans-serif;
             font-size: 8pt;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -239,13 +246,17 @@
 
     <div class="lettre-tete">
         <div>
-            <div class="marque">ITEAG</div>
+            {% if logo_pdf %}
+            <img class="marque-logo" src="{{ logo_pdf }}" alt="{{ institut.sigle }}">
+            {% else %}
+            <div class="marque">{{ institut.sigle }}</div>
+            {% endif %}
             <div class="marque-filet"></div>
         </div>
         <div class="coordonnees">
-            {{ SITE_FULL_NAME }}<br>
-            {{ SITE_ADDRESS }}<br>
-            {{ SITE_EMAIL }} · {{ SITE_PHONE }}
+            {{ institut.nom }}<br>
+            {{ institut.adresse }}<br>
+            {{ institut.email }} · {{ institut.telephone }}
         </div>
     </div>
 

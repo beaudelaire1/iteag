@@ -104,18 +104,20 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
         # total de ses lignes.
         credits = profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by("date_validation")
 
+        from apps.core.services.pdf import contexte_marque
+
         html = render_to_string(
             "documents/pdf/document.html",
-            {
-                "user": request.user,
-                "profil": profil,
-                "document_type": document_type,
-                "document_label": dict(DocumentAdministratif.TypeDocument.choices)[document_type],
-                "generated_at": timezone.now(),
-                "evaluations": evaluations,
-                "paiements": paiements,
-                "credits": credits,
-            },
+            contexte_marque(
+                user=request.user,
+                profil=profil,
+                document_type=document_type,
+                document_label=dict(DocumentAdministratif.TypeDocument.choices)[document_type],
+                generated_at=timezone.now(),
+                evaluations=evaluations,
+                paiements=paiements,
+                credits=credits,
+            ),
             request=request,
         )
         pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
