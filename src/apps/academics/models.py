@@ -173,6 +173,30 @@ class CoursDeSession(TimeStampedModel):
     )
     informations_pratiques = models.TextField(blank=True)
 
+    # ── Évaluation : date d'examen et fenêtre de dépôt ──
+    #
+    # Sans fenêtre, un devoir se déposait à n'importe quel moment, y compris
+    # après que les notes des autres aient été publiées. L'enseignant n'avait
+    # aucun moyen de clore la remise autrement qu'en le demandant.
+    date_examen = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de l'examen",
+        help_text="Annoncée aux étudiants sur la page du cours.",
+    )
+    depot_ouverture = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Ouverture du dépôt",
+        help_text="Avant cette date, aucun devoir ne peut être remis. Vide = ouvert dès maintenant.",
+    )
+    depot_fermeture = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fermeture du dépôt",
+        help_text="Après cette date, la remise est close. Vide = pas d'échéance.",
+    )
+
     class Meta:
         verbose_name = "Cours de session"
         verbose_name_plural = "Cours de session"
@@ -184,10 +208,49 @@ class CoursDeSession(TimeStampedModel):
                 condition=models.Q(frais_inscription__isnull=True) | models.Q(frais_inscription__gte=0),
                 name="cours_session_frais_positifs",
             ),
+            # Une fenêtre qui se ferme avant de s'ouvrir n'accepterait jamais
+            # rien, sans que l'enseignant comprenne pourquoi.
+            models.CheckConstraint(
+                condition=models.Q(depot_ouverture__isnull=True)
+                | models.Q(depot_fermeture__isnull=True)
+                | models.Q(depot_fermeture__gte=models.F("depot_ouverture")),
+                name="cours_session_fenetre_depot_coherente",
+            ),
         ]
 
     def __str__(self):
         return f"{self.cours.titre} — {self.session}"
+
+    # ── Fenêtre de dépôt ──────────────────────────────────────
+
+    @property
+    def depot_est_ouvert(self) -> bool:
+        """La remise des devoirs est-elle possible maintenant ?
+
+        Une borne vide vaut « pas de limite de ce côté » : un enseignant qui ne
+        renseigne rien laisse le dépôt ouvert, ce qui est le comportement
+        antérieur et donc celui auquel les cours existants s'attendent.
+        """
+        maintenant = timezone.now()
+        if self.depot_ouverture and maintenant < self.depot_ouverture:
+            return False
+        if self.depot_fermeture and maintenant > self.depot_fermeture:
+            return False
+        return True
+
+    @property
+    def motif_depot_ferme(self) -> str:
+        """Pourquoi le dépôt est refusé — vide s'il est ouvert.
+
+        Un refus utile dit à l'étudiant s'il est trop tôt ou trop tard : les
+        deux cas appellent des réactions opposées.
+        """
+        maintenant = timezone.now()
+        if self.depot_ouverture and maintenant < self.depot_ouverture:
+            return f"La remise ouvrira le {timezone.localtime(self.depot_ouverture):%d/%m/%Y à %H h %M}."
+        if self.depot_fermeture and maintenant > self.depot_fermeture:
+            return f"La remise est close depuis le {timezone.localtime(self.depot_fermeture):%d/%m/%Y à %H h %M}."
+        return ""
 
     def clean(self):
         super().clean()

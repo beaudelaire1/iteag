@@ -217,14 +217,30 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
     context_object_name = "evaluation"
 
     def get_object(self, queryset=None):
-        return get_object_or_404(
+        evaluation = get_object_or_404(
             Evaluation.objects.select_related("cours_session__cours", "cours_session__session"),
             pk=self.kwargs["pk"],
             etudiant=self.request.user.profil_etudiant,
             statut=Evaluation.StatutEvaluation.EN_ATTENTE,
         )
+        # La fenêtre de remise est relue à chaque appel, y compris en POST :
+        # la contrôler seulement au gabarit laisserait passer un envoi direct,
+        # et le devoir arriverait après la publication des notes des autres.
+        self.motif_fermeture = evaluation.cours_session.motif_depot_ferme
+        return evaluation
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte["motif_fermeture"] = self.motif_fermeture
+        contexte["depot_ouvert"] = not self.motif_fermeture
+        contexte["cours_session"] = self.object.cours_session
+        return contexte
 
     def form_valid(self, form):
+        if self.motif_fermeture:
+            messages.error(self.request, self.motif_fermeture)
+            return redirect("etudiant:grades")
+
         evaluation = form.save(commit=False)
         evaluation.statut = Evaluation.StatutEvaluation.SOUMIS
         evaluation.date_soumission = timezone.now()

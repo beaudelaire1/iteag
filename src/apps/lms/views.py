@@ -1,14 +1,16 @@
 from django.contrib import messages
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.academics.models import CoursDeSession
 from apps.core.mixins import TeacherRoleRequiredMixin
 
-from .forms import AnnonceForm, GradeForm, RessourceUploadForm
+from .forms import AnnonceForm, GradeForm, ParametresEvaluationForm, RessourceUploadForm
 from .models import Annonce, Evaluation, RessourcePedagogique
 
 # ──────────────────────────────────────────────
@@ -287,23 +289,43 @@ class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
     context_object_name = "evaluation"
 
     def get_queryset(self):
+        """Toutes les copies de l'enseignant, y compris déjà notées.
+
+        Le filtre se limitait à « soumis » et « en correction » : une note
+        posée devenait définitive, et corriger une erreur de saisie demandait
+        un passage par l'administration Django. Une note se corrige — c'est le
+        cas d'usage le plus banal de la vie d'un enseignant.
+
+        Ce qui est publié reste modifiable, mais l'écran le signale : l'étudiant
+        a déjà vu la note, et la changer sans le lui dire serait pire que de ne
+        pas pouvoir la changer.
+        """
         prof = _get_professeur(self.request)
         if prof is None:
             return Evaluation.objects.none()
-        return Evaluation.objects.filter(
-            cours_session__enseignant=prof,
-            statut__in=[
-                Evaluation.StatutEvaluation.SOUMIS,
-                Evaluation.StatutEvaluation.EN_CORRECTION,
-            ],
-        ).select_related("etudiant__utilisateur", "cours_session__cours", "cours_session__session")
+        return Evaluation.objects.filter(cours_session__enseignant=prof).select_related(
+            "etudiant__utilisateur", "cours_session__cours", "cours_session__session"
+        )
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte["deja_publiee"] = self.object.statut == Evaluation.StatutEvaluation.PUBLIE
+        return contexte
 
     def form_valid(self, form):
         evaluation = form.save(commit=False)
-        evaluation.statut = Evaluation.StatutEvaluation.NOTE
+        etait_publiee = Evaluation.objects.get(pk=evaluation.pk).statut == Evaluation.StatutEvaluation.PUBLIE
+        # Une note déjà publiée le reste : la repasser en « notée » la
+        # retirerait du relevé de l'étudiant sans prévenir personne.
+        evaluation.statut = Evaluation.StatutEvaluation.PUBLIE if etait_publiee else Evaluation.StatutEvaluation.NOTE
         evaluation.date_notation = timezone.now()
         evaluation.save()
-        messages.success(self.request, f"Note enregistrée pour {evaluation.etudiant.utilisateur.get_full_name()}.")
+
+        nom = evaluation.etudiant.utilisateur.get_full_name()
+        if etait_publiee:
+            messages.success(self.request, f"Note de {nom} corrigée. Elle est visible immédiatement par l'étudiant.")
+        else:
+            messages.success(self.request, f"Note enregistrée pour {nom}.")
         return redirect(reverse("lms:course_detail", kwargs={"pk": evaluation.cours_session.pk}))
 
 
@@ -440,3 +462,136 @@ class TeacherAnnouncementDeleteView(TeacherRoleRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse("lms:annonces_list")
+
+
+# ──────────────────────────────────────────────
+# Paramètres d'évaluation d'un cours
+# ──────────────────────────────────────────────
+
+
+class TeacherParametresEvaluationView(TeacherRoleRequiredMixin, UpdateView):
+    """Date d'examen et fenêtre de remise.
+
+    L'enseignant n'avait aucun moyen de clore la remise autrement qu'en le
+    demandant : un devoir pouvait arriver après la publication des notes des
+    autres.
+    """
+
+    model = CoursDeSession
+    form_class = ParametresEvaluationForm
+    template_name = "lms/parametres_evaluation.html"
+    context_object_name = "cours_session"
+
+    def get_queryset(self):
+        return _teacher_courses(self.request)
+
+    def form_valid(self, form):
+        messages.success(self.request, "Calendrier d'évaluation enregistré. Les étudiants le voient sur leur page.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("lms:course_detail", kwargs={"pk": self.object.pk})
+
+
+class TeacherOuvrirDepotView(TeacherRoleRequiredMixin, View):
+    """Ouvre ou ferme la remise sur-le-champ, sans passer par le calendrier.
+
+    Le geste courant est « je ferme maintenant » ou « je rouvre pour un
+    retardataire » : le faire en éditant deux dates serait disproportionné.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        cours_session = get_object_or_404(_teacher_courses(request), pk=pk)
+        maintenant = timezone.now()
+
+        if cours_session.depot_est_ouvert:
+            cours_session.depot_fermeture = maintenant
+            if cours_session.depot_ouverture and cours_session.depot_ouverture > maintenant:
+                cours_session.depot_ouverture = maintenant
+            message = "Remise close. Les étudiants ne peuvent plus déposer."
+        else:
+            cours_session.depot_ouverture = maintenant
+            cours_session.depot_fermeture = None
+            message = "Remise rouverte, sans échéance. Pensez à fixer une fermeture."
+
+        cours_session.save(update_fields=["depot_ouverture", "depot_fermeture", "updated_at"])
+        messages.success(request, message)
+        return redirect(reverse("lms:course_detail", kwargs={"pk": cours_session.pk}))
+
+
+# ──────────────────────────────────────────────
+# Espace documents
+# ──────────────────────────────────────────────
+
+
+class TeacherDocumentsView(TeacherRoleRequiredMixin, ListView):
+    """Toutes les copies de l'enseignant : remises, corrigées, en attente.
+
+    Les copies n'étaient atteignables qu'une par une, depuis la page de
+    notation de chacune. Les retrouver — pour en réimprimer une, vérifier qui
+    n'a rien rendu, ou récupérer un corrigé — demandait de parcourir les cours.
+    """
+
+    template_name = "lms/documents.html"
+    context_object_name = "evaluations"
+    paginate_by = 30
+
+    def get_queryset(self):
+        prof = _get_professeur(self.request)
+        if prof is None:
+            return Evaluation.objects.none()
+
+        requete = Evaluation.objects.filter(cours_session__enseignant=prof).select_related(
+            "etudiant__utilisateur", "cours_session__cours", "cours_session__session"
+        )
+        cours = self.request.GET.get("cours", "")
+        etat = self.request.GET.get("etat", "")
+
+        if cours:
+            requete = requete.filter(cours_session_id=cours)
+        if etat == "a_corriger":
+            requete = requete.filter(
+                statut__in=[Evaluation.StatutEvaluation.SOUMIS, Evaluation.StatutEvaluation.EN_CORRECTION]
+            )
+        elif etat == "corrigees":
+            requete = requete.exclude(fichier_corrige="")
+        elif etat == "sans_remise":
+            requete = requete.filter(fichier_soumis="")
+        return requete.order_by("cours_session__cours__titre", "etudiant__numero_etudiant")
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        toutes = Evaluation.objects.filter(cours_session__enseignant=_get_professeur(self.request))
+        contexte.update(
+            {
+                "mes_cours": _teacher_courses(self.request),
+                "cours_courant": self.request.GET.get("cours", ""),
+                "etat_courant": self.request.GET.get("etat", ""),
+                "total_remises": toutes.exclude(fichier_soumis="").count(),
+                "total_corriges": toutes.exclude(fichier_corrige="").count(),
+                "total_sans_remise": toutes.filter(fichier_soumis="").count(),
+            }
+        )
+        return contexte
+
+
+class TeacherFichierEvaluationView(TeacherRoleRequiredMixin, View):
+    """
+    Sert une copie — remise ou corrigée — après vérification du droit.
+
+    Les gabarits pointaient jusqu'ici sur l'adresse média directe. Un devoir
+    d'étudiant y est un fichier public à qui connaît son chemin : le contrôle
+    d'accès s'arrêtait à la page, pas au document. Ici, la requête n'aboutit
+    que si la copie appartient à un cours de cet enseignant.
+    """
+
+    def get(self, request, pk, genre):
+        prof = _get_professeur(request)
+        evaluation = get_object_or_404(Evaluation, pk=pk, cours_session__enseignant=prof)
+
+        fichier = evaluation.fichier_soumis if genre == "remise" else evaluation.fichier_corrige
+        if not fichier:
+            raise Http404
+        return FileResponse(fichier.open("rb"), as_attachment=True, filename=fichier.name.split("/")[-1])

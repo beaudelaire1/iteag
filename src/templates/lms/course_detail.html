@@ -102,6 +102,47 @@
 
     {# ── Évaluations ── #}
     <div role="tabpanel" data-tab-panel="evaluations" hidden>
+
+        {# Calendrier : date d'examen et fenêtre de remise. #}
+        <div class="card-elevated mb-5">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="overline mb-2">Calendrier</p>
+                    <p class="text-sm text-warm-700">
+                        {% if cours_session.date_examen %}
+                        Examen le <strong>{{ cours_session.date_examen|date:"d/m/Y à H\hi" }}</strong>
+                        {% else %}
+                        Aucune date d'examen fixée
+                        {% endif %}
+                    </p>
+                    <p class="mt-1 text-sm">
+                        {% if cours_session.depot_est_ouvert %}
+                        <span class="badge badge-success">Remise ouverte</span>
+                        {% if cours_session.depot_fermeture %}
+                        <span class="ml-2 text-warm-600">jusqu'au {{ cours_session.depot_fermeture|date:"d/m/Y à H\hi" }}</span>
+                        {% else %}
+                        <span class="ml-2 text-warm-500">sans échéance</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="badge badge-warning">Remise fermée</span>
+                        <span class="ml-2 text-warm-600">{{ cours_session.motif_depot_ferme }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <form method="post" action="{% url 'lms:basculer_depot' cours_session.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-ghost" style="padding: 0.5rem 1.1rem;">
+                            {% if cours_session.depot_est_ouvert %}Fermer la remise{% else %}Rouvrir{% endif %}
+                        </button>
+                    </form>
+                    <a href="{% url 'lms:parametres_evaluation' cours_session.pk %}" class="btn-ghost" style="padding: 0.5rem 1.1rem;">
+                        Modifier le calendrier
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <form method="post" action="{% url 'lms:prepare_evaluations' cours_session.pk %}" class="flex items-end gap-2">
                 {% csrf_token %}

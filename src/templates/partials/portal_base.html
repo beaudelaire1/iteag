@@ -20,7 +20,21 @@
                         </div>
                     </div>
                 </div>
-                <nav class="sticky top-24 space-y-1">
+                {% comment %}
+                    Le ruban défile pour lui-même.
+
+                    « sticky » seul l'épinglait sans lui donner de hauteur : dès
+                    que la navigation dépassait l'écran — ce qui est le cas du
+                    back-office, qui compte une trentaine d'entrées — son bas
+                    devenait inatteignable tant que le contenu principal n'avait
+                    pas fini de défiler.
+
+                    « overscroll-contain » complète la correction : sans lui, le
+                    défilement se propage à la page dès qu'on atteint le bout de
+                    la liste, et le ruban paraît de nouveau bloqué.
+                {% endcomment %}
+                <nav class="sticky top-24 space-y-1 overflow-y-auto overscroll-contain pr-1"
+                     style="max-height: calc(100vh - 7rem);">
                     {% block portal_nav %}{% endblock %}
                 </nav>
             </aside>
