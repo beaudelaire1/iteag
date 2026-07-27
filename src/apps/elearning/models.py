@@ -43,6 +43,7 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
         AUTHENTIFIE = "authentifie", "Réservé aux comptes connectés"
         INSCRIT_PARCOURS = "inscrit_parcours", "Réservé aux inscrits du parcours"
         SUR_OCTROI = "sur_octroi", "Sur octroi individuel"
+        ACHAT = "achat", "Vendu à l'unité"
 
     class StatutPublication(models.TextChoices):
         BROUILLON = "brouillon", "Brouillon"
@@ -101,6 +102,27 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
 
     duree_totale_secondes = models.PositiveIntegerField(default=0, editable=False, verbose_name="Durée totale")
     ects = models.DecimalField(max_digits=4, decimal_places=1, default=0, verbose_name="ECTS")
+
+    # Tarification — ne sert que sous la politique « Vendu à l'unité ». Le prix
+    # est saisi TTC parce que c'est ce que le visiteur lit et ce que Stripe
+    # encaisse ; le taux l'accompagne car l'ITEAG peut relever de l'exonération
+    # de formation professionnelle sur ses modules sans y relever sur ses livres.
+    prix_ttc = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        verbose_name="Prix TTC",
+        help_text="En euros. Sans effet si le module n'est pas vendu à l'unité.",
+    )
+    taux_tva = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        verbose_name="Taux de TVA (%)",
+        help_text="0 si l'ITEAG est exonéré au titre de la formation professionnelle.",
+    )
 
     politique_acces = models.CharField(
         max_length=20,
@@ -177,11 +199,41 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
             a_visiter.extend(module.prerequis.all())
         return False
 
+    @property
+    def acces_est_restreint(self) -> bool:
+        """La politique de ce module promet-elle une restriction ?"""
+        return self.politique_acces != self.PolitiqueAcces.PUBLIC
+
+    @property
+    def est_vendu(self) -> bool:
+        """Ce module s'achète-t-il en ligne ?"""
+        return self.politique_acces == self.PolitiqueAcces.ACHAT and self.prix_ttc > 0
+
+    def apercus_couvrent_tout(self) -> bool:
+        """Toutes les leçons sont-elles en aperçu gratuit ?
+
+        Un aperçu contourne le contrôle d'accès par construction : c'est sa
+        raison d'être. Mais si *toutes* les leçons le sont, la politique du
+        module ne protège plus rien, et personne ne le voit — ni l'enseignant
+        qui coche les cases une à une, ni l'écran d'administration, qui affiche
+        toujours « réservé aux inscrits ».
+        """
+        lecons = list(self.lecons())
+        return bool(lecons) and all(lecon.apercu_gratuit for lecon in lecons)
+
     def peut_etre_publie(self) -> tuple[bool, str]:
         """Un module ne se publie pas si une de ses vidéos n'est pas prête."""
         lecons = list(self.lecons())
         if not lecons:
             return False, "Le module ne contient aucune leçon."
+        if self.politique_acces == self.PolitiqueAcces.ACHAT and self.prix_ttc <= 0:
+            return False, "Ce module est annoncé comme vendu à l'unité mais son prix est nul. Fixez un prix TTC."
+        if self.acces_est_restreint and self.apercus_couvrent_tout():
+            return False, (
+                f"Toutes les leçons sont en aperçu gratuit : « {self.get_politique_acces_display()} » "
+                "ne protégerait rien. Retirez l'aperçu des leçons qui doivent rester réservées, "
+                "ou passez le module en accès public si c'est bien l'intention."
+            )
         for lecon in lecons:
             if lecon.type_lecon == Lecon.TypeLecon.VIDEO:
                 if lecon.video is None:
@@ -462,6 +514,7 @@ class InscriptionModule(UUIDModel, TimeStampedModel):
         SESSION = "session", "Session académique"
         OCTROI_MANUEL = "octroi_manuel", "Octroi manuel"
         LIBRE = "libre", "Accès libre"
+        ACHAT = "achat", "Achat en ligne"
 
     class StatutAcces(models.TextChoices):
         # Un étudiant déjà inscrit à l'institut demande lui-même l'ouverture

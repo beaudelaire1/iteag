@@ -36,6 +36,11 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "elearning": {"core", "accounts", "formations", "academics"},
     "library": {"core", "formations"},
     "commerce": {"core", "accounts", "library"},
+    # « paiements » encaisse pour le compte des domaines vendeurs : il les
+    # connaît tous les trois, et aucun ne le connaît en retour. Le sens de la
+    # flèche est le point important — un domaine qui appellerait le paiement
+    # deviendrait indissociable de Stripe.
+    "paiements": {"core", "academics", "commerce", "elearning"},
     "documents": {"core", "accounts", "academics"},
     # Les portails agrègent plusieurs domaines : c'est leur raison d'être, et
     # c'est pourquoi ils vivent hors des applications de domaine.
@@ -70,7 +75,12 @@ def _apps_presentes() -> set[str]:
 
 
 def _est_module_de_test(chemin: Path) -> bool:
-    return chemin.name == "tests.py" or chemin.name.startswith("test_")
+    # `conftest.py` est du montage de test au même titre qu'un `test_*.py` : il
+    # n'est jamais importé à l'exécution. L'y inclure ferait apparaître comme
+    # dépendance de production ce qu'une simple donnée de test exige — un
+    # étudiant fictif ne peut pas exister sans son parcours, ce qui suffirait à
+    # déclarer une dépendance vers « formations » qui n'existe pas.
+    return chemin.name in ("tests.py", "conftest.py") or chemin.name.startswith("test_")
 
 
 def _imports_de_app(app: str) -> set[str]:

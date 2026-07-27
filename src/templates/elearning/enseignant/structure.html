@@ -36,9 +36,26 @@
 
 {% block portal_content %}
 
+{% if apercu_integral %}
+<div class="note alert mb-8" style="max-width: none;">
+    <span class="lbl">Ce module est entièrement gratuit</span>
+    <p>
+        Les {{ nombre_apercus }} leçon{{ nombre_apercus|pluralize }} du module sont en aperçu gratuit.
+        Un aperçu s'ouvre à n'importe quel visiteur, sans compte : la politique
+        « {{ module.get_politique_acces_display }} » ne protège donc plus rien.
+        Décochez « Aperçu gratuit » sur les leçons qui doivent rester réservées.
+    </p>
+</div>
+{% elif nombre_apercus %}
+<p class="mb-8 text-sm" style="color: var(--color-warm-500);">
+    {{ nombre_apercus }} leçon{{ nombre_apercus|pluralize }} sur {{ nombre_lecons }}
+    {{ nombre_apercus|pluralize:"est,sont" }} en aperçu gratuit, visible{{ nombre_apercus|pluralize }} sans compte.
+</p>
+{% endif %}
+
 {% if not publiable %}
 <div class="note alert mb-8" style="max-width: none;">
-    <span class="lbl">Publication bloquée</span>
+    <span class="lbl">{% if module.statut == "publie" %}À corriger{% else %}Publication bloquée{% endif %}</span>
     <p>{{ motif_blocage }}</p>
 </div>
 {% endif %}

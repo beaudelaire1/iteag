@@ -403,6 +403,10 @@ PROTECTION_MINIMALE: dict[str, str] = {
     "authentifie": NiveauProtection.DOMAINE,
     "inscrit_parcours": NiveauProtection.SIGNEE,
     "sur_octroi": NiveauProtection.SIGNEE,
+    # Un module vendu est le cas où le lien porteur coûte le plus cher : une
+    # adresse YouTube partagée une fois, et le module est gratuit pour tous
+    # ceux qui la reçoivent. Rien en dessous de l'adresse signée.
+    "achat": NiveauProtection.SIGNEE,
 }
 
 _ORDRE_PROTECTION = [NiveauProtection.AUCUNE, NiveauProtection.DOMAINE, NiveauProtection.SIGNEE]

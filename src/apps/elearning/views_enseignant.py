@@ -121,11 +121,19 @@ class ModuleStructureView(ProfesseurMixin, DetailView):
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
         publiable, motif = self.object.peut_etre_publie()
+        lecons = list(self.object.lecons())
         contexte.update(
             {
                 "chapitres": self.object.chapitres.prefetch_related("lecons__video"),
                 "publiable": publiable,
                 "motif_blocage": motif,
+                # Un aperçu s'ouvre à tous. Coché leçon par leçon, on perd de
+                # vue combien du module est devenu gratuit : le total est donc
+                # affiché, et l'alerte se déclenche quand il ne reste plus rien
+                # à protéger.
+                "nombre_lecons": len(lecons),
+                "nombre_apercus": sum(1 for lecon in lecons if lecon.apercu_gratuit),
+                "apercu_integral": self.object.acces_est_restreint and self.object.apercus_couvrent_tout(),
                 "videos": VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:20],
                 "form_chapitre": ChapitreForm(module=self.object),
             }

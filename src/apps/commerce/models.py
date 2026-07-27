@@ -91,6 +91,7 @@ class Commande(UUIDModel, TimeStampedModel):
         REMBOURSE = "rembourse", "Remboursé"
 
     class ModePaiement(models.TextChoices):
+        CARTE = "carte", "Carte bancaire"
         VIREMENT = "virement", "Virement bancaire"
         SUR_PLACE = "sur_place", "Paiement auprès du secrétariat"
 
