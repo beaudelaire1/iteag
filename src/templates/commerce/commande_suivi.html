@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Suivi {{ commande.numero }} — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide" style="max-width: 60rem;">
+        <div class="card-elevated p-8">
+            <p class="overline mb-2">Suivi de commande</p>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div><h1 class="text-3xl">{{ commande.numero }}</h1><p class="mt-2 text-warm-500">Passée le {{ commande.created_at|date:"d/m/Y à H:i" }}</p></div>
+                <span class="badge {% if commande.statut == 'annulee' %}badge-danger{% elif commande.statut == 'livree' %}badge-success{% else %}badge-info{% endif %}">
+                    {{ commande.get_statut_display }}
+                </span>
+            </div>
+
+            <ol class="mt-9 grid grid-cols-2 gap-3 text-center text-xs sm:grid-cols-5" aria-label="Progression de la commande">
+                <li class="rounded bg-navy-50 p-3 font-semibold text-navy-800">Reçue</li>
+                <li class="rounded p-3 {% if commande.statut != 'en_attente' and commande.statut != 'annulee' %}bg-navy-50 font-semibold text-navy-800{% else %}bg-warm-100 text-warm-400{% endif %}">Confirmée</li>
+                <li class="rounded p-3 {% if commande.statut == 'preparation' or commande.statut == 'expediee' or commande.statut == 'livree' %}bg-navy-50 font-semibold text-navy-800{% else %}bg-warm-100 text-warm-400{% endif %}">Préparation</li>
+                <li class="rounded p-3 {% if commande.statut == 'expediee' or commande.statut == 'livree' %}bg-navy-50 font-semibold text-navy-800{% else %}bg-warm-100 text-warm-400{% endif %}">Expédiée</li>
+                <li class="rounded p-3 {% if commande.statut == 'livree' %}bg-emerald-50 font-semibold text-emerald-800{% else %}bg-warm-100 text-warm-400{% endif %}">Livrée</li>
+            </ol>
+
+            {% if commande.numero_suivi or commande.url_suivi_transporteur %}
+            <div class="mt-8 rounded border border-sky-200 bg-sky-50 p-5">
+                <h2 class="text-base">Suivi de l'expédition</h2>
+                {% if commande.transporteur %}<p class="mt-2 text-sm">Transporteur : {{ commande.transporteur }}</p>{% endif %}
+                {% if commande.numero_suivi %}<p class="text-sm">Numéro : <strong>{{ commande.numero_suivi }}</strong></p>{% endif %}
+                {% if commande.url_suivi_transporteur %}<a class="btn-secondary mt-4" href="{{ commande.url_suivi_transporteur }}" target="_blank" rel="noopener noreferrer">Suivre chez le transporteur</a>{% endif %}
+            </div>
+            {% endif %}
+
+            <h2 class="text-xl mt-10 mb-5">Contenu de la commande</h2>
+            <div class="divide-y divide-warm-200 border-y border-warm-200">
+                {% for ligne in commande.lignes.all %}
+                <div class="flex justify-between gap-4 py-4 text-sm">
+                    <span>{{ ligne.titre }} × {{ ligne.quantite }}</span><strong>{{ ligne.total_ligne }} €</strong>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-5 ml-auto max-w-sm space-y-2 text-sm">
+                <p class="flex justify-between"><span>Livres</span><strong>{{ commande.total_produits }} €</strong></p>
+                <p class="flex justify-between"><span>Livraison</span><strong>{{ commande.frais_livraison }} €</strong></p>
+                <p class="flex justify-between text-lg pt-2"><span>Total</span><strong>{{ commande.total }} €</strong></p>
+            </div>
+
+            <div class="mt-8 rounded bg-warm-50 p-5 text-sm text-warm-700">
+                <p><strong>Règlement :</strong> {{ commande.get_mode_paiement_display }} — {{ commande.get_statut_paiement_display }}</p>
+                <p class="mt-1"><strong>Livraison :</strong> {{ commande.adresse }}{% if commande.complement_adresse %}, {{ commande.complement_adresse }}{% endif %}, {{ commande.code_postal }} {{ commande.ville }}, {{ commande.pays }}</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

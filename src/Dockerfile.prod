@@ -78,7 +78,9 @@ COPY --from=assets /app/static/js/vendor/ static/js/vendor/
 
 # Collecte des statiques — sans masquage d'erreur : un échec ici doit arrêter
 # le build, pas produire une image qui servira un site sans style.
-RUN python manage.py collectstatic --noinput --clear
+RUN DJANGO_SECRET_KEY=collectstatic-build-only-not-for-runtime \
+    DJANGO_ALLOWED_HOSTS=localhost \
+    python manage.py collectstatic --noinput --clear
 
 RUN chown -R iteag:iteag /app
 
@@ -87,7 +89,7 @@ USER iteag
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/ || exit 1
+    CMD curl -f -H "X-Forwarded-Proto: https" http://localhost:8000/healthz || exit 1
 
 CMD ["gunicorn", "config.wsgi:application", \
      "--bind", "0.0.0.0:8000", \

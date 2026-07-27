@@ -72,7 +72,7 @@ class TestFormationVideoAuTableauDeBord:
         InscriptionModule.objects.create(etudiant=etudiant, module=module, statut=InscriptionModule.StatutAcces.ACTIF)
         contenu = tableau_de_bord(client, etudiant)
         assert "Mission et cultures créoles" in contenu
-        assert "Ma formation vidéo" in contenu
+        assert "Mon E-Learning" in contenu
 
     def test_la_progression_est_affichee(self, client, etudiant, module):
         InscriptionModule.objects.create(
@@ -103,7 +103,7 @@ class TestFormationVideoAuTableauDeBord:
         Mieux vaut ne rien montrer qu'une section vide : un étudiant du
         présentiel n'a pas à voir un bloc « formation vidéo » sans contenu.
         """
-        assert "Ma formation vidéo" not in tableau_de_bord(client, etudiant)
+        assert "Mon E-Learning" not in tableau_de_bord(client, etudiant)
 
     def test_un_acces_revoque_ne_compte_pas_comme_en_cours(self, client, etudiant, module):
         InscriptionModule.objects.create(etudiant=etudiant, module=module, statut=InscriptionModule.StatutAcces.REVOQUE)

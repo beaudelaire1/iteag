@@ -77,6 +77,7 @@ LOCAL_APPS = [
     "apps.library",
     "apps.documents",
     "apps.elearning",
+    "apps.commerce",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -129,6 +130,7 @@ TEMPLATES = [
                 "apps.core.context_processors.navigation_publique",
                 "apps.core.context_processors.notifications_context",
                 "apps.administration.context_processors.taches_en_attente",
+                "apps.commerce.context_processors.panier_context",
             ],
         },
     },
@@ -243,6 +245,10 @@ JAZZMIN_SETTINGS = {
         "admissions.DossierCandidature": "fas fa-file-alt",
         "library.NoticeBibliographique": "fas fa-book-open",
         "documents.DocumentAdministratif": "fas fa-folder-open",
+        "commerce.ProduitLivre": "fas fa-book",
+        "commerce.Commande": "fas fa-shopping-cart",
+        "commerce.MouvementStock": "fas fa-boxes",
+        "commerce.AlerteStock": "fas fa-exclamation-triangle",
     },
     "default_icon_parents": "fas fa-folder",
     "default_icon_children": "fas fa-circle",
@@ -332,6 +338,28 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "elearning-expirer-acces": {
+        "task": "elearning.expirer_acces",
+        "schedule": 24 * 60 * 60,
+    },
+    "commerce-verifier-stocks": {
+        "task": "commerce.verifier_stocks",
+        "schedule": 6 * 60 * 60,
+    },
+    "core-purger-notifications": {
+        "task": "core.purger_notifications",
+        "schedule": 7 * 24 * 60 * 60,
+    },
+    "core-purger-journal-audit": {
+        "task": "core.purger_journal_audit",
+        "schedule": 30 * 24 * 60 * 60,
+    },
+}
+
+# Boutique de livres
+COMMERCE_FRAIS_LIVRAISON = env("COMMERCE_FRAIS_LIVRAISON", default="0.00")
+COMMERCE_ALERTE_EMAIL = env("COMMERCE_ALERTE_EMAIL", default="")
 
 # ──────────────────────────────────────────────
 # Formation vidéo (voir ADR-001 et ADR-002)
@@ -357,7 +385,13 @@ AWS_STORAGE_BUCKET_NAME_VIDEOS = env("AWS_STORAGE_BUCKET_NAME_VIDEOS", default="
 
 # Bunny Stream. La clé de signature ne quitte jamais le serveur : elle sert à
 # calculer les jetons de lecture, jamais à être transmise au navigateur.
-BUNNY_ZONE_DIFFUSION = env("BUNNY_ZONE_DIFFUSION", default="")
+BUNNY_ZONE_DIFFUSION = env("BUNNY_ZONE_DIFFUSION", default="").strip().rstrip("/")
+# Compatibilité avec les configurations déjà saisies sous la forme
+# « vz-xxxx.b-cdn.net ». Une origine de diffusion doit être absolue dans le
+# navigateur ; sans schéma, elle devient une adresse relative au site et aucun
+# manifeste HLS ne peut être chargé.
+if BUNNY_ZONE_DIFFUSION and "://" not in BUNNY_ZONE_DIFFUSION:
+    BUNNY_ZONE_DIFFUSION = f"https://{BUNNY_ZONE_DIFFUSION}"
 BUNNY_CLE_SIGNATURE = env("BUNNY_CLE_SIGNATURE", default="")
 # Liaison du jeton à l'adresse IP : plus strict, mais coupe la lecture quand
 # l'adresse change en cours de séance — fréquent en mobile.

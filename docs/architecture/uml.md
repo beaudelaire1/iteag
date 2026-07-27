@@ -70,6 +70,7 @@ graph LR
         UC1["Consulter l'offre de formation"]
         UC2["Consulter le catalogue vidéo<br/>et les aperçus gratuits"]
         UC3["Consulter la bibliothèque"]
+        UC7["Commander des livres<br/>et suivre la livraison"]
         UC4["Déposer une candidature"]
         UC5["Suivre sa candidature"]
         UC6["S'abonner à la newsletter"]
@@ -100,6 +101,7 @@ graph LR
         UC34["Suivre paiements et impayés"]
         UC35["Piloter (KPI, exports)"]
         UC36["Publier le contenu éditorial"]
+        UC37["Gérer commandes,<br/>expéditions et stocks"]
     end
 
     subgraph SYS["Traitements automatiques"]
@@ -107,15 +109,16 @@ graph LR
         UC41["Transcoder / préparer une vidéo"]
         UC42["Expirer les accès échus"]
         UC43["Émettre une attestation"]
+        UC44["Détecter le stock minimal"]
     end
 
-    Visiteur --> UC1 & UC2 & UC3 & UC4 & UC6
+    Visiteur --> UC1 & UC2 & UC3 & UC4 & UC6 & UC7
     Candidat --> UC5
     Etudiant --> UC10 & UC11 & UC12 & UC13 & UC14 & UC15
     Enseignant --> UC20 & UC21 & UC22 & UC23 & UC24
-    Secretariat --> UC30 & UC31 & UC32 & UC34
-    Admin --> UC32 & UC33 & UC35 & UC36
-    Systeme --> UC40 & UC41 & UC42 & UC43
+    Secretariat --> UC30 & UC31 & UC32 & UC34 & UC37
+    Admin --> UC32 & UC33 & UC35 & UC36 & UC37
+    Systeme --> UC40 & UC41 & UC42 & UC43 & UC44
 
     UC11 -.->|"«include»"| UC50["Vérifier le droit d'accès"]
     UC12 -.->|"«include»"| UC50
@@ -125,7 +128,7 @@ graph LR
 
     classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
     classDef existant fill:#F1F5F9,stroke:#64748B,color:#1F2937
-    class UC2,UC11,UC12,UC20,UC21,UC24,UC32,UC41,UC42,UC43,UC50 nouveau
+    class UC2,UC7,UC11,UC12,UC20,UC21,UC24,UC32,UC37,UC41,UC42,UC43,UC44,UC50 nouveau
     class UC1,UC3,UC4,UC5,UC10,UC13,UC14,UC15,UC22,UC23,UC30,UC31,UC33,UC34,UC35,UC36,UC40 existant
 ```
 
@@ -1356,6 +1359,58 @@ def verifier_acces(user, lecon) -> DecisionAcces:
 
 Aucune vue ne réimplémente cette règle. C'est ce qui rend le contrôle d'accès
 **testable exhaustivement** (une table de vérité, un test par ligne) et **auditable**.
+
+### 7.3 Commandes et stock de la boutique
+
+```mermaid
+erDiagram
+    ProduitLivre ||--o{ LigneCommande : "est commandé dans"
+    Commande ||--|{ LigneCommande : contient
+    ProduitLivre ||--o{ MouvementStock : journalise
+    Commande o|--o{ MouvementStock : motive
+    ProduitLivre ||--o{ AlerteStock : déclenche
+
+    ProduitLivre {
+        uuid id PK
+        string sku UK
+        decimal prix_ttc
+        int stock_physique
+        int stock_reserve
+        int seuil_alerte
+    }
+    Commande {
+        uuid id PK
+        string numero UK
+        uuid jeton_suivi UK
+        string statut
+        string statut_paiement
+        decimal total
+        bool stock_sorti
+    }
+    LigneCommande {
+        int id PK
+        int quantite
+        decimal prix_unitaire
+        decimal total_ligne
+    }
+    MouvementStock {
+        int id PK
+        string type_mouvement
+        int variation_physique
+        int variation_reserve
+    }
+    AlerteStock {
+        int id PK
+        int stock_disponible_detecte
+        int seuil
+        bool resolue
+    }
+```
+
+Le panier reste en session et ne réserve rien. La réservation est atomique au
+moment de créer `Commande`, après verrouillage des livres concernés. Le stock
+physique ne sort qu'à l'expédition ; une annulation antérieure libère la
+réservation. Une contrainte garantit une seule alerte ouverte par livre.
 
 ---
 

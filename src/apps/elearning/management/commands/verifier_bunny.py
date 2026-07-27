@@ -22,7 +22,7 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.elearning.diffusion import BunnyStreamVideo, base_a_signer, condenser
+from apps.elearning.diffusion import BunnyStreamVideo
 
 DELAI = 15
 
@@ -30,7 +30,11 @@ DELAI = 15
 def _statut(url: str) -> tuple[int, str]:
     """Code de réponse pour `url`, et un extrait du corps en cas d'échec."""
     # Adresse construite ici même, jamais reçue de l'extérieur.
-    requete = urllib.request.Request(url, headers={"User-Agent": "ITEAG-verification/1.0"})  # noqa: S310
+    entetes = {"User-Agent": "ITEAG-verification/1.0"}
+    site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+    if site_url:
+        entetes["Referer"] = f"{site_url}/"
+    requete = urllib.request.Request(url, headers=entetes)  # noqa: S310
     try:
         with urllib.request.urlopen(requete, timeout=DELAI) as reponse:  # noqa: S310 — adresse construite ici
             return reponse.status, reponse.read(2048).decode("utf-8", "replace")
@@ -76,11 +80,11 @@ class Command(BaseCommand):
         self.stdout.write(f"  Zone de diffusion   {zone}")
         self.stdout.write(f"  Clé de signature    {'renseignée (' + str(len(cle)) + ' caractères)'}")
         self.stdout.write(f"  Liaison d'adresse   {'oui — ' + adresse_ip if adresse_ip else 'non'}")
+        self.stdout.write(f"  Référent simulé     {getattr(settings, 'SITE_URL', '') or 'aucun'}")
         self.stdout.write(f"  Vidéo               {identifiant}")
 
         # ── 1. Le manifeste ──────────────────────────────────────────
-        requete = backend.requete_signee(identifiant, expiration, adresse_ip)
-        url_manifeste = f"{zone}{backend.repertoire(identifiant)}playlist.m3u8?{requete}"
+        url_manifeste = backend.url_signee(identifiant, expiration, adresse_ip)
 
         self.stdout.write(self.style.MIGRATE_HEADING("\n1. Manifeste"))
         code, corps = _statut(url_manifeste)
@@ -98,17 +102,8 @@ class Command(BaseCommand):
             return
         self.stdout.write(f"  Référencé par le manifeste : {segment[:80]}")
 
-        base_manifeste = f"{zone}{backend.repertoire(identifiant)}playlist.m3u8"
-        url_segment = urljoin(base_manifeste, segment)
-
-        if "?" in segment:
-            self.stdout.write("  Le manifeste porte déjà un jeton sur ses segments.")
-            code_segment, _ = _statut(url_segment)
-        else:
-            code_nu, _ = _statut(url_segment)
-            code_segment, _ = _statut(f"{url_segment}?{requete}")
-            if code_nu == 200:
-                self.stdout.write(self.style.WARNING("  Le segment répond sans jeton : la zone n'est pas protégée."))
+        url_segment = urljoin(url_manifeste, segment)
+        code_segment, _ = _statut(url_segment)
         self._dire(code_segment, "segment")
 
         # ── 3. Verdict ───────────────────────────────────────────────
@@ -119,9 +114,9 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.ERROR(
                     "  Le manifeste passe mais pas le segment. C'est la signature de\n"
-                    "  répertoire qui est en cause : vérifiez que « Token Authentication »\n"
-                    "  est bien activée sur la zone, et qu'aucune autre restriction\n"
-                    "  (pays, référent) ne s'y ajoute."
+                    "  répertoire qui est en cause : vérifiez que le manifeste référence\n"
+                    "  des chemins relatifs, et qu'aucune restriction de domaine, pays\n"
+                    "  ou référent ne s'ajoute dans la bibliothèque Bunny."
                 )
             )
 
@@ -139,68 +134,33 @@ class Command(BaseCommand):
 
     def _diagnostiquer_signature(self, backend, zone, identifiant, expiration, adresse_ip) -> None:
         """
-        Le manifeste est refusé : on essaie les variantes documentées.
+        Le manifeste est refusé alors que l'URL suit le format Bunny actuel.
 
-        La composition exacte de la chaîne signée varie d'une version à l'autre
-        de la documentation Bunny — notamment la place de l'adresse IP et la
-        présence du jeton de répertoire. Plutôt que de trancher au jugé, on
-        demande au CDN laquelle il accepte.
+        On éprouve aussi le fichier sans jeton pour distinguer une zone non
+        protégée d'une restriction ou d'une clé incorrecte.
         """
-        self.stdout.write(self.style.MIGRATE_HEADING("\nDiagnostic — variantes de signature"))
-        repertoire = backend.repertoire(identifiant)
-        chemin_fichier = f"{repertoire}playlist.m3u8"
-        cle = settings.BUNNY_CLE_SIGNATURE
+        self.stdout.write(self.style.MIGRATE_HEADING("\nDiagnostic — configuration Bunny"))
+        url_sans_jeton = f"{zone}{backend._chemin(identifiant)}"
+        code_sans_jeton, _ = _statut(url_sans_jeton)
+        self.stdout.write(f"  {code_sans_jeton or '---'}  manifeste sans jeton")
 
-        variantes = {
-            "répertoire, IP avant les paramètres": (
-                repertoire,
-                {"token_path": repertoire},
-                adresse_ip,
-                True,
-            ),
-            "répertoire, IP après les paramètres": (
-                repertoire,
-                {"token_path": repertoire},
-                adresse_ip,
-                False,
-            ),
-            "fichier seul (sans token_path)": (chemin_fichier, {}, adresse_ip, True),
-        }
-
-        gagnante = None
-        for libelle, (chemin, parametres, ip, ip_avant) in variantes.items():
-            if ip_avant:
-                base = base_a_signer(cle, chemin, expiration, parametres, ip)
-            else:
-                donnees = "&".join(f"{n}={parametres[n]}" for n in sorted(parametres))
-                base = f"{cle}{chemin}{expiration}{donnees}{ip}"
-            jeton = condenser(base)
-            requete = f"token={jeton}&expires={expiration}"
-            if parametres:
-                from urllib.parse import quote
-
-                requete += f"&token_path={quote(repertoire, safe='')}"
-            code, _ = _statut(f"{zone}{chemin_fichier}?{requete}")
-            marque = "✓" if code == 200 else " "
-            self.stdout.write(f"  {marque} {code or '---'}  {libelle}")
-            if code == 200 and gagnante is None:
-                gagnante = libelle
-
-        self.stdout.write("")
-        if gagnante:
+        if code_sans_jeton == 200:
             self.stdout.write(
                 self.style.WARNING(
-                    f"  La variante « {gagnante} » est acceptée alors que la nôtre ne l'est pas.\n"
-                    "  Signalez-le : la composition de la chaîne signée doit être ajustée."
+                    "  Le manifeste est public alors que l'adresse signée est refusée.\n"
+                    "  Vérifiez que l'authentification avancée par jeton est activée\n"
+                    "  sur la zone de diffusion correspondant à cette clé."
                 )
             )
         else:
             self.stdout.write(
                 self.style.ERROR(
-                    "  Aucune variante acceptée. Vérifiez d'abord, dans la console Bunny :\n"
-                    "    · « Token Authentication » activée sur la zone de diffusion ;\n"
+                    "  L'URL utilise HMAC-SHA256 et un jeton de chemin, le format Bunny\n"
+                    "  requis pour HLS. Vérifiez dans Stream > Bibliothèque > Sécurité :\n"
                     "    · la clé copiée est bien celle de cette zone ;\n"
                     "    · l'identifiant de la vidéo existe et son encodage est terminé ;\n"
-                    "    · aucun blocage par pays ou par référent."
+                    "    · le domaine de SITE_URL figure dans « Allowed domains », sans\n"
+                    "      https://, si « Block Direct URL File Access » est activé ;\n"
+                    "    · aucune restriction d'IP, de pays ou de référent ne s'ajoute."
                 )
             )

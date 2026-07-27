@@ -2,7 +2,8 @@
 
 Refonte du site de l'Institut de Théologie Évangélique des Antilles et de la Guyane :
 migration WordPress → Django 5 / Wagtail 7, avec quatre portails (public, étudiant,
-enseignant, administratif) et un module de formation vidéo à accès contrôlé.
+enseignant, administratif), un espace E-Learning à accès contrôlé et une
+boutique de livres avec commandes, suivi et gestion de stock.
 
 **Maître d'ouvrage** : ITEAG · **Maître d'œuvre** : Trait d'Union Studio
 
@@ -85,9 +86,10 @@ src/
 │   ├── academics/           Sessions, promotions, ECTS, stages, VAE, paiements
 │   ├── lms/                 Ressources, évaluations, annonces (présentiel)
 │   ├── library/             Catalogue de la bibliothèque
+│   ├── commerce/            Boutique, commandes, stocks et alertes
 │   ├── documents/           Documents administratifs PDF
 │   ├── website/             Pages éditoriales Wagtail
-│   ├── elearning/           Formation vidéo — modules, accès, progression
+│   ├── elearning/           E-Learning — modules, accès, progression
 │   └── administration/      Portail administratif
 ├── assets/css/input.css     Source Tailwind (jamais servie telle quelle)
 ├── static/                  Fichiers servis — main.css y est généré

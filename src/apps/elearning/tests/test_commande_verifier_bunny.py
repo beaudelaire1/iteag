@@ -64,7 +64,7 @@ class TestCeQueLaCommandeRapporte:
         répertoire, et il ne se voit pas en regardant seulement la première
         requête.
         """
-        reponses = iter([(200, MANIFESTE), (403, ""), (403, "")])
+        reponses = iter([(200, MANIFESTE), (403, "")])
 
         with patch(
             "apps.elearning.management.commands.verifier_bunny._statut",
@@ -79,19 +79,18 @@ class TestCeQueLaCommandeRapporte:
             return_value=(403, ""),
         ):
             sortie = lancer("abc123")
-        assert "variantes de signature" in sortie
-        assert "Aucune variante acceptée" in sortie
+        assert "configuration Bunny" in sortie
+        assert "HMAC-SHA256" in sortie
 
-    def test_le_diagnostic_nomme_la_variante_acceptee(self):
-        """Trouver laquelle passe est tout l'intérêt : cela dit quoi corriger."""
-        reponses = iter([(403, ""), (200, ""), (403, ""), (403, "")])
+    def test_le_diagnostic_detecte_une_zone_non_protegee(self):
+        reponses = iter([(403, ""), (200, "")])
 
         with patch(
             "apps.elearning.management.commands.verifier_bunny._statut",
             side_effect=lambda url: next(reponses),
         ):
             sortie = lancer("abc123")
-        assert "est acceptée alors que la nôtre ne l'est pas" in sortie
+        assert "Le manifeste est public" in sortie
 
     def test_une_zone_injoignable_ne_fait_pas_planter(self):
         with patch(
@@ -133,8 +132,9 @@ class TestLAdresseEprouvee:
         ):
             lancer("abc123")
 
-        assert vues[0].startswith(f"{ZONE}/abc123/playlist.m3u8?")
+        assert vues[0].startswith(f"{ZONE}/bcdn_token=HS256-")
         assert "token_path=%2Fabc123%2F" in vues[0], "Sans token_path, les segments seraient refusés"
+        assert vues[0].endswith("/abc123/playlist.m3u8")
 
     def test_le_segment_est_demande_avec_la_meme_requete(self):
         vues = []
@@ -147,4 +147,4 @@ class TestLAdresseEprouvee:
 
         segments = [url for url in vues if "segment-0.ts" in url]
         assert segments, "Le segment référencé par le manifeste doit être éprouvé"
-        assert any("token=" in url for url in segments)
+        assert any("/bcdn_token=HS256-" in url for url in segments)

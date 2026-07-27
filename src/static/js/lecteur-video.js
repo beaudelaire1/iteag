@@ -18,6 +18,7 @@
 
   const video = conteneur.querySelector("[data-video]");
   const zoneMessage = conteneur.querySelector("[data-lecteur-message]");
+  const boutonDemarrer = conteneur.querySelector("[data-demarrer-video]");
   const urlLecture = conteneur.dataset.urlLecture;
   const urlProgression = conteneur.dataset.urlProgression;
   const positionReprise = parseInt(conteneur.dataset.positionReprise, 10) || 0;
@@ -49,13 +50,33 @@
     zoneMessage.classList.add("hidden");
   }
 
+  function montrerBouton() {
+    if (!boutonDemarrer) return;
+    boutonDemarrer.hidden = false;
+    boutonDemarrer.classList.remove("hidden");
+    boutonDemarrer.disabled = false;
+  }
+
+  function masquerBouton() {
+    if (!boutonDemarrer) return;
+    boutonDemarrer.hidden = true;
+    boutonDemarrer.classList.add("hidden");
+    boutonDemarrer.disabled = false;
+  }
+
   /* ── Demande d'une adresse de lecture ── */
   async function obtenirAdresse() {
-    const reponse = await fetch(urlLecture, {
-      method: "POST",
-      headers: { "X-CSRFToken": jetonCsrf(), "X-Requested-With": "XMLHttpRequest" },
-      credentials: "same-origin",
-    });
+    let reponse;
+    try {
+      reponse = await fetch(urlLecture, {
+        method: "POST",
+        headers: { "X-CSRFToken": jetonCsrf(), "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+      });
+    } catch (_erreur) {
+      afficherMessage("Le service vidéo est momentanément injoignable. Réessayez.");
+      return null;
+    }
 
     if (!reponse.ok) {
       const donnees = await reponse.json().catch(() => ({}));
@@ -91,15 +112,9 @@
     hls = new Hls({
       lowLatencyMode: false,
       // Un flux HLS n'est pas un fichier : après le manifeste, le lecteur
-      // demande les segments un par un. Ces adresses sont résolues
-      // relativement au manifeste, donc *sans* sa chaîne de requête — le
-      // jeton d'accès y serait perdu et chaque segment refusé. On la
-      // réapplique, sauf si le manifeste en a déjà fourni une.
-      xhrSetup: (xhr, url) => {
-        const requeteSignee = adresse.split("?")[1];
-        if (!requeteSignee || url.includes("?")) return;
-        xhr.open("GET", url + "?" + requeteSignee, true);
-      },
+      // demande les segments un par un. Le jeton Bunny est volontairement
+      // placé dans le chemin du manifeste : les adresses relatives des
+      // segments en héritent sans réécriture dans le navigateur.
     });
     hls.loadSource(adresse);
     hls.attachMedia(video);
@@ -132,6 +147,7 @@
       video.src = lecture.url;
     }
     adresseObtenue = true;
+    masquerBouton();
 
     if (positionCourante > 0) {
       video.addEventListener(
@@ -143,6 +159,15 @@
       );
     }
     return true;
+  }
+
+  async function lancerLecture() {
+    if (boutonDemarrer) boutonDemarrer.disabled = true;
+    if (await preparerLecture()) {
+      video.play().then(demarrerSignaux).catch(() => montrerBouton());
+    } else {
+      montrerBouton();
+    }
   }
 
   /* ── Signal de progression ── */
@@ -203,10 +228,20 @@
     video.pause();
     if (await preparerLecture()) {
       video.play().then(demarrerSignaux).catch(() => {});
+    } else {
+      montrerBouton();
     }
   });
 
+  // Un élément <video> sans source ne déclenche pas toujours « play » depuis
+  // ses contrôles natifs. Ce bouton est donc le point d'entrée fiable : il
+  // obtient d'abord l'adresse protégée, puis lance le lecteur.
+  if (boutonDemarrer) {
+    boutonDemarrer.addEventListener("click", lancerLecture);
+  }
+
   video.addEventListener("pause", () => {
+    if (!adresseObtenue) return;
     envoyerSignal(true);
     arreterSignaux();
   });
@@ -214,13 +249,18 @@
   video.addEventListener("ended", () => {
     envoyerSignal(true);
     arreterSignaux();
+    montrerBouton();
   });
 
   // Une adresse expirée provoque une erreur réseau : on en redemande une.
   video.addEventListener("error", async () => {
     if (!adresseObtenue) return;
     adresseObtenue = false;
-    if (await preparerLecture()) video.play().catch(() => {});
+    if (await preparerLecture()) {
+      video.play().catch(() => montrerBouton());
+    } else {
+      montrerBouton();
+    }
   });
 
   // Dernier signal avant de quitter la page, pour ne pas perdre la position.

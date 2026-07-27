@@ -303,7 +303,7 @@ class FAQPage(Page):
 
 
 # ──────────────────────────────────────────────
-# Catalogue de formation vidéo — page éditoriale
+# Catalogue E-Learning — page éditoriale
 # ──────────────────────────────────────────────
 
 
@@ -343,7 +343,7 @@ class ModuleCataloguePage(Page):
     ]
 
     class Meta:
-        verbose_name = "Page catalogue vidéo"
+        verbose_name = "Page catalogue E-Learning"
 
     parent_page_types = ["website.HomePage"]
 

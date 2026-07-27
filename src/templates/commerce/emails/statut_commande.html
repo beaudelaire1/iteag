@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr">
+<body>
+    <p>Bonjour {{ nom }},</p>
+    <p>La commande <strong>{{ numero }}</strong> est maintenant au statut : <strong>{{ statut }}</strong>.</p>
+    <p>{{ message }}</p>
+    {% if transporteur %}<p>Transporteur : {{ transporteur }}</p>{% endif %}
+    {% if numero_suivi %}<p>Numéro de suivi : {{ numero_suivi }}</p>{% endif %}
+    {% if url_suivi_transporteur %}
+    <p><a href="{{ url_suivi_transporteur }}">Suivre auprès du transporteur</a></p>
+    {% endif %}
+    <p><a href="{{ suivi_url }}">Consulter le suivi de votre commande</a></p>
+    <p>L'équipe {{ SITE_NAME }}</p>
+</body>
+</html>

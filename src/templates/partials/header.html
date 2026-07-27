@@ -54,6 +54,14 @@
 
             {# Actions droite #}
             <div class="hidden lg:flex lg:items-center lg:gap-3">
+                <a href="{% url 'commerce:panier' %}"
+                   class="relative rounded p-2 text-white/80 transition-colors hover:text-white"
+                   aria-label="Voir le panier">
+                    <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                    {% if panier_nombre %}
+                    <span class="absolute -right-1 -top-1 min-w-5 rounded-full bg-gold-500 px-1 text-center text-xs font-bold text-navy-950">{{ panier_nombre }}</span>
+                    {% endif %}
+                </a>
                 {% if user.is_authenticated %}
                 {% include "partials/nav_notifications.html" %}
                 <div class="relative" data-dropdown>
@@ -137,6 +145,10 @@
                 <a href="{{ rubrique.url }}" class="nav-mobile-lien font-semibold uppercase tracking-wider{% if rubrique.active %} active{% endif %}">{{ rubrique.libelle }}</a>
                 {% endif %}
                 {% endfor %}
+
+                <a href="{% url 'commerce:panier' %}" class="nav-mobile-lien font-semibold uppercase tracking-wider">
+                    Panier{% if panier_nombre %} <span class="nav-cloche-pastille">{{ panier_nombre }}</span>{% endif %}
+                </a>
 
                 {% if user.is_authenticated %}
                 <hr class="my-3 border-white/15">

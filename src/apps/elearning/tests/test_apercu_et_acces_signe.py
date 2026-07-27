@@ -135,7 +135,7 @@ class TestApercuGratuit:
     def test_l_adresse_d_apercu_est_signee_comme_les_autres(self, client, module, lecons):
         """Gratuit ne veut pas dire ouvert : l'adresse expire aussi."""
         donnees = json.loads(demander_lecture(client, module, lecons["apercu"]).content)
-        assert "token=" in donnees["url"]
+        assert "/bcdn_token=HS256-" in donnees["url"]
         assert "token_path=" in donnees["url"]
         assert donnees["expire_dans"] > 0
 
@@ -172,7 +172,8 @@ class TestLectureProtegee:
         InscriptionModule.objects.create(etudiant=etudiant, module=module, statut=InscriptionModule.StatutAcces.ACTIF)
         client.force_login(etudiant.utilisateur)
         donnees = json.loads(demander_lecture(client, module, lecons["protegee"]).content)
-        assert donnees["url"].startswith(f"{ZONE}/video-reservee/playlist.m3u8?")
+        assert donnees["url"].startswith(f"{ZONE}/bcdn_token=HS256-")
+        assert donnees["url"].endswith("/video-reservee/playlist.m3u8")
 
     def test_la_revocation_coupe_la_delivrance(self, client, module, lecons, etudiant):
         """

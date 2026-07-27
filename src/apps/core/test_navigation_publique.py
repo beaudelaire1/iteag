@@ -63,9 +63,9 @@ class TestLaDeclaration:
     def test_la_video_est_dans_la_rubrique_formations(self):
         """Elle ne doit plus voisiner « Formations » au premier niveau."""
         catalogue = reverse("elearning:catalogue")
-        assert catalogue not in [r.url for r in rubriques()], "« Formations vidéo » est restée au premier niveau"
+        assert catalogue not in [r.url for r in rubriques()], "« E-Learning » est resté au premier niveau"
         sous_entrees = [entree.url for rubrique in rubriques() for entree in rubrique.entrees]
-        assert catalogue in sous_entrees, "« Formations vidéo » n'est dans aucune rubrique"
+        assert catalogue in sous_entrees, "« E-Learning » n'est dans aucune rubrique"
 
     def test_aucune_rubrique_ne_revendique_la_racine(self):
         """« / » préfixe tout : une rubrique qui le revendique s'allume partout."""
@@ -77,7 +77,7 @@ class TestLaDeclaration:
         [
             ("/formations/", "formations"),
             ("/formations/professeurs/", "formations"),
-            ("/formations-video/", "formations"),
+            ("/e-learning/", "formations"),
             ("/presentation/", "institut"),
             ("/actualites/un-article/", "institut"),
             ("/bibliotheque/", "bibliotheque"),
