@@ -16,11 +16,32 @@ from .views import (
     TeacherResourceUpdateView,
     TeacherResourceUploadView,
 )
+from .views_devoirs import (
+    TeacherDelaiView,
+    TeacherDevoirActionView,
+    TeacherDevoirCreateView,
+    TeacherDevoirDetailView,
+    TeacherDevoirsListView,
+    TeacherDevoirUpdateView,
+    TeacherEtudiantsListView,
+    TeacherReviseGradeView,
+)
 
 app_name = "lms"
 
 urlpatterns = [
     path("", TeacherDashboardView.as_view(), name="dashboard"),
+    # ── Devoirs ──
+    path("devoirs/", TeacherDevoirsListView.as_view(), name="devoirs_list"),
+    path("cours/<int:cours_pk>/devoir/", TeacherDevoirCreateView.as_view(), name="devoir_create"),
+    path("devoirs/<int:pk>/", TeacherDevoirDetailView.as_view(), name="devoir_detail"),
+    path("devoirs/<int:pk>/modifier/", TeacherDevoirUpdateView.as_view(), name="devoir_update"),
+    path("devoirs/<int:pk>/action/", TeacherDevoirActionView.as_view(), name="devoir_action"),
+    path("copies/<int:pk>/delai/", TeacherDelaiView.as_view(), name="accorder_delai"),
+    # ── Recours ──
+    path("evaluations/<int:pk>/reviser/", TeacherReviseGradeView.as_view(), name="revise_grade"),
+    # ── Mes étudiants ──
+    path("etudiants/", TeacherEtudiantsListView.as_view(), name="etudiants_list"),
     path("cours/", TeacherCoursesListView.as_view(), name="courses_list"),
     path("cours/<int:pk>/", TeacherCourseDetailView.as_view(), name="course_detail"),
     path("cours/<int:cours_pk>/ressource/", TeacherResourceUploadView.as_view(), name="resource_upload"),

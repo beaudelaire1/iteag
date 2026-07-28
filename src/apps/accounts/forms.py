@@ -79,10 +79,28 @@ class ProfilForm(FormulaireModeleITEAG):
             "phone": forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel"}),
         }
 
+    # L'identité d'un étudiant figure sur ses relevés, ses attestations et son
+    # diplôme. La laisser modifiable par l'intéressé, c'est accepter qu'un
+    # document officiel soit édité au nom que quelqu'un s'est choisi la veille.
+    # Un changement d'état civil existe — il passe par le secrétariat, sur
+    # pièce, comme dans n'importe quel établissement.
+    IDENTITE = ("first_name", "last_name")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for nom in ("first_name", "last_name", "email"):
             self.fields[nom].required = True
+
+        if self.identite_verrouillee:
+            for nom in self.IDENTITE:
+                champ = self.fields[nom]
+                champ.disabled = True
+                champ.help_text = "Modifiable par le secrétariat uniquement, sur présentation d'une pièce d'état civil."
+
+    @property
+    def identite_verrouillee(self) -> bool:
+        """Vrai dès qu'un dossier de scolarité porte cette identité."""
+        return hasattr(self.instance, "profil_etudiant")
 
     def clean_email(self):
         """Deux comptes ne peuvent pas partager une adresse : elle sert à se connecter."""

@@ -9,6 +9,7 @@ la moitié de ce à quoi il a accès.
 """
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
@@ -217,17 +218,43 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
     context_object_name = "evaluation"
 
     def get_object(self, queryset=None):
+        # Le statut n'est plus filtré ici : une copie déjà remise peut être
+        # remplacée tant que la fenêtre est ouverte, et c'est le service qui
+        # tranche. Filtrer sur « en_attente » produisait un 404 muet là où
+        # l'étudiant attendait une explication.
         return get_object_or_404(
-            Evaluation.objects.select_related("cours_session__cours", "cours_session__session"),
+            Evaluation.objects.select_related("cours_session__cours", "cours_session__session", "devoir"),
             pk=self.kwargs["pk"],
             etudiant=self.request.user.profil_etudiant,
-            statut=Evaluation.StatutEvaluation.EN_ATTENTE,
         )
 
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        evaluation = self.object
+        contexte.update(
+            {
+                "devoir": evaluation.devoir,
+                "echeance": evaluation.echeance(),
+                "motif_de_refus": evaluation.motif_de_refus_depot(),
+                "delai_accorde": evaluation.date_limite_reportee,
+            }
+        )
+        return contexte
+
     def form_valid(self, form):
-        evaluation = form.save(commit=False)
-        evaluation.statut = Evaluation.StatutEvaluation.SOUMIS
-        evaluation.date_soumission = timezone.now()
-        evaluation.save(update_fields=["fichier_soumis", "statut", "date_soumission", "updated_at"])
-        messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
+        from apps.lms import services
+
+        try:
+            services.deposer(self.object, form.cleaned_data["fichier_soumis"], request=self.request)
+        except ValidationError as erreur:
+            form.add_error(None, erreur.messages[0])
+            return self.form_invalid(form)
+
+        if self.object.depot_tardif:
+            messages.warning(
+                self.request,
+                "Votre travail a été remis après l'échéance : il est signalé comme tardif à l'enseignant.",
+            )
+        else:
+            messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
         return redirect("etudiant:grades")

@@ -173,3 +173,75 @@ def test_mot_de_passe_actuel_faux_refuse(client, db):
 def test_initiales_de_repli(db):
     """Sans photo, l'espace privé affiche des initiales plutôt qu'un vide."""
     assert _compte(User.Role.ETUDIANT).initiales == "JD"
+
+
+# ──────────────────────────────────────────────
+# Verrouillage de l'identité
+# ──────────────────────────────────────────────
+
+
+def _dossier_de_scolarite(utilisateur):
+    from apps.academics.models import ProfilEtudiant, Promotion
+    from apps.formations.models import Parcours
+
+    parcours = Parcours.objects.create(
+        nom="Parcours", slug="parcours-identite", type_parcours=Parcours.TypeParcours.LIBRE
+    )
+    promotion = Promotion.objects.create(nom="Promotion", parcours=parcours, annee_debut=2026, annee_fin=2029)
+    return ProfilEtudiant.objects.create(
+        utilisateur=utilisateur, parcours=parcours, promotion=promotion, numero_etudiant="ETU-ID-001"
+    )
+
+
+def _coordonnees(**remplace):
+    donnees = {
+        "first_name": "Jean",
+        "last_name": "Dupont",
+        "email": "titulaire@iteag.org",
+        "phone": "",
+        "adresse": "",
+        "complement_adresse": "",
+        "code_postal": "",
+        "ville": "",
+        "pays": "Guadeloupe",
+    }
+    donnees.update(remplace)
+    return donnees
+
+
+def test_l_etudiant_ne_change_pas_son_nom(client, db):
+    """L'identité figure sur les relevés et les attestations : elle n'est pas à lui."""
+    utilisateur = _compte(User.Role.ETUDIANT)
+    _dossier_de_scolarite(utilisateur)
+    client.force_login(utilisateur)
+
+    client.post(
+        reverse("accounts:profil"),
+        _coordonnees(first_name="Prénom", last_name="Inventé", phone="0690000000"),
+    )
+
+    utilisateur.refresh_from_db()
+    assert utilisateur.first_name == "Jean"
+    assert utilisateur.last_name == "Dupont"
+    # Le reste du formulaire reste modifiable : le verrou est ciblé.
+    assert utilisateur.phone == "0690000000"
+
+
+def test_le_champ_du_nom_est_desactive_a_l_affichage(client, db):
+    utilisateur = _compte(User.Role.ETUDIANT)
+    _dossier_de_scolarite(utilisateur)
+    client.force_login(utilisateur)
+
+    corps = client.get(reverse("accounts:profil")).content.decode()
+    assert "état civil" in corps
+
+
+def test_un_compte_sans_dossier_garde_la_main_sur_son_nom(client, db):
+    """Un enseignant ou une secrétaire corrige son propre nom sans passer par un tiers."""
+    utilisateur = _compte(User.Role.ENSEIGNANT)
+    client.force_login(utilisateur)
+
+    client.post(reverse("accounts:profil"), _coordonnees(first_name="Jean-Marc"))
+
+    utilisateur.refresh_from_db()
+    assert utilisateur.first_name == "Jean-Marc"

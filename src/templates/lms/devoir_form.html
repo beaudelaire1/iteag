@@ -1,0 +1,72 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if devoir %}Modifier un devoir{% else %}Nouveau devoir{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:devoirs_list' %}" class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Mes devoirs
+    </a>
+    <p class="overline mb-2">{{ cours_session.cours.titre }} · {{ cours_session.session }}</p>
+    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">
+        {% if devoir %}Modifier le devoir{% else %}Nouveau devoir{% endif %}
+    </h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl">
+    <form method="post" enctype="multipart/form-data" class="card-elevated space-y-6" novalidate>
+        {% csrf_token %}
+        {% include "partials/erreurs_formulaire.html" %}
+
+        {% include "partials/champ.html" with field=form.titre %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+            {% include "partials/champ.html" with field=form.type_evaluation %}
+            {% include "partials/champ.html" with field=form.modalite %}
+        </div>
+
+        {% include "partials/champ.html" with field=form.consigne %}
+        {% include "partials/champ.html" with field=form.fichier_consigne %}
+
+        <div class="pt-2" style="border-top: 1px solid var(--color-warm-200);">
+            <p class="overline mb-1" style="margin-top: 1rem;">Fenêtre de dépôt</p>
+            <p class="mb-4 text-xs text-warm-500">
+                Avant l'ouverture, l'étudiant voit le sujet sans pouvoir déposer.
+                Après la fermeture, le dépôt est refusé — sauf si vous acceptez les retards,
+                auquel cas il reste possible et vous est signalé comme tardif.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                {% include "partials/champ.html" with field=form.date_ouverture %}
+                {% include "partials/champ.html" with field=form.date_fermeture %}
+            </div>
+            {% include "partials/champ.html" with field=form.retard_accepte %}
+        </div>
+
+        <div class="pt-2" style="border-top: 1px solid var(--color-warm-200);">
+            <p class="overline mb-4" style="margin-top: 1rem;">Notation</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                {% include "partials/champ.html" with field=form.bareme %}
+                {% include "partials/champ.html" with field=form.ects %}
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="btn-primary">Enregistrer</button>
+            <a href="{% if devoir %}{% url 'lms:devoir_detail' devoir.pk %}{% else %}{% url 'lms:devoirs_list' %}{% endif %}" class="btn-ghost">Annuler</a>
+        </div>
+
+        {% if not devoir %}
+        <p class="text-xs text-warm-500">
+            Le devoir est créé en brouillon. Il ne sera visible des étudiants — et ne leur sera
+            notifié — qu'une fois ouvert depuis sa fiche.
+        </p>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}
