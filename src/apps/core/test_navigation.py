@@ -123,7 +123,12 @@ class TestBarreDeNavigation:
         import re
 
         contenu = self._rendu(client, comptes, role, nom_route)
-        barre = contenu.split('<nav class="sticky', 1)[-1].split("</nav>", 1)[0]
+        # Le ruban se repère à « data-portal-nav », pas à ses classes de style.
+        # S'accrocher à « <nav class="sticky" » liait ce test à la mise en page :
+        # déplacer l'épinglage sur le conteneur faisait retomber le découpage sur
+        # la page entière, et l'en-tête public y passait pour des doublons.
+        assert "data-portal-nav" in contenu, f"Ruban introuvable sur « {nom_route} »"
+        barre = contenu.split("data-portal-nav", 1)[-1].split("</nav>", 1)[0]
         liens = re.findall(r'href="([^"#]+)"', barre)
         doublons = {lien for lien in liens if liens.count(lien) > 1}
         assert not doublons, f"Liens répétés dans la barre de « {nom_route} » : {doublons}"
