@@ -28,12 +28,28 @@ from apps.elearning.models import (
     Lecon,
     ModuleFormation,
     ProgressionLecon,
+    RessourceLecon,
 )
 from apps.elearning.services import octroi
 from apps.elearning.services import progression as service_progression
 from apps.elearning.services.acces import journaliser_acces, verifier_acces
 
 TTL_LECTURE = 300
+
+
+def acces_integral_module(utilisateur, module) -> bool:
+    """
+    Ce visiteur peut-il ouvrir les leçons *hors aperçu* de ce module ?
+
+    Sert aux sommaires, pour verrouiller visuellement ce qui le sera au clic.
+    La décision n'est pas recalculée ici : elle est demandée à `verifier_acces`
+    sur une leçon témoin — toutes les leçons hors aperçu d'un module partagent
+    la même réponse, puisque le droit est porté par le module.
+    """
+    temoin = next((lecon for lecon in module.lecons() if not lecon.apercu_gratuit), None)
+    if temoin is None:
+        return True
+    return verifier_acces(utilisateur, temoin).autorise
 
 
 # ══════════════════════════════════════════════
@@ -124,6 +140,7 @@ class ModuleDetailView(CspLectureVideoMixin, DetailView):
                 "lecon_suivante": service_progression.lecon_suivante(inscription) if inscription else None,
                 "attestation": getattr(inscription, "attestation", None) if inscription else None,
                 "lecon_apercu": module.lecons().filter(apercu_gratuit=True).first(),
+                "acces_integral": acces_integral_module(self.request.user, module),
                 # Un étudiant déjà inscrit demande l'accès en un clic ; seul un
                 # visiteur sans dossier est invité à déposer une candidature.
                 "profil_etudiant": profil,
@@ -277,6 +294,8 @@ class LeconDetailView(CspLectureVideoMixin, DetailView):
                 "progression": avancement,
                 "position_reprise": avancement.position_secondes if avancement else 0,
                 "chapitres": module.chapitres.prefetch_related("lecons"),
+                "acces_integral": acces_integral_module(self.request.user, module),
+                "ressources": lecon.ressources.all(),
                 "sous_titres": lecon.video.sous_titres.all() if lecon.video else [],
                 "intervalle_signal": getattr(settings, "ELEARNING_INTERVALLE_SIGNAL", 15),
                 # Un fournisseur en cadre n'a rien à signer : son adresse peut
@@ -380,6 +399,44 @@ class ProgressionView(LoginRequiredMixin, View):
                 "module_termine": decision.inscription.statut == InscriptionModule.StatutAcces.TERMINE,
             }
         )
+
+
+class RessourceTelechargementView(View):
+    """
+    Remet un support pédagogique de leçon, après revérification du droit.
+
+    La même autorité décide pour la vidéo et pour ses supports : un module
+    vendu dont les PDF seraient en accès libre n'aurait de protégé que la
+    vidéo. L'adresse de stockage du fichier n'apparaît donc jamais dans une
+    page — seule cette vue, qui revérifie à chaque demande, sait le servir.
+    """
+
+    def get(self, request, slug, lecon_slug, pk):
+        ressource = get_object_or_404(
+            RessourceLecon.objects.select_related("lecon__chapitre__module"),
+            pk=pk,
+            lecon__chapitre__module__slug=slug,
+            lecon__slug=lecon_slug,
+        )
+        lecon = ressource.lecon
+        decision = verifier_acces(request.user, lecon)
+        if not decision.autorise:
+            # Le refus détaillé — et sa voie de sortie — s'affichent sur la
+            # page de la leçon : on y renvoie plutôt que de dupliquer l'écran.
+            return redirect(
+                "elearning:lecon_detail",
+                slug=lecon.chapitre.module.slug,
+                lecon_slug=lecon.slug,
+            )
+
+        if not ressource.est_fichier:
+            return redirect(ressource.lien_externe)
+
+        try:
+            contenu = ressource.fichier.open("rb")
+        except (FileNotFoundError, ValueError) as erreur:
+            raise Http404 from erreur
+        return FileResponse(contenu, as_attachment=True, filename=ressource.nom_fichier)
 
 
 class FichierVideoView(View):

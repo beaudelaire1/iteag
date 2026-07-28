@@ -40,4 +40,57 @@
         <a href="{% url 'elearning:enseignant_structure' chapitre.module.slug %}" class="btn-ghost">Annuler</a>
     </div>
 </form>
+
+{% if object %}
+<section class="max-w-2xl card-elevated mt-8 space-y-5" aria-labelledby="titre-ressources">
+    <div>
+        <h2 id="titre-ressources" class="text-lg font-semibold" style="color: var(--color-navy-900);">
+            Ressources pédagogiques
+        </h2>
+        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+            Supports remis avec la leçon : notes de cours, diaporama, bibliographie, lien
+            d'approfondissement. Les étudiants les retrouvent sous la vidéo, et leur accès
+            obéit à la même politique que la leçon.
+        </p>
+    </div>
+
+    {% if ressources %}
+    <ul class="divide-y divide-warm-100" role="list">
+        {% for ressource in ressources %}
+        <li class="flex items-center justify-between gap-4 py-3">
+            <div class="min-w-0">
+                <p class="truncate font-medium" style="color: var(--color-navy-900);">{{ ressource.titre }}</p>
+                <p class="text-xs" style="color: var(--color-warm-500);">
+                    {% if ressource.est_fichier %}
+                        {{ ressource.nom_fichier }}{% if ressource.taille_octets %} — {{ ressource.taille_octets|filesizeformat }}{% endif %}
+                    {% else %}
+                        {{ ressource.lien_externe }}
+                    {% endif %}
+                </p>
+            </div>
+            <form method="post"
+                  action="{% url 'elearning:enseignant_ressource_supprimer' ressource.pk %}"
+                  class="shrink-0">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost text-sm">Retirer</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm" style="color: var(--color-warm-500);">Aucune ressource pour l'instant.</p>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data"
+          action="{% url 'elearning:enseignant_ressource_creer' object.pk %}"
+          class="space-y-5 border-t border-warm-100 pt-5">
+        {% csrf_token %}
+        {% if form_ressource.non_field_errors %}
+        <div class="note alert" style="max-width: none;">{{ form_ressource.non_field_errors }}</div>
+        {% endif %}
+        {% for champ in form_ressource %}{% with field=champ %}{% include "partials/champ.html" %}{% endwith %}{% endfor %}
+        <button type="submit" class="btn-primary">Ajouter la ressource</button>
+    </form>
+</section>
+{% endif %}
 {% endblock %}

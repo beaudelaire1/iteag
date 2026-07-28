@@ -241,8 +241,12 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
                 if lecon.video.statut_traitement != VideoAsset.StatutTraitement.PRET:
                     return False, f"La vidéo de « {lecon.titre} » est encore en préparation."
                 # Dernier filet avant la mise en ligne : la politique d'accès a
-                # pu être resserrée après le rattachement de la vidéo.
-                if not fournisseur_compatible(lecon.video.fournisseur, self.politique_acces):
+                # pu être resserrée après le rattachement de la vidéo. Une leçon
+                # d'aperçu y échappe, comme dans la validation de la leçon :
+                # son contenu est offert, il n'y a pas d'accès à retirer.
+                if not lecon.apercu_gratuit and not fournisseur_compatible(
+                    lecon.video.fournisseur, self.politique_acces
+                ):
                     return False, (
                         f"La vidéo de « {lecon.titre} » est hébergée chez "
                         f"« {lecon.video.get_fournisseur_display()} », qui ne permet pas de retirer "
@@ -342,8 +346,15 @@ class Lecon(UUIDModel, TimeStampedModel):
         Sans cette règle, coller un identifiant YouTube sur la leçon d'un module
         payant suffirait à percer tout le contrôle d'accès, sans qu'aucune alerte
         ne se déclenche : la page resterait protégée, la vidéo ne le serait plus.
+
+        Une leçon **en aperçu gratuit** y échappe : l'aperçu court-circuite le
+        contrôle d'accès par construction — c'est sa raison d'être commerciale.
+        Exiger une adresse révocable pour un contenu volontairement offert ne
+        protégerait rien, et interdirait le schéma normal d'une vitrine : la
+        bande-annonce chez un fournisseur public, les leçons sur adresse signée.
+        Décocher l'aperçu fait retomber la leçon sous la règle pleine.
         """
-        if self.video_id is None or self.chapitre_id is None:
+        if self.video_id is None or self.chapitre_id is None or self.apercu_gratuit:
             return
         politique = self.module.politique_acces
         if fournisseur_compatible(self.video.fournisseur, politique):
@@ -470,6 +481,84 @@ class SousTitre(TimeStampedModel):
 
     def __str__(self):
         return f"{self.video.titre} — {self.libelle}"
+
+
+class RessourceLecon(TimeStampedModel):
+    """
+    Support pédagogique remis avec une leçon : notes de cours, diaporama,
+    bibliographie, lien d'approfondissement…
+
+    Le fichier n'est jamais exposé par son adresse de stockage : il est servi
+    par une vue qui revérifie le droit sur la leçon à chaque téléchargement,
+    comme la vidéo l'est déjà. Une ressource porte soit un fichier, soit un
+    lien externe — jamais les deux, sinon le titre affiché deviendrait ambigu
+    sur ce qu'un clic déclenche.
+    """
+
+    lecon = models.ForeignKey(Lecon, on_delete=models.CASCADE, related_name="ressources")
+    titre = models.CharField(max_length=250)
+    fichier = models.FileField(upload_to="elearning/ressources/%Y/%m/", blank=True)
+    nom_origine = models.CharField(max_length=250, blank=True, verbose_name="Nom du fichier d'origine")
+    lien_externe = models.URLField(blank=True)
+    # Figée au dépôt : interroger le stockage à chaque affichage de la leçon
+    # coûterait un accès disque par ressource, pour une valeur qui ne change pas.
+    taille_octets = models.BigIntegerField(default=0, editable=False, verbose_name="Taille")
+    ordre = models.PositiveSmallIntegerField(default=0)
+    deposee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ressources_deposees",
+    )
+
+    class Meta:
+        verbose_name = "Ressource de leçon"
+        verbose_name_plural = "Ressources de leçon"
+        ordering = ["ordre", "id"]
+
+    def __str__(self):
+        return f"{self.lecon.titre} — {self.titre}"
+
+    def clean(self):
+        super().clean()
+        if bool(self.fichier) == bool(self.lien_externe):
+            raise ValidationError(
+                "Une ressource porte soit un fichier, soit un lien externe — exactement l'un des deux."
+            )
+
+    def save(self, *args, **kwargs):
+        if self.fichier:
+            try:
+                self.taille_octets = self.fichier.size
+            except (OSError, ValueError):
+                # Fichier déjà déplacé ou stockage muet : la taille reste celle
+                # connue, elle n'est qu'indicative à l'affichage.
+                pass
+            if not self.nom_origine:
+                from pathlib import PurePosixPath
+
+                self.nom_origine = PurePosixPath(self.fichier.name).name[:250]
+        super().save(*args, **kwargs)
+
+    @property
+    def est_fichier(self) -> bool:
+        return bool(self.fichier)
+
+    @property
+    def nom_fichier(self) -> str:
+        """Nom présenté à l'étudiant — celui du dépôt, pas celui du stockage."""
+        from pathlib import PurePosixPath
+
+        if self.nom_origine:
+            return self.nom_origine
+        return PurePosixPath(self.fichier.name).name if self.fichier else ""
+
+    @property
+    def extension(self) -> str:
+        from pathlib import PurePosixPath
+
+        return PurePosixPath(self.fichier.name).suffix.lstrip(".").lower() if self.fichier else ""
 
 
 # ══════════════════════════════════════════════

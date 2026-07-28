@@ -263,6 +263,84 @@ class TestUnFournisseurFaibleNeSertPasUnModuleProtege:
         )
         lecon.full_clean()  # ne lève pas
 
+    def test_youtube_est_accepte_sur_une_lecon_d_apercu(self, module, professeur, settings):
+        """
+        L'aperçu court-circuite le contrôle d'accès par construction : son
+        contenu est offert, il n'y a pas d'accès à retirer. Le schéma normal
+        d'une vitrine — bande-annonce chez un fournisseur public, leçons sur
+        adresse signée — doit donc rester possible.
+        """
+        settings.DEBUG = False
+        chapitre = Chapitre.objects.create(module=module, titre="Chapitre", ordre=1)
+        video = VideoAsset.objects.create(
+            titre="Bande-annonce",
+            cle_stockage="dQw4w9WgXcQ",
+            fournisseur="youtube",
+            uploade_par=professeur.user,
+            statut_traitement=VideoAsset.StatutTraitement.PRET,
+        )
+        lecon = Lecon(
+            chapitre=chapitre,
+            titre="Bande-annonce",
+            slug="bande-annonce",
+            ordre=1,
+            video=video,
+            apercu_gratuit=True,
+        )
+        lecon.full_clean()  # ne lève pas
+
+    def test_decocher_l_apercu_fait_retomber_sous_la_regle(self, module, professeur, settings):
+        from django.core.exceptions import ValidationError
+
+        settings.DEBUG = False
+        chapitre = Chapitre.objects.create(module=module, titre="Chapitre", ordre=1)
+        video = VideoAsset.objects.create(
+            titre="Bande-annonce",
+            cle_stockage="dQw4w9WgXcQ",
+            fournisseur="youtube",
+            uploade_par=professeur.user,
+            statut_traitement=VideoAsset.StatutTraitement.PRET,
+        )
+        lecon = Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Bande-annonce",
+            slug="bande-annonce",
+            ordre=1,
+            video=video,
+            apercu_gratuit=True,
+        )
+        lecon.apercu_gratuit = False
+        with pytest.raises(ValidationError):
+            lecon.full_clean()
+
+    def test_la_publication_accepte_une_bande_annonce_youtube(self, module, professeur, settings):
+        """Le dernier filet de `peut_etre_publie` suit la même exemption."""
+        settings.DEBUG = False
+        chapitre = Chapitre.objects.create(module=module, titre="Chapitre", ordre=1)
+        Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Bande-annonce",
+            slug="bande-annonce",
+            ordre=1,
+            apercu_gratuit=True,
+            video=VideoAsset.objects.create(
+                titre="Sur YouTube",
+                cle_stockage="dQw4w9WgXcQ",
+                fournisseur="youtube",
+                uploade_par=professeur.user,
+                statut_traitement=VideoAsset.StatutTraitement.PRET,
+            ),
+        )
+        Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Leçon réservée",
+            slug="reservee-pub",
+            ordre=2,
+            video=_video("Réservée", "video-reservee-pub", professeur),
+        )
+        publiable, motif = module.peut_etre_publie()
+        assert publiable is True, motif
+
 
 # ══════════════════════════════════════════════
 # Un module tout en aperçu ne protège rien
@@ -397,3 +475,75 @@ class TestLeResponsableChoisitLaPolitiqueDAcces:
         assert formulaire.is_valid() is False
         assert "politique_acces" in formulaire.errors
         assert "Bande-annonce" in formulaire.errors["politique_acces"][0]
+
+    def test_une_bande_annonce_en_apercu_ne_bloque_pas_le_resserrement(self, module, professeur, settings):
+        """Ce qui est offert n'a pas besoin d'être révocable : l'aperçu ne compte pas."""
+        from apps.elearning.forms import ModuleForm
+
+        settings.DEBUG = False
+        module.politique_acces = ModuleFormation.PolitiqueAcces.PUBLIC
+        module.save(update_fields=["politique_acces"])
+        chapitre = Chapitre.objects.create(module=module, titre="Chapitre", ordre=1)
+        Lecon.objects.create(
+            chapitre=chapitre,
+            titre="Bande-annonce",
+            slug="bande-annonce",
+            ordre=1,
+            apercu_gratuit=True,
+            video=VideoAsset.objects.create(
+                titre="Sur YouTube",
+                cle_stockage="dQw4w9WgXcQ",
+                fournisseur="youtube",
+                uploade_par=professeur.user,
+                statut_traitement=VideoAsset.StatutTraitement.PRET,
+            ),
+        )
+
+        formulaire = ModuleForm(
+            instance=module,
+            data={
+                "titre": module.titre,
+                "niveau": ModuleFormation.Niveau.INITIATION,
+                "ects": "0",
+                "politique_acces": ModuleFormation.PolitiqueAcces.SUR_OCTROI,
+                "seuil_completion": "80",
+            },
+        )
+        assert formulaire.is_valid() is True
+
+
+# ══════════════════════════════════════════════
+# Le sommaire annonce ce qui est verrouillé
+# ══════════════════════════════════════════════
+
+
+@pytest.mark.django_db
+class TestLeSommaireVerrouilleCeQuiLeSera:
+    """
+    Le sommaire ne doit pas inviter à ouvrir ce qui sera refusé au clic : les
+    leçons hors aperçu s'affichent verrouillées tant que le droit manque —
+    c'est le comportement attendu d'une plateforme de cours en ligne.
+    """
+
+    def test_un_visiteur_anonyme_voit_les_verrous(self, client, module, lecons):
+        contenu = client.get(module.get_absolute_url()).content.decode()
+        assert "Leçon verrouillée" in contenu
+
+    def test_un_inscrit_voit_les_liens(self, client, module, lecons, etudiant):
+        InscriptionModule.objects.create(etudiant=etudiant, module=module, statut=InscriptionModule.StatutAcces.ACTIF)
+        client.force_login(etudiant.utilisateur)
+        contenu = client.get(module.get_absolute_url()).content.decode()
+        assert "Leçon verrouillée" not in contenu
+        assert "Ouvrir" in contenu
+
+    def test_le_responsable_ne_voit_pas_de_verrous_sur_son_module(self, client, module, lecons, professeur):
+        client.force_login(professeur.user)
+        contenu = client.get(module.get_absolute_url()).content.decode()
+        assert "Leçon verrouillée" not in contenu
+
+    def test_la_page_de_lecon_marque_les_lecons_reservees(self, client, module, lecons):
+        """Sur la page d'un aperçu, le sommaire latéral verrouille le reste."""
+        contenu = client.get(
+            reverse("elearning:lecon_detail", args=[module.slug, lecons["apercu"].slug])
+        ).content.decode()
+        assert "(verrouillée)" in contenu
