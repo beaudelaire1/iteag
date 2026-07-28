@@ -56,4 +56,13 @@ class CspLectureVideoMixin:
             reponse._csp_update = ajouts
         if remplacements:
             reponse._csp_replace = remplacements
+        # La politique globale « same-origin » supprime le Referer sur toute
+        # requête sortante — y compris celles du lecteur vers le CDN. Or la
+        # zone Bunny vérifie le domaine d'origine (anti-hotlink) en plus du
+        # jeton : sans Referer, chaque manifeste est refusé en 403 alors que
+        # la signature est valable. On ne rétablit ici que l'origine, jamais
+        # le chemin, et seulement sur les pages qui lisent une vidéo.
+        # `SecurityMiddleware` pose la politique globale par `setdefault` :
+        # la valeur écrite ici reste prioritaire.
+        reponse.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return reponse
