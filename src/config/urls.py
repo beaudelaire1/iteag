@@ -44,8 +44,8 @@ urlpatterns = [
     path("boutique/", include("apps.commerce.urls", namespace="commerce")),
     path("paiements/", include("apps.paiements.urls", namespace="paiements")),
     path("espace-etudiant/", include("apps.portail_etudiant.urls", namespace="etudiant")),
-    path("espace-enseignant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
-    path("espace-enseignant/", include("apps.lms.urls", namespace="lms")),
+    path("gnant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
+    path("gnant/", include("apps.lms.urls", namespace="lms")),
     path("mes-documents/", include("apps.documents.urls", namespace="documents")),
     path("e-learning/", include("apps.elearning.urls", namespace="elearning")),
     re_path(

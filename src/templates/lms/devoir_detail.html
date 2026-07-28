@@ -64,6 +64,11 @@
             {% endif %}
 
             <a href="{% url 'lms:devoir_update' devoir.pk %}" class="btn-ghost w-full justify-center mt-3">Modifier le devoir</a>
+            {% if devoir.modalite == 'qcm' %}
+            <a href="{% url 'lms:questionnaire' devoir.pk %}" class="btn-ghost w-full justify-center mt-3">
+                Composer le questionnaire
+            </a>
+            {% endif %}
         </section>
 
         <section class="card">

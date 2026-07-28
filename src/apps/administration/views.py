@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
@@ -224,6 +224,9 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         ctx["promotions"] = Promotion.objects.filter(actif=True, parcours=self.object.parcours_souhaite).order_by(
             "-annee_debut"
         )
+        pieces = list(self.object.pieces_complementaires.select_related("demandee_par"))
+        ctx["pieces"] = pieces
+        ctx["pieces_bloquantes"] = [piece for piece in pieces if piece.bloque_le_dossier]
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -962,3 +965,52 @@ class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
         if skipped:
             messages.warning(request, f"{skipped} dossier(s) ignoré(s) : transition non autorisée.")
         return redirect("administration:candidatures")
+
+
+# ──────────────────────────────────────────────
+# Pièces complémentaires d'une candidature
+# ──────────────────────────────────────────────
+
+
+class DemanderPieceView(StaffRoleRequiredMixin, View):
+    """Réclame une pièce au candidat, depuis l'examen de son dossier."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from apps.admissions.services import demander_piece
+
+        dossier = get_object_or_404(DossierCandidature, pk=pk)
+        try:
+            piece = demander_piece(
+                dossier,
+                libelle=request.POST.get("libelle", ""),
+                description=request.POST.get("description", ""),
+                obligatoire=request.POST.get("obligatoire") == "on",
+                par=request.user,
+            )
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+        else:
+            messages.success(request, f"« {piece.libelle} » a été demandée au candidat, qui en est averti.")
+        return redirect("administration:candidature_detail", pk=dossier.pk)
+
+
+class VerifierPieceView(StaffRoleRequiredMixin, View):
+    """Accepte ou refuse une pièce déposée par le candidat."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from apps.admissions.models import PieceComplementaire
+        from apps.admissions.services import verifier_piece
+
+        piece = get_object_or_404(PieceComplementaire.objects.select_related("dossier"), pk=pk)
+        acceptee = request.POST.get("decision") == "accepter"
+        try:
+            verifier_piece(piece, acceptee=acceptee, motif=request.POST.get("motif", ""), par=request.user)
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+        else:
+            messages.success(request, "Pièce validée." if acceptee else "Pièce refusée : le candidat est averti.")
+        return redirect("administration:candidature_detail", pk=piece.dossier_id)

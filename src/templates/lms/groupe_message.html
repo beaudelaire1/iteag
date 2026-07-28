@@ -1,0 +1,61 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Écrire au groupe {{ groupe.nom }} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='groupes' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='groupes' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:groupes_list' %}" class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Groupes de travail
+    </a>
+    <p class="overline mb-2">{{ groupe.cours_session.cours.titre }}</p>
+    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">Écrire au groupe « {{ groupe.nom }} »</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+    <section class="lg:col-span-2">
+        <form method="post" class="card-elevated space-y-5" novalidate>
+            {% csrf_token %}
+            {% include "partials/erreurs_formulaire.html" %}
+            {% for field in form %}{% include "partials/champ.html" %}{% endfor %}
+            <div class="flex flex-wrap gap-3">
+                <button type="submit" class="btn-primary">Envoyer au groupe</button>
+                <a href="{% url 'lms:groupes_list' %}" class="btn-ghost">Annuler</a>
+            </div>
+            <p class="text-xs text-warm-500">
+                Chaque membre reçoit une notification dans son espace. Les comptes désactivés
+                sont ignorés.
+            </p>
+        </form>
+    </section>
+
+    <aside class="lg:col-span-1">
+        <div class="card">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+                Destinataires
+            </h2>
+            {% if groupe.membres.all %}
+            <ul class="space-y-2 text-sm">
+                {% for membre in groupe.membres.all %}
+                <li style="color: var(--color-navy-800);">
+                    {{ membre.utilisateur.get_full_name|default:membre.utilisateur.username }}
+                    <span class="block text-xs text-warm-400">{{ membre.numero_etudiant }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-sm text-warm-500">
+                Ce groupe n'a aucun membre : le message ne serait transmis à personne.
+            </p>
+            {% endif %}
+        </div>
+    </aside>
+
+</div>
+{% endblock %}

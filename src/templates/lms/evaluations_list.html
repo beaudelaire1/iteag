@@ -85,6 +85,15 @@
                     <td class="px-5 py-3 text-sm">
                         {% if eval.statut == 'soumis' or eval.statut == 'en_correction' %}
                         <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="font-medium hover:underline" style="color: var(--color-navy-600);">Noter</a>
+                        {% elif eval.statut == 'publie' %}
+                        {% comment %}
+                            Une note publiée reste corrigible : c'est la voie du recours,
+                            et elle doit être atteignable là où l'enseignant regarde ses copies.
+                        {% endcomment %}
+                        <a href="{% url 'lms:revise_grade' eval.pk %}" class="font-medium hover:underline" style="color: var(--color-navy-600);">Réviser</a>
+                        {% endif %}
+                        {% if eval.fichier_soumis %}
+                        <a href="{{ eval.fichier_soumis.url }}" class="ml-3 font-medium hover:underline" style="color: var(--color-navy-600);">Copie</a>
                         {% endif %}
                     </td>
                 </tr>

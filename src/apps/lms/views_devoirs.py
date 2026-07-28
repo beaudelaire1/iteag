@@ -102,11 +102,21 @@ class _DevoirDuProfesseur(TeacherRoleRequiredMixin):
 
 
 class TeacherDevoirCreateView(TeacherRoleRequiredMixin, CreateView):
+    """Création d'un devoir pour l'un des cours de l'enseignant.
+
+    Le cours se désigne indifféremment dans le chemin — lien depuis la fiche du
+    cours — ou en paramètre, ce qui permet à la liste des devoirs de proposer un
+    simple formulaire GET plutôt qu'un panneau flottant : celui-ci sortait de
+    l'écran, et n'aurait pu être refermé qu'avec du script, que la politique de
+    sécurité de production interdit.
+    """
+
     form_class = DevoirForm
     template_name = "lms/devoir_form.html"
 
     def dispatch(self, request, *args, **kwargs):
-        self.cours_session = get_object_or_404(_teacher_courses(request), pk=kwargs["cours_pk"])
+        identifiant = kwargs.get("cours_pk") or request.GET.get("cours")
+        self.cours_session = get_object_or_404(_teacher_courses(request), pk=identifiant)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

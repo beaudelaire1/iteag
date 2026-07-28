@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -339,6 +341,162 @@ class Devoir(TimeStampedModel):
         if maintenant > self.date_fermeture and not self.retard_accepte:
             return f"Le dépôt a fermé le {timezone.localtime(self.date_fermeture):%d/%m/%Y à %H:%M}."
         return ""
+
+
+class Question(TimeStampedModel):
+    """
+    Une question d'un questionnaire, et ce qu'elle vaut.
+
+    Le barème est porté par la question et non déduit d'une division du total :
+    toutes les questions d'un devoir ne pèsent pas le même poids, et une note
+    calculée à partir d'une moyenne arithmétique serait fausse dès la première
+    question bonus.
+    """
+
+    class TypeQuestion(models.TextChoices):
+        CHOIX_UNIQUE = "choix_unique", "Une seule bonne réponse"
+        CHOIX_MULTIPLE = "choix_multiple", "Plusieurs bonnes réponses"
+
+    devoir = models.ForeignKey(Devoir, on_delete=models.CASCADE, related_name="questions")
+    enonce = models.TextField(verbose_name="Énoncé")
+    type_question = models.CharField(
+        max_length=20,
+        choices=TypeQuestion.choices,
+        default=TypeQuestion.CHOIX_UNIQUE,
+        verbose_name="Type de question",
+    )
+    points = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=1,
+        validators=[MinValueValidator(Decimal("0.25"))],
+        verbose_name="Points",
+    )
+    explication = models.TextField(
+        blank=True,
+        verbose_name="Explication",
+        help_text="Montrée à l'étudiant après la correction. Une réponse fausse sans explication n'apprend rien.",
+    )
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Question"
+        verbose_name_plural = "Questions"
+        ordering = ["ordre", "id"]
+
+    def __str__(self):
+        return self.enonce[:80]
+
+    @property
+    def bonnes_reponses(self):
+        return self.choix.filter(correct=True)
+
+    def est_valide(self) -> str:
+        """Ce qui manque à cette question pour être posée — vide si elle est prête."""
+        choix = list(self.choix.all())
+        if len(choix) < 2:
+            return "Il faut au moins deux propositions."
+        correctes = [c for c in choix if c.correct]
+        if not correctes:
+            return "Aucune proposition n'est marquée comme correcte."
+        if self.type_question == self.TypeQuestion.CHOIX_UNIQUE and len(correctes) > 1:
+            return "Une question à réponse unique ne peut avoir qu'une seule proposition correcte."
+        return ""
+
+
+class Choix(TimeStampedModel):
+    """Une proposition de réponse. Sa justesse n'est jamais envoyée au navigateur."""
+
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="choix")
+    libelle = models.CharField(max_length=500, verbose_name="Proposition")
+    correct = models.BooleanField(default=False, verbose_name="Réponse correcte")
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Proposition"
+        verbose_name_plural = "Propositions"
+        ordering = ["ordre", "id"]
+
+    def __str__(self):
+        return self.libelle[:60]
+
+
+class ReponseEtudiant(TimeStampedModel):
+    """
+    Ce qu'un étudiant a coché, conservé tel quel.
+
+    La note se recalcule à partir de ces réponses ; elle n'est pas seule à être
+    stockée. Un barème corrigé après coup — une question retirée, une seconde
+    bonne réponse admise — peut ainsi être rejoué sur toutes les copies au lieu
+    d'être ressaisi à la main.
+    """
+
+    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE, related_name="reponses")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="reponses")
+    choix = models.ManyToManyField(Choix, blank=True, related_name="reponses")
+    points_obtenus = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Réponse d'étudiant"
+        verbose_name_plural = "Réponses d'étudiants"
+        ordering = ["question__ordre"]
+        constraints = [
+            models.UniqueConstraint(fields=["evaluation", "question"], name="reponse_unique_par_question"),
+        ]
+
+    def __str__(self):
+        return f"{self.evaluation.etudiant} — {self.question}"
+
+    def corriger(self) -> Decimal:
+        """Tout ou rien : une réponse partiellement juste ne rapporte pas.
+
+        Le barème partiel a été écarté à dessein — il oblige à décider ce que
+        vaut une case oubliée par rapport à une case en trop, et cette décision
+        n'appartient pas au code.
+        """
+        attendus = {choix.pk for choix in self.question.choix.all() if choix.correct}
+        donnes = {choix.pk for choix in self.choix.all()}
+        self.points_obtenus = self.question.points if donnes == attendus and attendus else Decimal("0")
+        return self.points_obtenus
+
+
+class GroupeEtudiants(TimeStampedModel):
+    """
+    Un sous-ensemble d'une classe : équipe de projet, groupe de travaux dirigés.
+
+    Rattaché au cours de session et non à la promotion : les groupes d'un cours
+    n'ont pas de raison de valoir pour un autre, et un étudiant peut être en
+    équipe 1 ici et en équipe 3 ailleurs.
+    """
+
+    cours_session = models.ForeignKey(
+        "academics.CoursDeSession",
+        on_delete=models.CASCADE,
+        related_name="groupes",
+    )
+    nom = models.CharField(max_length=120)
+    description = models.TextField(blank=True, help_text="Sujet du projet, consigne propre au groupe…")
+    membres = models.ManyToManyField(
+        "academics.ProfilEtudiant",
+        blank=True,
+        related_name="groupes_de_travail",
+    )
+    couleur = models.CharField(
+        max_length=7,
+        blank=True,
+        help_text="Repère visuel, au format #RRGGBB.",
+    )
+
+    class Meta:
+        verbose_name = "Groupe d'étudiants"
+        verbose_name_plural = "Groupes d'étudiants"
+        ordering = ["nom"]
+        constraints = [
+            models.UniqueConstraint(fields=["cours_session", "nom"], name="groupe_nom_unique_par_cours"),
+        ]
+
+    def __str__(self):
+        return f"{self.nom} — {self.cours_session}"
 
 
 class Annonce(TimeStampedModel):

@@ -1,0 +1,84 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Groupes de travail — Espace enseignant — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='groupes' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='groupes' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Espace enseignant</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Groupes de travail</h1>
+    <p class="mt-2 text-sm text-warm-600">
+        Équipes de projet et sous-groupes de travaux dirigés. Un message envoyé au groupe
+        atteint tous ses membres d'un coup.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if cours_enseignes %}
+<form method="get" action="{% url 'lms:groupe_create' %}" class="mb-6 flex flex-wrap items-end gap-3">
+    <div class="champ" style="margin-bottom: 0;">
+        <label class="form-label" for="cours-groupe">Créer un groupe dans</label>
+        <select name="cours" id="cours-groupe" class="form-select" style="min-width: 16rem;">
+            {% for offre in cours_enseignes %}
+            <option value="{{ offre.pk }}">{{ offre.cours.titre }} — {{ offre.session }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-primary">Créer un groupe</button>
+</form>
+{% endif %}
+
+{% if groupes %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    {% for groupe in groupes %}
+    <article class="card">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">
+                    {% if groupe.couleur %}
+                    <span class="inline-block h-3 w-3 rounded-full align-middle" style="background: {{ groupe.couleur }};" aria-hidden="true"></span>
+                    {% endif %}
+                    {{ groupe.nom }}
+                </h2>
+                <p class="mt-1 text-sm text-warm-500">
+                    {{ groupe.cours_session.cours.titre }} · {{ groupe.cours_session.session }}
+                </p>
+            </div>
+            <span class="badge badge-info shrink-0">{{ groupe.nb_membres }} membre{{ groupe.nb_membres|pluralize }}</span>
+        </div>
+
+        {% if groupe.description %}
+        <p class="mt-3 text-sm text-warm-600" style="white-space: pre-line;">{{ groupe.description }}</p>
+        {% endif %}
+
+        {% if groupe.membres.all %}
+        <ul class="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-xs text-warm-600">
+            {% for membre in groupe.membres.all %}
+            <li>{{ membre.utilisateur.get_full_name|default:membre.utilisateur.username }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="mt-4 text-xs text-warm-500">Aucun membre pour l'instant.</p>
+        {% endif %}
+
+        <div class="mt-5 flex flex-wrap gap-3">
+            <a href="{% url 'lms:groupe_message' groupe.pk %}" class="btn-primary">Écrire au groupe</a>
+            <a href="{% url 'lms:groupe_update' groupe.pk %}" class="btn-ghost">Modifier</a>
+            <a href="{% url 'lms:groupe_delete' groupe.pk %}" class="btn-ghost">Supprimer</a>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card text-center" style="padding: 3rem 1.5rem;">
+    <p class="text-sm text-warm-600">
+        Aucun groupe. Choisissez un cours ci-dessus pour constituer la première équipe.
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -2,7 +2,7 @@ from django import forms
 
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 
-from .models import Annonce, Devoir, Evaluation, RessourcePedagogique
+from .models import Annonce, Choix, Devoir, Evaluation, GroupeEtudiants, Question, RessourcePedagogique
 
 # Classes du système de design ITEAG (assets/css/input.css).
 # Les formulaires du portail enseignant utilisent les mêmes composants que le
@@ -145,3 +145,72 @@ class RevisionNoteForm(FormulaireITEAG):
         if len(motif) < 10:
             raise forms.ValidationError("Précisez le motif : il devra tenir devant l'étudiant et devant le jury.")
         return motif
+
+
+class QuestionForm(FormulaireModeleITEAG):
+    """Une question du questionnaire. Les propositions se saisissent à côté."""
+
+    class Meta:
+        model = Question
+        fields = ["enonce", "type_question", "points", "explication", "ordre"]
+        widgets = {
+            "enonce": forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Formulez la question…"}),
+            "type_question": forms.Select(attrs={"class": "form-select"}),
+            "points": forms.NumberInput(attrs={"min": "0.25", "step": "0.25", "class": INPUT_COURT}),
+            "explication": forms.Textarea(attrs={"rows": 2, "class": INPUT}),
+            "ordre": forms.NumberInput(attrs={"min": 0, "class": INPUT_COURT}),
+        }
+        help_texts = {"ordre": "Laisser 0 pour placer la question à la fin."}
+
+
+class ChoixForm(FormulaireModeleITEAG):
+    class Meta:
+        model = Choix
+        fields = ["libelle", "correct", "ordre"]
+        widgets = {
+            "libelle": forms.TextInput(attrs={"class": INPUT, "placeholder": "Proposition de réponse"}),
+            "ordre": forms.NumberInput(attrs={"min": 0, "class": INPUT_COURT}),
+        }
+
+
+class GroupeForm(FormulaireModeleITEAG):
+    """Un groupe de travail au sein d'un cours."""
+
+    class Meta:
+        model = GroupeEtudiants
+        fields = ["nom", "description", "membres", "couleur"]
+        widgets = {
+            "nom": forms.TextInput(attrs={"class": INPUT, "placeholder": "Équipe 1"}),
+            "description": forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Sujet du projet…"}),
+            "membres": forms.CheckboxSelectMultiple(),
+            "couleur": forms.TextInput(attrs={"type": "color", "class": "form-input", "style": "width: 4rem;"}),
+        }
+
+    def __init__(self, *args, cours_session=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cours_session = cours_session or getattr(self.instance, "cours_session", None)
+        # Seuls les inscrits au cours : proposer toute la promotion ferait
+        # constituer des groupes avec des étudiants qui ne suivent pas ce cours.
+        if self.cours_session is not None:
+            from apps.academics.models import ProfilEtudiant
+
+            self.fields["membres"].queryset = (
+                ProfilEtudiant.objects.filter(inscriptions__cours_session=self.cours_session)
+                .select_related("utilisateur")
+                .order_by("utilisateur__last_name", "utilisateur__first_name")
+            )
+        self.fields["membres"].required = False
+
+
+class MessageGroupeForm(FormulaireITEAG):
+    """Message adressé d'un coup à tous les membres d'un groupe."""
+
+    titre = forms.CharField(
+        max_length=200,
+        label="Objet",
+        widget=forms.TextInput(attrs={"class": INPUT, "placeholder": "Rendez-vous de projet"}),
+    )
+    message = forms.CharField(
+        label="Message",
+        widget=forms.Textarea(attrs={"rows": 5, "class": INPUT}),
+    )

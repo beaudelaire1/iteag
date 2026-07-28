@@ -7,6 +7,78 @@ from django.utils import timezone
 from apps.core.models import TimeStampedModel
 
 
+class PieceComplementaire(TimeStampedModel):
+    """
+    Une pièce réclamée à un candidat en cours d'instruction.
+
+    Le dossier ne portait que trois champs fichier figés — identité, diplômes,
+    autre document. Dès que le secrétariat avait besoin d'autre chose — un
+    relevé de notes, une attestation d'église, une traduction — il n'existait
+    aucun moyen de le demander : la seule voie était un courriel hors
+    plateforme, sans trace, sans relance, et sans endroit où déposer la
+    réponse. La candidature restait « incomplète » sans que personne ne sache
+    de quoi.
+
+    Chaque pièce est donc un objet : elle est demandée, elle est déposée, elle
+    est acceptée ou refusée avec un motif. L'état du dossier se lit alors sans
+    rien reconstituer.
+    """
+
+    class Statut(models.TextChoices):
+        DEMANDEE = "demandee", "Demandée"
+        DEPOSEE = "deposee", "Déposée, en attente de vérification"
+        VALIDEE = "validee", "Validée"
+        REFUSEE = "refusee", "Refusée, à redéposer"
+
+    dossier = models.ForeignKey(
+        "DossierCandidature",
+        on_delete=models.CASCADE,
+        related_name="pieces_complementaires",
+    )
+    libelle = models.CharField(max_length=200, verbose_name="Pièce demandée")
+    description = models.TextField(
+        blank=True,
+        verbose_name="Précisions",
+        help_text="Ce que le candidat doit fournir exactement. Une demande vague revient deux fois.",
+    )
+    obligatoire = models.BooleanField(
+        default=True,
+        help_text="Une pièce facultative n'empêche pas l'instruction du dossier.",
+    )
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.DEMANDEE)
+
+    fichier = models.FileField(upload_to="candidatures/complements/%Y/%m/", blank=True)
+    motif_refus = models.TextField(blank=True, verbose_name="Motif du refus")
+
+    demandee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pieces_demandees",
+    )
+    date_depot = models.DateTimeField(null=True, blank=True, verbose_name="Déposée le")
+    date_verification = models.DateTimeField(null=True, blank=True, verbose_name="Vérifiée le")
+
+    class Meta:
+        verbose_name = "Pièce complémentaire"
+        verbose_name_plural = "Pièces complémentaires"
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["dossier", "statut"])]
+
+    def __str__(self):
+        return f"{self.libelle} — {self.dossier}"
+
+    @property
+    def est_en_attente(self) -> bool:
+        """Le candidat doit-il encore agir ?"""
+        return self.statut in (self.Statut.DEMANDEE, self.Statut.REFUSEE)
+
+    @property
+    def bloque_le_dossier(self) -> bool:
+        return self.obligatoire and self.statut != self.Statut.VALIDEE
+
+
 class DossierCandidature(TimeStampedModel):
     """
     Dossier de candidature — CDC section 7.1.

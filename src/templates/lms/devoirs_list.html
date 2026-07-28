@@ -34,19 +34,24 @@
         <button type="submit" class="btn-ghost">Filtrer</button>
     </form>
 
+    {% comment %}
+        Un panneau flottant a été essayé puis écarté : posé en absolu au bord
+        droit de la barre, il sortait de l'écran et emportait la mise en page
+        avec lui. Une liste déroulante ordinaire tient dans le flux, se
+        parcourt au clavier, et le navigateur se charge de la placer.
+    {% endcomment %}
     {% if cours_enseignes %}
-    <details class="relative">
-        <summary class="btn-primary cursor-pointer list-none">Créer un devoir</summary>
-        <div class="absolute right-0 z-20 mt-2 w-80 rounded border bg-white p-2 shadow-elevated" style="border-color: var(--color-warm-200);">
-            <p class="px-3 py-2 text-xs text-warm-500">Pour quel cours ?</p>
-            {% for offre in cours_enseignes %}
-            <a href="{% url 'lms:devoir_create' offre.pk %}" class="block rounded px-3 py-2 text-sm hover:bg-warm-50" style="color: var(--color-navy-800);">
-                {{ offre.cours.titre }}
-                <span class="block text-xs text-warm-500">{{ offre.session }}</span>
-            </a>
-            {% endfor %}
+    <form method="get" action="{% url 'lms:devoir_create' %}" class="flex flex-wrap items-end gap-3">
+        <div class="champ" style="margin-bottom: 0;">
+            <label class="form-label" for="cours-devoir">Créer un devoir pour</label>
+            <select name="cours" id="cours-devoir" class="form-select" style="min-width: 16rem;">
+                {% for offre in cours_enseignes %}
+                <option value="{{ offre.pk }}">{{ offre.cours.titre }} — {{ offre.session }}</option>
+                {% endfor %}
+            </select>
         </div>
-    </details>
+        <button type="submit" class="btn-primary">Créer un devoir</button>
+    </form>
     {% endif %}
 </div>
 

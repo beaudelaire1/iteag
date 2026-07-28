@@ -9,6 +9,8 @@ urlpatterns = [
     # Candidatures
     path("candidatures/", views.AdminCandidatureListView.as_view(), name="candidatures"),
     path("candidatures/<int:pk>/", views.AdminCandidatureDetailView.as_view(), name="candidature_detail"),
+    path("candidatures/<int:pk>/demander-piece/", views.DemanderPieceView.as_view(), name="demander_piece"),
+    path("pieces/<int:pk>/verifier/", views.VerifierPieceView.as_view(), name="verifier_piece"),
     # Étudiants
     path("etudiants/", views.AdminEtudiantListView.as_view(), name="etudiants"),
     path("etudiants/ajouter/", views.AdminEtudiantCreateView.as_view(), name="etudiant_create"),

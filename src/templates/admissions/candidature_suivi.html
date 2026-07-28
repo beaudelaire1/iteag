@@ -39,6 +39,68 @@
                 </div>
             </dl>
         </div>
+
+        {# ── Pièces réclamées par le secrétariat ── #}
+        {% if pieces %}
+        <div class="card-elevated reveal reveal-delay-2 mt-6">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-2" style="color: var(--color-navy-800);">
+                Pièces demandées
+            </h2>
+            {% if pieces_attendues %}
+            <p class="mb-5 text-sm text-warm-600">
+                Votre dossier ne pourra être instruit qu'une fois ces documents reçus.
+            </p>
+            {% else %}
+            <p class="mb-5 text-sm text-warm-600">
+                Toutes les pièces demandées ont été transmises. Le secrétariat vous répondra.
+            </p>
+            {% endif %}
+
+            <ul class="space-y-4">
+                {% for piece in pieces %}
+                <li class="rounded border p-4" style="border-color: var(--color-warm-200);">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="font-medium" style="color: var(--color-navy-900);">
+                                {{ piece.libelle }}
+                                {% if not piece.obligatoire %}<span class="badge">Facultative</span>{% endif %}
+                            </p>
+                            {% if piece.description %}
+                            <p class="mt-1 text-sm text-warm-600">{{ piece.description }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="shrink-0">
+                            {% if piece.statut == 'validee' %}<span class="badge badge-success">Validée</span>
+                            {% elif piece.statut == 'deposee' %}<span class="badge badge-warning">En cours de vérification</span>
+                            {% elif piece.statut == 'refusee' %}<span class="badge badge-danger">À redéposer</span>
+                            {% else %}<span class="badge badge-info">À fournir</span>{% endif %}
+                        </span>
+                    </div>
+
+                    {% if piece.motif_refus %}
+                    <p class="mt-3 text-sm form-erreur" role="alert">
+                        Ce document n'a pas été retenu : {{ piece.motif_refus }}
+                    </p>
+                    {% endif %}
+
+                    {% if piece.est_en_attente %}
+                    <form method="post" enctype="multipart/form-data" class="mt-4 flex flex-wrap items-end gap-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="piece" value="{{ piece.pk }}">
+                        <div class="champ" style="margin-bottom: 0;">
+                            <label class="form-label" for="fichier-{{ piece.pk }}">Votre document</label>
+                            <input type="file" name="fichier" id="fichier-{{ piece.pk }}" class="form-file" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Déposer</button>
+                    </form>
+                    {% elif piece.date_depot %}
+                    <p class="mt-3 text-xs text-warm-400">Déposée le {{ piece.date_depot|date:"d/m/Y à H:i" }}.</p>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

@@ -6,6 +6,8 @@ partagées entre le portail enseignant et le portail étudiant, et elles se
 testent sans passer par une requête HTTP.
 """
 
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -14,7 +16,7 @@ from apps.core.models import Notification
 from apps.core.services.audit import journaliser
 from apps.core.services.notifications import notifier
 
-from .models import Devoir, Evaluation, RevisionNote
+from .models import Devoir, Evaluation, ReponseEtudiant, RevisionNote
 
 # ──────────────────────────────────────────────
 # Ouverture d'un devoir
@@ -208,3 +210,135 @@ def reviser(evaluation: Evaluation, *, note, motif: str, appreciation=None, ects
         url_cible="/espace-etudiant/notes/",
     )
     return revision
+
+
+# ──────────────────────────────────────────────
+# Questionnaires
+# ──────────────────────────────────────────────
+
+
+def motif_qcm_incomplet(devoir: Devoir) -> str:
+    """Ce qui empêche d'ouvrir ce questionnaire — vide s'il est prêt.
+
+    Contrôlé à l'ouverture et non à la saisie : une question se construit en
+    plusieurs fois, et refuser d'enregistrer une question sans propositions
+    interdirait d'en écrire l'énoncé avant d'y penser.
+    """
+    if devoir.modalite != Devoir.Modalite.QCM:
+        return ""
+
+    questions = list(devoir.questions.prefetch_related("choix"))
+    if not questions:
+        return "Ce questionnaire ne contient aucune question."
+
+    for rang, question in enumerate(questions, start=1):
+        probleme = question.est_valide()
+        if probleme:
+            return f"Question {rang} : {probleme}"
+    return ""
+
+
+@transaction.atomic
+def enregistrer_reponses(evaluation: Evaluation, choix_par_question: dict) -> Evaluation:
+    """Enregistre les réponses d'un étudiant, corrige, et note.
+
+    La correction est immédiate parce qu'elle est mécanique : un questionnaire à
+    propositions fermées n'attend l'avis de personne. L'enseignant garde la main
+    ensuite — la note reste révisable, et la copie n'est pas publiée d'office.
+    """
+    motif = evaluation.motif_de_refus_depot()
+    if motif:
+        raise ValidationError(motif)
+
+    devoir = evaluation.devoir
+    if devoir is None or devoir.modalite != Devoir.Modalite.QCM:
+        raise ValidationError("Ce devoir n'est pas un questionnaire.")
+
+    questions = list(devoir.questions.prefetch_related("choix"))
+    total_points = sum((question.points for question in questions), Decimal("0"))
+    if total_points <= 0:
+        raise ValidationError("Ce questionnaire ne vaut aucun point : il ne peut pas être noté.")
+
+    obtenus = Decimal("0")
+    for question in questions:
+        reponse, _ = ReponseEtudiant.objects.get_or_create(evaluation=evaluation, question=question)
+        # Seules les propositions de la question comptent : un identifiant
+        # étranger glissé dans la requête ne peut pas rapporter de point.
+        retenus = question.choix.filter(pk__in=choix_par_question.get(question.pk, []))
+        reponse.choix.set(retenus)
+        obtenus += reponse.corriger()
+        reponse.save(update_fields=["points_obtenus", "updated_at"])
+
+    note = (obtenus / total_points * devoir.bareme).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    evaluation.note = note
+    evaluation.statut = Evaluation.StatutEvaluation.NOTE
+    evaluation.date_soumission = timezone.now()
+    evaluation.date_notation = timezone.now()
+    evaluation.depot_tardif = bool(evaluation.echeance() and evaluation.date_soumission > evaluation.echeance())
+    evaluation.appreciation = f"Questionnaire corrigé automatiquement : {obtenus} / {total_points} points."
+    evaluation.save(
+        update_fields=[
+            "note",
+            "statut",
+            "date_soumission",
+            "date_notation",
+            "depot_tardif",
+            "appreciation",
+            "updated_at",
+        ]
+    )
+    return evaluation
+
+
+@transaction.atomic
+def recorriger(devoir: Devoir) -> int:
+    """Rejoue la correction de toutes les copies d'un questionnaire.
+
+    Sert lorsqu'un barème est rectifié après coup — question retirée, seconde
+    bonne réponse admise. Les réponses des étudiants sont conservées telles
+    quelles, ce qui rend l'opération possible sans redemander quoi que ce soit.
+    """
+    questions = list(devoir.questions.prefetch_related("choix"))
+    total_points = sum((question.points for question in questions), Decimal("0"))
+    if total_points <= 0:
+        return 0
+
+    recorrigees = 0
+    for copie in devoir.copies.exclude(statut=Evaluation.StatutEvaluation.EN_ATTENTE).prefetch_related(
+        "reponses__choix", "reponses__question__choix"
+    ):
+        obtenus = sum((reponse.corriger() for reponse in copie.reponses.all()), Decimal("0"))
+        for reponse in copie.reponses.all():
+            reponse.save(update_fields=["points_obtenus", "updated_at"])
+        copie.note = (obtenus / total_points * devoir.bareme).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        copie.save(update_fields=["note", "updated_at"])
+        recorrigees += 1
+    return recorrigees
+
+
+# ──────────────────────────────────────────────
+# Groupes
+# ──────────────────────────────────────────────
+
+
+def message_au_groupe(groupe, *, titre: str, message: str, par=None) -> int:
+    """Notifie tous les membres d'un groupe. Retourne le nombre d'envois."""
+    from apps.core.services.notifications import notifier_plusieurs
+
+    destinataires = [membre.utilisateur for membre in groupe.membres.select_related("utilisateur")]
+    envoyes = notifier_plusieurs(
+        destinataires,
+        titre,
+        type_notification=Notification.Type.ANNONCE,
+        message=message,
+        url_cible="/espace-etudiant/cours/",
+    )
+    journaliser(
+        "creation",
+        utilisateur=par,
+        objet=groupe,
+        objet_libelle=f"Message au groupe « {groupe.nom} »",
+        destinataires=envoyes,
+    )
+    return envoyes
