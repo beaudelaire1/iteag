@@ -44,8 +44,8 @@ urlpatterns = [
     path("boutique/", include("apps.commerce.urls", namespace="commerce")),
     path("paiements/", include("apps.paiements.urls", namespace="paiements")),
     path("espace-etudiant/", include("apps.portail_etudiant.urls", namespace="etudiant")),
-    path("gnant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
-    path("gnant/", include("apps.lms.urls", namespace="lms")),
+    path("espace-enseignant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
+    path("espace-enseignant/", include("apps.lms.urls", namespace="lms")),
     path("mes-documents/", include("apps.documents.urls", namespace="documents")),
     path("e-learning/", include("apps.elearning.urls", namespace="elearning")),
     re_path(
@@ -56,6 +56,20 @@ urlpatterns = [
             query_string=True,
         ),
         name="ancienne_url_elearning",
+    ),
+    # « espace-enseignant/ » avait été amputé de ses cinq premières lettres en
+    # même temps qu'on ajoutait les questionnaires (12a8e78), sans que personne
+    # ne l'ait voulu ni remarqué : le préfixe est devenu « gnant/ ». Les liens
+    # posés entre-temps méritent d'aboutir plutôt que de tomber en 404, d'où
+    # cette redirection — la même mécanique que pour l'ancienne URL e-learning.
+    re_path(
+        r"^gnant/(?P<chemin>.*)$",
+        RedirectView.as_view(
+            url="/espace-enseignant/%(chemin)s",
+            permanent=True,
+            query_string=True,
+        ),
+        name="ancienne_url_enseignant",
     ),
     path("", include("apps.website.urls", namespace="website")),
     # Wagtail catch-all (must be last)

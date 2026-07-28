@@ -134,6 +134,40 @@ class TestBarreDeNavigation:
         assert not doublons, f"Liens répétés dans la barre de « {nom_route} » : {doublons}"
 
 
+@pytest.mark.django_db
+class TestLesAdressesDesEspaces:
+    """
+    Chaque espace privé vit sous « /espace-… », et cela se vérifie.
+
+    Le préfixe de l'espace enseignant s'est retrouvé amputé de ses cinq
+    premières lettres — « espace-enseignant/ » devenu « gnant/ » — au détour
+    d'un commit consacré aux questionnaires. Rien ne l'a signalé : les gabarits
+    passent tous par « {% url %} », donc le site continuait de fonctionner, et
+    seuls les signets déjà posés tombaient en 404.
+
+    Un test qui interroge le routeur voit ce qu'aucune relecture de gabarit ne
+    montre : l'adresse réellement servie.
+    """
+
+    ESPACES = {
+        "etudiant:dashboard": "/espace-etudiant/",
+        "enseignant:accueil": "/espace-enseignant/",
+        "lms:dashboard": "/espace-enseignant/",
+        "secretariat:dashboard": "/espace-secretariat/",
+        "administration:dashboard": "/espace-admin/",
+    }
+
+    @pytest.mark.parametrize("route,attendu", sorted(ESPACES.items()))
+    def test_chaque_espace_garde_son_adresse(self, route, attendu):
+        assert reverse(route) == attendu
+
+    def test_l_ancienne_adresse_tronquee_redirige(self, client):
+        """Les liens posés pendant que le préfixe était cassé doivent aboutir."""
+        reponse = client.get("/gnant/cours/")
+        assert reponse.status_code == 301
+        assert reponse["Location"] == "/espace-enseignant/cours/"
+
+
 # Couleurs de la palette Tailwind par défaut. Elles ne font pas partie de la
 # charte ITEAG : navy, gold et warm sont les seules familles définies dans le
 # thème. En trouver une signale un écran qui n'a pas été rattaché au système de
