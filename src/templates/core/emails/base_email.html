@@ -19,34 +19,43 @@
         }
     </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f0e5;font-family:Arial,Helvetica,sans-serif;color:#373127;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background-color:#FEFAEF;font-family:Arial,Helvetica,sans-serif;color:#373127;-webkit-font-smoothing:antialiased;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
         {% block preheader %}Information de l'Institut de Théologie Évangélique des Antilles et de la Guyane.{% endblock %}
     </div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f0e5"
-           style="width:100%;background-color:#f4f0e5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FEFAEF"
+           style="width:100%;background-color:#FEFAEF;">
         <tr>
             <td align="center" style="padding:42px 14px;">
                 <table class="email-shell" role="presentation" width="640" cellpadding="0" cellspacing="0" border="0"
-                       style="width:640px;max-width:640px;background-color:#ffffff;border-collapse:separate;border-spacing:0;
-                              border-radius:8px;box-shadow:0 12px 32px rgba(26,45,41,.12);overflow:hidden;">
+                       style="width:640px;max-width:640px;background-color:#FEFAEF;border:1px solid #EDE5D0;
+                              border-collapse:separate;border-spacing:0;border-radius:8px;
+                              box-shadow:0 10px 28px rgba(26,45,41,.08);overflow:hidden;">
                     <tr>
-                        <td class="email-header" bgcolor="#1A2D29"
-                            style="padding:30px 42px 26px;background-color:#1A2D29;border-bottom:4px solid #EAB63E;">
+                        <td class="email-header" bgcolor="#FEFAEF"
+                            style="padding:26px 42px 23px;background-color:#FEFAEF;border-bottom:3px solid #EAB63E;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td valign="middle">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td bgcolor="#355952"
+                                                    style="padding:11px 16px;background-color:#355952;border-radius:4px;">
                                         {% if EMAIL_LOGO_CID %}
-                                        <img class="brand-logo" src="cid:{{ EMAIL_LOGO_CID }}" width="220"
-                                             alt="ITEAG" style="display:block;width:220px;max-width:100%;height:auto;border:0;">
+                                                    <img class="brand-logo" src="cid:{{ EMAIL_LOGO_CID }}" width="190"
+                                                         alt="ITEAG"
+                                                         style="display:block;width:190px;max-width:100%;height:auto;border:0;">
                                         {% else %}
-                                        <span style="font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:bold;
-                                                     letter-spacing:.08em;color:#ffffff;">ITEAG</span>
+                                                    <span style="font-family:Georgia,'Times New Roman',serif;font-size:30px;
+                                                                 font-weight:bold;letter-spacing:.08em;color:#ffffff;">ITEAG</span>
                                         {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                     <td class="header-category" align="right" valign="middle"
                                         style="font-size:10px;line-height:1.5;font-weight:bold;letter-spacing:.16em;
-                                               text-transform:uppercase;color:#EEC671;">
+                                               text-transform:uppercase;color:#355952;">
                                         {% block categorie %}Information officielle{% endblock %}
                                     </td>
                                 </tr>
@@ -54,7 +63,8 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="email-body" style="padding:46px 46px 42px;font-size:16px;line-height:1.65;color:#373127;">
+                        <td class="email-body" bgcolor="#FEFAEF"
+                            style="padding:46px 46px 42px;background-color:#FEFAEF;font-size:16px;line-height:1.65;color:#373127;">
                             {% block corps %}{% endblock %}
                         </td>
                     </tr>
@@ -87,19 +97,19 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="email-footer" bgcolor="#0D1815"
-                            style="padding:25px 42px 27px;background-color:#0D1815;text-align:center;">
+                        <td class="email-footer" bgcolor="#FEFAEF"
+                            style="padding:25px 42px 27px;background-color:#FEFAEF;border-top:2px solid #EAB63E;text-align:center;">
                             <p style="margin:0 0 7px;font-family:Georgia,'Times New Roman',serif;font-size:15px;
-                                      font-style:italic;color:#F9ECCE;">{{ SITE_TAGLINE }}</p>
-                            <p style="margin:0 0 12px;font-size:11px;line-height:1.55;color:#B8AC93;">
+                                      font-style:italic;color:#355952;">{{ SITE_TAGLINE }}</p>
+                            <p style="margin:0 0 12px;font-size:11px;line-height:1.55;color:#736957;">
                                 {{ SITE_FULL_NAME }}
                             </p>
                             <p style="margin:0 0 14px;font-size:11px;">
-                                <a href="{{ SITE_URL }}" style="color:#EEC671;text-decoration:none;">iteag.org</a>
-                                <span style="color:#544B3D;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
-                                <a href="{{ SITE_FACEBOOK }}" style="color:#EEC671;text-decoration:none;">Facebook</a>
-                                <span style="color:#544B3D;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
-                                <a href="{{ SITE_YOUTUBE }}" style="color:#EEC671;text-decoration:none;">YouTube</a>
+                                <a href="{{ SITE_URL }}" style="color:#355952;font-weight:bold;text-decoration:none;">iteag.org</a>
+                                <span style="color:#D8CDB6;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+                                <a href="{{ SITE_FACEBOOK }}" style="color:#355952;font-weight:bold;text-decoration:none;">Facebook</a>
+                                <span style="color:#D8CDB6;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+                                <a href="{{ SITE_YOUTUBE }}" style="color:#355952;font-weight:bold;text-decoration:none;">YouTube</a>
                             </p>
                             <p style="margin:0;font-size:10px;line-height:1.55;color:#736957;">
                                 © {{ ANNEE_COURANTE }} ITEAG · Tous droits réservés.<br>
