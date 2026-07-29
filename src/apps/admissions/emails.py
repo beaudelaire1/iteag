@@ -1,29 +1,31 @@
 """Service d'envoi d'emails pour les admissions — CDC §7.1."""
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.urls import reverse
+
+from apps.core.services.emails import envoyer_notification_email
 
 
 def send_candidature_confirmation(dossier):
     """Email de confirmation envoyé au candidat après soumission (PUB-011)."""
     suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
 
-    send_mail(
-        subject="ITEAG — Votre candidature a bien été enregistrée",
+    envoyer_notification_email(
+        sujet="Votre candidature a bien été enregistrée",
+        titre="Votre candidature a bien été enregistrée",
         message=(
             f"Bonjour {dossier.prenom},\n\n"
             f"Nous avons bien reçu votre candidature pour le parcours "
             f"« {dossier.parcours_souhaite} ».\n\n"
             f"Votre dossier est en cours d'examen. Vous pouvez suivre son avancement "
-            f"à tout moment via ce lien :\n{suivi_url}\n\n"
+            f"à tout moment depuis votre page de suivi.\n\n"
             f"Nous reviendrons vers vous dans les meilleurs délais.\n\n"
             f"Cordialement,\n"
             f"Le secrétariat de l'ITEAG"
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[dossier.email],
-        fail_silently=True,
+        lien=suivi_url,
+        libelle_lien="Suivre ma candidature",
+        destinataires=[dossier.email],
     )
 
 
@@ -73,12 +75,13 @@ def send_statut_change_email(dossier):
 
     body = body_map.get(dossier.statut, "")
 
-    send_mail(
-        subject=subject,
+    envoyer_notification_email(
+        sujet=subject.removeprefix("ITEAG — "),
+        titre=subject.removeprefix("ITEAG — "),
         message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[dossier.email],
-        fail_silently=True,
+        lien=suivi_url,
+        libelle_lien="Suivre ma candidature",
+        destinataires=[dossier.email],
     )
 
 
@@ -95,8 +98,9 @@ def envoyer_demande_de_pieces(dossier, pieces):
     echeances = {piece.date_limite for piece in pieces if piece.date_limite}
     echeance = f"\nCes pièces sont attendues avant le {min(echeances):%d/%m/%Y}.\n" if echeances else ""
 
-    send_mail(
-        subject="ITEAG — Pièces à fournir pour votre dossier",
+    envoyer_notification_email(
+        sujet="Pièces à fournir pour votre dossier",
+        titre="Pièces à fournir pour votre dossier",
         message=(
             f"Bonjour {dossier.prenom},\n\n"
             f"Pour finaliser votre dossier, le secrétariat vous demande de fournir "
@@ -104,13 +108,13 @@ def envoyer_demande_de_pieces(dossier, pieces):
             f"{liste}\n"
             f"{echeance}\n"
             f"Vous pouvez les déposer directement depuis votre page de suivi, "
-            f"sans créer de compte :\n{suivi_url}\n\n"
+            f"sans créer de compte.\n\n"
             f"Cordialement,\n"
             f"Le secrétariat de l'ITEAG"
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[dossier.email],
-        fail_silently=True,
+        lien=suivi_url,
+        libelle_lien="Déposer les pièces",
+        destinataires=[dossier.email],
     )
 
 
@@ -119,17 +123,18 @@ def envoyer_refus_de_piece(piece):
     dossier = piece.dossier
     suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
 
-    send_mail(
-        subject=f"ITEAG — La pièce « {piece.libelle} » est à refournir",
+    envoyer_notification_email(
+        sujet=f"La pièce « {piece.libelle} » est à refournir",
+        titre=f"La pièce « {piece.libelle} » est à refournir",
         message=(
             f"Bonjour {dossier.prenom},\n\n"
             f"Le document que vous avez déposé pour « {piece.libelle} » n'a pas pu être retenu.\n\n"
             f"Motif : {piece.motif_refus}\n\n"
-            f"Vous pouvez en déposer un nouveau depuis votre page de suivi :\n{suivi_url}\n\n"
+            f"Vous pouvez en déposer un nouveau depuis votre page de suivi.\n\n"
             f"Cordialement,\n"
             f"Le secrétariat de l'ITEAG"
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[dossier.email],
-        fail_silently=True,
+        lien=suivi_url,
+        libelle_lien="Déposer une nouvelle pièce",
+        destinataires=[dossier.email],
     )

@@ -1,7 +1,12 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from apps.accounts.models import User
+from apps.core.models import Notification
+from apps.core.services.emails import envoyer_notification_email
+from apps.core.services.notifications import notifier_plusieurs
 from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 from apps.formations.models import Parcours
 
@@ -19,6 +24,16 @@ def candidature_form(request):
             if valider_requete(request, action="candidature"):
                 dossier = form.save()
                 send_candidature_confirmation(dossier)
+                notifier_plusieurs(
+                    User.objects.filter(
+                        is_active=True,
+                        role__in=[User.Role.ADMIN, User.Role.SECRETARIAT],
+                    ),
+                    f"Nouvelle candidature — {dossier.nom_complet}",
+                    type_notification=Notification.Type.CANDIDATURE,
+                    message=f"Parcours demandé : {dossier.parcours_souhaite}.",
+                    url_cible=reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
+                )
                 messages.success(request, "Votre candidature a bien été enregistrée.")
                 return redirect("admissions:candidature_confirmation", token=dossier.token_suivi)
             form.add_error(None, MESSAGE_ECHEC)
@@ -65,6 +80,31 @@ def deposer_piece(request, token, piece_id):
     formulaire = DepotPieceForm(request.POST, request.FILES, instance=piece)
     if formulaire.is_valid():
         piece.deposer(formulaire.cleaned_data["fichier"])
+        suivi_url = request.build_absolute_uri(
+            reverse("admissions:candidature_suivi", kwargs={"token": dossier.token_suivi})
+        )
+        envoyer_notification_email(
+            sujet=f"Document reçu — {piece.libelle}",
+            titre="Votre document a bien été reçu",
+            message=(
+                f"Bonjour {dossier.prenom},\n\n"
+                f"Le document « {piece.libelle} » a bien été transmis. "
+                "Le secrétariat va maintenant le vérifier."
+            ),
+            lien=suivi_url,
+            libelle_lien="Suivre mon dossier",
+            destinataires=[dossier.email],
+        )
+        notifier_plusieurs(
+            User.objects.filter(
+                is_active=True,
+                role__in=[User.Role.ADMIN, User.Role.SECRETARIAT],
+            ),
+            f"Pièce déposée — {dossier.nom_complet}",
+            type_notification=Notification.Type.CANDIDATURE,
+            message=f"Le document « {piece.libelle} » est prêt à être vérifié.",
+            url_cible=reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
+        )
         messages.success(request, f"« {piece.libelle} » a bien été transmis. Le secrétariat va le vérifier.")
     else:
         for erreurs in formulaire.errors.values():

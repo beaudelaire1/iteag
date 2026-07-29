@@ -22,6 +22,7 @@ boutique de livres avec commandes, suivi et gestion de stock.
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
 | [`docs/exploitation/cloudflare.md`](docs/exploitation/cloudflare.md) | Activation Turnstile, proxy DNS, TLS et WAF Cloudflare |
 | [`docs/exploitation/render.md`](docs/exploitation/render.md) | Déploiement Render, variables secrètes, R2 et Stripe live |
+| [`docs/exploitation/notifications.md`](docs/exploitation/notifications.md) | Événements notifiés, destinataires et contrôle SMTP |
 
 ---
 
@@ -57,7 +58,7 @@ python manage.py runserver
 
 Pendant le développement, laisser `npm run css:watch` tourner dans un second terminal.
 
-Pour tester les notifications réelles avec Google SMTP, renseigner
+Pour tester les notifications réelles, renseigner `EMAIL_HOST`,
 `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` et `EMAIL_TEST_RECIPIENT` dans
 `src/.env`, puis lancer :
 
@@ -65,7 +66,7 @@ Pour tester les notifications réelles avec Google SMTP, renseigner
 python manage.py tester_notifications_email
 ```
 
-La commande envoie six messages de contrôle sans créer de candidature, de
+La commande envoie sept messages de contrôle sans créer de candidature, de
 commande ou de compte. En développement, les notifications déclenchées depuis
 le site sont envoyées immédiatement ; Render continue à les confier au worker.
 

@@ -19,8 +19,6 @@ envVarGroups:
         value: "60"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
-      - key: EMAIL_HOST
-        value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
       - key: EMAIL_USE_TLS
@@ -29,10 +27,6 @@ envVarGroups:
         value: "False"
       - key: EMAIL_TIMEOUT
         value: "10"
-      - key: DEFAULT_FROM_EMAIL
-        value: secretariat@iteag.org
-      - key: SERVER_EMAIL
-        value: errors@iteag.org
       - key: AWS_S3_REGION_NAME
         value: auto
       - key: AWS_S3_ADDRESSING_STYLE
@@ -120,9 +114,15 @@ services:
         sync: false
       - key: BUNNY_CLE_SIGNATURE
         sync: false
+      - key: EMAIL_HOST
+        sync: false
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: SERVER_EMAIL
         sync: false
       - key: COMMERCE_ALERTE_EMAIL
         sync: false
@@ -171,9 +171,15 @@ services:
         sync: false
       - key: BUNNY_CLE_SIGNATURE
         sync: false
+      - key: EMAIL_HOST
+        sync: false
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: SERVER_EMAIL
         sync: false
 
   - type: keyvalue

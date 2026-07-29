@@ -103,6 +103,7 @@ def accepter_dossier(
         "Bienvenue à l'ITEAG",
         type_notification=Notification.Type.CANDIDATURE,
         message="Votre candidature est acceptée. Votre espace étudiant est ouvert.",
+        envoyer_par_email=False,
     )
     _envoyer_bienvenue(utilisateur, dossier, request)
 

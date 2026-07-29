@@ -17,13 +17,17 @@ from apps.academics.models import (
     CreditECTS,
     DemandeInscriptionCours,
     Paiement,
+    ProfilEtudiant,
     Promotion,
     SessionAcademique,
     Stage,
 )
 from apps.academics.services.inscriptions import traiter_demande
+from apps.accounts.models import User
 from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
+from apps.core.models import Notification
 from apps.core.services.audit import journaliser
+from apps.core.services.notifications import notifier, notifier_plusieurs
 from apps.formations.models import Cours, Discipline, Tarif
 
 from .forms import (
@@ -37,6 +41,60 @@ from .forms import (
     TarifForm,
     VAEForm,
 )
+
+
+def _notifier_dossier_etudiant(objet, titre, message, url_cible):
+    return notifier(
+        objet.etudiant.utilisateur,
+        titre,
+        type_notification=Notification.Type.SYSTEME,
+        message=message,
+        url_cible=url_cible,
+    )
+
+
+def _notifier_cours_disponible(cours_session):
+    if not cours_session.inscriptions_ouvertes:
+        return 0
+    destinataires = User.objects.filter(
+        is_active=True,
+        profil_etudiant__parcours__in=cours_session.cours.parcours.all(),
+        profil_etudiant__statut_inscription__in=[
+            ProfilEtudiant.StatutInscription.PRE_INSCRIT,
+            ProfilEtudiant.StatutInscription.PAIEMENT_ATTENTE,
+            ProfilEtudiant.StatutInscription.INSCRIT,
+            ProfilEtudiant.StatutInscription.ACTIF,
+        ],
+    ).distinct()
+    return notifier_plusieurs(
+        destinataires,
+        f"Cours disponible — {cours_session.cours.titre}",
+        type_notification=Notification.Type.NOUVEAU_MODULE,
+        message=f"Les inscriptions sont ouvertes pour la session « {cours_session.session.nom} ».",
+        url_cible=reverse("etudiant:course_offering_detail", kwargs={"pk": cours_session.pk}),
+    )
+
+
+def _notifier_programmation_cours(cours_session, *, creation=False):
+    enseignant = getattr(cours_session.enseignant, "user", None)
+    notifier(
+        enseignant,
+        f"Cours {'attribué' if creation else 'mis à jour'} — {cours_session.cours.titre}",
+        type_notification=Notification.Type.RAPPEL_SESSION,
+        message=f"Session : {cours_session.session.nom}.",
+        url_cible=reverse("lms:course_detail", kwargs={"pk": cours_session.pk}),
+    )
+    inscrits = User.objects.filter(
+        is_active=True,
+        profil_etudiant__inscriptions__cours_session=cours_session,
+    ).distinct()
+    notifier_plusieurs(
+        inscrits,
+        f"Programmation mise à jour — {cours_session.cours.titre}",
+        type_notification=Notification.Type.RAPPEL_SESSION,
+        message=f"Consultez les informations de la session « {cours_session.session.nom} ».",
+        url_cible=reverse("etudiant:courses"),
+    )
 
 
 class EnrollmentRequestListView(StaffRoleRequiredMixin, ListView):
@@ -222,8 +280,11 @@ class CourseOfferingCreateView(StaffRoleRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        reponse = super().form_valid(form)
+        _notifier_cours_disponible(self.object)
+        _notifier_programmation_cours(self.object, creation=True)
         messages.success(self.request, "Le cours a été ajouté au catalogue de la session.")
-        return super().form_valid(form)
+        return reponse
 
 
 class CourseOfferingUpdateView(StaffRoleRequiredMixin, UpdateView):
@@ -244,8 +305,13 @@ class CourseOfferingUpdateView(StaffRoleRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        inscriptions_ouvertes_avant = self.object.inscriptions_ouvertes
+        reponse = super().form_valid(form)
+        if self.object.inscriptions_ouvertes and not inscriptions_ouvertes_avant:
+            _notifier_cours_disponible(self.object)
+        _notifier_programmation_cours(self.object)
         messages.success(self.request, "La programmation du cours a été mise à jour.")
-        return super().form_valid(form)
+        return reponse
 
 
 class CourseOfferingDeleteView(AdminRoleRequiredMixin, DeleteView):
@@ -339,8 +405,15 @@ class PaymentCreateView(StaffRoleRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        reponse = super().form_valid(form)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Paiement enregistré",
+            f"{self.object.montant} € — {self.object.get_statut_display()}.",
+            reverse("etudiant:payments"),
+        )
         messages.success(self.request, "Le paiement a été enregistré.")
-        return super().form_valid(form)
+        return reponse
 
 
 class PaymentUpdateView(StaffRoleRequiredMixin, UpdateView):
@@ -361,8 +434,15 @@ class PaymentUpdateView(StaffRoleRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        reponse = super().form_valid(form)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Paiement mis à jour",
+            f"{self.object.montant} € — {self.object.get_statut_display()}.",
+            reverse("etudiant:payments"),
+        )
         messages.success(self.request, "Le paiement a été mis à jour.")
-        return super().form_valid(form)
+        return reponse
 
 
 class PaymentDeleteView(AdminRoleRequiredMixin, DeleteView):
@@ -374,6 +454,12 @@ class PaymentDeleteView(AdminRoleRequiredMixin, DeleteView):
         if self.object.demandes_inscription.exists():
             messages.error(self.request, "Ce paiement justifie une inscription et ne peut pas être supprimé.")
             return redirect("administration:payments")
+        _notifier_dossier_etudiant(
+            self.object,
+            "Paiement retiré de votre dossier",
+            f"Le paiement de {self.object.montant} € a été retiré de votre dossier.",
+            reverse("etudiant:payments"),
+        )
         messages.success(self.request, "Le paiement a été supprimé.")
         return super().form_valid(form)
 
@@ -686,8 +772,15 @@ class CreditECTSCreateView(StaffRoleRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        reponse = super().form_valid(form)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Crédits ECTS ajoutés",
+            f"{self.object.ects_obtenus} ECTS ont été portés à votre dossier.",
+            reverse("etudiant:progress"),
+        )
         messages.success(self.request, "Crédit porté au dossier de l'étudiant.")
-        return super().form_valid(form)
+        return reponse
 
 
 class CreditECTSUpdateView(StaffRoleRequiredMixin, UpdateView):
@@ -708,8 +801,15 @@ class CreditECTSUpdateView(StaffRoleRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        reponse = super().form_valid(form)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Crédits ECTS mis à jour",
+            f"Votre dossier affiche désormais {self.object.ects_obtenus} ECTS pour cet élément.",
+            reverse("etudiant:progress"),
+        )
         messages.success(self.request, "Crédit corrigé.")
-        return super().form_valid(form)
+        return reponse
 
 
 class CreditECTSDeleteView(AdminRoleRequiredMixin, DeleteView):
@@ -723,6 +823,12 @@ class CreditECTSDeleteView(AdminRoleRequiredMixin, DeleteView):
     success_url = reverse_lazy("administration:credits_ects")
 
     def form_valid(self, form):
+        _notifier_dossier_etudiant(
+            self.object,
+            "Crédits ECTS retirés",
+            f"{self.object.ects_obtenus} ECTS ont été retirés de votre dossier.",
+            reverse("etudiant:progress"),
+        )
         journaliser(
             "suppression",
             request=self.request,
@@ -817,6 +923,12 @@ class StageCreateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, CreateVie
         reponse = super().form_valid(form)
         messages.success(self.request, "Stage enregistré.")
         self._repercuter(self.object)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Stage enregistré",
+            f"{self.object.type_stage} — {self.object.get_statut_display()}.",
+            reverse("etudiant:progress"),
+        )
         return reponse
 
 
@@ -842,6 +954,12 @@ class StageUpdateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, UpdateVie
         reponse = super().form_valid(form)
         messages.success(self.request, "Stage mis à jour.")
         self._repercuter(self.object)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Stage mis à jour",
+            f"{self.object.type_stage} — {self.object.get_statut_display()}.",
+            reverse("etudiant:progress"),
+        )
         return reponse
 
 
@@ -851,6 +969,12 @@ class StageDeleteView(AdminRoleRequiredMixin, DeleteView):
     success_url = reverse_lazy("administration:stages")
 
     def form_valid(self, form):
+        _notifier_dossier_etudiant(
+            self.object,
+            "Stage retiré de votre dossier",
+            f"Le stage « {self.object.type_stage} » a été retiré de votre dossier.",
+            reverse("etudiant:progress"),
+        )
         journaliser(
             "suppression",
             request=self.request,
@@ -915,6 +1039,12 @@ class VAECreateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, CreateView)
         reponse = super().form_valid(form)
         messages.success(self.request, "Dossier VAE enregistré.")
         self._repercuter(self.object)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Dossier VAE enregistré",
+            f"Votre demande de {self.object.ects_demandes} ECTS est au statut {self.object.get_statut_display()}.",
+            reverse("etudiant:progress"),
+        )
         return reponse
 
 
@@ -946,6 +1076,12 @@ class VAEUpdateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, UpdateView)
         )
         messages.success(self.request, "Dossier VAE mis à jour.")
         self._repercuter(self.object)
+        _notifier_dossier_etudiant(
+            self.object,
+            "Dossier VAE mis à jour",
+            f"Décision : {self.object.get_statut_display()} — {self.object.ects_accordes} ECTS accordés.",
+            reverse("etudiant:progress"),
+        )
         return reponse
 
 
@@ -955,6 +1091,12 @@ class VAEDeleteView(AdminRoleRequiredMixin, DeleteView):
     success_url = reverse_lazy("administration:vae")
 
     def form_valid(self, form):
+        _notifier_dossier_etudiant(
+            self.object,
+            "Dossier VAE retiré",
+            "Le dossier VAE a été retiré de votre espace.",
+            reverse("etudiant:progress"),
+        )
         journaliser(
             "suppression", request=self.request, objet=self.object, objet_libelle=f"Suppression de VAE : {self.object}"
         )

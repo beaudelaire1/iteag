@@ -27,6 +27,7 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.lms.models import Evaluation
 
@@ -143,6 +144,14 @@ class TestFenetreDeRemise:
         evaluation.refresh_from_db()
         assert evaluation.statut == Evaluation.StatutEvaluation.SOUMIS
         assert evaluation.fichier_soumis
+        assert Notification.objects.filter(
+            destinataire=etudiant.utilisateur,
+            titre__startswith="Travail remis",
+        ).exists()
+        assert Notification.objects.filter(
+            destinataire=cours_session.enseignant.user,
+            titre__startswith="Nouveau travail remis",
+        ).exists()
 
     def test_l_enseignant_ferme_la_remise_en_un_clic(self, client, professeur, cours_session):
         client.force_login(professeur.user)

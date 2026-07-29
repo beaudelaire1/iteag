@@ -18,7 +18,9 @@ from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.core.mixins import TeacherRoleRequiredMixin
+from apps.core.models import Notification
 from apps.core.services.audit import journaliser
+from apps.core.services.notifications import notifier_plusieurs
 from apps.elearning.diffusion import fournisseur
 from apps.elearning.forms import (
     ChapitreForm,
@@ -35,6 +37,25 @@ from apps.elearning.models import (
     ProgressionLecon,
     VideoAsset,
 )
+
+
+def _notifier_inscrits_module(module, titre, message):
+    destinataires = [
+        inscription.etudiant.utilisateur
+        for inscription in module.inscriptions.filter(
+            statut__in=[
+                InscriptionModule.StatutAcces.ACTIF,
+                InscriptionModule.StatutAcces.TERMINE,
+            ]
+        ).select_related("etudiant__utilisateur")
+    ]
+    return notifier_plusieurs(
+        destinataires,
+        titre,
+        type_notification=Notification.Type.NOUVEAU_MODULE,
+        message=message,
+        url_cible=module.get_absolute_url(),
+    )
 
 
 class ProfesseurMixin(TeacherRoleRequiredMixin):
@@ -154,6 +175,11 @@ class ModulePublierView(ProfesseurMixin, View):
             messages.error(request, f"Publication impossible — {erreur.messages[0]}")
         else:
             journaliser("modification", request=request, objet=module, objet_libelle=f"Publication : {module.titre}")
+            _notifier_inscrits_module(
+                module,
+                f"Module disponible — {module.titre}",
+                "Le contenu du module est maintenant disponible dans votre espace E-Learning.",
+            )
             messages.success(request, "Module publié. Il est désormais visible au catalogue.")
         return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": slug}))
 
@@ -270,6 +296,12 @@ class LeconCreateView(LeconFormMixin, CreateView):
             form.add_error("ordre", "Cette position vient d'être utilisée. Choisissez-en une autre.")
             return self.form_invalid(form)
         self.chapitre.module.recalculer_duree()
+        if self.chapitre.module.est_publie:
+            _notifier_inscrits_module(
+                self.chapitre.module,
+                f"Nouvelle leçon — {lecon.titre}",
+                f"Une nouvelle leçon est disponible dans « {self.chapitre.module.titre} ».",
+            )
         messages.success(self.request, "Leçon ajoutée.")
         return redirect(self.get_success_url())
 
@@ -308,6 +340,12 @@ class LeconUpdateView(LeconFormMixin, UpdateView):
     def form_valid(self, form):
         lecon = form.save()
         lecon.chapitre.module.recalculer_duree()
+        if lecon.chapitre.module.est_publie:
+            _notifier_inscrits_module(
+                lecon.chapitre.module,
+                f"Leçon mise à jour — {lecon.titre}",
+                f"Une leçon de « {lecon.chapitre.module.titre} » a été mise à jour.",
+            )
         messages.success(self.request, "Leçon mise à jour.")
         return redirect(self.get_success_url())
 

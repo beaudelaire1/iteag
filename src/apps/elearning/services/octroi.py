@@ -227,6 +227,42 @@ def revoquer(inscription: InscriptionModule, *, motif: str = "", par=None) -> In
         objet_libelle=f"{inscription.etudiant} → {inscription.module.titre}",
         motif=motif,
     )
+    notifier(
+        inscription.etudiant.utilisateur,
+        f"Accès retiré — {inscription.module.titre}",
+        type_notification=Notification.Type.ACCES_OCTROYE,
+        message=motif or "Votre accès à ce module a été retiré.",
+        url_cible=inscription.module.get_absolute_url(),
+    )
+    return inscription
+
+
+def suspendre(inscription: InscriptionModule, *, par=None) -> InscriptionModule:
+    inscription.statut = InscriptionModule.StatutAcces.SUSPENDU
+    inscription.save(update_fields=["statut", "updated_at"])
+    journaliser("revocation_acces", utilisateur=par, objet=inscription, suspension=True)
+    notifier(
+        inscription.etudiant.utilisateur,
+        f"Accès suspendu — {inscription.module.titre}",
+        type_notification=Notification.Type.ACCES_OCTROYE,
+        message="Votre accès à ce module est temporairement suspendu.",
+        url_cible=inscription.module.get_absolute_url(),
+    )
+    return inscription
+
+
+def reactiver(inscription: InscriptionModule, *, par=None) -> InscriptionModule:
+    inscription.statut = InscriptionModule.StatutAcces.ACTIF
+    inscription.suspendu_par_propagation = False
+    inscription.save(update_fields=["statut", "suspendu_par_propagation", "updated_at"])
+    journaliser("octroi_acces", utilisateur=par, objet=inscription, reactivation=True)
+    notifier(
+        inscription.etudiant.utilisateur,
+        f"Accès réactivé — {inscription.module.titre}",
+        type_notification=Notification.Type.ACCES_OCTROYE,
+        message="Votre accès au module est de nouveau actif.",
+        url_cible=inscription.module.get_absolute_url(),
+    )
     return inscription
 
 
@@ -240,6 +276,13 @@ def prolonger(inscription: InscriptionModule, *, jours: int, par=None) -> Inscri
         inscription.statut = InscriptionModule.StatutAcces.ACTIF
     inscription.save(update_fields=["date_fin_acces", "statut", "updated_at"])
     journaliser("octroi_acces", utilisateur=par, objet=inscription, prolongation_jours=jours)
+    notifier(
+        inscription.etudiant.utilisateur,
+        f"Accès prolongé — {inscription.module.titre}",
+        type_notification=Notification.Type.ACCES_OCTROYE,
+        message=f"Votre accès est prolongé jusqu'au {inscription.date_fin_acces:%d/%m/%Y}.",
+        url_cible=inscription.module.get_absolute_url(),
+    )
     return inscription
 
 

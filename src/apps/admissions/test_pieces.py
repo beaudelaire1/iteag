@@ -140,6 +140,7 @@ class TestDepotParLeCandidat:
         assert "Acte de naissance" in contenu
 
     def test_le_depot_enregistre_le_fichier_et_l_horodate(self, client, dossier, piece):
+        mail.outbox.clear()
         client.post(
             reverse("admissions:deposer_piece", args=[dossier.token_suivi, piece.pk]),
             {"fichier": fichier()},
@@ -148,6 +149,9 @@ class TestDepotParLeCandidat:
         assert piece.statut == PieceDemandee.Statut.DEPOSEE
         assert piece.date_depot is not None
         assert piece.fichier
+        assert len(mail.outbox) == 1
+        assert "Document reçu" in mail.outbox[0].subject
+        assert mail.outbox[0].alternatives
 
     def test_un_format_refuse_n_est_pas_enregistre(self, client, dossier, piece):
         client.post(

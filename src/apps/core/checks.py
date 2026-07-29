@@ -117,3 +117,33 @@ def configuration_turnstile(app_configs, **kwargs):
         ]
 
     return []
+
+
+@register()
+def configuration_smtp(app_configs, **kwargs):
+    """Un backend SMTP actif doit pouvoir réellement authentifier ses envois."""
+    if settings.EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend":
+        return []
+
+    manquantes = [
+        nom for nom in ("EMAIL_HOST", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD") if not getattr(settings, nom, "")
+    ]
+    if manquantes:
+        return [
+            Error(
+                "Les notifications email sont activées sans configuration SMTP complète.",
+                hint=f"Renseignez les variables suivantes : {', '.join(manquantes)}.",
+                id="core.E004",
+            )
+        ]
+
+    if settings.EMAIL_USE_TLS and settings.EMAIL_USE_SSL:
+        return [
+            Error(
+                "EMAIL_USE_TLS et EMAIL_USE_SSL ne peuvent pas être actifs ensemble.",
+                hint="Gardez uniquement le mode de sécurité indiqué par le fournisseur SMTP.",
+                id="core.E005",
+            )
+        ]
+
+    return []

@@ -59,3 +59,4 @@ class TestPasswordResetViews:
         assert len(mail.outbox) == 1
         assert reverse("accounts:password_reset_done") == response.url
         assert "/mot-de-passe/confirmer/" in mail.outbox[0].body
+        assert mail.outbox[0].alternatives

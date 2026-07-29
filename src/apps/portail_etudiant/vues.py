@@ -11,6 +11,7 @@ la moitié de ce à quoi il a accès.
 from django.contrib import messages
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView, UpdateView
 
@@ -23,8 +24,11 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.core.mixins import StudentRoleRequiredMixin
+from apps.core.models import Notification
+from apps.core.services.notifications import notifier
 from apps.documents.models import DocumentAdministratif
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
+from apps.lms.notifications import notifier_enseignant
 
 
 class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
@@ -245,5 +249,19 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
         evaluation.statut = Evaluation.StatutEvaluation.SOUMIS
         evaluation.date_soumission = timezone.now()
         evaluation.save(update_fields=["fichier_soumis", "statut", "date_soumission", "updated_at"])
+        titre_cours = evaluation.cours_session.cours.titre
+        notifier(
+            self.request.user,
+            f"Travail remis — {titre_cours}",
+            type_notification=Notification.Type.SYSTEME,
+            message="Votre dépôt est enregistré. L'enseignant peut maintenant le corriger.",
+            url_cible=reverse("etudiant:grades"),
+        )
+        notifier_enseignant(
+            evaluation.cours_session,
+            f"Nouveau travail remis — {titre_cours}",
+            message=f"{evaluation.etudiant} a déposé son travail.",
+            url_cible=reverse("lms:evaluations_list"),
+        )
         messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
         return redirect("etudiant:grades")

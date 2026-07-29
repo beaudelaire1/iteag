@@ -350,6 +350,7 @@ def confirmer_commande(commande: Commande, *, acteur=None) -> Commande:
             f"Commande {commande.numero} confirmée",
             message="Votre règlement a été confirmé. La commande va être préparée.",
             url_cible=commande.get_absolute_url(),
+            envoyer_par_email=False,
         )
     transaction.on_commit(
         lambda: _envoyer_statut_commande(
@@ -432,6 +433,7 @@ def expedier_commande(
             f"Commande {commande.numero} expédiée",
             message=(f"Numéro de suivi : {commande.numero_suivi}" if commande.numero_suivi else ""),
             url_cible=commande.get_absolute_url(),
+            envoyer_par_email=False,
         )
     transaction.on_commit(
         lambda: _envoyer_statut_commande(

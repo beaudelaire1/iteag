@@ -17,6 +17,7 @@ from apps.academics.models import (
 )
 from apps.academics.services.inscriptions import soumettre_demande, traiter_demande
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 
 
@@ -107,12 +108,24 @@ class TestStudentEnrollmentJourney:
         assert demande.statut == DemandeInscriptionCours.Statut.SOUMISE
         assert demande.montant_du == Decimal("120.00")
         assert demande.historique.count() == 1
+        assert Notification.objects.filter(
+            destinataire=etudiant.utilisateur,
+            titre="Votre demande d'inscription est enregistrée",
+        ).exists()
+        assert Notification.objects.filter(
+            destinataire=enrollment_context["secretariat"],
+            titre="Nouvelle demande d'inscription à un cours",
+        ).exists()
 
         response = client.post(reverse("etudiant:enrollment_request_cancel", kwargs={"pk": demande.pk}))
         assert response.status_code == 302
         demande.refresh_from_db()
         assert demande.statut == DemandeInscriptionCours.Statut.ANNULEE
         assert demande.historique.count() == 2
+        assert Notification.objects.filter(
+            destinataire=etudiant.utilisateur,
+            titre="Votre demande d'inscription est annulée",
+        ).exists()
 
     def test_student_payment_and_request_tracking_pages(self, client, enrollment_context):
         client.force_login(enrollment_context["etudiant"].utilisateur)
@@ -219,3 +232,58 @@ class TestEnrollmentDecisionWorkflow:
         assert client.get(reverse("administration:payments")).status_code == 200
         assert client.get(reverse("administration:payment_create")).status_code == 200
         assert client.get(reverse("administration:session_create")).status_code == 200
+
+    def test_un_nouveau_cours_disponible_previent_les_etudiants(self, client, enrollment_context):
+        offre = enrollment_context["offre"]
+        etudiant = enrollment_context["etudiant"]
+        cours = Cours.objects.create(
+            titre="Cours nouvellement disponible",
+            slug="cours-nouvellement-disponible",
+            discipline=offre.cours.discipline,
+        )
+        cours.parcours.add(etudiant.parcours)
+        client.force_login(enrollment_context["secretariat"])
+
+        reponse = client.post(
+            reverse("administration:course_offering_create"),
+            {
+                "session": offre.session_id,
+                "cours": cours.pk,
+                "enseignant": offre.enseignant_id,
+                "modalite": CoursDeSession.Modalite.PRESENTIEL,
+                "salle": "",
+                "horaires": "",
+                "statut": CoursDeSession.StatutCours.PROGRAMME,
+                "capacite": 30,
+                "inscriptions_ouvertes": "on",
+                "date_limite_inscription": "",
+                "frais_inscription": "0",
+                "informations_pratiques": "",
+            },
+        )
+
+        assert reponse.status_code == 302
+        assert Notification.objects.filter(
+            destinataire=etudiant.utilisateur,
+            titre="Cours disponible — Cours nouvellement disponible",
+        ).exists()
+
+    def test_un_paiement_enregistre_previent_l_etudiant(self, client, enrollment_context):
+        etudiant = enrollment_context["etudiant"]
+        client.force_login(enrollment_context["secretariat"])
+
+        reponse = client.post(
+            reverse("administration:payment_create"),
+            {
+                "etudiant": etudiant.pk,
+                "session": enrollment_context["session"].pk,
+                "montant": "120.00",
+                "date_paiement": timezone.localdate().isoformat(),
+                "mode": Paiement.ModePaiement.VIREMENT,
+                "statut": Paiement.StatutPaiement.CONFIRME,
+                "reference": "TEST-NOTIFICATION",
+            },
+        )
+
+        assert reponse.status_code == 302
+        assert Notification.objects.filter(destinataire=etudiant.utilisateur, titre="Paiement enregistré").exists()

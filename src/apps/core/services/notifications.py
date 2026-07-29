@@ -5,9 +5,11 @@ la règle « ne pas notifier un compte inactif » et le comptage restent en un s
 endroit.
 """
 
+from django.db import transaction
 from django.db.models import QuerySet
 
 from apps.core.models import Notification
+from apps.core.services.emails import envoyer_notification_email
 
 
 def notifier(
@@ -17,17 +19,30 @@ def notifier(
     type_notification: str = Notification.Type.SYSTEME,
     message: str = "",
     url_cible: str = "",
+    envoyer_par_email: bool = True,
 ) -> Notification | None:
-    """Crée une notification pour un utilisateur. Ignore les comptes inactifs."""
+    """Crée une notification interne et son email institutionnel."""
     if destinataire is None or not getattr(destinataire, "is_active", False):
         return None
-    return Notification.objects.create(
+    notification = Notification.objects.create(
         destinataire=destinataire,
         titre=titre,
         type_notification=type_notification,
         message=message,
         url_cible=url_cible,
     )
+    email = getattr(destinataire, "email", "")
+    if envoyer_par_email and email:
+        transaction.on_commit(
+            lambda: envoyer_notification_email(
+                sujet=titre,
+                titre=titre,
+                message=message or titre,
+                destinataires=[email],
+                lien=url_cible,
+            )
+        )
+    return notification
 
 
 def notifier_plusieurs(destinataires, titre: str, **kwargs) -> int:

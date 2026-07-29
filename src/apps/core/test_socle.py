@@ -38,6 +38,21 @@ class TestServiceNotifications:
         assert notification.destinataire == etudiant
         assert notification.lu is False
 
+    def test_notifier_envoie_aussi_un_email_iteag(self, etudiant, django_capture_on_commit_callbacks):
+        mail.outbox.clear()
+        with django_capture_on_commit_callbacks(execute=True):
+            service_notifications.notifier(
+                etudiant,
+                "Cours disponible",
+                message="Un nouveau cours est ouvert.",
+                url_cible="/espace-etudiant/catalogue/",
+            )
+
+        assert len(mail.outbox) == 1
+        assert "Cours disponible" in mail.outbox[0].subject
+        assert "Un nouveau cours est ouvert" in mail.outbox[0].body
+        assert mail.outbox[0].alternatives
+
     def test_compte_inactif_n_est_pas_notifie(self, etudiant):
         etudiant.is_active = False
         etudiant.save(update_fields=["is_active"])
@@ -281,6 +296,16 @@ class TestServiceEmail:
         ("gabarit", "contexte", "texte_attendu"),
         [
             (
+                "core/emails/notification.html",
+                {
+                    "titre": "Information importante",
+                    "message": "Votre dossier a été mis à jour.",
+                    "lien": "https://example.org/espace/",
+                    "libelle_lien": "Ouvrir",
+                },
+                "Votre dossier a été mis à jour.",
+            ),
+            (
                 "core/emails/newsletter_confirmation.html",
                 {"email": "test@example.org", "lien_confirmation": "https://example.org/confirmer/"},
                 "Confirmez votre inscription",
@@ -324,6 +349,16 @@ class TestServiceEmail:
                 },
                 "Bienvenue, Test",
             ),
+            (
+                "accounts/password_reset_email.html",
+                {
+                    "protocol": "https",
+                    "domain": "example.org",
+                    "uid": "test",
+                    "token": "test-token",
+                },
+                "Réinitialisation de votre mot de passe",
+            ),
         ],
     )
     def test_chaque_gabarit_de_notification_contient_son_message(self, gabarit, contexte, texte_attendu):
@@ -333,28 +368,21 @@ class TestServiceEmail:
 class TestCommandeNotificationsEmail:
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
-        EMAIL_HOST="smtp.gmail.com",
+        EMAIL_HOST="smtp.example.org",
         EMAIL_HOST_USER="test@example.org",
         EMAIL_HOST_PASSWORD="mot-de-passe-application",
         EMAIL_TEST_RECIPIENT="reception@example.org",
     )
-    def test_envoie_les_six_notifications_de_controle(self):
+    def test_envoie_les_sept_notifications_de_controle(self):
         sortie = StringIO()
-        with (
-            mock.patch(
-                "apps.core.management.commands.tester_notifications_email.envoyer_maintenant",
-                return_value=True,
-            ) as envoi_html,
-            mock.patch(
-                "apps.core.management.commands.tester_notifications_email.send_mail",
-                return_value=1,
-            ) as envoi_texte,
-        ):
+        with mock.patch(
+            "apps.core.management.commands.tester_notifications_email.envoyer_maintenant",
+            return_value=True,
+        ) as envoi_html:
             call_command("tester_notifications_email", stdout=sortie)
 
-        assert envoi_html.call_count == 5
-        envoi_texte.assert_called_once()
-        assert "6 notifications de contrôle envoyées" in sortie.getvalue()
+        assert envoi_html.call_count == 7
+        assert "7 notifications de contrôle envoyées" in sortie.getvalue()
 
     def test_refuse_un_faux_controle_sans_configuration_smtp(self):
         with pytest.raises(CommandError, match="SMTP"):

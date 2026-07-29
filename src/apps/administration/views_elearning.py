@@ -143,13 +143,13 @@ class AccesActionView(StaffRoleRequiredMixin, View):
             messages.success(request, f"{refusees} demande(s) refusée(s).")
 
         elif action == "suspendre":
-            selection.update(statut=InscriptionModule.StatutAcces.SUSPENDU)
-            journaliser("revocation_acces", request=request, objet_type="InscriptionModule", nombre=nombre)
+            for inscription in selection.select_related("etudiant__utilisateur", "module"):
+                octroi.suspendre(inscription, par=request.user)
             messages.success(request, f"{nombre} accès suspendu(s).")
 
         elif action == "reactiver":
-            selection.update(statut=InscriptionModule.StatutAcces.ACTIF, suspendu_par_propagation=False)
-            journaliser("octroi_acces", request=request, objet_type="InscriptionModule", nombre=nombre)
+            for inscription in selection.select_related("etudiant__utilisateur", "module"):
+                octroi.reactiver(inscription, par=request.user)
             messages.success(request, f"{nombre} accès réactivé(s).")
 
         elif action == "revoquer":

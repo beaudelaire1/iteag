@@ -14,6 +14,7 @@ from django.urls import reverse
 
 from apps.academics.models import CreditECTS, ProfilEtudiant, Promotion, SessionAcademique
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Cours, Discipline, Parcours, Tarif
 
 
@@ -179,6 +180,7 @@ class TestCreditsECTS:
         credit = CreditECTS.objects.get(etudiant=etudiant)
         assert credit.source == CreditECTS.SourceCredit.FLTE
         assert float(credit.ects_obtenus) == 5
+        assert Notification.objects.filter(destinataire=etudiant.utilisateur, titre="Crédits ECTS ajoutés").exists()
 
     def test_un_credit_nul_est_refuse(self, client, secretaire, etudiant):
         client.force_login(secretaire)

@@ -12,9 +12,10 @@ from apps.academics.models import (
     Paiement,
     ProfilEtudiant,
 )
+from apps.accounts.models import User
 from apps.core.models import JournalAudit, Notification
 from apps.core.services.audit import journaliser
-from apps.core.services.notifications import notifier
+from apps.core.services.notifications import notifier, notifier_plusieurs
 
 STATUTS_ETUDIANT_AUTORISES = {
     ProfilEtudiant.StatutInscription.PRE_INSCRIT,
@@ -99,6 +100,23 @@ def soumettre_demande(
         objet=demande,
         montant=str(demande.montant_du),
     )
+    notifier(
+        etudiant.utilisateur,
+        "Votre demande d'inscription est enregistrée",
+        type_notification=Notification.Type.RAPPEL_SESSION,
+        message=f"{cours_session.cours.titre} — le secrétariat va examiner votre demande.",
+        url_cible=reverse("etudiant:enrollment_requests"),
+    )
+    notifier_plusieurs(
+        User.objects.filter(
+            is_active=True,
+            role__in=[User.Role.ADMIN, User.Role.SECRETARIAT],
+        ),
+        "Nouvelle demande d'inscription à un cours",
+        type_notification=Notification.Type.RAPPEL_SESSION,
+        message=f"{etudiant} demande à suivre « {cours_session.cours.titre} ».",
+        url_cible=reverse("administration:enrollment_request_detail", kwargs={"pk": demande.pk}),
+    )
     return demande
 
 
@@ -119,6 +137,13 @@ def annuler_demande(*, demande, etudiant, request=None):
         request=request,
         objet=demande,
         nouveau_statut=demande.statut,
+    )
+    notifier(
+        etudiant.utilisateur,
+        "Votre demande d'inscription est annulée",
+        type_notification=Notification.Type.RAPPEL_SESSION,
+        message=f"{demande.cours_session.cours.titre} — votre annulation a bien été enregistrée.",
+        url_cible=reverse("etudiant:enrollment_requests"),
     )
     return demande
 

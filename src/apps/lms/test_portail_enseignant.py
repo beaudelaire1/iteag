@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from apps.academics.models import CoursDeSession, InscriptionSession, ProfilEtudiant, Promotion, SessionAcademique
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
 
@@ -111,7 +112,15 @@ class TestPagesDuPortail:
 
 @pytest.mark.django_db
 class TestRessourcesEtAnnonces:
-    def test_depot_d_une_ressource(self, client, enseignant, cours_session, tmp_path, settings):
+    def test_depot_d_une_ressource(
+        self,
+        client,
+        enseignant,
+        cours_session,
+        etudiant_inscrit,
+        tmp_path,
+        settings,
+    ):
         settings.MEDIA_ROOT = tmp_path
         client.force_login(enseignant.user)
         client.post(
@@ -129,6 +138,10 @@ class TestRessourcesEtAnnonces:
         # Type et taille sont déduits du fichier, pas saisis.
         assert ressource.type_fichier == "PDF"
         assert ressource.taille > 0
+        assert Notification.objects.filter(
+            destinataire=etudiant_inscrit.utilisateur,
+            type_notification=Notification.Type.NOUVELLE_RESSOURCE,
+        ).exists()
 
     def test_on_ne_depose_pas_sur_le_cours_d_un_autre(
         self, client, autre_enseignant, cours_session, tmp_path, settings
@@ -160,7 +173,7 @@ class TestRessourcesEtAnnonces:
         assert response.status_code == 302
         assert not RessourcePedagogique.objects.filter(pk=ressource.pk).exists()
 
-    def test_publication_d_une_annonce(self, client, enseignant, cours_session):
+    def test_publication_d_une_annonce(self, client, enseignant, cours_session, etudiant_inscrit):
         client.force_login(enseignant.user)
         client.post(
             reverse("lms:announcement_create", kwargs={"cours_pk": cours_session.pk}),
@@ -168,6 +181,10 @@ class TestRessourcesEtAnnonces:
         )
         annonce = Annonce.objects.get(cours_session=cours_session)
         assert annonce.auteur == enseignant.user
+        assert Notification.objects.filter(
+            destinataire=etudiant_inscrit.utilisateur,
+            type_notification=Notification.Type.ANNONCE,
+        ).exists()
 
     def test_modification_d_une_annonce(self, client, enseignant, cours_session):
         annonce = Annonce.objects.create(
@@ -245,6 +262,10 @@ class TestNotation:
         client.post(reverse("lms:publish_grades", kwargs={"pk": cours_session.pk}))
         evaluation.refresh_from_db()
         assert evaluation.statut == Evaluation.StatutEvaluation.PUBLIE
+        assert Notification.objects.filter(
+            destinataire=evaluation.etudiant.utilisateur,
+            type_notification=Notification.Type.NOTE_PUBLIEE,
+        ).exists()
 
     def test_une_evaluation_non_notee_n_est_pas_publiee(self, client, enseignant, cours_session, evaluation):
         client.force_login(enseignant.user)
@@ -260,6 +281,10 @@ class TestNotation:
             {"type_evaluation": Evaluation.TypeEvaluation.DEVOIR},
         )
         assert Evaluation.objects.filter(cours_session=cours_session, etudiant=etudiant_inscrit).exists()
+        assert Notification.objects.filter(
+            destinataire=etudiant_inscrit.utilisateur,
+            titre__startswith="Nouvelle évaluation",
+        ).exists()
 
     def test_la_preparation_ne_duplique_pas(self, client, enseignant, cours_session, etudiant_inscrit):
         client.force_login(enseignant.user)

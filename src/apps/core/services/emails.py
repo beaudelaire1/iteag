@@ -5,6 +5,7 @@ gabarit, de l'expéditeur et du mode d'envoi (synchrone ou différé).
 """
 
 import logging
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -44,6 +45,33 @@ def envoyer_email(
             logger.warning("Courtier Celery indisponible, bascule en envoi synchrone", exc_info=True)
 
     return envoyer_maintenant(sujet, gabarit, contexte, destinataires)
+
+
+def envoyer_notification_email(
+    *,
+    sujet: str,
+    titre: str,
+    message: str,
+    destinataires: list[str],
+    lien: str = "",
+    libelle_lien: str = "Consulter dans mon espace",
+    differe: bool = True,
+) -> bool:
+    """Envoie une information métier avec le gabarit institutionnel ITEAG."""
+    if lien and not lien.startswith(("http://", "https://")):
+        lien = urljoin(f"{settings.SITE_URL.rstrip('/')}/", lien.lstrip("/"))
+    return envoyer_email(
+        sujet=sujet,
+        gabarit="core/emails/notification.html",
+        contexte={
+            "titre": titre,
+            "message": message,
+            "lien": lien,
+            "libelle_lien": libelle_lien,
+        },
+        destinataires=destinataires,
+        differe=differe,
+    )
 
 
 def envoyer_maintenant(sujet: str, gabarit: str, contexte: dict, destinataires: list[str]) -> bool:

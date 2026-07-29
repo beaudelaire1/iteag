@@ -1,0 +1,28 @@
+{% extends "core/emails/base_email.html" %}
+
+{% block sujet %}{{ titre }}{% endblock %}
+
+{% block corps %}
+<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A2D29;">
+    {{ titre }}
+</h1>
+
+<div style="margin:0 0 24px;">
+    {{ message|linebreaks }}
+</div>
+
+{% if lien %}
+<p style="margin:0 0 24px;">
+    <a href="{{ lien }}"
+       style="display:inline-block;padding:14px 32px;background-color:#355952;color:#ffffff;
+              text-decoration:none;border-radius:2px;font-size:13px;font-weight:bold;
+              letter-spacing:0.08em;text-transform:uppercase;">
+        {{ libelle_lien }}
+    </a>
+</p>
+
+<p style="margin:0;font-size:12px;word-break:break-all;color:#355952;">
+    {{ lien }}
+</p>
+{% endif %}
+{% endblock %}

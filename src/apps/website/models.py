@@ -425,38 +425,34 @@ class ContactPage(AbstractForm):
 
     def _send_notification_email(self, form):
         """Envoie le message au secrétariat."""
-        from django.conf import settings
-        from django.core.mail import send_mail
+        from apps.core.services.emails import envoyer_notification_email
 
         data = form.cleaned_data
         lines = [f"{key}: {value}" for key, value in data.items() if key != "honeypot"]
         body = "\n".join(lines)
 
-        send_mail(
-            subject="[ITEAG Contact] Nouveau message via le site",
+        envoyer_notification_email(
+            sujet="Nouveau message via le site",
+            titre="Nouveau message via le formulaire de contact",
             message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[self.destinataire],
-            fail_silently=True,
+            destinataires=[self.destinataire],
         )
 
     def _send_confirmation_email(self, form):
         """Envoie un accusé de réception au visiteur."""
-        from django.conf import settings
-        from django.core.mail import send_mail
+        from apps.core.services.emails import envoyer_notification_email
 
         email = form.cleaned_data.get("email") or form.cleaned_data.get("e-mail") or form.cleaned_data.get("courriel")
         if not email:
             return
-        send_mail(
-            subject="ITEAG — Nous avons bien reçu votre message",
+        envoyer_notification_email(
+            sujet="Nous avons bien reçu votre message",
+            titre="Nous avons bien reçu votre message",
             message=(
                 "Bonjour,\n\n"
                 "Nous avons bien reçu votre message et nous vous répondrons dans les meilleurs délais.\n\n"
                 "Cordialement,\n"
                 "Le secrétariat de l'ITEAG"
             ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=True,
+            destinataires=[email],
         )

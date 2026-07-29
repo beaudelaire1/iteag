@@ -9,9 +9,12 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, T
 
 from apps.academics.models import CoursDeSession
 from apps.core.mixins import TeacherRoleRequiredMixin
+from apps.core.models import Notification
+from apps.core.services.notifications import notifier
 
 from .forms import AnnonceForm, GradeForm, ParametresEvaluationForm, RessourceUploadForm
 from .models import Annonce, Evaluation, RessourcePedagogique
+from .notifications import notifier_etudiants
 
 # ──────────────────────────────────────────────
 # Helpers
@@ -229,6 +232,14 @@ class TeacherResourceUploadView(TeacherRoleRequiredMixin, CreateView):
         ressource.cours_session = self.cours_session
         ressource.uploade_par = self.request.user
         ressource.save()
+        if ressource.visible_etudiants:
+            notifier_etudiants(
+                self.cours_session,
+                f"Nouvelle ressource — {ressource.titre}",
+                message=f"Une nouvelle ressource est disponible pour « {self.cours_session.cours.titre} ».",
+                url_cible=reverse("etudiant:courses"),
+                type_notification=Notification.Type.NOUVELLE_RESSOURCE,
+            )
         messages.success(self.request, "Ressource ajoutée avec succès.")
         return redirect(reverse("lms:course_detail", kwargs={"pk": self.cours_session.pk}))
 
@@ -254,6 +265,14 @@ class TeacherResourceUpdateView(TeacherRoleRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         self.object = form.save()
+        if self.object.visible_etudiants:
+            notifier_etudiants(
+                self.object.cours_session,
+                f"Ressource mise à jour — {self.object.titre}",
+                message=f"Une ressource de « {self.object.cours_session.cours.titre} » a été mise à jour.",
+                url_cible=reverse("etudiant:courses"),
+                type_notification=Notification.Type.NOUVELLE_RESSOURCE,
+            )
         messages.success(self.request, "Ressource mise à jour.")
         return redirect("lms:course_detail", pk=self.object.cours_session_id)
 
@@ -323,6 +342,13 @@ class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
 
         nom = evaluation.etudiant.utilisateur.get_full_name()
         if etait_publiee:
+            notifier(
+                evaluation.etudiant.utilisateur,
+                f"Votre note a été corrigée — {evaluation.cours_session.cours.titre}",
+                type_notification=Notification.Type.NOTE_PUBLIEE,
+                message="Une note déjà publiée vient d'être corrigée par votre enseignant.",
+                url_cible=reverse("etudiant:grades"),
+            )
             messages.success(self.request, f"Note de {nom} corrigée. Elle est visible immédiatement par l'étudiant.")
         else:
             messages.success(self.request, f"Note enregistrée pour {nom}.")
@@ -350,13 +376,26 @@ class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
         from apps.academics.services.credits import crediter_publication
 
         cours_session = self.get_object()
-        updated = cours_session.evaluations.filter(statut=Evaluation.StatutEvaluation.NOTE).update(
-            statut=Evaluation.StatutEvaluation.PUBLIE
+        evaluations_publiees = list(
+            cours_session.evaluations.filter(statut=Evaluation.StatutEvaluation.NOTE).select_related(
+                "etudiant__utilisateur"
+            )
         )
+        updated = cours_session.evaluations.filter(
+            pk__in=[evaluation.pk for evaluation in evaluations_publiees]
+        ).update(statut=Evaluation.StatutEvaluation.PUBLIE)
         # Publier une note, c'est arrêter un résultat : le crédit ECTS est
         # porté au dossier dans le même geste, sinon le relevé de l'étudiant
         # reste vierge quoi qu'il valide.
         credites = crediter_publication(cours_session)
+        for evaluation in evaluations_publiees:
+            notifier(
+                evaluation.etudiant.utilisateur,
+                f"Note publiée — {cours_session.cours.titre}",
+                type_notification=Notification.Type.NOTE_PUBLIEE,
+                message="Votre note et l'appréciation de l'enseignant sont disponibles.",
+                url_cible=reverse("etudiant:grades"),
+            )
 
         message = f"{updated} évaluation(s) publiée(s)."
         if credites:
@@ -384,13 +423,21 @@ class TeacherPrepareEvaluationsView(TeacherRoleRequiredMixin, DetailView):
 
         created = 0
         for inscription in cours_session.inscriptions.all():
-            _, was_created = Evaluation.objects.get_or_create(
+            evaluation, was_created = Evaluation.objects.get_or_create(
                 cours_session=cours_session,
                 etudiant=inscription.etudiant,
                 type_evaluation=evaluation_type,
                 defaults={"statut": Evaluation.StatutEvaluation.EN_ATTENTE},
             )
             created += int(was_created)
+            if was_created:
+                notifier(
+                    evaluation.etudiant.utilisateur,
+                    f"Nouvelle évaluation — {cours_session.cours.titre}",
+                    type_notification=Notification.Type.SYSTEME,
+                    message=f"Un travail de type « {evaluation.get_type_evaluation_display()} » est à remettre.",
+                    url_cible=reverse("etudiant:grades"),
+                )
         messages.success(request, f"{created} évaluation(s) préparée(s) pour les étudiants inscrits.")
         return redirect("lms:course_detail", pk=cours_session.pk)
 
@@ -418,6 +465,13 @@ class TeacherAnnouncementCreateView(TeacherRoleRequiredMixin, CreateView):
         annonce.cours_session = self.cours_session
         annonce.auteur = self.request.user
         annonce.save()
+        notifier_etudiants(
+            self.cours_session,
+            f"Nouvelle annonce — {annonce.titre}",
+            message=annonce.contenu,
+            url_cible=reverse("etudiant:courses"),
+            type_notification=Notification.Type.ANNONCE,
+        )
         messages.success(self.request, "Annonce publiée.")
         return redirect(reverse("lms:course_detail", kwargs={"pk": self.cours_session.pk}))
 
@@ -440,7 +494,14 @@ class TeacherAnnouncementUpdateView(TeacherRoleRequiredMixin, UpdateView):
         return Annonce.objects.filter(cours_session__enseignant=prof).select_related("cours_session__cours")
 
     def form_valid(self, form):
-        form.save()
+        annonce = form.save()
+        notifier_etudiants(
+            annonce.cours_session,
+            f"Annonce mise à jour — {annonce.titre}",
+            message=annonce.contenu,
+            url_cible=reverse("etudiant:courses"),
+            type_notification=Notification.Type.ANNONCE,
+        )
         messages.success(self.request, "Annonce modifiée.")
         return redirect(reverse("lms:annonces_list"))
 
@@ -486,8 +547,16 @@ class TeacherParametresEvaluationView(TeacherRoleRequiredMixin, UpdateView):
         return _teacher_courses(self.request)
 
     def form_valid(self, form):
+        reponse = super().form_valid(form)
+        notifier_etudiants(
+            self.object,
+            f"Calendrier d'évaluation mis à jour — {self.object.cours.titre}",
+            message="La date d'examen ou la période de remise a été modifiée.",
+            url_cible=reverse("etudiant:grades"),
+            type_notification=Notification.Type.SYSTEME,
+        )
         messages.success(self.request, "Calendrier d'évaluation enregistré. Les étudiants le voient sur leur page.")
-        return super().form_valid(form)
+        return reponse
 
     def get_success_url(self):
         return reverse("lms:course_detail", kwargs={"pk": self.object.pk})
@@ -517,6 +586,13 @@ class TeacherOuvrirDepotView(TeacherRoleRequiredMixin, View):
             message = "Remise rouverte, sans échéance. Pensez à fixer une fermeture."
 
         cours_session.save(update_fields=["depot_ouverture", "depot_fermeture", "updated_at"])
+        notifier_etudiants(
+            cours_session,
+            f"Remise des travaux mise à jour — {cours_session.cours.titre}",
+            message=message,
+            url_cible=reverse("etudiant:grades"),
+            type_notification=Notification.Type.SYSTEME,
+        )
         messages.success(request, message)
         return redirect(reverse("lms:course_detail", kwargs={"pk": cours_session.pk}))
 

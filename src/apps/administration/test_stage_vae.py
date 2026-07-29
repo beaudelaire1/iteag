@@ -15,6 +15,7 @@ from django.urls import reverse
 
 from apps.academics.models import VAE, CreditECTS, ProfilEtudiant, Promotion, Stage
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Parcours
 
 
@@ -76,6 +77,7 @@ class TestStages:
         client.force_login(secretaire)
         client.post(reverse("administration:stage_create"), champs_stage(etudiant))
         assert Stage.objects.filter(etudiant=etudiant).exists()
+        assert Notification.objects.filter(destinataire=etudiant.utilisateur, titre="Stage enregistré").exists()
 
     def test_un_stage_en_cours_ne_credite_rien(self, client, secretaire, etudiant):
         client.force_login(secretaire)
@@ -148,6 +150,10 @@ class TestValidationDesAcquis:
         )
         assert VAE.objects.filter(etudiant=etudiant).exists()
         assert not CreditECTS.objects.filter(etudiant=etudiant).exists()
+        assert Notification.objects.filter(
+            destinataire=etudiant.utilisateur,
+            titre="Dossier VAE enregistré",
+        ).exists()
 
     def test_accorder_porte_les_ects_accordes_et_non_les_demandes(self, client, admin, etudiant):
         client.force_login(admin)

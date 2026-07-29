@@ -52,9 +52,9 @@ DATABASES = {  # noqa: F811
 
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
-# Les emails restent visibles dans la console tant que les identifiants Google
+# Les emails restent visibles dans la console tant que les identifiants SMTP
 # ne sont pas renseignés dans le fichier .env local.
-if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:  # noqa: F405
+if not EMAIL_HOST or not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:  # noqa: F405
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ──────────────────────────────────────────────

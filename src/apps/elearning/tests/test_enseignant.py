@@ -11,6 +11,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.elearning.models import Chapitre, Lecon, ModuleFormation, SousTitre, VideoAsset
 from apps.formations.models import Professeur
 
@@ -117,7 +118,7 @@ class TestCycleDeVieDUnModule:
         assert reponse.status_code == 302
         assert Chapitre.objects.get(module=module, titre="À la fin").ordre == 4
 
-    def test_ajout_d_une_lecon_video(self, client, enseignant, chapitre, video_prete):
+    def test_ajout_d_une_lecon_video(self, client, enseignant, chapitre, video_prete, acces):
         video_prete.uploade_par = enseignant.user
         video_prete.save(update_fields=["uploade_par"])
         client.force_login(enseignant.user)
@@ -134,6 +135,10 @@ class TestCycleDeVieDUnModule:
             },
         )
         assert Lecon.objects.filter(chapitre=chapitre, titre="Le contexte historique").exists()
+        assert Notification.objects.filter(
+            destinataire=acces.etudiant.utilisateur,
+            titre="Nouvelle leçon — Le contexte historique",
+        ).exists()
 
     def test_la_page_de_modification_recoit_le_chapitre(self, client, enseignant, lecon):
         client.force_login(enseignant.user)
@@ -310,7 +315,7 @@ class TestPublicationControlee:
         assert module.statut == ModuleFormation.StatutPublication.BROUILLON
         assert "préparation" in reponse.content.decode()
 
-    def test_un_module_complet_se_publie(self, client, enseignant, module, lecon):
+    def test_un_module_complet_se_publie(self, client, enseignant, module, lecon, acces):
         module.statut = ModuleFormation.StatutPublication.BROUILLON
         module.save(update_fields=["statut"])
         client.force_login(enseignant.user)
@@ -319,6 +324,10 @@ class TestPublicationControlee:
         module.refresh_from_db()
         assert module.statut == ModuleFormation.StatutPublication.PUBLIE
         assert module.date_publication is not None
+        assert Notification.objects.filter(
+            destinataire=acces.etudiant.utilisateur,
+            titre=f"Module disponible — {module.titre}",
+        ).exists()
 
     def test_depublication(self, client, enseignant, module, lecon):
         client.force_login(enseignant.user)
