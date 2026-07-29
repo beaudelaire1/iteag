@@ -53,7 +53,7 @@ npm run build                                        # styles + bibliothèques t
 export DJANGO_SETTINGS_MODULE=config.settings.dev
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py runserver
+python manage.py runserver --noreload
 ```
 
 Pendant le développement, laisser `npm run css:watch` tourner dans un second terminal.

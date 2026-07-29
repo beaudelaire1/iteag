@@ -10,7 +10,7 @@ la moitié de ce à quoi il a accès.
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -22,6 +22,7 @@ from apps.academics.models import (
     CreditECTS,
     DemandeInscriptionCours,
     InscriptionSession,
+    ProfilEtudiant,
     SessionAcademique,
 )
 from apps.core.mixins import StudentRoleRequiredMixin
@@ -37,7 +38,11 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        profil = self.request.user.profil_etudiant
+        profil = ProfilEtudiant.objects.select_related("parcours", "promotion").get(utilisateur=self.request.user)
+        total_ects_acquis = profil.total_ects_acquis
+        # La propriété réutilise cette valeur dans le template au lieu de
+        # relancer la même agrégation SQL.
+        profil.ects_acquis_annotes = total_ects_acquis
         today = timezone.localdate()
 
         current_session = (
@@ -48,13 +53,29 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
             .first()
         )
         prochaine_session = SessionAcademique.objects.filter(date_debut__gt=today).order_by("date_debut").first()
+        demandes = profil.demandes_inscription.aggregate(
+            en_cours=Count(
+                "pk",
+                filter=Q(
+                    statut__in=[
+                        DemandeInscriptionCours.Statut.SOUMISE,
+                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
+                    ]
+                ),
+            ),
+            paiement=Count(
+                "pk",
+                filter=Q(statut=DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE),
+            ),
+        )
 
         context.update(
             {
                 "profil": profil,
                 "current_session": current_session,
                 "prochaine_session": prochaine_session,
-                "progress_percent": round((profil.total_ects_acquis / profil.parcours.ects_requis) * 100)
+                "total_ects_acquis": total_ects_acquis,
+                "progress_percent": round((total_ects_acquis / profil.parcours.ects_requis) * 100)
                 if profil.parcours.ects_requis
                 else 0,
                 "pending_evaluations": profil.evaluations.select_related(
@@ -73,11 +94,6 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                 .distinct()[:5],
                 "inscriptions": profil.inscriptions.select_related(
                     "cours_session__cours", "cours_session__session", "cours_session__enseignant"
-                ).prefetch_related(
-                    Prefetch(
-                        "cours_session__ressources",
-                        queryset=RessourcePedagogique.objects.filter(visible_etudiants=True).order_by("-created_at"),
-                    )
                 )[:6],
                 "documents_count": DocumentAdministratif.objects.filter(etudiant=self.request.user).count(),
                 # Formation vidéo. Absente du tableau de bord tant que ces vues
@@ -86,15 +102,8 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                 # existait. C'est ce que l'extraction du portail débloque.
                 **self._formation_video(profil),
                 "latest_payments": profil.paiements.select_related("session")[:4],
-                "demandes_en_cours": profil.demandes_inscription.filter(
-                    statut__in=[
-                        DemandeInscriptionCours.Statut.SOUMISE,
-                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
-                    ]
-                ).count(),
-                "demandes_paiement": profil.demandes_inscription.filter(
-                    statut=DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
-                ).count(),
+                "demandes_en_cours": demandes["en_cours"],
+                "demandes_paiement": demandes["paiement"],
                 "cours_catalogue_count": CoursDeSession.objects.filter(
                     cours__actif=True,
                     inscriptions_ouvertes=True,

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from django.conf import settings
+from django.utils.functional import SimpleLazyObject
 
 from apps.core.navigation import rubriques_pour
 
@@ -52,4 +53,7 @@ def notifications_context(request):
 
     from apps.core.services.notifications import compter_non_lues
 
-    return {"notifications_non_lues": lambda: compter_non_lues(utilisateur)}
+    # Plusieurs zones de navigation affichent la cloche sur une même page.
+    # SimpleLazyObject conserve l'évaluation paresseuse tout en mémorisant le
+    # résultat : le compteur ne déclenche ainsi qu'une seule requête SQL.
+    return {"notifications_non_lues": SimpleLazyObject(lambda: compter_non_lues(utilisateur))}

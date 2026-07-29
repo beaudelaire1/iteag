@@ -132,9 +132,10 @@
             !child.classList.contains("reveal-blur")) {
           child.classList.add("reveal");
         }
-        // Only set delay if not already set via CSS nth-child or inline
+        // Une cascade courte conserve le rythme visuel sans faire attendre les
+        // derniers éléments d'une grille pendant plus d'une seconde.
         if (!child.style.transitionDelay) {
-          child.style.transitionDelay = (i * 120) + "ms";
+          child.style.transitionDelay = Math.min(i * 45, 300) + "ms";
         }
       });
     });
