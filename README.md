@@ -223,7 +223,8 @@ le service web, le worker Celery, PostgreSQL et Render Key Value. Les clés Stri
 Cloudflare R2, Turnstile, Sentry, Bunny et SMTP restent exclusivement dans les
 variables secrètes Render. Voir
 [`docs/exploitation/render.md`](docs/exploitation/render.md) pour le premier
-déploiement et la bascule du domaine.
+déploiement et la bascule du domaine. Ces opérations nécessitent l'accord
+explicite du client.
 
 ---
 
