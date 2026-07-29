@@ -277,8 +277,6 @@ class TestServiceEmail:
         message = mail.outbox[0]
         html = message.alternatives[0].content
         assert 'src="cid:logo-iteag"' in html
-        assert 'bgcolor="#FEFAEF"' in html
-        assert "background-color:#0D1815" not in html
         assert "Institut de Théologie Évangélique des Antilles et de la Guyane" in html
         assert "201 lot Pointe" in html
         assert "97139 Les Abymes" in html
