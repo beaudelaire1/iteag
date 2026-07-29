@@ -8,20 +8,41 @@ qu'un paiement a abouti.
 
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.paiements.models import Reglement
 from apps.paiements.services import reglements, webhook
-from apps.paiements.services.stripe_client import StripeIndisponible, creer_session, lire_evenement
+from apps.paiements.services.stripe_client import (
+    SessionPaiementTerminee,
+    StripeIndisponible,
+    creer_session_integree,
+    est_configure,
+    lire_evenement,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _reglement_visible(request, pk):
+    """Retrouve un règlement sans exposer celui d'un autre compte."""
+    filtres = Q(utilisateur__isnull=True)
+    if request.user.is_authenticated:
+        filtres |= Q(utilisateur=request.user)
+    return get_object_or_404(
+        Reglement.objects.select_related("commande", "module").prefetch_related("commande__lignes"),
+        filtres,
+        pk=pk,
+    )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -98,11 +119,10 @@ class AnnulationView(View):
 
 
 class AchatModuleView(LoginRequiredMixin, View):
-    """Ouvre le paiement d'un module et envoie l'acheteur chez Stripe.
+    """Prépare le paiement d'un module et ouvre la page sécurisée ITEAG.
 
-    En POST seulement : ouvrir une session de paiement est une action, pas une
-    consultation, et un lien visité par erreur — ou préchargé par le navigateur
-    — ne doit pas en créer une.
+    En POST seulement : créer un règlement est une action, pas une consultation,
+    et un lien préchargé par le navigateur ne doit pas en créer un.
     """
 
     http_method_names = ["post"]
@@ -115,19 +135,110 @@ class AchatModuleView(LoginRequiredMixin, View):
 
         try:
             reglement = reglements.pour_module(module, profil, utilisateur=request.user)
-            adresse = creer_session(reglement, request)
         except ValidationError as erreur:
             messages.error(request, erreur.messages[0])
-        except StripeIndisponible:
-            messages.error(
-                request,
-                "Le paiement par carte n'est pas disponible pour le moment. "
-                "Contactez le secrétariat pour régler autrement.",
-            )
         except Exception:
-            logger.exception("Ouverture de session Stripe impossible pour le module %s", slug)
-            messages.error(request, "Le service de paiement est momentanément injoignable. Réessayez.")
+            logger.exception("Préparation du paiement impossible pour le module %s", slug)
+            messages.error(request, "Le paiement ne peut pas être préparé pour le moment. Réessayez.")
         else:
-            return redirect(adresse)
+            return redirect("paiements:checkout", pk=reglement.pk)
 
         return redirect(module.get_absolute_url())
+
+
+class PaiementCommandeView(View):
+    """Prépare le paiement d'une commande, y compris pour un acheteur invité."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, jeton):
+        from apps.commerce.models import Commande
+
+        commande = get_object_or_404(Commande, jeton_suivi=jeton)
+        if commande.mode_paiement != Commande.ModePaiement.CARTE:
+            messages.error(request, "Cette commande n'a pas été configurée pour un paiement par carte.")
+            return redirect(commande)
+        if commande.statut_paiement == Commande.StatutPaiement.CONFIRME:
+            messages.info(request, "Cette commande est déjà réglée.")
+            return redirect(commande)
+
+        try:
+            reglement = reglements.pour_commande(commande)
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+        except Exception:
+            logger.exception("Préparation du paiement impossible pour la commande %s", commande.numero)
+            messages.error(
+                request,
+                "Le paiement ne peut pas être préparé pour le moment. "
+                "Votre commande reste enregistrée : réessayez dans un instant.",
+            )
+        else:
+            return redirect("paiements:checkout", pk=reglement.pk)
+
+        return redirect(commande)
+
+
+class CheckoutView(View):
+    """Page ITEAG qui accueille le formulaire bancaire sécurisé de Stripe."""
+
+    http_method_names = ["get"]
+
+    def get(self, request, pk):
+        reglement = _reglement_visible(request, pk)
+        if reglement.est_paye:
+            return redirect("paiements:succes", pk=reglement.pk)
+
+        if reglement.nature == Reglement.Nature.COMMANDE:
+            retour = reglement.commande.get_absolute_url()
+        elif reglement.module_id:
+            retour = reglement.module.get_absolute_url()
+        else:
+            retour = "/"
+
+        return render(
+            request,
+            "paiements/checkout.html",
+            {
+                "reglement": reglement,
+                "commande": reglement.commande,
+                "retour": retour,
+                "stripe_configure": est_configure(),
+                "stripe_cle_publiable": settings.STRIPE_CLE_PUBLIABLE,
+            },
+        )
+
+
+class SessionCheckoutView(View):
+    """Crée la session Stripe intégrée depuis la page, avec protection CSRF."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        reglement = _reglement_visible(request, pk)
+        if reglement.est_paye:
+            return JsonResponse(
+                {"redirect_url": reverse("paiements:succes", kwargs={"pk": reglement.pk})},
+                status=409,
+            )
+
+        try:
+            secret_client = creer_session_integree(reglement, request)
+        except SessionPaiementTerminee:
+            return JsonResponse(
+                {"redirect_url": reverse("paiements:succes", kwargs={"pk": reglement.pk})},
+                status=409,
+            )
+        except StripeIndisponible:
+            return JsonResponse(
+                {"message": "Le paiement par carte est temporairement indisponible."},
+                status=503,
+            )
+        except Exception:
+            logger.exception("Ouverture de la session Stripe intégrée impossible pour %s", reglement.pk)
+            return JsonResponse(
+                {"message": "Le paiement ne peut pas être chargé. Réessayez dans un instant."},
+                status=502,
+            )
+
+        return JsonResponse({"client_secret": secret_client})

@@ -286,7 +286,7 @@ class Command(BaseCommand):
                 total += ligne_total
 
             commande.total_produits = total
-            commande.frais_livraison = Decimal("0.00") if total >= Decimal("50.00") else Decimal("6.90")
+            commande.frais_livraison = Decimal("0.00")
             commande.total = commande.total_produits + commande.frais_livraison
 
             # Les dates suivent l'état : une commande livrée sans date

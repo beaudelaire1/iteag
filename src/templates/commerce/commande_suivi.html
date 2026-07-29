@@ -48,8 +48,26 @@
 
             <div class="mt-8 rounded bg-warm-50 p-5 text-sm text-warm-700">
                 <p><strong>Règlement :</strong> {{ commande.get_mode_paiement_display }} — {{ commande.get_statut_paiement_display }}</p>
-                <p class="mt-1"><strong>Livraison :</strong> {{ commande.adresse }}{% if commande.complement_adresse %}, {{ commande.complement_adresse }}{% endif %}, {{ commande.code_postal }} {{ commande.ville }}, {{ commande.pays }}</p>
+                <p class="mt-1">
+                    <strong>Livraison {{ commande.get_type_livraison_display|lower }} :</strong>
+                    {{ commande.adresse }}{% if commande.complement_adresse %}, {{ commande.complement_adresse }}{% endif %},
+                    {{ commande.code_postal }} {{ commande.ville }}, {{ commande.pays }}
+                    — colis de {{ commande.poids_total_grammes }} g
+                </p>
             </div>
+
+            {% if commande.mode_paiement == "carte" and commande.statut_paiement == "en_attente" and commande.statut == "en_attente" %}
+            <div class="mt-6 rounded border border-gold-300 bg-gold-50 p-5">
+                <h2 class="text-base">Paiement à finaliser</h2>
+                <p class="mt-2 text-sm text-warm-700">
+                    Votre commande est enregistrée, mais aucun paiement par carte n'a encore été confirmé.
+                </p>
+                <form method="post" action="{% url 'paiements:payer_commande' commande.jeton_suivi %}" class="mt-4">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary">Payer {{ commande.total }} € par carte</button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 </section>

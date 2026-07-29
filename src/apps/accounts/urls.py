@@ -1,7 +1,13 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from .views import IteagLoginView, IteagLogoutView, OTPActivationView, OTPVerificationView
+from .views import (
+    IteagLoginView,
+    IteagLogoutView,
+    IteagPasswordResetView,
+    OTPActivationView,
+    OTPVerificationView,
+)
 
 app_name = "accounts"
 
@@ -13,7 +19,7 @@ urlpatterns = [
     path("comptes/securite/verifier/", OTPVerificationView.as_view(), name="otp_verification"),
     path(
         "mot-de-passe/reinitialiser/",
-        auth_views.PasswordResetView.as_view(
+        IteagPasswordResetView.as_view(
             template_name="accounts/password_reset.html",
             email_template_name="accounts/password_reset_email.txt",
             subject_template_name="accounts/password_reset_subject.txt",

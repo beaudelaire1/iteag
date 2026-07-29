@@ -9,11 +9,30 @@ from django.urls import reverse
 from apps.accounts.models import User
 from apps.commerce import panier, services
 from apps.commerce.forms import ProduitLivreForm
-from apps.commerce.models import AlerteStock, Commande, MouvementStock, ProduitLivre
+from apps.commerce.models import (
+    AlerteStock,
+    Commande,
+    DestinationLivraison,
+    MouvementStock,
+    ProduitLivre,
+    TarifLivraison,
+    TypeLivraison,
+)
+from apps.paiements.models import Reglement
+from apps.paiements.services import reglements, webhook
 
 
 @pytest.fixture
 def livre(db):
+    # Les tests métier utilisent une grille minimale maîtrisée ; la migration
+    # charge par ailleurs le barème public complet pour l'application réelle.
+    TarifLivraison.objects.all().delete()
+    TarifLivraison.objects.create(
+        destination=DestinationLivraison.GUADELOUPE,
+        type_livraison=TypeLivraison.STANDARD,
+        poids_max_grammes=5000,
+        prix_ttc=Decimal("10.00"),
+    )
     return ProduitLivre.objects.create(
         titre="Introduction à la théologie",
         slug="introduction-theologie",
@@ -21,6 +40,7 @@ def livre(db):
         isbn="9780000000001",
         auteur="Auteur Test",
         prix_ttc=Decimal("19.90"),
+        poids_grammes=400,
         stock_physique=5,
         seuil_alerte=2,
     )
@@ -37,8 +57,17 @@ def donnees_commande():
         "code_postal": "97100",
         "ville": "Basse-Terre",
         "pays": "Guadeloupe",
+        "type_livraison": TypeLivraison.STANDARD,
         "mode_paiement": Commande.ModePaiement.VIREMENT,
         "commentaire": "",
+    }
+
+
+def donnees_formulaire_commande(mode_paiement):
+    return donnees_commande() | {
+        "mode_paiement": mode_paiement,
+        "accepte_conditions": "on",
+        "site_web": "",
     }
 
 
@@ -53,6 +82,29 @@ def creer_depuis_session(client, livre, quantite=2):
             donnees=donnees_commande(),
             lignes_panier=lignes,
         )
+
+
+@pytest.mark.django_db
+def test_la_migration_charge_les_baremes_officiels_laposte_2026():
+    assert TarifLivraison.objects.count() == 205
+
+    attendus = {
+        (DestinationLivraison.GUADELOUPE, TypeLivraison.STANDARD, 500): Decimal("7.59"),
+        (DestinationLivraison.MARTINIQUE, TypeLivraison.STANDARD, 500): Decimal("7.59"),
+        (DestinationLivraison.GUYANE, TypeLivraison.STANDARD, 500): Decimal("10.02"),
+        (DestinationLivraison.GUADELOUPE, TypeLivraison.EXPRESS, 30000): Decimal("58.18"),
+        (DestinationLivraison.MARTINIQUE, TypeLivraison.EXPRESS, 12000): Decimal("71.01"),
+        (DestinationLivraison.GUYANE, TypeLivraison.EXPRESS, 12000): Decimal("71.01"),
+    }
+    for (destination, type_livraison, poids), prix in attendus.items():
+        tarif = TarifLivraison.objects.get(
+            destination=destination,
+            type_livraison=type_livraison,
+            poids_max_grammes=poids,
+        )
+        assert tarif.prix_ttc == prix
+        assert tarif.source_url.startswith("https://www.laposte.fr/")
+        assert tarif.date_effet.isoformat() == "2026-04-01"
 
 
 @pytest.mark.django_db
@@ -101,15 +153,22 @@ class TestCommande:
         assert reponse_ajout.status_code == 302
         assert 'name="prenom"' in contenu
         assert 'name="adresse"' in contenu
+        assert 'name="pays"' in contenu
+        assert 'name="type_livraison"' in contenu
         assert 'name="mode_paiement"' in contenu
         assert 'name="accepte_conditions"' in contenu
+        assert reverse("commerce:devis_livraison") in contenu
+        assert "commerce-commande.js?v=20260729-2" in contenu
+        assert 'id="source-tarif-livraison"' in contenu
 
     def test_commande_reserve_le_stock_et_cree_un_suivi(self, client, livre):
         commande = creer_depuis_session(client, livre, quantite=2)
         livre.refresh_from_db()
 
         assert commande.total_produits == Decimal("39.80")
-        assert commande.total == Decimal("39.80")
+        assert commande.poids_total_grammes == 800
+        assert commande.frais_livraison == Decimal("10.00")
+        assert commande.total == Decimal("49.80")
         assert livre.stock_physique == 5
         assert livre.stock_reserve == 2
         assert MouvementStock.objects.filter(
@@ -120,6 +179,188 @@ class TestCommande:
         ).exists()
         assert client.get(commande.get_absolute_url()).status_code == 200
         assert client.get(reverse("commerce:commande_suivi", kwargs={"jeton": uuid4()})).status_code == 404
+
+    def test_devis_depend_de_la_destination_et_du_type_de_livraison(self, client, livre):
+        tarifs = {
+            (DestinationLivraison.GUADELOUPE, TypeLivraison.STANDARD): Decimal("10.00"),
+            (DestinationLivraison.GUADELOUPE, TypeLivraison.EXPRESS): Decimal("18.00"),
+            (DestinationLivraison.GUYANE, TypeLivraison.STANDARD): Decimal("12.00"),
+            (DestinationLivraison.GUYANE, TypeLivraison.EXPRESS): Decimal("22.00"),
+            (DestinationLivraison.MARTINIQUE, TypeLivraison.STANDARD): Decimal("11.00"),
+            (DestinationLivraison.MARTINIQUE, TypeLivraison.EXPRESS): Decimal("19.00"),
+        }
+        for (destination, type_livraison), prix in tarifs.items():
+            TarifLivraison.objects.update_or_create(
+                destination=destination,
+                type_livraison=type_livraison,
+                poids_max_grammes=5000,
+                defaults={"prix_ttc": prix, "actif": True},
+            )
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+
+        for (destination, type_livraison), prix in tarifs.items():
+            reponse = client.get(
+                reverse("commerce:devis_livraison"),
+                {"destination": destination, "type_livraison": type_livraison},
+            )
+            contenu = reponse.json()
+            assert reponse.status_code == 200
+            assert contenu["frais_livraison"] == str(prix)
+            assert contenu["total_commande"] == str(Decimal("19.90") + prix)
+            assert contenu["poids_grammes"] == 400
+
+    def test_devis_choisit_le_palier_de_poids_le_plus_precis(self, client, livre):
+        TarifLivraison.objects.create(
+            destination=DestinationLivraison.GUADELOUPE,
+            type_livraison=TypeLivraison.STANDARD,
+            poids_max_grammes=500,
+            prix_ttc=Decimal("5.00"),
+        )
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+
+        leger = client.get(
+            reverse("commerce:devis_livraison"),
+            {"destination": "Guadeloupe", "type_livraison": "standard"},
+        ).json()
+        client.post(reverse("commerce:panier_modifier", args=[livre.pk]), {"quantite": 2})
+        lourd = client.get(
+            reverse("commerce:devis_livraison"),
+            {"destination": "Guadeloupe", "type_livraison": "standard"},
+        ).json()
+
+        assert leger["frais_livraison"] == "5.00"
+        assert lourd["frais_livraison"] == "10.00"
+
+    def test_aucune_commande_n_est_creee_sans_tarif_contractuel(self, client, livre):
+        TarifLivraison.objects.all().delete()
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+
+        devis = client.get(
+            reverse("commerce:devis_livraison"),
+            {"destination": "Guyane", "type_livraison": "express"},
+        )
+        commande = client.post(
+            reverse("commerce:commander"),
+            donnees_formulaire_commande(Commande.ModePaiement.CARTE) | {"pays": "Guyane", "type_livraison": "express"},
+        )
+
+        assert devis.status_code == 422
+        assert devis.json()["disponible"] is False
+        assert commande.status_code == 200
+        assert "Aucun tarif express" in commande.content.decode()
+        assert Commande.objects.exists() is False
+
+    def test_livraison_n_est_offerte_qu_a_partir_de_cent_cinquante_euros(self, client, livre):
+        livre.prix_ttc = Decimal("149.00")
+        livre.save(update_fields=["prix_ttc", "updated_at"])
+        sous_seuil = creer_depuis_session(client, livre, quantite=1)
+
+        assert sous_seuil.frais_livraison == Decimal("10.00")
+        assert sous_seuil.total == Decimal("159.00")
+
+        services.annuler_commande(sous_seuil)
+        session = client.session
+        session.pop(panier.CLE_SESSION, None)
+        session.save()
+        livre.prix_ttc = Decimal("150.00")
+        livre.save(update_fields=["prix_ttc", "updated_at"])
+        au_seuil = creer_depuis_session(client, livre, quantite=1)
+
+        assert au_seuil.frais_livraison == Decimal("0.00")
+        assert au_seuil.total == Decimal("150.00")
+
+    def test_suivant_ouvre_immediatement_le_paiement_integre_pour_la_carte(self, client, livre):
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 2})
+
+        with mock.patch("apps.commerce.services._notification_commande"):
+            reponse = client.post(
+                reverse("commerce:commander"),
+                donnees_formulaire_commande(Commande.ModePaiement.CARTE),
+            )
+
+        commande = Commande.objects.get()
+        assert reponse.status_code == 307
+        assert reponse.url == reverse("paiements:payer_commande", args=[commande.jeton_suivi])
+        assert panier.CLE_SESSION not in client.session
+
+        paiement = client.post(reponse.url)
+
+        assert paiement.status_code == 302
+        reglement = Reglement.objects.get(commande=commande)
+        assert paiement.url == reverse("paiements:checkout", args=[reglement.pk])
+        assert commande.frais_livraison == Decimal("10.00")
+        assert reglement.montant_ttc == commande.total
+
+        page = client.get(paiement.url)
+        contenu = page.content.decode()
+        assert page.status_code == 200
+        assert commande.numero in contenu
+        assert "Livraison standard" in contenu
+        assert "49,80" in contenu or "49.80" in contenu
+
+    def test_virement_va_au_suivi_sans_ouvrir_stripe(self, client, livre):
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+
+        with mock.patch("apps.commerce.services._notification_commande"):
+            reponse = client.post(
+                reverse("commerce:commander"),
+                donnees_formulaire_commande(Commande.ModePaiement.VIREMENT),
+            )
+
+        commande = Commande.objects.get()
+        assert reponse.status_code == 302
+        assert reponse.url == commande.get_absolute_url()
+        assert Reglement.objects.filter(commande=commande).exists() is False
+
+    def test_le_suivi_permet_de_reprendre_un_paiement_carte(self, client, livre):
+        donnees = donnees_commande() | {"mode_paiement": Commande.ModePaiement.CARTE}
+        reponse = client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+        lignes, _ = panier.details(reponse.wsgi_request)
+        with mock.patch("apps.commerce.services._notification_commande"):
+            commande = services.creer_commande(donnees=donnees, lignes_panier=lignes)
+
+        contenu = client.get(commande.get_absolute_url()).content.decode()
+        assert reverse("paiements:payer_commande", args=[commande.jeton_suivi]) in contenu
+        assert "Payer " in contenu
+        assert " par carte" in contenu
+
+    def test_un_get_ne_cree_jamais_de_session_stripe(self, client, livre):
+        donnees = donnees_commande() | {"mode_paiement": Commande.ModePaiement.CARTE}
+        commande = creer_depuis_session(client, livre)
+        commande.mode_paiement = donnees["mode_paiement"]
+        commande.save(update_fields=["mode_paiement", "updated_at"])
+
+        reponse = client.get(reverse("paiements:payer_commande", args=[commande.jeton_suivi]))
+
+        assert reponse.status_code == 405
+        assert Reglement.objects.filter(commande=commande).exists() is False
+
+    def test_le_webhook_stripe_confirme_la_commande_payee(self, client, livre):
+        commande = creer_depuis_session(client, livre)
+        commande.mode_paiement = Commande.ModePaiement.CARTE
+        commande.save(update_fields=["mode_paiement", "updated_at"])
+        reglement = reglements.pour_commande(commande)
+
+        webhook.traiter(
+            {
+                "id": "evt_commande_payee",
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "client_reference_id": str(reglement.pk),
+                        "payment_status": "paid",
+                        "payment_intent": "pi_commande",
+                        "amount_total": reglement.montant_en_centimes,
+                    }
+                },
+            }
+        )
+
+        commande.refresh_from_db()
+        reglement.refresh_from_db()
+        assert reglement.statut == Reglement.Statut.PAYE
+        assert commande.statut == Commande.Statut.CONFIRMEE
+        assert commande.statut_paiement == Commande.StatutPaiement.CONFIRME
 
     def test_expedition_sort_le_stock_une_seule_fois(self, client, livre):
         commande = creer_depuis_session(client, livre)
@@ -211,3 +452,48 @@ class TestStockEtAlertes:
         )
         client.force_login(etudiant)
         assert client.get(reverse("commerce:gestion_stock")).status_code == 403
+
+
+@pytest.mark.django_db
+class TestGestionTarifsLivraison:
+    def test_un_admin_saisit_un_tarif_contractuel(self, client):
+        administrateur = User.objects.create_user(
+            username="admin-tarifs",
+            password="motdepasse-long-12",
+            role=User.Role.ADMIN,
+        )
+        client.force_login(administrateur)
+
+        reponse = client.post(
+            reverse("commerce:gestion_tarifs_livraison"),
+            {
+                "destination": DestinationLivraison.GUYANE,
+                "type_livraison": TypeLivraison.EXPRESS,
+                "poids_max_grammes": 2250,
+                "prix_ttc": "24.50",
+                "actif": "on",
+            },
+        )
+
+        assert reponse.status_code == 302
+        tarif = TarifLivraison.objects.get(
+            destination=DestinationLivraison.GUYANE,
+            type_livraison=TypeLivraison.EXPRESS,
+            poids_max_grammes=2250,
+        )
+        assert tarif.destination == DestinationLivraison.GUYANE
+        assert tarif.type_livraison == TypeLivraison.EXPRESS
+        assert tarif.poids_max_grammes == 2250
+        assert tarif.prix_ttc == Decimal("24.50")
+
+    def test_la_grille_tarifaire_est_reservee_aux_admins(self, client):
+        secretariat = User.objects.create_user(
+            username="secretariat-tarifs",
+            password="motdepasse-long-12",
+            role=User.Role.SECRETARIAT,
+        )
+        client.force_login(secretariat)
+
+        reponse = client.get(reverse("commerce:gestion_tarifs_livraison"))
+
+        assert reponse.status_code == 403

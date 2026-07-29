@@ -59,6 +59,13 @@
 
                     <form action="{% pageurl page %}" method="POST" class="space-y-5 contact-form">
                         {% csrf_token %}
+                        {% if form.non_field_errors %}
+                        <div class="form-recap-erreurs" role="alert">
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         {# Honeypot anti-spam — champ invisible pour les humains #}
                         <div style="position:absolute;left:-9999px;" aria-hidden="true">
                             <label for="id_hp_field">Ne pas remplir</label>
@@ -79,6 +86,7 @@
                             {% endif %}
                         </div>
                         {% endfor %}
+                        {% include "partials/turnstile_widget.html" with action="contact" %}
                         <div class="pt-3">
                             <button type="submit" class="btn-gold w-full sm:w-auto">
                                 Envoyer le message
@@ -194,4 +202,8 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
+{% include "partials/turnstile_script.html" %}
 {% endblock %}

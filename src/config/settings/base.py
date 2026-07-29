@@ -24,6 +24,7 @@ env.read_env(str(BASE_DIR / ".env"))
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me-in-production")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 # ──────────────────────────────────────────────
 # Apps
@@ -327,7 +328,28 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="secretariat@iteag.org")
 SERVER_EMAIL = env("SERVER_EMAIL", default="errors@iteag.org")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
+
+# ──────────────────────────────────────────────
+# Cloudflare Turnstile — protection des formulaires publics
+# ──────────────────────────────────────────────
+
+CLOUDFLARE_TURNSTILE_SITE_KEY = env("CLOUDFLARE_TURNSTILE_SITE_KEY", default="").strip()
+CLOUDFLARE_TURNSTILE_SECRET_KEY = env("CLOUDFLARE_TURNSTILE_SECRET_KEY", default="").strip()
+# Avec les deux clés, la protection s'active sans troisième variable. Le
+# booléen reste disponible pour une désactivation d'urgence maîtrisée.
+CLOUDFLARE_TURNSTILE_ENABLED = env.bool(
+    "CLOUDFLARE_TURNSTILE_ENABLED",
+    default=bool(CLOUDFLARE_TURNSTILE_SITE_KEY and CLOUDFLARE_TURNSTILE_SECRET_KEY),
+)
+CLOUDFLARE_TURNSTILE_TIMEOUT = env.float("CLOUDFLARE_TURNSTILE_TIMEOUT", default=5.0)
 
 # ──────────────────────────────────────────────
 # Celery
@@ -359,7 +381,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # Boutique de livres
-COMMERCE_FRAIS_LIVRAISON = env("COMMERCE_FRAIS_LIVRAISON", default="0.00")
+COMMERCE_SEUIL_LIVRAISON_OFFERTE = env("COMMERCE_SEUIL_LIVRAISON_OFFERTE", default="150.00")
 COMMERCE_ALERTE_EMAIL = env("COMMERCE_ALERTE_EMAIL", default="")
 
 # ──────────────────────────────────────────────
@@ -442,16 +464,19 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Content Security Policy (django-csp)
 # ──────────────────────────────────────────────
 
+_turnstile_origins = ["https://challenges.cloudflare.com"] if CLOUDFLARE_TURNSTILE_ENABLED else []
+_stripe_script_origins = ["https://js.stripe.com"]
+_stripe_frame_origins = ["https://js.stripe.com", "https://hooks.stripe.com", "https://checkout.stripe.com"]
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
-        "script-src": ["'self'"],
+        "script-src": ["'self'", *_turnstile_origins, *_stripe_script_origins],
         "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"],
+        "img-src": ["'self'", "data:", "https://*.stripe.com"],
         "media-src": ["'self'", "blob:"],
         "font-src": ["'self'"],
-        "connect-src": ["'self'"],
-        "frame-src": ["'none'"],
+        "connect-src": ["'self'", "https://api.stripe.com", "https://m.stripe.network"],
+        "frame-src": [*_turnstile_origins, *_stripe_frame_origins],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
         "form-action": ["'self'"],

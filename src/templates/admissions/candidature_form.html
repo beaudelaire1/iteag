@@ -24,6 +24,8 @@
                 {% include "partials/champ.html" %}
                 {% endfor %}
 
+                {% include "partials/turnstile_widget.html" with action="candidature" %}
+
                 <div class="pt-4">
                     <button type="submit" class="btn-primary w-full justify-center">
                         Soumettre ma candidature
@@ -33,4 +35,8 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% include "partials/turnstile_script.html" %}
 {% endblock %}

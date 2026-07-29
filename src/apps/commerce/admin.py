@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
 from apps.commerce import services
-from apps.commerce.models import AlerteStock, Commande, LigneCommande, MouvementStock, ProduitLivre
+from apps.commerce.models import AlerteStock, Commande, LigneCommande, MouvementStock, ProduitLivre, TarifLivraison
 
 
 @admin.register(ProduitLivre)
@@ -29,6 +29,24 @@ class ProduitLivreAdmin(admin.ModelAdmin):
         return ["stock_reserve"]
 
 
+@admin.register(TarifLivraison)
+class TarifLivraisonAdmin(admin.ModelAdmin):
+    list_display = [
+        "destination",
+        "type_livraison",
+        "poids_max_grammes",
+        "prix_ttc",
+        "transporteur",
+        "offre",
+        "date_effet",
+        "actif",
+        "updated_at",
+    ]
+    list_filter = ["destination", "type_livraison", "transporteur", "actif"]
+    search_fields = ["offre", "source_url"]
+    ordering = ["destination", "type_livraison", "poids_max_grammes"]
+
+
 class LigneCommandeInline(admin.TabularInline):
     model = LigneCommande
     extra = 0
@@ -39,12 +57,13 @@ class LigneCommandeInline(admin.TabularInline):
 @admin.register(Commande)
 class CommandeAdmin(admin.ModelAdmin):
     list_display = ["numero", "nom_complet", "statut", "statut_paiement", "total", "created_at"]
-    list_filter = ["statut", "statut_paiement", "mode_paiement"]
+    list_filter = ["statut", "statut_paiement", "mode_paiement", "pays", "type_livraison"]
     search_fields = ["numero", "nom", "prenom", "email", "numero_suivi"]
     readonly_fields = [
         "numero",
         "jeton_suivi",
         "stock_sorti",
+        "poids_total_grammes",
         "total_produits",
         "frais_livraison",
         "total",

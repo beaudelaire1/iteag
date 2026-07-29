@@ -37,5 +37,9 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 WAGTAIL_ENABLE_UPDATE_CHECK = False
 
+# Les tests Turnstile dédiés le réactivent avec override_settings. Les secrets
+# présents dans le .env local ne doivent pas modifier le résultat du reste de la suite.
+CLOUDFLARE_TURNSTILE_ENABLED = False
+
 CONTENT_SECURITY_POLICY = None
 CONTENT_SECURITY_POLICY_REPORT_ONLY = None

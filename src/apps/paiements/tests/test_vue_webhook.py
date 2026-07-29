@@ -12,6 +12,7 @@ import json
 from unittest.mock import patch
 
 import pytest
+from django.test import Client
 from django.urls import reverse
 
 from apps.elearning.models import InscriptionModule
@@ -137,20 +138,18 @@ class TestLeParcoursDAchat:
     def test_le_prix_vient_de_la_base_pas_de_la_requete(self, client, module_vendu, etudiant):
         """Un montant qui transiterait par le navigateur serait négociable."""
         client.force_login(etudiant.utilisateur)
-        with patch("apps.paiements.views.creer_session", return_value="https://stripe.test/session"):
-            client.post(
-                reverse("paiements:acheter_module", args=[module_vendu.slug]),
-                {"montant_ttc": "1.00", "prix": "1"},
-            )
+        client.post(
+            reverse("paiements:acheter_module", args=[module_vendu.slug]),
+            {"montant_ttc": "1.00", "prix": "1"},
+        )
         reglement = Reglement.objects.get()
         assert reglement.montant_ttc == module_vendu.prix_ttc
 
     def test_deux_clics_ne_creent_qu_un_reglement(self, client, module_vendu, etudiant):
         client.force_login(etudiant.utilisateur)
         adresse = reverse("paiements:acheter_module", args=[module_vendu.slug])
-        with patch("apps.paiements.views.creer_session", return_value="https://stripe.test/session"):
-            client.post(adresse)
-            client.post(adresse)
+        client.post(adresse)
+        client.post(adresse)
         assert Reglement.objects.count() == 1
 
     def test_on_ne_rachete_pas_un_module_deja_acquis(self, client, module_vendu, etudiant):
@@ -158,6 +157,50 @@ class TestLeParcoursDAchat:
             etudiant=etudiant, module=module_vendu, statut=InscriptionModule.StatutAcces.ACTIF
         )
         client.force_login(etudiant.utilisateur)
-        with patch("apps.paiements.views.creer_session", return_value="https://stripe.test/session"):
-            client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
         assert Reglement.objects.count() == 0
+
+    def test_le_paiement_reste_sur_une_page_iteag(self, client, module_vendu, etudiant):
+        client.force_login(etudiant.utilisateur)
+        ouverture = client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        reglement = Reglement.objects.get()
+
+        assert ouverture.url == reverse("paiements:checkout", args=[reglement.pk])
+        page = client.get(ouverture.url)
+        contenu = page.content.decode()
+        assert page.status_code == 200
+        assert "Finaliser le paiement" in contenu
+        assert "stripe-checkout" in contenu
+        assert "120,00" in contenu or "120.00" in contenu
+
+    def test_la_session_integree_est_creee_en_post(self, client, module_vendu, etudiant):
+        client.force_login(etudiant.utilisateur)
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        reglement = Reglement.objects.get()
+
+        with patch(
+            "apps.paiements.views.creer_session_integree",
+            return_value="cs_test_secret_exemple",
+        ) as creer:
+            reponse = client.post(reverse("paiements:session_checkout", args=[reglement.pk]))
+
+        assert reponse.status_code == 200
+        assert reponse.json() == {"client_secret": "cs_test_secret_exemple"}
+        creer.assert_called_once()
+
+    def test_un_autre_compte_ne_voit_pas_le_paiement(self, client, module_vendu, etudiant):
+        client.force_login(etudiant.utilisateur)
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        reglement = Reglement.objects.get()
+        client.logout()
+
+        assert client.get(reverse("paiements:checkout", args=[reglement.pk])).status_code == 404
+        assert client.post(reverse("paiements:session_checkout", args=[reglement.pk])).status_code == 404
+
+    def test_la_creation_de_session_exige_un_jeton_csrf(self, reglement):
+        navigateur = Client(enforce_csrf_checks=True)
+        navigateur.force_login(reglement.utilisateur)
+
+        reponse = navigateur.post(reverse("paiements:session_checkout", args=[reglement.pk]))
+
+        assert reponse.status_code == 403

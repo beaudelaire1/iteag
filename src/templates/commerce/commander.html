@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Passer ma commande — Boutique {{ SITE_NAME }}{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
@@ -8,7 +9,11 @@
     <div class="container-wide">
         <div class="mb-10"><p class="overline mb-2">Boutique</p><h1>Passer ma commande</h1></div>
         <div class="grid grid-cols-1 gap-10 lg:grid-cols-3">
-            <form method="post" class="card-elevated p-7 lg:col-span-2">
+            <form method="post"
+                  id="formulaire-commande"
+                  data-devis-url="{% url 'commerce:devis_livraison' %}"
+                  data-seuil-livraison-offerte="{{ seuil_livraison_offerte }}"
+                  class="card-elevated p-7 lg:col-span-2">
                 {% csrf_token %}
                 {% include "partials/erreurs_formulaire.html" with form=form %}
                 <h2 class="text-xl mb-6">Coordonnées et livraison</h2>
@@ -23,7 +28,30 @@
                     {% endif %}
                     {% endfor %}
                 </div>
-                <button type="submit" class="btn-primary mt-8">Confirmer la commande</button>
+                <div id="alerte-livraison-formulaire"
+                     class="mt-6 rounded border border-red-200 bg-red-50 p-4 text-sm text-red-900 {% if livraison_disponible %}hidden{% endif %}"
+                     role="alert">
+                    <p class="font-semibold">Calcul des frais de livraison indisponible.</p>
+                    <p id="erreur-livraison-formulaire" class="mt-1">
+                        {{ erreur_livraison|default:"Choisissez une destination et un type de livraison disponibles." }}
+                    </p>
+                    {% if request.user.role == "admin" or request.user.is_superuser %}
+                    <a href="{% url 'commerce:gestion_tarifs_livraison' %}"
+                       class="mt-3 inline-block font-semibold underline">
+                        Configurer les tarifs de livraison
+                    </a>
+                    {% endif %}
+                </div>
+                <button type="submit"
+                        id="bouton-commande"
+                        aria-describedby="erreur-livraison-formulaire"
+                        class="btn-primary mt-8"
+                        {% if not livraison_disponible %}disabled{% endif %}>
+                    Suivant
+                </button>
+                <p class="mt-3 text-xs leading-5 text-warm-500">
+                    Avec « Carte bancaire », vous serez redirigé immédiatement vers la page de paiement sécurisée Stripe.
+                </p>
             </form>
 
             <aside class="card h-fit">
@@ -39,14 +67,46 @@
                 <hr class="my-5 border-warm-200">
                 <div class="space-y-2 text-sm">
                     <p class="flex justify-between"><span>Livres</span><strong>{{ total_produits }} €</strong></p>
-                    <p class="flex justify-between"><span>Livraison</span><strong>{{ frais_livraison }} €</strong></p>
-                    <p class="flex justify-between text-lg pt-3"><span>Total</span><strong>{{ total_commande }} €</strong></p>
+                    <p class="flex justify-between">
+                        <span>Livraison</span>
+                        <strong id="frais-livraison">
+                            {% if livraison_disponible %}
+                                {% if livraison_offerte %}Offerte{% else %}{{ frais_livraison }} €{% endif %}
+                            {% else %}
+                                À calculer
+                            {% endif %}
+                        </strong>
+                    </p>
+                    <p class="flex justify-between text-lg pt-3">
+                        <span>Total</span>
+                        <strong id="total-commande">
+                            {% if livraison_disponible %}{{ total_commande }} €{% else %}—{% endif %}
+                        </strong>
+                    </p>
                 </div>
+                <p id="message-livraison"
+                   class="mt-4 text-xs {% if erreur_livraison %}text-red-700{% else %}text-warm-500{% endif %}"
+                   aria-live="polite">
+                    {% if erreur_livraison %}
+                        {{ erreur_livraison }}
+                    {% elif livraison_offerte %}
+                        Livraison offerte : le panier atteint {{ seuil_livraison_offerte }} €.
+                    {% else %}
+                        Frais de livraison calculés.
+                    {% endif %}
+                </p>
+                {# Compatibilité avec une ancienne version du script encore présente dans le cache du navigateur. #}
+                <span id="source-tarif-livraison" class="hidden" style="display:none !important" aria-hidden="true"></span>
                 <p class="mt-5 text-xs leading-5 text-warm-500">
-                    Le stock est réservé dès la validation. Le secrétariat confirme ensuite le règlement et la préparation.
+                    Le stock est réservé en cliquant sur « Suivant ». Un paiement par carte confirmé lance automatiquement
+                    la préparation ; un virement ou un paiement sur place reste validé par le secrétariat.
                 </p>
             </aside>
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/commerce-commande.js' %}?v=20260729-2" defer></script>
 {% endblock %}

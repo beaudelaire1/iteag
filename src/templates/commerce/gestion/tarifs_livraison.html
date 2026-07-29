@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Tarifs de livraison — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-wide">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-10">
+            <div>
+                <p class="overline mb-2">Administration de la boutique</p>
+                <h1>Tarifs de livraison</h1>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'commerce:gestion_commandes' %}" class="btn-secondary">Commandes</a>
+                <a href="{% url 'commerce:gestion_stock' %}" class="btn-ghost">Stock</a>
+            </div>
+        </div>
+
+        <div class="mb-8 rounded border border-sky-200 bg-sky-50 p-5 text-sm text-sky-950">
+            <p class="font-semibold">Barèmes La Poste 2026 chargés automatiquement.</p>
+            <p class="mt-2">
+                Les grilles publiques au départ de Guadeloupe sont appliquées par destination, mode et poids maximal.
+                Sous {{ seuil_livraison_offerte }} €, une commande est bloquée si aucun palier actif ne couvre son colis.
+                À partir de {{ seuil_livraison_offerte }} €, la livraison est offerte.
+            </p>
+            <a href="https://www.laposte.fr/ecom/occ/smartedit/medias/sys_master/pdf/h4e/ha0/31034407387166/2026-04-07_Particuliers-Guadeloupe/2026-04-07-Particuliers-Guadeloupe.pdf"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="mt-2 inline-block font-semibold underline">
+                Consulter le cahier tarifaire officiel
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 gap-8 xl:grid-cols-3">
+            <form method="post" class="card-elevated p-6 h-fit">
+                {% csrf_token %}
+                {% include "partials/erreurs_formulaire.html" with form=form %}
+                <h2 class="text-lg mb-5">
+                    {% if tarif_modifie %}Modifier le tarif{% else %}Ajouter un tarif contractuel{% endif %}
+                </h2>
+                <div class="space-y-5">
+                    {% for champ in form %}
+                    {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
+                    {% endfor %}
+                </div>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button type="submit" class="btn-primary">
+                        {% if tarif_modifie %}Enregistrer{% else %}Ajouter{% endif %}
+                    </button>
+                    {% if tarif_modifie %}
+                    <a href="{% url 'commerce:gestion_tarifs_livraison' %}" class="btn-ghost">Annuler</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="xl:col-span-2 overflow-x-auto card-elevated">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-warm-100 text-warm-600">
+                        <tr>
+                            <th class="p-4">Destination</th>
+                            <th class="p-4">Mode</th>
+                            <th class="p-4 text-right">Jusqu'à</th>
+                            <th class="p-4 text-right">Prix TTC</th>
+                            <th class="p-4">Provenance</th>
+                            <th class="p-4">État</th>
+                            <th class="p-4"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-warm-200">
+                        {% for tarif in tarifs %}
+                        <tr>
+                            <td class="p-4 font-semibold">{{ tarif.get_destination_display }}</td>
+                            <td class="p-4">{{ tarif.get_type_livraison_display }}</td>
+                            <td class="p-4 text-right">{{ tarif.poids_max_grammes }} g</td>
+                            <td class="p-4 text-right font-bold">{{ tarif.prix_ttc }} €</td>
+                            <td class="p-4">
+                                {% if tarif.source_url %}
+                                <a href="{{ tarif.source_url }}" target="_blank" rel="noopener noreferrer"
+                                   class="font-semibold text-navy-600 underline">
+                                    {{ tarif.transporteur|default:"Source" }}
+                                    {% if tarif.date_effet %}— {{ tarif.date_effet|date:"d/m/Y" }}{% endif %}
+                                </a>
+                                {% else %}
+                                <span class="text-warm-500">Saisie manuelle</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-4">
+                                <span class="badge {% if tarif.actif %}badge-success{% else %}badge-warning{% endif %}">
+                                    {% if tarif.actif %}Actif{% else %}Inactif{% endif %}
+                                </span>
+                            </td>
+                            <td class="p-4">
+                                <div class="flex justify-end gap-3">
+                                    <a href="{% url 'commerce:tarif_livraison_modifier' tarif.pk %}"
+                                       class="font-semibold text-navy-600">Modifier</a>
+                                    <form method="post"
+                                          action="{% url 'commerce:tarif_livraison_supprimer' tarif.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="font-semibold text-rose-700">Supprimer</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="p-10 text-center text-warm-500">
+                                Aucun tarif réel n'est encore configuré. Les commandes inférieures au seuil restent bloquées.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.text import slugify
 
-from apps.commerce.models import Commande, ProduitLivre
+from apps.commerce.models import Commande, DestinationLivraison, ProduitLivre, TarifLivraison, TypeLivraison
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 
 
@@ -18,7 +18,16 @@ class CommandeForm(FormulaireITEAG):
     complement_adresse = forms.CharField(max_length=250, required=False, label="Complément d'adresse")
     code_postal = forms.CharField(max_length=20, label="Code postal")
     ville = forms.CharField(max_length=120)
-    pays = forms.CharField(max_length=100, initial="Guadeloupe")
+    pays = forms.ChoiceField(
+        choices=DestinationLivraison.choices,
+        initial=DestinationLivraison.GUADELOUPE,
+        label="Destination",
+    )
+    type_livraison = forms.ChoiceField(
+        choices=TypeLivraison.choices,
+        initial=TypeLivraison.STANDARD,
+        label="Type de livraison",
+    )
     mode_paiement = forms.ChoiceField(choices=Commande.ModePaiement.choices, label="Mode de règlement")
     commentaire = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
     accepte_conditions = forms.BooleanField(label="J'accepte les conditions de vente et confirme ma commande.")
@@ -87,6 +96,27 @@ class ProduitLivreForm(FormulaireModeleITEAG):
                 f"{self.instance.stock_reserve} exemplaire(s) sont réservés : le stock ne peut pas être inférieur."
             )
         return stock
+
+
+class TarifLivraisonForm(FormulaireModeleITEAG):
+    class Meta:
+        model = TarifLivraison
+        fields = [
+            "destination",
+            "type_livraison",
+            "poids_max_grammes",
+            "prix_ttc",
+            "transporteur",
+            "offre",
+            "source_url",
+            "date_effet",
+            "actif",
+        ]
+        help_texts = {
+            "poids_max_grammes": "Le tarif couvre les colis jusqu'à ce poids inclus.",
+            "prix_ttc": "Saisissez uniquement le montant validé avec le transporteur ou le client.",
+            "source_url": "Lien vers le barème officiel ou contractuel correspondant.",
+        }
 
 
 class AjustementStockForm(FormulaireITEAG):

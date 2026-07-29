@@ -20,6 +20,8 @@ boutique de livres avec commandes, suivi et gestion de stock.
 | [`docs/architecture/adr/ADR-005-fournisseurs-video-externes.md`](docs/architecture/adr/ADR-005-fournisseurs-video-externes.md) | Choix du fournisseur de diffusion vidéo |
 | [`docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md`](docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md) | Paiement en ligne : Stripe, webhook, TVA |
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
+| [`docs/exploitation/cloudflare.md`](docs/exploitation/cloudflare.md) | Activation Turnstile, proxy DNS, TLS et WAF Cloudflare |
+| [`docs/exploitation/render.md`](docs/exploitation/render.md) | Déploiement Render, variables secrètes, R2 et Stripe live |
 
 ---
 
@@ -215,6 +217,13 @@ statiques échoue bruyamment en cas de rupture — voir
 [ADR-004](docs/architecture/adr/ADR-004-pipeline-assets-production.md).
 
 Variables d'environnement attendues : voir `src/.env.example`.
+
+Le déploiement Render est décrit par `render.yaml` à la racine du dépôt. Il crée
+le service web, le worker Celery, PostgreSQL et Render Key Value. Les clés Stripe,
+Cloudflare R2, Turnstile, Sentry, Bunny et SMTP restent exclusivement dans les
+variables secrètes Render. Voir
+[`docs/exploitation/render.md`](docs/exploitation/render.md) pour le premier
+déploiement et la bascule du domaine.
 
 ---
 

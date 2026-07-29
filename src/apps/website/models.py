@@ -1,4 +1,5 @@
 from django.db import models
+from django.template.response import TemplateResponse
 from django.utils import timezone
 from modelcluster.fields import ParentalKey
 from wagtail import blocks
@@ -7,6 +8,8 @@ from wagtail.contrib.forms.models import AbstractForm, AbstractFormField
 from wagtail.fields import RichTextField, StreamField
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Page
+
+from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
 # ──────────────────────────────────────────────
 # StreamField Blocks
@@ -394,6 +397,22 @@ class ContactPage(AbstractForm):
         verbose_name = "Page de contact"
 
     parent_page_types = ["website.HomePage"]
+
+    def serve(self, request, *args, **kwargs):
+        """Traite le formulaire seulement après validation du défi Turnstile."""
+        if request.method == "POST":
+            form = self.get_form(request.POST, request.FILES, page=self, user=request.user)
+            if form.is_valid():
+                if valider_requete(request, action="contact"):
+                    soumission = self.process_form_submission(form)
+                    return self.render_landing_page(request, soumission, *args, **kwargs)
+                form.add_error(None, MESSAGE_ECHEC)
+        else:
+            form = self.get_form(page=self, user=request.user)
+
+        contexte = self.get_context(request)
+        contexte["form"] = form
+        return TemplateResponse(request, self.get_template(request), contexte)
 
     def process_form_submission(self, form):
         # Honeypot anti-spam : si le champ caché est rempli, on ignore la soumission

@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 from apps.formations.models import Parcours
 
 from .emails import send_candidature_confirmation
@@ -15,10 +16,12 @@ def candidature_form(request):
     if request.method == "POST":
         form = CandidatureForm(request.POST, request.FILES)
         if form.is_valid():
-            dossier = form.save()
-            send_candidature_confirmation(dossier)
-            messages.success(request, "Votre candidature a bien été enregistrée.")
-            return redirect("admissions:candidature_confirmation", token=dossier.token_suivi)
+            if valider_requete(request, action="candidature"):
+                dossier = form.save()
+                send_candidature_confirmation(dossier)
+                messages.success(request, "Votre candidature a bien été enregistrée.")
+                return redirect("admissions:candidature_confirmation", token=dossier.token_suivi)
+            form.add_error(None, MESSAGE_ECHEC)
     else:
         form = CandidatureForm()
     return render(request, "admissions/candidature_form.html", {"form": form})

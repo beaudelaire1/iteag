@@ -114,8 +114,8 @@
     {# Jeton CSRF — exploité par HTMX #}
     {% csrf_token %}
 
-    {# HTMX auto-hébergé par django-htmx. #}
-    <script src="{% static 'django_htmx/htmx.min.js' %}"></script>
+    {# HTMX auto-hébergé avec les autres ressources du projet. #}
+    <script src="{% static 'js/htmx.min.js' %}"></script>
     {# ITEAG global JS — scroll reveal, counters, HTMX handlers #}
     <script src="{% static 'js/iteag.js' %}" defer></script>
 

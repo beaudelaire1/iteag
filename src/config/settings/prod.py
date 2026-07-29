@@ -6,6 +6,8 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")  # noqa: F405
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)  # noqa: F405
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 
 # ──────────────────────────────────────────────
 # Security — production hardened
@@ -37,9 +39,14 @@ STORAGES = {
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")  # noqa: F405
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="")  # noqa: F405
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="iteag-media")  # noqa: F405
-AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="eu-west-3")  # noqa: F405
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default="")  # noqa: F405
+AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="auto" if AWS_S3_ENDPOINT_URL else "eu-west-3")  # noqa: F405
+AWS_S3_ADDRESSING_STYLE = env("AWS_S3_ADDRESSING_STYLE", default="path")  # noqa: F405
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="") or None  # noqa: F405
 AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = True
+AWS_QUERYSTRING_EXPIRE = env.int("AWS_QUERYSTRING_EXPIRE", default=3600)  # noqa: F405
 # Deux dépôts de même nom ne doivent pas s'écraser : un devoir remis
 # effacerait celui d'un autre étudiant.
 AWS_S3_FILE_OVERWRITE = False
@@ -75,8 +82,14 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
-        traces_sample_rate=0.1,
-        send_default_pii=False,
+        send_default_pii=env.bool("SENTRY_SEND_DEFAULT_PII", default=False),  # noqa: F405
+        enable_logs=env.bool("SENTRY_ENABLE_LOGS", default=True),  # noqa: F405
+        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.1),  # noqa: F405
+        profile_session_sample_rate=env.float(  # noqa: F405
+            "SENTRY_PROFILE_SESSION_SAMPLE_RATE",
+            default=0.0,
+        ),
+        profile_lifecycle=env("SENTRY_PROFILE_LIFECYCLE", default="trace"),  # noqa: F405
     )
 
 # ──────────────────────────────────────────────

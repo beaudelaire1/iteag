@@ -12,16 +12,16 @@ ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]  # noqa: S104
 
 # ──────────────────────────────────────────────
-# Debug toolbar & browser reload
+# Outils de développement — désactivés par défaut pour garder le site rapide
 # ──────────────────────────────────────────────
 
-INSTALLED_APPS += [  # noqa: F405
-    "debug_toolbar",
-    "django_browser_reload",
-]
+if env.bool("DJANGO_DEBUG_TOOLBAR", default=False):  # noqa: F405
+    INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 
-MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
-MIDDLEWARE.append("django_browser_reload.middleware.BrowserReloadMiddleware")  # noqa: F405
+if env.bool("DJANGO_BROWSER_RELOAD", default=False):  # noqa: F405
+    INSTALLED_APPS += ["django_browser_reload"]  # noqa: F405
+    MIDDLEWARE.append("django_browser_reload.middleware.BrowserReloadMiddleware")  # noqa: F405
 
 INTERNAL_IPS = ["127.0.0.1"]
 

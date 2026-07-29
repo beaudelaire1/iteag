@@ -12,6 +12,17 @@ from django.utils import timezone
 from apps.core.models import TimeStampedModel, UUIDModel
 
 
+class DestinationLivraison(models.TextChoices):
+    GUYANE = "Guyane", "Guyane"
+    GUADELOUPE = "Guadeloupe", "Guadeloupe"
+    MARTINIQUE = "Martinique", "Martinique"
+
+
+class TypeLivraison(models.TextChoices):
+    STANDARD = "standard", "Standard"
+    EXPRESS = "express", "Express"
+
+
 class ProduitLivre(UUIDModel, TimeStampedModel):
     """Livre proposé à la vente, distinct de la notice de bibliothèque."""
 
@@ -36,7 +47,11 @@ class ProduitLivre(UUIDModel, TimeStampedModel):
         verbose_name="Prix TTC",
     )
     image = models.ImageField(upload_to="commerce/livres/", blank=True)
-    poids_grammes = models.PositiveIntegerField(default=0, verbose_name="Poids (g)")
+    poids_grammes = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name="Poids (g)",
+    )
     stock_physique = models.PositiveIntegerField(default=0)
     stock_reserve = models.PositiveIntegerField(default=0, editable=False, verbose_name="Stock réservé")
     seuil_alerte = models.PositiveIntegerField(default=2, verbose_name="Seuil d'alerte")
@@ -52,6 +67,7 @@ class ProduitLivre(UUIDModel, TimeStampedModel):
                 condition=models.Q(stock_reserve__lte=models.F("stock_physique")),
                 name="commerce_stock_reserve_borne",
             ),
+            models.CheckConstraint(condition=models.Q(poids_grammes__gte=1), name="commerce_poids_livre_positif"),
         ]
         indexes = [
             models.Index(fields=["actif", "titre"]),
@@ -72,6 +88,53 @@ class ProduitLivre(UUIDModel, TimeStampedModel):
     @property
     def en_alerte_stock(self) -> bool:
         return self.stock_disponible <= self.seuil_alerte
+
+
+class TarifLivraison(TimeStampedModel):
+    """Montant contractuel d'une livraison pour une destination, un mode et un poids."""
+
+    destination = models.CharField(max_length=20, choices=DestinationLivraison.choices)
+    type_livraison = models.CharField(max_length=20, choices=TypeLivraison.choices)
+    poids_max_grammes = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name="Poids maximal (g)",
+    )
+    prix_ttc = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+        verbose_name="Prix TTC",
+    )
+    transporteur = models.CharField(max_length=80, blank=True)
+    offre = models.CharField(max_length=120, blank=True)
+    source_url = models.URLField(max_length=500, blank=True, verbose_name="Source officielle")
+    date_effet = models.DateField(null=True, blank=True, verbose_name="Date d'effet")
+    actif = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Tarif de livraison"
+        verbose_name_plural = "Tarifs de livraison"
+        ordering = ["destination", "type_livraison", "poids_max_grammes"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["destination", "type_livraison", "poids_max_grammes"],
+                name="commerce_tarif_livraison_unique",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(poids_max_grammes__gte=1),
+                name="commerce_tarif_poids_positif",
+            ),
+            models.CheckConstraint(condition=models.Q(prix_ttc__gt=0), name="commerce_tarif_prix_positif"),
+        ]
+        indexes = [
+            models.Index(fields=["destination", "type_livraison", "actif", "poids_max_grammes"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.get_destination_display()} — {self.get_type_livraison_display()} — "
+            f"jusqu'à {self.poids_max_grammes} g : {self.prix_ttc} €"
+        )
 
 
 class Commande(UUIDModel, TimeStampedModel):
@@ -113,7 +176,11 @@ class Commande(UUIDModel, TimeStampedModel):
     complement_adresse = models.CharField(max_length=250, blank=True)
     code_postal = models.CharField(max_length=20)
     ville = models.CharField(max_length=120)
-    pays = models.CharField(max_length=100, default="Guadeloupe")
+    pays = models.CharField(
+        max_length=100,
+        choices=DestinationLivraison.choices,
+        default=DestinationLivraison.GUADELOUPE,
+    )
     commentaire = models.TextField(blank=True)
 
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
@@ -123,6 +190,12 @@ class Commande(UUIDModel, TimeStampedModel):
         default=StatutPaiement.EN_ATTENTE,
     )
     mode_paiement = models.CharField(max_length=20, choices=ModePaiement.choices, default=ModePaiement.VIREMENT)
+    type_livraison = models.CharField(
+        max_length=20,
+        choices=TypeLivraison.choices,
+        default=TypeLivraison.STANDARD,
+    )
+    poids_total_grammes = models.PositiveIntegerField(default=0, editable=False, verbose_name="Poids total (g)")
     total_produits = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     frais_livraison = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)

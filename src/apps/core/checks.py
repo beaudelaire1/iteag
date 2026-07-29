@@ -85,3 +85,35 @@ def styles_construits(app_configs, **kwargs):
         ]
 
     return []
+
+
+@register()
+def configuration_turnstile(app_configs, **kwargs):
+    """Une protection annoncée comme active doit être complètement configurée."""
+    if not getattr(settings, "CLOUDFLARE_TURNSTILE_ENABLED", False):
+        return []
+
+    manquantes = [
+        nom
+        for nom in ("CLOUDFLARE_TURNSTILE_SITE_KEY", "CLOUDFLARE_TURNSTILE_SECRET_KEY")
+        if not getattr(settings, nom, "")
+    ]
+    if manquantes:
+        return [
+            Error(
+                "Cloudflare Turnstile est activé sans toutes ses clés.",
+                hint=f"Renseignez les variables suivantes : {', '.join(manquantes)}.",
+                id="core.E002",
+            )
+        ]
+
+    if getattr(settings, "CLOUDFLARE_TURNSTILE_TIMEOUT", 0) <= 0:
+        return [
+            Error(
+                "Le délai Siteverify de Cloudflare Turnstile doit être positif.",
+                hint="Définissez CLOUDFLARE_TURNSTILE_TIMEOUT à 5 secondes, par exemple.",
+                id="core.E003",
+            )
+        ]
+
+    return []

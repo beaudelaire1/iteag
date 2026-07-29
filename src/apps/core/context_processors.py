@@ -25,6 +25,8 @@ def site_context(request):
         "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
         "DEBUG": settings.DEBUG,
+        "CLOUDFLARE_TURNSTILE_ENABLED": settings.CLOUDFLARE_TURNSTILE_ENABLED,
+        "CLOUDFLARE_TURNSTILE_SITE_KEY": settings.CLOUDFLARE_TURNSTILE_SITE_KEY,
     }
 
 

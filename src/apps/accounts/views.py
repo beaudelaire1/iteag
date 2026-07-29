@@ -3,13 +3,14 @@ import io
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import TemplateView
 from django_otp import login as otp_login
 
 from apps.core.services.audit import journaliser
+from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
 from .forms import EmailOrUsernameAuthenticationForm
 from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
@@ -55,6 +56,16 @@ class IteagLoginView(LoginView):
 
 class IteagLogoutView(LogoutView):
     pass
+
+
+class IteagPasswordResetView(PasswordResetView):
+    """Empêche l'automatisation des envois de liens de réinitialisation."""
+
+    def form_valid(self, form):
+        if not valider_requete(self.request, action="mot_de_passe"):
+            form.add_error(None, MESSAGE_ECHEC)
+            return self.form_invalid(form)
+        return super().form_valid(form)
 
 
 # ──────────────────────────────────────────────

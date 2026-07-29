@@ -21,6 +21,10 @@ class StripeIndisponible(RuntimeError):
     """Stripe n'est pas configuré : mieux vaut le dire que d'échouer plus loin."""
 
 
+class SessionPaiementTerminee(RuntimeError):
+    """La session Stripe a déjà abouti et ne doit pas être remplacée."""
+
+
 def est_configure() -> bool:
     """Stripe peut-il encaisser ?
 
@@ -87,6 +91,63 @@ def creer_session(reglement, request=None) -> str:
     reglement.session_stripe = session.id
     reglement.save(update_fields=["session_stripe", "updated_at"])
     return session.url
+
+
+def creer_session_integree(reglement, request=None) -> str:
+    """Ouvre ou reprend une session Checkout intégrée et renvoie son secret client.
+
+    Une session encore ouverte est réutilisée après un rechargement de page.
+    Une ancienne session hébergée ou expirée est remplacée, mais sa clé sert à
+    rendre cette opération idempotente : deux appels simultanés ne peuvent pas
+    produire deux possibilités d'encaissement distinctes.
+    """
+    client = _client()
+    session_precedente = None
+
+    if reglement.session_stripe:
+        session_precedente = client.checkout.Session.retrieve(reglement.session_stripe)
+        statut = getattr(session_precedente, "status", "")
+        paiement = getattr(session_precedente, "payment_status", "")
+        secret_client = getattr(session_precedente, "client_secret", "")
+        mode_interface = getattr(session_precedente, "ui_mode", "")
+
+        if paiement == "paid" or statut == "complete":
+            raise SessionPaiementTerminee("Ce paiement a déjà été traité.")
+        if statut == "open" and mode_interface == "embedded" and secret_client:
+            return secret_client
+        if statut == "open":
+            client.checkout.Session.expire(reglement.session_stripe)
+
+    retour = f"{_adresse_absolue(request, 'paiements:succes', pk=reglement.pk)}?session_id={{CHECKOUT_SESSION_ID}}"
+    identifiant_precedent = getattr(session_precedente, "id", "") or "initiale"
+    session = client.checkout.Session.create(
+        ui_mode="embedded",
+        mode="payment",
+        locale="fr",
+        payment_method_types=["card"],
+        client_reference_id=str(reglement.pk),
+        customer_email=reglement.email or None,
+        line_items=[
+            {
+                "quantity": 1,
+                "price_data": {
+                    "currency": reglement.devise.lower(),
+                    "unit_amount": reglement.montant_en_centimes,
+                    "product_data": {"name": reglement.libelle},
+                },
+            }
+        ],
+        metadata={
+            "reglement": str(reglement.pk),
+            "nature": reglement.nature,
+            "taux_tva": str(reglement.taux_tva),
+        },
+        return_url=retour,
+        idempotency_key=f"reglement-{reglement.pk}-integre-apres-{identifiant_precedent}",
+    )
+    reglement.session_stripe = session.id
+    reglement.save(update_fields=["session_stripe", "updated_at"])
+    return session.client_secret
 
 
 def lire_evenement(charge_utile: bytes, signature: str):

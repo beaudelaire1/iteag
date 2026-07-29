@@ -1,0 +1,6 @@
+{% if CLOUDFLARE_TURNSTILE_ENABLED %}
+<div class="cf-turnstile"
+     data-sitekey="{{ CLOUDFLARE_TURNSTILE_SITE_KEY }}"
+     data-action="{{ action }}"
+     data-language="fr"></div>
+{% endif %}

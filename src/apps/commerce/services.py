@@ -1,5 +1,7 @@
 """Workflows transactionnels des commandes et du stock."""
 
+from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 
 from django.conf import settings
@@ -10,9 +12,118 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.commerce.models import AlerteStock, Commande, LigneCommande, MouvementStock, ProduitLivre
+from apps.commerce.models import (
+    AlerteStock,
+    Commande,
+    DestinationLivraison,
+    LigneCommande,
+    MouvementStock,
+    ProduitLivre,
+    TarifLivraison,
+    TypeLivraison,
+)
 from apps.core.services.emails import envoyer_email
 from apps.core.services.notifications import notifier, notifier_plusieurs
+
+
+@dataclass(frozen=True)
+class DevisLivraison:
+    destination: str
+    type_livraison: str
+    poids_grammes: int
+    frais: Decimal
+    livraison_offerte: bool
+    transporteur: str = ""
+    offre: str = ""
+    source_url: str = ""
+    date_effet: date | None = None
+
+    def total_avec(self, total_produits: Decimal) -> Decimal:
+        return Decimal(total_produits) + self.frais
+
+
+def seuil_livraison_offerte() -> Decimal:
+    """Seuil commercial explicite : aucun port gratuit en dessous."""
+    return Decimal(str(getattr(settings, "COMMERCE_SEUIL_LIVRAISON_OFFERTE", "150.00")))
+
+
+def calculer_poids_articles(articles) -> int:
+    """Calcule le poids du colis et refuse tout catalogue incomplet."""
+    poids_total = 0
+    for produit, quantite in articles:
+        poids = int(produit.poids_grammes)
+        if poids < 1:
+            raise ValidationError(f"Le poids de « {produit.titre} » doit être renseigné avant sa vente.")
+        poids_total += poids * int(quantite)
+    return poids_total
+
+
+def calculer_devis_livraison(
+    *,
+    total_produits: Decimal,
+    poids_grammes: int,
+    destination: str,
+    type_livraison: str,
+) -> DevisLivraison:
+    """Sélectionne le premier palier contractuel couvrant le poids du colis."""
+    destinations = {valeur for valeur, _ in DestinationLivraison.choices}
+    types = {valeur for valeur, _ in TypeLivraison.choices}
+    if destination not in destinations:
+        raise ValidationError("Cette destination n'est pas desservie.")
+    if type_livraison not in types:
+        raise ValidationError("Ce type de livraison n'est pas proposé.")
+    if poids_grammes < 1:
+        raise ValidationError("Le poids du colis doit être supérieur à zéro.")
+
+    total = Decimal(total_produits)
+    seuil = seuil_livraison_offerte()
+    if total >= seuil:
+        return DevisLivraison(
+            destination=destination,
+            type_livraison=type_livraison,
+            poids_grammes=poids_grammes,
+            frais=Decimal("0.00"),
+            livraison_offerte=True,
+        )
+
+    tarif = (
+        TarifLivraison.objects.filter(
+            destination=destination,
+            type_livraison=type_livraison,
+            poids_max_grammes__gte=poids_grammes,
+            actif=True,
+        )
+        .order_by("poids_max_grammes")
+        .first()
+    )
+    if tarif is None:
+        libelle_type = TypeLivraison(type_livraison).label.lower()
+        raise ValidationError(
+            f"Aucun tarif {libelle_type} n'est configuré pour {destination} et un colis de {poids_grammes} g."
+        )
+
+    return DevisLivraison(
+        destination=destination,
+        type_livraison=type_livraison,
+        poids_grammes=poids_grammes,
+        frais=tarif.prix_ttc,
+        livraison_offerte=False,
+        transporteur=tarif.transporteur,
+        offre=tarif.offre,
+        source_url=tarif.source_url,
+        date_effet=tarif.date_effet,
+    )
+
+
+def devis_pour_lignes(lignes, *, destination: str, type_livraison: str) -> DevisLivraison:
+    articles = [(ligne.produit, ligne.quantite) for ligne in lignes]
+    total_produits = sum((ligne.produit.prix_ttc * ligne.quantite for ligne in lignes), Decimal("0.00"))
+    return calculer_devis_livraison(
+        total_produits=total_produits,
+        poids_grammes=calculer_poids_articles(articles),
+        destination=destination,
+        type_livraison=type_livraison,
+    )
 
 
 def _personnel():
@@ -151,6 +262,24 @@ def creer_commande(*, donnees: dict, lignes_panier, utilisateur=None) -> Command
     if len(produits) != len(quantites):
         raise ValidationError("Un livre de votre panier n'est plus proposé.")
 
+    total_produits = Decimal("0.00")
+    articles = []
+    for identifiant, quantite in quantites.items():
+        produit = produits[identifiant]
+        if quantite < 1 or quantite > produit.stock_disponible:
+            raise ValidationError(
+                f"Stock insuffisant pour « {produit.titre} » : {produit.stock_disponible} disponible(s)."
+            )
+        total_produits += produit.prix_ttc * quantite
+        articles.append((produit, quantite))
+
+    devis = calculer_devis_livraison(
+        total_produits=total_produits,
+        poids_grammes=calculer_poids_articles(articles),
+        destination=donnees.get("pays", ""),
+        type_livraison=donnees.get("type_livraison", ""),
+    )
+
     champs = {
         nom: donnees.get(nom, "")
         for nom in (
@@ -163,6 +292,7 @@ def creer_commande(*, donnees: dict, lignes_panier, utilisateur=None) -> Command
             "code_postal",
             "ville",
             "pays",
+            "type_livraison",
             "mode_paiement",
             "commentaire",
         )
@@ -170,15 +300,11 @@ def creer_commande(*, donnees: dict, lignes_panier, utilisateur=None) -> Command
     commande = Commande.objects.create(
         **champs,
         utilisateur=utilisateur if getattr(utilisateur, "is_authenticated", False) else None,
+        poids_total_grammes=devis.poids_grammes,
     )
 
-    total_produits = Decimal("0.00")
     for identifiant, quantite in quantites.items():
         produit = produits[identifiant]
-        if quantite < 1 or quantite > produit.stock_disponible:
-            raise ValidationError(
-                f"Stock insuffisant pour « {produit.titre} » : {produit.stock_disponible} disponible(s)."
-            )
         total_ligne = produit.prix_ttc * quantite
         LigneCommande.objects.create(
             commande=commande,
@@ -200,12 +326,10 @@ def creer_commande(*, donnees: dict, lignes_panier, utilisateur=None) -> Command
             motif=f"Réservation pour {commande.numero}",
         )
         synchroniser_alerte_stock(produit)
-        total_produits += total_ligne
 
-    frais = Decimal(str(getattr(settings, "COMMERCE_FRAIS_LIVRAISON", "0.00")))
     commande.total_produits = total_produits
-    commande.frais_livraison = frais
-    commande.total = total_produits + frais
+    commande.frais_livraison = devis.frais
+    commande.total = devis.total_avec(total_produits)
     commande.save(update_fields=["total_produits", "frais_livraison", "total", "updated_at"])
     transaction.on_commit(lambda: _notification_commande(commande))
     return commande

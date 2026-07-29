@@ -3,6 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 
 from apps.core.formulaires import habiller
+from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
 from .models import User
 
@@ -20,6 +21,11 @@ class EmailOrUsernameAuthenticationForm(AuthenticationForm):
         habiller(self)
 
     def clean(self):
+        # Avant même de tenter l'authentification : un robot ne doit pas
+        # pouvoir transformer ce point d'entrée en oracle de mots de passe.
+        if not valider_requete(self.request, action="connexion"):
+            raise ValidationError(MESSAGE_ECHEC)
+
         username = self.cleaned_data.get("username")
         password = self.cleaned_data.get("password")
 

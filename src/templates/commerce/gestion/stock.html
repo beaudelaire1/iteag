@@ -9,6 +9,9 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-10">
             <div><p class="overline mb-2">Administration de la boutique</p><h1>Stock des livres</h1></div>
             <div class="flex gap-3">
+                {% if request.user.role == "admin" or request.user.is_superuser %}
+                <a href="{% url 'commerce:gestion_tarifs_livraison' %}" class="btn-secondary">Tarifs de livraison</a>
+                {% endif %}
                 <a href="{% url 'commerce:gestion_commandes' %}" class="btn-secondary">Commandes</a>
                 <a href="{% url 'commerce:produit_ajouter' %}" class="btn-primary">+ Ajouter un livre</a>
             </div>

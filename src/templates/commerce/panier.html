@@ -40,6 +40,10 @@
         </div>
         <div class="mt-8 flex flex-col items-end gap-5">
             <p class="text-xl">Sous-total : <strong>{{ total }} €</strong></p>
+            <p class="max-w-md text-right text-sm text-warm-500">
+                Les frais de livraison seront calculés à l'étape suivante selon la destination,
+                le mode standard ou express et le poids total des livres.
+            </p>
             <a href="{% url 'commerce:commander' %}" class="btn-primary">Passer la commande</a>
         </div>
         {% else %}
