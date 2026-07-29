@@ -10,6 +10,7 @@ from apps.elearning.models import (
     ModuleFormation,
     ProgressionLecon,
     RegleAccesParcours,
+    RessourceLecon,
     SousTitre,
     VideoAsset,
 )
@@ -78,12 +79,20 @@ class ChapitreAdmin(admin.ModelAdmin):
     inlines = [LeconInline]
 
 
+class RessourceLeconInline(admin.TabularInline):
+    model = RessourceLecon
+    extra = 1
+    ordering = ["ordre"]
+    fields = ["ordre", "titre", "fichier", "lien_externe"]
+
+
 @admin.register(Lecon)
 class LeconAdmin(admin.ModelAdmin):
     list_display = ["titre", "chapitre", "type_lecon", "duree_secondes", "apercu_gratuit", "obligatoire"]
     list_filter = ["type_lecon", "apercu_gratuit", "obligatoire", "chapitre__module"]
     search_fields = ["titre"]
     prepopulated_fields = {"slug": ("titre",)}
+    inlines = [RessourceLeconInline]
 
 
 @admin.register(VideoAsset)

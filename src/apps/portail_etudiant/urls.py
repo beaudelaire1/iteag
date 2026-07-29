@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.lms.views_qcm import StudentQuestionnaireView
+
 from .vues import (
     StudentCoursesView,
     StudentDashboardView,
@@ -38,4 +40,5 @@ urlpatterns = [
     path("paiements/", StudentPaymentsView.as_view(), name="payments"),
     path("notes/", StudentGradesView.as_view(), name="grades"),
     path("evaluations/<int:pk>/remettre/", StudentEvaluationSubmitView.as_view(), name="submit_evaluation"),
+    path("evaluations/<int:pk>/questionnaire/", StudentQuestionnaireView.as_view(), name="questionnaire"),
 ]

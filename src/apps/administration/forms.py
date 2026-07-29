@@ -111,6 +111,7 @@ class AdminEtudiantForm(FormulaireModeleITEAG):
             "numero_etudiant",
             "statut_inscription",
             "formule_tarif",
+            "eglise",
             "eglise_fondatrice",
         ]
         widgets = {
@@ -120,6 +121,7 @@ class AdminEtudiantForm(FormulaireModeleITEAG):
             "numero_etudiant": forms.TextInput(attrs={"class": "form-input"}),
             "statut_inscription": forms.Select(attrs={"class": "form-input"}),
             "formule_tarif": forms.Select(attrs={"class": "form-input"}),
+            "eglise": forms.TextInput(attrs={"class": "form-input"}),
             "eglise_fondatrice": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
         }
 

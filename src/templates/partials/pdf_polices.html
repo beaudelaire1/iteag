@@ -1,0 +1,20 @@
+{% comment %}
+Socle typographique des documents imprimés — attend `polices_pdf`.
+
+Les fichiers viennent du dépôt et sont désignés par leur chemin sur le disque
+(voir apps/core/services/pdf.py). Un document produit sur un poste de travail
+est donc typographiquement identique à celui produit par l'image de production :
+c'est la seule façon d'être sûr que le papier remis ressemble à ce qui a été
+validé.
+
+Les familles de repli restent nommées derrière : si un fichier venait à
+manquer, mieux vaut un serif générique qu'un rendu sans empattement du tout.
+{% endcomment %}
+{% for police in polices_pdf %}
+@font-face {
+    font-family: "{{ police.famille }}";
+    src: url("{{ police.uri }}") format("truetype");
+    font-weight: {{ police.graisse }};
+    font-style: {{ police.style }};
+}
+{% endfor %}

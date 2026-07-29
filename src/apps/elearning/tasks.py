@@ -138,7 +138,15 @@ def generer_attestation_pdf(attestation_id: str) -> str:
         logger.warning("WeasyPrint indisponible : attestation %s sans PDF", attestation_id)
         return "sans_pdf"
 
-    html = render_to_string("elearning/attestation_pdf.html", {"attestation": attestation})
+    from django.conf import settings
+
+    from apps.core.services.pdf import contexte_marque, qr_data_uri
+
+    adresse = f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{attestation.url_verification()}"
+    html = render_to_string(
+        "elearning/attestation_pdf.html",
+        contexte_marque(attestation=attestation, qr_verification=qr_data_uri(adresse)),
+    )
     pdf = HTML(string=html).write_pdf()
     attestation.fichier_pdf.save(f"{attestation.numero}.pdf", ContentFile(pdf), save=True)
     return "generee"

@@ -1,0 +1,167 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ devoir.titre }} — Espace enseignant — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:devoirs_list' %}" class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Mes devoirs
+    </a>
+
+    <p class="overline mb-2">{{ devoir.cours_session.cours.titre }} · {{ devoir.cours_session.session }}</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ devoir.titre }}</h1>
+
+    <p class="mt-3 flex flex-wrap items-center gap-2">
+        {% if devoir.statut == 'brouillon' %}
+            <span class="badge badge-warning">Brouillon — non visible des étudiants</span>
+        {% elif devoir.statut == 'clos' %}
+            <span class="badge">Clos</span>
+        {% elif devoir.est_a_venir %}
+            <span class="badge badge-info">Ouvre le {{ devoir.date_ouverture|date:"d/m/Y à H:i" }}</span>
+        {% elif devoir.est_ouvert %}
+            <span class="badge badge-success">Dépôt ouvert jusqu'au {{ devoir.date_fermeture|date:"d/m/Y à H:i" }}</span>
+        {% else %}
+            <span class="badge badge-danger">Dépôt fermé depuis le {{ devoir.date_fermeture|date:"d/m/Y à H:i" }}</span>
+        {% endif %}
+        <span class="badge badge-info">{{ devoir.get_modalite_display }}</span>
+        <span class="badge">Barème /{{ devoir.bareme|floatformat:0 }}</span>
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+    {# ── Actions et consigne ── #}
+    <aside class="lg:col-span-1 space-y-6">
+        <section class="card-elevated">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Pilotage</h2>
+
+            {% if devoir.statut == 'brouillon' %}
+            <form method="post" action="{% url 'lms:devoir_action' devoir.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="publier">
+                <button type="submit" class="btn-primary w-full justify-center">Ouvrir aux étudiants</button>
+            </form>
+            <p class="mt-3 text-xs text-warm-500">
+                Une copie vide sera créée pour chaque inscrit, et chacun recevra une notification.
+            </p>
+            {% elif devoir.statut == 'publie' %}
+            <form method="post" action="{% url 'lms:devoir_action' devoir.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="clore">
+                <button type="submit" class="btn-ghost w-full justify-center">Clore le dépôt</button>
+            </form>
+            <p class="mt-3 text-xs text-warm-500">
+                La clôture ferme le dépôt immédiatement, avant même la date de fermeture.
+            </p>
+            {% else %}
+            <p class="text-sm text-warm-600">Ce devoir est clos. Les copies restent corrigeables.</p>
+            {% endif %}
+
+            <a href="{% url 'lms:devoir_update' devoir.pk %}" class="btn-ghost w-full justify-center mt-3">Modifier le devoir</a>
+            {% if devoir.modalite == 'qcm' %}
+            <a href="{% url 'lms:questionnaire' devoir.pk %}" class="btn-ghost w-full justify-center mt-3">
+                Composer le questionnaire
+            </a>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">Consigne</h2>
+            {% if devoir.consigne %}
+            <p class="text-sm text-warm-700" style="white-space: pre-line;">{{ devoir.consigne }}</p>
+            {% else %}
+            <p class="text-sm text-warm-500">Aucune consigne écrite.</p>
+            {% endif %}
+            {% if devoir.fichier_consigne %}
+            <a href="{{ devoir.fichier_consigne.url }}" class="btn-ghost w-full justify-center mt-4">Télécharger le sujet</a>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">Avancement</h2>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between"><dt class="text-warm-500">Attendues</dt><dd class="num font-semibold">{{ attendues|length }}</dd></div>
+                <div class="flex justify-between"><dt class="text-warm-500">À corriger</dt><dd class="num font-semibold">{{ a_corriger|length }}</dd></div>
+                <div class="flex justify-between"><dt class="text-warm-500">Corrigées</dt><dd class="num font-semibold">{{ corrigees|length }}</dd></div>
+                {% if tardives %}
+                <div class="flex justify-between"><dt class="text-warm-500">Dont tardives</dt><dd class="num font-semibold" style="color: var(--color-navy-900);">{{ tardives|length }}</dd></div>
+                {% endif %}
+            </dl>
+        </section>
+    </aside>
+
+    {# ── Copie par copie ── #}
+    <section class="lg:col-span-2">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Les copies</h2>
+
+        {% if copies %}
+        <div class="tw overflow-x-auto">
+            <table class="table-premium">
+                <thead>
+                    <tr><th>Étudiant</th><th>Remise</th><th>État</th><th class="num">Note</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for copie in copies %}
+                    <tr>
+                        <td class="font-medium">
+                            {{ copie.etudiant.utilisateur.get_full_name|default:copie.etudiant.utilisateur.username }}
+                            <span class="block text-xs text-warm-400">{{ copie.etudiant.numero_etudiant }}</span>
+                        </td>
+                        <td class="text-sm">
+                            {% if copie.date_soumission %}
+                                {{ copie.date_soumission|date:"d/m/Y H:i" }}
+                                {% if copie.depot_tardif %}<span class="badge badge-warning">Tardif</span>{% endif %}
+                            {% elif copie.date_limite_reportee %}
+                                <span class="text-warm-500">Délai jusqu'au {{ copie.date_limite_reportee|date:"d/m H:i" }}</span>
+                            {% else %}
+                                <span class="text-warm-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if copie.statut == 'publie' %}<span class="badge badge-success">Publiée</span>
+                            {% elif copie.statut == 'note' %}<span class="badge badge-info">Notée</span>
+                            {% elif copie.statut == 'en_correction' %}<span class="badge badge-warning">En correction</span>
+                            {% elif copie.statut == 'soumis' %}<span class="badge badge-warning">Remise</span>
+                            {% else %}<span class="badge">Attendue</span>{% endif %}
+                            {% if copie.a_ete_revisee %}<span class="badge badge-gold">Révisée</span>{% endif %}
+                        </td>
+                        <td class="num">{% if copie.note is not None %}{{ copie.note }}{% else %}—{% endif %}</td>
+                        <td class="text-right">
+                            {% if copie.fichier_soumis %}
+                            <a href="{{ copie.fichier_soumis.url }}" class="text-xs font-medium mr-3" style="color: var(--color-navy-600);">Copie</a>
+                            {% endif %}
+                            {% if copie.statut == 'publie' %}
+                            <a href="{% url 'lms:revise_grade' copie.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Réviser</a>
+                            {% elif copie.statut == 'soumis' or copie.statut == 'en_correction' %}
+                            <a href="{% url 'lms:grade_evaluation' copie.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Corriger</a>
+                            {% elif copie.statut == 'en_attente' %}
+                            <form method="post" action="{% url 'lms:accorder_delai' copie.pk %}" class="inline-flex items-center gap-2">
+                                {% csrf_token %}
+                                <label class="sr-only" for="delai-{{ copie.pk }}">Délai accordé à {{ copie.etudiant }}</label>
+                                <input type="datetime-local" name="jusqu_au" id="delai-{{ copie.pk }}" class="form-input" style="width: 13rem;">
+                                <button type="submit" class="text-xs font-medium" style="color: var(--color-navy-600);">Accorder</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card text-center" style="padding: 3rem 1.5rem;">
+            <p class="text-sm text-warm-600">
+                Aucune copie : le devoir n'a pas encore été ouvert aux étudiants.
+            </p>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

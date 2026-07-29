@@ -15,6 +15,7 @@ urlpatterns = [
     # Étudiants
     path("etudiants/", views.AdminEtudiantListView.as_view(), name="etudiants"),
     path("etudiants/ajouter/", views.AdminEtudiantCreateView.as_view(), name="etudiant_create"),
+    path("etudiants/<int:pk>/", views.AdminEtudiantDetailView.as_view(), name="etudiant_detail"),
     path("etudiants/<int:pk>/modifier/", views.AdminEtudiantUpdateView.as_view(), name="etudiant_update"),
     path("etudiants/<int:pk>/supprimer/", views.AdminEtudiantDeleteView.as_view(), name="etudiant_delete"),
     # Professeurs

@@ -26,6 +26,7 @@ from apps.elearning.forms import (
     ChapitreForm,
     LeconForm,
     ModuleForm,
+    RessourceLeconForm,
     SousTitreForm,
     VideoExterneForm,
 )
@@ -35,6 +36,7 @@ from apps.elearning.models import (
     Lecon,
     ModuleFormation,
     ProgressionLecon,
+    RessourceLecon,
     VideoAsset,
 )
 
@@ -337,6 +339,19 @@ class LeconUpdateView(LeconFormMixin, UpdateView):
     def chapitre(self):
         return self.object.chapitre
 
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        # Les ressources s'ajoutent depuis cette page, à la façon des
+        # plateformes de cours en ligne : la leçon et ses supports se
+        # travaillent au même endroit.
+        contexte.update(
+            {
+                "ressources": self.object.ressources.all(),
+                "form_ressource": kwargs.get("form_ressource") or RessourceLeconForm(),
+            }
+        )
+        return contexte
+
     def form_valid(self, form):
         lecon = form.save()
         lecon.chapitre.module.recalculer_duree()
@@ -374,6 +389,47 @@ class LeconDeleteView(ProfesseurMixin, DeleteView):
             }
         )
         return contexte
+
+
+class RessourceCreateView(ProfesseurMixin, View):
+    """Joint un support pédagogique à une leçon — fichier ou lien externe."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, lecon_pk):
+        lecon = get_object_or_404(Lecon.objects.filter(chapitre__module__in=self.mes_modules()), pk=lecon_pk)
+        formulaire = RessourceLeconForm(request.POST, request.FILES)
+        if not formulaire.is_valid():
+            messages.error(request, " ".join(erreur for erreurs in formulaire.errors.values() for erreur in erreurs))
+            return redirect(reverse("elearning:enseignant_lecon_modifier", kwargs={"pk": lecon.pk}))
+
+        ressource = formulaire.save(commit=False)
+        ressource.lecon = lecon
+        ressource.deposee_par = request.user
+        if not ressource.ordre:
+            dernier_ordre = lecon.ressources.aggregate(maximum=Max("ordre"))["maximum"] or 0
+            ressource.ordre = dernier_ordre + 1
+        ressource.save()
+        journaliser("creation", request=request, objet=ressource)
+        messages.success(request, "Ressource ajoutée à la leçon.")
+        return redirect(reverse("elearning:enseignant_lecon_modifier", kwargs={"pk": lecon.pk}))
+
+
+class RessourceDeleteView(ProfesseurMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        ressource = get_object_or_404(
+            RessourceLecon.objects.filter(lecon__chapitre__module__in=self.mes_modules()),
+            pk=pk,
+        )
+        lecon = ressource.lecon
+        journaliser("suppression", request=request, objet=ressource)
+        if ressource.fichier:
+            ressource.fichier.delete(save=False)
+        ressource.delete()
+        messages.success(request, "Ressource retirée de la leçon.")
+        return redirect(reverse("elearning:enseignant_lecon_modifier", kwargs={"pk": lecon.pk}))
 
 
 class ReordonnerLeconsView(ProfesseurMixin, View):

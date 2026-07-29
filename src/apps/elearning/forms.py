@@ -10,7 +10,7 @@ from django.utils.text import slugify
 
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 from apps.elearning.diffusion import fournisseur_compatible
-from apps.elearning.models import Chapitre, Lecon, ModuleFormation, SousTitre, VideoAsset
+from apps.elearning.models import Chapitre, Lecon, ModuleFormation, RessourceLecon, SousTitre, VideoAsset
 
 INPUT = "form-input"
 SELECT = "form-select"
@@ -110,7 +110,9 @@ class ModuleForm(FormulaireModeleITEAG):
         incompatibles = [
             lecon
             for lecon in self.instance.lecons()
-            if lecon.video is not None and not fournisseur_compatible(lecon.video.fournisseur, politique)
+            if lecon.video is not None
+            and not lecon.apercu_gratuit
+            and not fournisseur_compatible(lecon.video.fournisseur, politique)
         ]
         if incompatibles:
             noms = ", ".join(f"« {lecon.titre} »" for lecon in incompatibles[:3])
@@ -241,6 +243,86 @@ class LeconForm(FormulaireModeleITEAG):
         if commit:
             lecon.save()
         return lecon
+
+
+class RessourceLeconForm(FormulaireModeleITEAG):
+    """
+    Dépôt d'un support pédagogique sur une leçon.
+
+    Contrairement aux vidéos, ces fichiers transitent par le serveur : la
+    liste des formats est donc fermée — des supports de cours, pas des
+    exécutables — et la taille plafonnée pour qu'un dépôt ne monopolise pas
+    le serveur d'application.
+    """
+
+    EXTENSIONS_AUTORISEES = {
+        "pdf",
+        "doc",
+        "docx",
+        "ppt",
+        "pptx",
+        "xls",
+        "xlsx",
+        "odt",
+        "odp",
+        "ods",
+        "rtf",
+        "txt",
+        "md",
+        "csv",
+        "jpg",
+        "jpeg",
+        "png",
+        "webp",
+        "zip",
+        "epub",
+        "mp3",
+    }
+    TAILLE_MAX_OCTETS = 50 * 1024 * 1024
+
+    class Meta:
+        model = RessourceLecon
+        fields = ["titre", "fichier", "lien_externe"]
+        widgets = {
+            "titre": forms.TextInput(attrs={"class": INPUT, "placeholder": "Ex. Notes de cours (PDF)"}),
+            "fichier": forms.ClearableFileInput(attrs={"class": FICHIER}),
+            "lien_externe": forms.URLInput(attrs={"class": INPUT, "placeholder": "https://…"}),
+        }
+        help_texts = {
+            "fichier": "PDF, bureautique, image, archive ZIP ou audio MP3 — 50 Mo au plus.",
+            "lien_externe": "À défaut de fichier : adresse HTTPS d'une ressource externe.",
+        }
+
+    def clean_fichier(self):
+        fichier = self.cleaned_data.get("fichier")
+        if not fichier:
+            return fichier
+        extension = (fichier.name.rsplit(".", 1)[-1] if "." in fichier.name else "").lower()
+        if extension not in self.EXTENSIONS_AUTORISEES:
+            raise forms.ValidationError(
+                f"Le format « .{extension or '?'} » n'est pas accepté. Formats possibles : "
+                + ", ".join(sorted(self.EXTENSIONS_AUTORISEES))
+                + "."
+            )
+        if fichier.size > self.TAILLE_MAX_OCTETS:
+            raise forms.ValidationError("Le fichier dépasse 50 Mo. Déposez-le chez un hébergeur et donnez le lien.")
+        return fichier
+
+    def clean_lien_externe(self):
+        lien = self.cleaned_data.get("lien_externe", "").strip()
+        if lien and not lien.startswith("https://"):
+            raise forms.ValidationError("Le lien doit utiliser HTTPS.")
+        return lien
+
+    def clean(self):
+        donnees = super().clean()
+        fichier = donnees.get("fichier") or self.instance.fichier
+        lien = donnees.get("lien_externe")
+        if fichier and lien:
+            self.add_error("lien_externe", "Choisissez : un fichier ou un lien, pas les deux.")
+        if not fichier and not lien:
+            self.add_error("fichier", "Joignez un fichier, ou indiquez un lien externe.")
+        return donnees
 
 
 class SousTitreForm(FormulaireModeleITEAG):

@@ -27,6 +27,12 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
         "academics",
         "library",
         "lms",
+        # La fiche de scolarité réunit ce que le secrétariat cherchait dans
+        # cinq écrans, documents édités compris. L'arête est ajoutée, et non
+        # subie : « documents » ne connaît pas « administration » en retour,
+        # donc aucun cycle n'apparaît, et « administration » est déjà le
+        # portail qui agrège les domaines — c'est sa raison d'être.
+        "documents",
         "elearning",
     },
     "formations": {"core"},

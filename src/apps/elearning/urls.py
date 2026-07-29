@@ -57,6 +57,16 @@ urlpatterns = [
         name="enseignant_lecon_supprimer",
     ),
     path(
+        "espace-enseignant/lecons/<uuid:lecon_pk>/ressources/",
+        views_enseignant.RessourceCreateView.as_view(),
+        name="enseignant_ressource_creer",
+    ),
+    path(
+        "espace-enseignant/ressources/<int:pk>/supprimer/",
+        views_enseignant.RessourceDeleteView.as_view(),
+        name="enseignant_ressource_supprimer",
+    ),
+    path(
         "espace-enseignant/<slug:slug>/chapitre/",
         views_enseignant.ChapitreCreateView.as_view(),
         name="enseignant_chapitre_creer",
@@ -90,6 +100,11 @@ urlpatterns = [
         name="module_demander_acces",
     ),
     path("<slug:slug>/<slug:lecon_slug>/", views.LeconDetailView.as_view(), name="lecon_detail"),
+    path(
+        "<slug:slug>/<slug:lecon_slug>/ressources/<int:pk>/",
+        views.RessourceTelechargementView.as_view(),
+        name="ressource_telecharger",
+    ),
     path("<slug:slug>/<slug:lecon_slug>/lecture/", views.playback_url, name="lecon_playback"),
     path("<slug:slug>/<slug:lecon_slug>/progression/", views.ProgressionView.as_view(), name="lecon_progression"),
 ]

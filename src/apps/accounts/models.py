@@ -22,6 +22,24 @@ class User(AbstractUser):
     )
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
 
+    # ── Coordonnées ──
+    #
+    # Portées par le compte, et non par le profil étudiant : un enseignant et
+    # une secrétaire ont une adresse et un téléphone comme un étudiant, et le
+    # même écran doit pouvoir les tenir à jour. Le dossier de scolarité, lui,
+    # garde ce qui n'a de sens que pour un étudiant (église, promotion, tarif).
+    photo = models.ImageField(
+        upload_to="comptes/photos/%Y/",
+        blank=True,
+        verbose_name="Photo",
+        help_text="Portrait affiché dans les espaces privés et sur la fiche de scolarité.",
+    )
+    adresse = models.CharField(max_length=250, blank=True, verbose_name="Adresse")
+    complement_adresse = models.CharField(max_length=250, blank=True, verbose_name="Complément d'adresse")
+    code_postal = models.CharField(max_length=20, blank=True, verbose_name="Code postal")
+    ville = models.CharField(max_length=120, blank=True, verbose_name="Ville")
+    pays = models.CharField(max_length=120, blank=True, default="Guadeloupe", verbose_name="Pays")
+
     class Meta:
         verbose_name = "Utilisateur"
         verbose_name_plural = "Utilisateurs"
@@ -30,6 +48,17 @@ class User(AbstractUser):
     def __str__(self):
         full = self.get_full_name()
         return full if full else self.username
+
+    @property
+    def initiales(self) -> str:
+        """Repli lorsqu'aucune photo n'est déposée."""
+        return f"{self.first_name[:1]}{self.last_name[:1]}".upper() or self.username[:2].upper()
+
+    @property
+    def adresse_postale(self) -> str:
+        """Adresse sur une ligne, sans virgule orpheline si un champ manque."""
+        lignes = [self.adresse, self.complement_adresse, " ".join(filter(None, [self.code_postal, self.ville]))]
+        return ", ".join(part for part in (ligne.strip() for ligne in lignes) if part)
 
     @property
     def is_admin(self):

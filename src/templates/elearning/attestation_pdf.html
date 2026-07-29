@@ -1,71 +1,236 @@
-{% load static %}<!doctype html>
+{% comment %}
+Attestation de suivi — document remis à l'étudiant, et montré à un employeur.
+
+Le format paysage, l'encadrement double et le sceau ne sont pas décoratifs :
+ils distinguent au premier coup d'œil une attestation d'une impression d'écran,
+et c'est ce que regarde celui à qui on la présente. Le QR renvoie à la page
+publique de vérification : le porteur n'a pas à être cru sur parole.
+
+Les polices viennent du dépôt (voir apps/core/services/pdf.py) : ce document est
+identique qu'il soit produit en conteneur ou sur un poste de travail.
+{% endcomment %}<!doctype html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <title>{{ attestation.numero }}</title>
     <style>
-        @page { size: A4 landscape; margin: 0; }
+        {% include "partials/pdf_polices.html" %}
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
             margin: 0;
-            font-family: "Helvetica", Arial, sans-serif;
-            color: #1A2D29;
-            background: #FEFAEF;
+            background: #fdfbf6;
+            color: #1a2b47;
+            font-family: "Inter", "Liberation Sans", sans-serif;
+            font-size: 10pt;
         }
-        .cadre {
-            margin: 14mm;
-            padding: 18mm 20mm;
-            border: 1.5pt solid #355952;
-            outline: 0.5pt solid #EAB63E;
-            outline-offset: 3mm;
-            height: calc(297mm - 28mm - 6mm);
-            box-sizing: border-box;
+
+        /* ── Encadrement ──
+           Un filet épais, un filet fin en retrait : le vocabulaire graphique du
+           diplôme. C'est ce qui distingue le document d'une capture d'écran. */
+
+        .bordure {
+            position: absolute;
+            top: 9mm; right: 9mm; bottom: 9mm; left: 9mm;
+            border: 1.4pt solid #14243d;
+        }
+        .bordure-interieure {
+            position: absolute;
+            top: 12.5mm; right: 12.5mm; bottom: 12.5mm; left: 12.5mm;
+            border: 0.5pt solid #b08d3f;
+        }
+
+        .feuille {
+            position: absolute;
+            top: 12.5mm; right: 12.5mm; bottom: 12.5mm; left: 12.5mm;
+            padding: 10mm 16mm 9mm;
             text-align: center;
         }
+
+        /* ── En-tête ── */
+
+        .logo { height: 14mm; margin-bottom: 3.5mm; }
+
+        .institut {
+            color: #14243d;
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 12pt;
+            letter-spacing: 0.04em;
+            margin: 0;
+        }
+        .statut {
+            color: #8a857c;
+            font-size: 7pt;
+            letter-spacing: 0.16em;
+            margin: 1.5mm 0 0;
+            text-transform: uppercase;
+        }
+
+        /* ── Titre ── */
+
         .surtitre {
-            font-size: 9pt; font-weight: bold; letter-spacing: 0.22em;
-            text-transform: uppercase; color: #A8790C; margin: 0 0 6mm;
+            color: #b08d3f;
+            font-size: 8pt;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            margin: 9mm 0 2mm;
+            text-transform: uppercase;
         }
-        .institut { font-size: 13pt; color: #355952; margin: 0 0 14mm; }
-        h1 { font-size: 30pt; margin: 0 0 4mm; color: #1A2D29; font-weight: normal; }
-        .regle { width: 28mm; height: 2pt; background: #EAB63E; border: 0; margin: 0 auto 12mm; }
-        .mention { font-size: 11pt; color: #544B3D; margin: 0 0 3mm; }
-        .titulaire { font-size: 22pt; font-weight: bold; margin: 0 0 10mm; color: #263F3B; }
-        .module { font-size: 16pt; margin: 0 0 12mm; color: #355952; }
+        h1 {
+            color: #14243d;
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 32pt;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            margin: 0;
+        }
+        .filet {
+            background: #b08d3f;
+            border: 0;
+            height: 1.6pt;
+            margin: 4mm auto 6mm;
+            width: 26mm;
+        }
+
+        /* ── Corps ── */
+
+        .mention {
+            color: #55606f;
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 11pt;
+            font-style: italic;
+            margin: 0 0 2.5mm;
+        }
+        .titulaire {
+            color: #14243d;
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 23pt;
+            font-weight: 700;
+            margin: 0 0 5mm;
+        }
+        .module {
+            color: #14243d;
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 15pt;
+            font-style: italic;
+            margin: 0 0 7mm;
+            padding: 0 12mm;
+        }
+        .attributs {
+            color: #6f6a61;
+            font-size: 8.5pt;
+            letter-spacing: 0.06em;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .attributs span { padding: 0 2.5mm; }
+
+        /* ── Pied ──
+           Un tableau plutôt qu'une boîte flexible : WeasyPrint aligne les
+           cellules sans surprise, ce qui n'est pas vrai de toutes les
+           propriétés d'alignement flexible. */
+
+        /* Un tableau positionné en absolu se contracte sur son contenu, même
+           avec « left » et « right » : les trois colonnes se tassaient alors à
+           gauche. Le positionnement est donc porté par un conteneur, et le
+           tableau ne fait que remplir sa largeur. */
+        .bandeau-pied {
+            bottom: 8mm;
+            left: 16mm;
+            position: absolute;
+            right: 16mm;
+        }
         .pied {
-            margin-top: 14mm; display: flex; justify-content: space-between;
-            font-size: 8.5pt; color: #736957;
+            border-collapse: collapse;
+            width: 100%;
         }
-        .pied div { text-align: left; }
-        .code { font-family: "Courier New", monospace; }
+        .pied td {
+            border: 0;
+            border-top: 0.5pt solid #ddd7cc;
+            color: #6f6a61;
+            font-size: 7.5pt;
+            line-height: 1.55;
+            padding: 3.5mm 0 0;
+            text-align: left;
+            vertical-align: top;
+        }
+        .pied .etiquette {
+            color: #a9a396;
+            display: block;
+            font-size: 6.5pt;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+        .pied .valeur { color: #14243d; font-weight: 600; }
+        .code { font-family: "Inter", monospace; letter-spacing: 0.05em; }
+
+        .colonne-signature { text-align: center; width: 62mm; }
+        .signature-ligne {
+            border-top: 0.5pt solid #14243d;
+            margin: 7mm auto 1.5mm;
+            width: 46mm;
+        }
+
+        .colonne-qr { text-align: right; width: 32mm; }
+        .qr { height: 19mm; width: 19mm; }
     </style>
 </head>
 <body>
-    <div class="cadre">
-        <p class="surtitre">Attestation de suivi</p>
-        <p class="institut">Institut de Théologie Évangélique des Antilles et de la Guyane</p>
+    <div class="bordure"></div>
+    <div class="bordure-interieure"></div>
 
+    <div class="feuille">
+        {% if logo_pdf %}<img class="logo" src="{{ logo_pdf }}" alt="{{ institut.sigle }}">{% endif %}
+        <p class="institut">{{ institut.nom }}</p>
+        <p class="statut">{{ institut.statut }} · {{ institut.site }}</p>
+
+        <p class="surtitre">Attestation de suivi</p>
         <h1>Attestation</h1>
-        <hr class="regle">
+        <hr class="filet">
 
         <p class="mention">Il est attesté que</p>
         <p class="titulaire">{{ attestation.inscription.etudiant.utilisateur.get_full_name }}</p>
 
-        <p class="mention">a suivi et achevé le module de formation</p>
+        <p class="mention">a suivi et achevé, dans son intégralité, le module de formation</p>
         <p class="module">« {{ attestation.inscription.module.titre }} »</p>
 
-        {% if attestation.inscription.module.ects %}
-        <p class="mention">{{ attestation.inscription.module.ects }} crédits ECTS</p>
-        {% endif %}
+        <p class="attributs">
+            {% if attestation.inscription.module.ects %}<span>{{ attestation.inscription.module.ects }} crédits ECTS</span>·{% endif %}
+            <span>{{ attestation.inscription.module.get_niveau_display }}</span>
+            {% if attestation.inscription.module.duree_minutes %}·<span>{{ attestation.inscription.module.duree_minutes }} minutes de formation</span>{% endif %}
+        </p>
 
-        <div class="pied">
-            <div>
-                <p>Numéro : <span class="code">{{ attestation.numero }}</span></p>
-                <p>Délivrée le {{ attestation.date_emission|date:"d F Y" }}</p>
-            </div>
-            <div style="text-align: right;">
-                <p>Vérification en ligne</p>
-                <p class="code">{{ attestation.code_verification }}</p>
-            </div>
+        <div class="bandeau-pied">
+        <table class="pied">
+            <tr>
+                <td>
+                    <span class="etiquette">Numéro d'attestation</span>
+                    <span class="valeur code">{{ attestation.numero }}</span><br>
+                    Délivrée le {{ attestation.date_emission|date:"j F Y" }}
+                </td>
+                <td class="colonne-signature">
+                    <div class="signature-ligne"></div>
+                    <span class="etiquette">Pour l'institut</span>
+                    {% if attestation.inscription.module.responsable %}
+                    <span class="valeur">{{ attestation.inscription.module.responsable.nom_complet }}</span>
+                    {% else %}
+                    <span class="valeur">La direction</span>
+                    {% endif %}
+                </td>
+                <td class="colonne-qr">
+                    {% if qr_verification %}<img class="qr" src="{{ qr_verification }}" alt="">{% endif %}
+                    <span class="etiquette">Vérifier en ligne</span>
+                    <span class="code">{{ attestation.code_verification }}</span>
+                </td>
+            </tr>
+        </table>
         </div>
     </div>
 </body>

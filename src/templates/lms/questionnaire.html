@@ -1,0 +1,116 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Questionnaire — {{ devoir.titre }} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{% url 'lms:devoir_detail' devoir.pk %}" class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Retour au devoir
+    </a>
+    <p class="overline mb-2">{{ devoir.cours_session.cours.titre }}</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ devoir.titre }}</h1>
+    <p class="mt-2 text-sm text-warm-600">
+        {{ questions|length }} question(s) · {{ total_points }} point(s) au total,
+        ramenés sur {{ devoir.bareme|floatformat:0 }} à la correction.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if motif_incomplet %}
+<div class="mb-6 rounded border p-4" role="alert" style="border-color: var(--color-warm-300); background: var(--color-warm-50);">
+    <p class="text-sm font-semibold" style="color: var(--color-navy-900);">Ce questionnaire n'est pas prêt</p>
+    <p class="mt-1 text-sm text-warm-700">{{ motif_incomplet }}</p>
+</div>
+{% else %}
+<div class="mb-6 rounded border p-4" style="border-color: var(--color-warm-300);">
+    <p class="text-sm" style="color: var(--color-navy-800);">
+        Le questionnaire est complet. Il pourra être ouvert aux étudiants depuis la fiche du devoir,
+        et sera corrigé automatiquement à la remise.
+    </p>
+</div>
+{% endif %}
+
+{% if copies_rendues %}
+<form method="post" action="{% url 'lms:questionnaire_recorriger' devoir.pk %}" class="mb-6">
+    {% csrf_token %}
+    <div class="card">
+        <p class="text-sm text-warm-700">
+            {{ copies_rendues }} copie(s) ont déjà été rendues. Si vous corrigez un barème
+            — question retirée, seconde bonne réponse admise — rejouez la correction :
+            les réponses des étudiants sont conservées, rien n'est à ressaisir.
+        </p>
+        <button type="submit" class="btn-ghost mt-4">Recorriger les copies rendues</button>
+    </div>
+</form>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+    <section class="lg:col-span-2 space-y-4">
+        {% for question in questions %}
+        <article class="card">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-xs text-warm-500 mb-1">
+                        Question {{ forloop.counter }} · {{ question.get_type_question_display }} · {{ question.points }} pt
+                    </p>
+                    <p class="font-medium" style="color: var(--color-navy-900); white-space: pre-line;">{{ question.enonce }}</p>
+                </div>
+                <a href="{% url 'lms:question_detail' question.pk %}" class="btn-ghost shrink-0">Modifier</a>
+            </div>
+
+            {% comment %}
+                « est_valide » ne prend aucun argument : le gabarit peut l'appeler
+                directement, ce qui évite de transporter un dictionnaire indexé
+                par identifiant que le langage de gabarit ne sait pas relire.
+            {% endcomment %}
+            {% if question.est_valide %}
+            <p class="mt-3 text-sm form-erreur" role="alert">{{ question.est_valide }}</p>
+            {% endif %}
+
+            <ul class="mt-4 space-y-1.5">
+                {% for choix in question.choix.all %}
+                <li class="flex items-start gap-2 text-sm">
+                    {% if choix.correct %}
+                    <span aria-label="Réponse correcte" style="color: var(--color-navy-700);">✓</span>
+                    {% else %}
+                    <span aria-hidden="true" class="text-warm-300">·</span>
+                    {% endif %}
+                    <span style="color: {% if choix.correct %}var(--color-navy-900){% else %}var(--color-warm-600){% endif %};">
+                        {{ choix.libelle }}
+                    </span>
+                </li>
+                {% empty %}
+                <li class="text-sm text-warm-500">Aucune proposition : cette question ne peut pas être posée.</li>
+                {% endfor %}
+            </ul>
+        </article>
+        {% empty %}
+        <div class="card text-center" style="padding: 3rem 1.5rem;">
+            <p class="text-sm text-warm-600">Aucune question. Ajoutez la première à droite.</p>
+        </div>
+        {% endfor %}
+    </section>
+
+    <aside class="lg:col-span-1">
+        <form method="post" action="{% url 'lms:question_create' devoir.pk %}" class="card-elevated space-y-5" novalidate>
+            {% csrf_token %}
+            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+                Ajouter une question
+            </h2>
+            {% for field in form_question %}{% include "partials/champ.html" %}{% endfor %}
+            <button type="submit" class="btn-primary w-full justify-center">Ajouter</button>
+            <p class="text-xs text-warm-500">
+                Les propositions de réponse se saisissent ensuite, sur la fiche de la question.
+            </p>
+        </form>
+    </aside>
+
+</div>
+{% endblock %}

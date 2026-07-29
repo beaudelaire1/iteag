@@ -73,6 +73,10 @@ class ProfilEtudiant(TimeStampedModel):
         blank=True,
     )
     eglise_fondatrice = models.BooleanField(default=False, verbose_name="Membre d'une église fondatrice")
+    # L'église d'appartenance était saisie à la candidature puis perdue à
+    # l'admission : le secrétariat devait rouvrir le dossier de candidature pour
+    # la retrouver. Elle est reprise ici, où vit la scolarité.
+    eglise = models.CharField(max_length=200, blank=True, verbose_name="Église d'appartenance")
 
     class Meta:
         verbose_name = "Profil étudiant"

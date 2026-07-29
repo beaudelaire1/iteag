@@ -79,7 +79,19 @@
                 {{ eval.get_statut_display }}
             </span>
             {% if eval.statut == 'en_attente' %}
-            <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Remettre</a>
+                {% comment %}
+                    Un questionnaire se répond en ligne, un devoir se dépose : deux
+                    gestes différents, deux écrans. Envoyer les deux vers le dépôt de
+                    fichier obligeait l'étudiant à comprendre seul qu'il s'était trompé.
+                {% endcomment %}
+                {% if eval.devoir.modalite == 'qcm' %}
+                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Répondre</a>
+                {% else %}
+                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Remettre</a>
+                {% endif %}
+            {% endif %}
+            {% if eval.statut == 'publie' and eval.a_ete_revisee %}
+            <span class="badge badge-gold">Note révisée</span>
             {% endif %}
             </div>
         </div>

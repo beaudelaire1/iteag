@@ -232,9 +232,18 @@
                         {% if lecon.duree_secondes %}
                         <span class="text-xs text-warm-400">{{ lecon.duree_secondes|divisibleby:60|yesno:"," }}{{ lecon.duree_secondes }}s</span>
                         {% endif %}
-                        {% if inscription or lecon.apercu_gratuit %}
+                        {% if acces_integral or lecon.apercu_gratuit %}
                         <a href="{% url 'elearning:lecon_detail' module.slug lecon.slug %}"
                            class="text-sm font-medium text-navy-700 link-reveal">Ouvrir</a>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 text-xs text-warm-400"
+                              title="Réservé — un accès est nécessaire">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <rect x="5" y="11" width="14" height="9" rx="2"/>
+                                <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                            </svg>
+                            <span class="sr-only">Leçon verrouillée</span>
+                        </span>
                         {% endif %}
                     </span>
                 </li>

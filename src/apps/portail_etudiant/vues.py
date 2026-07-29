@@ -9,6 +9,7 @@ la moitié de ce à quoi il a accès.
 """
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -221,34 +222,50 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
     context_object_name = "evaluation"
 
     def get_object(self, queryset=None):
+        # Une copie déjà remise peut être remplacée tant que la fenêtre reste
+        # ouverte ; le service métier tranche et fournit un message explicite.
         evaluation = get_object_or_404(
-            Evaluation.objects.select_related("cours_session__cours", "cours_session__session"),
+            Evaluation.objects.select_related("cours_session__cours", "cours_session__session", "devoir"),
             pk=self.kwargs["pk"],
             etudiant=self.request.user.profil_etudiant,
-            statut=Evaluation.StatutEvaluation.EN_ATTENTE,
         )
-        # La fenêtre de remise est relue à chaque appel, y compris en POST :
-        # la contrôler seulement au gabarit laisserait passer un envoi direct,
-        # et le devoir arriverait après la publication des notes des autres.
-        self.motif_fermeture = evaluation.cours_session.motif_depot_ferme
+        self.motif_fermeture = evaluation.motif_de_refus_depot()
+        if not self.motif_fermeture and evaluation.devoir_id is None:
+            # Compatibilité avec les évaluations créées avant les devoirs
+            # détaillés : leur fenêtre reste portée par le cours.
+            self.motif_fermeture = evaluation.cours_session.motif_depot_ferme
         return evaluation
 
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
-        contexte["motif_fermeture"] = self.motif_fermeture
-        contexte["depot_ouvert"] = not self.motif_fermeture
-        contexte["cours_session"] = self.object.cours_session
+        evaluation = self.object
+        contexte.update(
+            {
+                "devoir": evaluation.devoir,
+                "echeance": evaluation.echeance() or evaluation.cours_session.depot_fermeture,
+                "motif_de_refus": self.motif_fermeture,
+                "motif_fermeture": self.motif_fermeture,
+                "depot_ouvert": not self.motif_fermeture,
+                "cours_session": evaluation.cours_session,
+                "delai_accorde": evaluation.date_limite_reportee,
+            }
+        )
         return contexte
 
     def form_valid(self, form):
         if self.motif_fermeture:
             messages.error(self.request, self.motif_fermeture)
-            return redirect("etudiant:grades")
+            form.add_error(None, self.motif_fermeture)
+            return self.form_invalid(form)
 
-        evaluation = form.save(commit=False)
-        evaluation.statut = Evaluation.StatutEvaluation.SOUMIS
-        evaluation.date_soumission = timezone.now()
-        evaluation.save(update_fields=["fichier_soumis", "statut", "date_soumission", "updated_at"])
+        from apps.lms import services
+
+        try:
+            evaluation = services.deposer(self.object, form.cleaned_data["fichier_soumis"], request=self.request)
+        except ValidationError as erreur:
+            form.add_error(None, erreur.messages[0])
+            return self.form_invalid(form)
+
         titre_cours = evaluation.cours_session.cours.titre
         notifier(
             self.request.user,
@@ -263,5 +280,12 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
             message=f"{evaluation.etudiant} a déposé son travail.",
             url_cible=reverse("lms:evaluations_list"),
         )
-        messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
+
+        if evaluation.depot_tardif:
+            messages.warning(
+                self.request,
+                "Votre travail a été remis après l'échéance : il est signalé comme tardif à l'enseignant.",
+            )
+        else:
+            messages.success(self.request, "Votre travail a été remis. L'enseignant peut maintenant le corriger.")
         return redirect("etudiant:grades")

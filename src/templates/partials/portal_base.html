@@ -8,35 +8,56 @@
     <div class="container-wide py-8 lg:py-12">
         <div class="lg:grid lg:grid-cols-[16rem_1fr] lg:gap-10">
             {# Sidebar #}
+            {% comment %}
+                Le volet latéral est une zone de défilement à lui seul.
+
+                « sticky » seul l'épinglait sans lui donner de hauteur : dès que
+                la navigation dépassait l'écran — le cas du back-office et de
+                l'espace étudiant — son bas devenait inatteignable tant que le
+                volet principal n'avait pas fini de défiler.
+
+                Trois pièces, toutes nécessaires :
+                · une hauteur bornée à l'écran, faute de quoi il n'y a rien à
+                  faire défiler ;
+                · « overflow-y: auto », qui donne au volet sa propre barre ;
+                · « overscroll-contain », pour que le défilement ne reparte pas
+                  dans la page une fois le bas de la liste atteint.
+
+                La fiche d'identité est *dans* la zone défilante, comme le panneau
+                utilisateur de Jazzmin : elle suit la navigation au lieu de rester
+                en surplomb.
+
+                La hauteur reste en style en ligne : la valeur calculée n'est pas
+                dans la feuille compilée, et une classe Tailwind arbitraire y
+                serait sans effet tant que « npm run css:build » n'a pas tourné.
+            {% endcomment %}
             <aside class="hidden lg:block">
+              <div class="sticky top-24 overflow-y-auto overscroll-contain pr-1" style="max-height: calc(100vh - 7rem);">
                 <div class="mb-6 rounded border border-warm-200 bg-white p-4">
-                    <div class="flex items-center gap-3">
-                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-navy-700 text-xs font-bold text-white">
-                            {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+                    <a href="{% url 'accounts:profil' %}" class="flex items-center gap-3 group">
+                        {% if user.photo %}
+                        <img src="{{ user.photo.url }}" alt=""
+                             class="h-10 w-10 shrink-0 rounded-full object-cover" style="border: 1px solid var(--color-warm-200);">
+                        {% else %}
+                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-700 text-xs font-bold text-white" aria-hidden="true">
+                            {{ user.initiales }}
                         </span>
+                        {% endif %}
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-navy-900">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="truncate text-sm font-semibold text-navy-900 group-hover:underline">{{ user.get_full_name|default:user.username }}</p>
                             <p class="text-xs text-warm-500">{{ user.get_role_display }}</p>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 {% comment %}
-                    Le ruban défile pour lui-même.
-
-                    « sticky » seul l'épinglait sans lui donner de hauteur : dès
-                    que la navigation dépassait l'écran — ce qui est le cas du
-                    back-office, qui compte une trentaine d'entrées — son bas
-                    devenait inatteignable tant que le contenu principal n'avait
-                    pas fini de défiler.
-
-                    « overscroll-contain » complète la correction : sans lui, le
-                    défilement se propage à la page dès qu'on atteint le bout de
-                    la liste, et le ruban paraît de nouveau bloqué.
+                    « data-portal-nav » est le repère du ruban : les tests s'y
+                    accrochent plutôt qu'à une classe de style, qui bouge avec la
+                    mise en page.
                 {% endcomment %}
-                <nav class="sticky top-24 space-y-1 overflow-y-auto overscroll-contain pr-1"
-                     style="max-height: calc(100vh - 7rem);">
+                <nav data-portal-nav class="space-y-1">
                     {% block portal_nav %}{% endblock %}
                 </nav>
+              </div>
             </aside>
 
             {# Mobile nav bar #}

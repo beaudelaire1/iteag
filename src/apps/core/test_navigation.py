@@ -123,10 +123,49 @@ class TestBarreDeNavigation:
         import re
 
         contenu = self._rendu(client, comptes, role, nom_route)
-        barre = contenu.split('<nav class="sticky', 1)[-1].split("</nav>", 1)[0]
+        # Le ruban se repère à « data-portal-nav », pas à ses classes de style.
+        # S'accrocher à « <nav class="sticky" » liait ce test à la mise en page :
+        # déplacer l'épinglage sur le conteneur faisait retomber le découpage sur
+        # la page entière, et l'en-tête public y passait pour des doublons.
+        assert "data-portal-nav" in contenu, f"Ruban introuvable sur « {nom_route} »"
+        barre = contenu.split("data-portal-nav", 1)[-1].split("</nav>", 1)[0]
         liens = re.findall(r'href="([^"#]+)"', barre)
         doublons = {lien for lien in liens if liens.count(lien) > 1}
         assert not doublons, f"Liens répétés dans la barre de « {nom_route} » : {doublons}"
+
+
+@pytest.mark.django_db
+class TestLesAdressesDesEspaces:
+    """
+    Chaque espace privé vit sous « /espace-… », et cela se vérifie.
+
+    Le préfixe de l'espace enseignant s'est retrouvé amputé de ses cinq
+    premières lettres — « espace-enseignant/ » devenu « gnant/ » — au détour
+    d'un commit consacré aux questionnaires. Rien ne l'a signalé : les gabarits
+    passent tous par « {% url %} », donc le site continuait de fonctionner, et
+    seuls les signets déjà posés tombaient en 404.
+
+    Un test qui interroge le routeur voit ce qu'aucune relecture de gabarit ne
+    montre : l'adresse réellement servie.
+    """
+
+    ESPACES = {
+        "etudiant:dashboard": "/espace-etudiant/",
+        "enseignant:accueil": "/espace-enseignant/",
+        "lms:dashboard": "/espace-enseignant/",
+        "secretariat:dashboard": "/espace-secretariat/",
+        "administration:dashboard": "/espace-admin/",
+    }
+
+    @pytest.mark.parametrize("route,attendu", sorted(ESPACES.items()))
+    def test_chaque_espace_garde_son_adresse(self, route, attendu):
+        assert reverse(route) == attendu
+
+    def test_l_ancienne_adresse_tronquee_redirige(self, client):
+        """Les liens posés pendant que le préfixe était cassé doivent aboutir."""
+        reponse = client.get("/gnant/cours/")
+        assert reponse.status_code == 301
+        assert reponse["Location"] == "/espace-enseignant/cours/"
 
 
 # Couleurs de la palette Tailwind par défaut. Elles ne font pas partie de la
