@@ -1,0 +1,47 @@
+{% load static %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "@id": "{{ SITE_URL }}/#organization",
+  "name": "{{ SITE_FULL_NAME|escapejs }}",
+  "alternateName": "{{ SITE_NAME|escapejs }}",
+  "legalName": "{{ SITE_FULL_NAME|escapejs }}",
+  "url": "{{ SITE_URL }}/",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "{{ SITE_URL }}{% static 'img/logo.png' %}"
+  },
+  "description": "Institut de formation théologique en Guadeloupe, accessible aux Antilles et à la Guyane.",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "201 lot Pointe d'Or",
+    "addressLocality": "Les Abymes",
+    "postalCode": "97139",
+    "addressRegion": "Guadeloupe",
+    "addressCountry": "GP"
+  },
+  "areaServed": [
+    {"@type": "AdministrativeArea", "name": "Guadeloupe"},
+    {"@type": "AdministrativeArea", "name": "Martinique"},
+    {"@type": "AdministrativeArea", "name": "Guyane"}
+  ],
+  "telephone": "{{ SITE_PHONE|escapejs }}",
+  "email": "{{ SITE_EMAIL|escapejs }}",
+  "sameAs": [
+    "{{ SITE_FACEBOOK }}",
+    "{{ SITE_YOUTUBE }}"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "{{ SITE_URL }}/#website",
+  "url": "{{ SITE_URL }}/",
+  "name": "{{ SITE_NAME|escapejs }}",
+  "alternateName": "{{ SITE_FULL_NAME|escapejs }}",
+  "publisher": {"@id": "{{ SITE_URL }}/#organization"}
+}
+</script>

@@ -138,7 +138,7 @@
     {# ── Évaluations en attente ── #}
     <div class="card-elevated" style="padding: 0;">
         <div class="px-5 py-4 border-b" style="border-color: var(--color-warm-100);">
-            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Évaluations récentes</h2>
+            <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Devoirs et évaluations</h2>
         </div>
         <div class="divide-y" style="border-color: var(--color-warm-100);">
             {% for eval in pending_evaluations %}
@@ -147,14 +147,25 @@
                     <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ eval.cours_session.cours.titre }}</p>
                     <p class="text-xs" style="color: var(--color-warm-500);">{{ eval.get_type_evaluation_display }}</p>
                 </div>
+                {% if eval.statut == 'en_attente' %}
+                {% if eval.devoir.modalite == 'qcm' %}
+                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">
+                    Répondre
+                </a>
+                {% else %}
+                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">
+                    Déposer le devoir
+                </a>
+                {% endif %}
+                {% else %}
                 <span class="badge
-                    {% if eval.statut == 'en_attente' %}badge-info
-                    {% elif eval.statut == 'soumis' %}badge-info
+                    {% if eval.statut == 'soumis' %}badge-info
                     {% elif eval.statut == 'en_correction' %}badge-warning
                     {% elif eval.statut == 'note' %}badge-success
                     {% else %}badge-gold{% endif %}">
                     {{ eval.get_statut_display }}
                 </span>
+                {% endif %}
             </div>
             {% empty %}
             <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune évaluation en cours.</p>

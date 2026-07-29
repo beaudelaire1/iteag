@@ -5,10 +5,12 @@
     "@type": "Course",
     "name": "{{ course.titre|escapejs }}",
     "description": "{{ course.description|striptags|truncatewords:50|escapejs }}",
+    "url": "{{ CANONICAL_URL }}",
     "provider": {
-        "@type": "Organization",
-        "name": "ITEAG",
-        "url": "https://iteag.org"
+        "@type": "EducationalOrganization",
+        "@id": "{{ SITE_URL }}/#organization",
+        "name": "{{ SITE_FULL_NAME|escapejs }}",
+        "url": "{{ SITE_URL }}/"
     },
     "educationalCredentialAwarded": "{{ course.ects|default:'2.5' }} ECTS",
     "inLanguage": "fr"

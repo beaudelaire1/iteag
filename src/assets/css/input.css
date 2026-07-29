@@ -808,6 +808,30 @@
   .badge-neutral { background: var(--color-warm-100); color: var(--color-warm-600); }
 
   /* ── Portal sidebar ── */
+  @media (min-width: 64rem) {
+    .portal-layout {
+      display: grid;
+      grid-template-columns: 17rem minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .portal-sidebar {
+      position: sticky;
+      top: 5.5rem;
+      height: calc(100vh - 6.5rem);
+      padding-right: 1.5rem;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-warm-300) transparent;
+      border-right: 1px solid var(--color-warm-300);
+    }
+
+    .portal-main {
+      padding-left: 2.5rem;
+    }
+  }
+
   .portal-nav-link {
     display: flex;
     align-items: center;

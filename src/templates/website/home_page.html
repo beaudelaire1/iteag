@@ -2,7 +2,8 @@
 {% load wagtailcore_tags wagtailimages_tags static %}
 
 {% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.meta_description|default:SITE_TAGLINE }}{% endblock %}
+{% block meta_description %}{{ page.meta_description|default:"Institut de formation théologique en Guadeloupe, accessible aux Antilles et à la Guyane : parcours diplômants, cours libres et e-learning." }}{% endblock %}
+{% block json_ld %}{% include "partials/jsonld_organization.html" %}{% endblock %}
 
 {% block content %}
 

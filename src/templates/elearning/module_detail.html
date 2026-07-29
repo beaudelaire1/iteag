@@ -11,7 +11,13 @@
   "@type": "Course",
   "name": "{{ module.titre|escapejs }}",
   "description": "{{ module.description|truncatewords:40|escapejs }}",
-  "provider": {"@type": "Organization", "name": "{{ SITE_FULL_NAME|escapejs }}", "sameAs": "https://www.iteag.org"},
+  "url": "{{ CANONICAL_URL }}",
+  "provider": {
+    "@type": "EducationalOrganization",
+    "@id": "{{ SITE_URL }}/#organization",
+    "name": "{{ SITE_FULL_NAME|escapejs }}",
+    "url": "{{ SITE_URL }}/"
+  },
   "educationalLevel": "{{ module.get_niveau_display|escapejs }}"{% if module.responsable %},
   "instructor": {"@type": "Person", "name": "{{ module.responsable.nom_complet|escapejs }}"}{% endif %}
 }

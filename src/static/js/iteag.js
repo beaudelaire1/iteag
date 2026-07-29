@@ -421,8 +421,20 @@
         });
       }
 
-      boutons.forEach((b) => b.addEventListener("click", () => activer(b.dataset.tab)));
-      activer(boutons[0].dataset.tab);
+      const noms = Array.from(boutons, (bouton) => bouton.dataset.tab);
+      boutons.forEach((b) =>
+        b.addEventListener("click", () => {
+          activer(b.dataset.tab);
+          history.replaceState(null, "", `#${b.dataset.tab}`);
+        })
+      );
+      document.querySelectorAll("[data-tab-trigger]").forEach((declencheur) => {
+        if (!noms.includes(declencheur.dataset.tabTrigger)) return;
+        declencheur.addEventListener("click", () => activer(declencheur.dataset.tabTrigger));
+      });
+
+      const ongletDemande = window.location.hash.slice(1);
+      activer(noms.includes(ongletDemande) ? ongletDemande : boutons[0].dataset.tab);
     });
   }
 

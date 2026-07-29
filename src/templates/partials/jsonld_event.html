@@ -6,6 +6,7 @@
     "@type": "Event",
     "name": "{{ event.title|escapejs }}",
     "description": "{{ event.search_description|default:event.title|escapejs }}",
+    "url": "{{ CANONICAL_URL }}",
     "startDate": "{{ event.date_debut|date:'c' }}",
     {% if event.date_fin %}"endDate": "{{ event.date_fin|date:'c' }}",{% endif %}
     {% if event.lieu %}"location": {
@@ -13,9 +14,10 @@
         "name": "{{ event.lieu|escapejs }}"
     },{% endif %}
     "organizer": {
-        "@type": "Organization",
-        "name": "ITEAG",
-        "url": "https://iteag.org"
+        "@type": "EducationalOrganization",
+        "@id": "{{ SITE_URL }}/#organization",
+        "name": "{{ SITE_FULL_NAME|escapejs }}",
+        "url": "{{ SITE_URL }}/"
     },
     "eventStatus": "https://schema.org/EventScheduled",
     "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"

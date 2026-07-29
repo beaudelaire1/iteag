@@ -58,7 +58,7 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                 if profil.parcours.ects_requis
                 else 0,
                 "pending_evaluations": profil.evaluations.select_related(
-                    "cours_session__cours", "cours_session__session"
+                    "cours_session__cours", "cours_session__session", "devoir"
                 ).exclude(statut=Evaluation.StatutEvaluation.PUBLIE)[:5],
                 "recent_resources": RessourcePedagogique.objects.filter(
                     cours_session__inscriptions__etudiant=profil,
@@ -207,7 +207,7 @@ class StudentGradesView(StudentRoleRequiredMixin, TemplateView):
         profil = self.request.user.profil_etudiant
         evaluations = (
             Evaluation.objects.filter(etudiant=profil)
-            .select_related("cours_session__cours", "cours_session__session")
+            .select_related("cours_session__cours", "cours_session__session", "devoir")
             .order_by("-cours_session__session__date_debut", "cours_session__cours__titre")
         )
         published = evaluations.filter(statut=Evaluation.StatutEvaluation.PUBLIE)

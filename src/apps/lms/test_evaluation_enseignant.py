@@ -94,6 +94,33 @@ def copie(nom="devoir.pdf"):
     return SimpleUploadedFile(nom, b"%PDF-1.4 copie", content_type="application/pdf")
 
 
+@pytest.mark.django_db
+class TestWorkflowVisible:
+    def test_le_professeur_trouve_la_creation_du_devoir_depuis_le_cours(
+        self,
+        client,
+        professeur,
+        cours_session,
+        etudiant,
+    ):
+        client.force_login(professeur.user)
+        contenu = client.get(reverse("lms:course_detail", args=[cours_session.pk])).content.decode()
+
+        assert "Créer un devoir" in contenu
+        assert reverse("lms:devoir_create_pour_cours", args=[cours_session.pk]) in contenu
+        assert "Ajoutez une consigne, une période de dépôt et un barème" in contenu
+
+    def test_l_etudiant_trouve_le_depot_depuis_son_tableau_et_ses_notes(self, client, etudiant, evaluation):
+        client.force_login(etudiant.utilisateur)
+
+        tableau = client.get(reverse("etudiant:dashboard")).content.decode()
+        notes = client.get(reverse("etudiant:grades")).content.decode()
+
+        assert "Déposer le devoir" in tableau
+        assert "Déposer mon devoir" in notes
+        assert reverse("etudiant:submit_evaluation", args=[evaluation.pk]) in notes
+
+
 # ══════════════════════════════════════════════
 # La fenêtre de remise
 # ══════════════════════════════════════════════

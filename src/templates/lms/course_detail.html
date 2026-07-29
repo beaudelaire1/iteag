@@ -10,11 +10,16 @@
 {% endblock %}
 
 {% block portal_header %}
-<div class="mb-8">
-    <a href="{% url 'enseignant:accueil' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au tableau de bord</a>
-    <p class="overline mb-2">Cours</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ cours_session.cours.titre }}</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.session.nom }} · {{ cours_session.get_statut_display }} · {{ cours_session.cours.ects }} ECTS</p>
+<div class="mb-8 flex flex-wrap items-end justify-between gap-5">
+    <div>
+        <a href="{% url 'enseignant:accueil' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au tableau de bord</a>
+        <p class="overline mb-2">Cours</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ cours_session.cours.titre }}</h1>
+        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.session.nom }} · {{ cours_session.get_statut_display }} · {{ cours_session.cours.ects }} ECTS</p>
+    </div>
+    <a href="{% url 'lms:devoir_create_pour_cours' cours_session.pk %}" class="btn-primary">
+        Créer un devoir
+    </a>
 </div>
 {% endblock %}
 
@@ -30,7 +35,7 @@
                 Ressources ({{ ressources|length }})
             </button>
             <button type="button" role="tab" data-tab="evaluations" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700);">
-                Évaluations ({{ evaluations|length }})
+                Notes et évaluations ({{ evaluations|length }})
             </button>
             <button type="button" role="tab" data-tab="announcements" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700);">
                 Annonces ({{ annonces|length }})
@@ -101,7 +106,7 @@
     </div>
 
     {# ── Évaluations ── #}
-    <div role="tabpanel" data-tab-panel="evaluations" hidden>
+    <div id="evaluations" role="tabpanel" data-tab-panel="evaluations" hidden>
 
         {# Calendrier : date d'examen et fenêtre de remise. #}
         <div class="card-elevated mb-5">
@@ -143,24 +148,19 @@
             </div>
         </div>
 
-        <div class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-            <form method="post" action="{% url 'lms:prepare_evaluations' cours_session.pk %}" class="flex items-end gap-2">
-                {% csrf_token %}
-                <div>
-                    <label for="type_evaluation" class="form-label">Nouvelle évaluation</label>
-                    <select name="type_evaluation" id="type_evaluation" class="form-select">
-                        <option value="devoir">Devoir</option>
-                        <option value="examen">Examen</option>
-                        <option value="stage">Stage</option>
-                        <option value="dissertation">Dissertation</option>
-                        <option value="vae">VAE</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn-ghost">Préparer pour la classe</button>
-            </form>
+        <div class="mb-5 rounded border border-navy-200 bg-navy-50 p-5">
+            <h2 class="text-base font-semibold text-navy-900">Nouveau devoir</h2>
+            <p class="mt-1 text-sm text-warm-600">
+                Ajoutez une consigne, une période de dépôt et un barème avant de l’ouvrir aux étudiants.
+            </p>
+            <a href="{% url 'lms:devoir_create_pour_cours' cours_session.pk %}" class="btn-primary mt-4">
+                Créer le devoir
+            </a>
+        </div>
+        <div class="mb-4 flex justify-end">
             <form method="post" action="{% url 'lms:publish_grades' cours_session.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn-primary">
+                <button type="submit" class="btn-ghost">
                     Publier les notes notées
                 </button>
             </form>

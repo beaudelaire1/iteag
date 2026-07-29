@@ -20,9 +20,12 @@
 {% block portal_content %}
 <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
     {% for cs in cours_list %}
-    <a href="{% url 'lms:course_detail' cs.pk %}" class="card-elevated block group hover:shadow-lg transition-shadow" style="padding: 0;">
+    {% url 'lms:course_detail' cs.pk as course_detail_url %}
+    <article class="card-elevated flex flex-col" style="padding: 0;">
         <div class="px-5 py-5">
-            <h3 class="text-base font-semibold group-hover:underline" style="color: var(--color-navy-900);">{{ cs.cours.titre }}</h3>
+            <h3 class="text-base font-semibold" style="color: var(--color-navy-900);">
+                <a href="{{ course_detail_url }}" class="link-reveal">{{ cs.cours.titre }}</a>
+            </h3>
             <p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ cs.session.nom }}</p>
             <div class="mt-4 flex items-center justify-between text-xs" style="color: var(--color-warm-500);">
                 <span>{{ cs.cours.ects }} ECTS</span>
@@ -35,7 +38,11 @@
             </div>
             <p class="text-xs mt-2" style="color: var(--color-warm-400);">{{ cs.inscriptions.count }} étudiant{{ cs.inscriptions.count|pluralize }}</p>
         </div>
-    </a>
+        <div class="mt-auto flex flex-wrap gap-3 border-t border-warm-100 px-5 py-4">
+            <a href="{{ course_detail_url }}" class="text-sm font-semibold text-navy-700">Gérer le cours</a>
+            <a href="{% url 'lms:devoir_create_pour_cours' cs.pk %}" class="text-sm font-semibold text-gold-700">Créer un devoir</a>
+        </div>
+    </article>
     {% empty %}
     <div class="sm:col-span-2 lg:col-span-3 card-elevated text-center py-12">
         <p style="color: var(--color-warm-400);">Aucun cours assigné pour le moment.</p>

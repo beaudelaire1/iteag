@@ -1,6 +1,6 @@
 {% extends "partials/portal_base.html" %}
 
-{% block title %}Mes notes — {{ SITE_NAME }}{% endblock %}
+{% block title %}Devoirs et notes — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
 {% with nav='grades' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}
@@ -11,15 +11,59 @@
 
 {% block portal_header %}
 <div class="mb-10">
-    <p class="overline mb-2">Résultats</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes notes</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Consultez vos évaluations et appréciations</p>
+    <p class="overline mb-2">Évaluations</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Devoirs et notes</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        Déposez les travaux demandés et consultez les résultats publiés.
+    </p>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-{# ── Notes publiées ── #}
+{# ── Travaux à remettre ── #}
 <div class="card-elevated mb-8" style="padding: 0;">
+    <div class="px-5 py-4 border-b border-warm-100">
+        <h2 class="text-base font-semibold text-navy-900">Travaux à remettre</h2>
+        <p class="mt-1 text-xs text-warm-500">Le bouton de dépôt apparaît tant que l’enseignant accepte les remises.</p>
+    </div>
+    {% if pending_grades %}
+    <div class="divide-y divide-warm-100">
+        {% for eval in pending_grades %}
+        <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <p class="text-sm font-medium text-navy-900">{{ eval.cours_session.cours.titre }}</p>
+                <p class="text-xs text-warm-500">{{ eval.get_type_evaluation_display }} — {{ eval.cours_session.session.nom }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                    {% if eval.statut == 'en_attente' %}bg-warm-100 text-warm-700
+                    {% elif eval.statut == 'soumis' %}bg-navy-100 text-navy-700
+                    {% elif eval.statut == 'en_correction' %}bg-gold-100 text-gold-700
+                    {% else %}bg-navy-100 text-navy-700{% endif %}">
+                    {{ eval.get_statut_display }}
+                </span>
+                {% if eval.statut == 'en_attente' %}
+                    {% if eval.devoir.modalite == 'qcm' %}
+                    <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary" style="padding: .5rem .9rem; font-size: .6875rem;">
+                        Répondre au questionnaire
+                    </a>
+                    {% else %}
+                    <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .5rem .9rem; font-size: .6875rem;">
+                        Déposer mon devoir
+                    </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="px-5 py-8 text-sm text-warm-400 text-center">Aucun travail à remettre pour le moment.</p>
+    {% endif %}
+</div>
+
+{# ── Notes publiées ── #}
+<div class="card-elevated" style="padding: 0;">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Notes publiées</h2>
     </div>
@@ -56,47 +100,4 @@
     <p class="px-5 py-8 text-sm text-warm-400 text-center">Aucune note publiée pour le moment.</p>
     {% endif %}
 </div>
-
-{# ── En attente ── #}
-{% if pending_grades %}
-<div class="card-elevated" style="padding: 0;">
-    <div class="px-5 py-4 border-b border-warm-100">
-        <h2 class="text-base font-semibold text-navy-900">En attente de notation</h2>
-    </div>
-    <div class="divide-y divide-warm-100">
-        {% for eval in pending_grades %}
-        <div class="px-5 py-3 flex items-center justify-between gap-4">
-            <div>
-                <p class="text-sm font-medium text-navy-900">{{ eval.cours_session.cours.titre }}</p>
-                <p class="text-xs text-warm-500">{{ eval.get_type_evaluation_display }} — {{ eval.cours_session.session.nom }}</p>
-            </div>
-            <div class="flex items-center gap-3">
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                {% if eval.statut == 'en_attente' %}bg-warm-100 text-warm-700
-                {% elif eval.statut == 'soumis' %}bg-navy-100 text-navy-700
-                {% elif eval.statut == 'en_correction' %}bg-gold-100 text-gold-700
-                {% else %}bg-navy-100 text-navy-700{% endif %}">
-                {{ eval.get_statut_display }}
-            </span>
-            {% if eval.statut == 'en_attente' %}
-                {% comment %}
-                    Un questionnaire se répond en ligne, un devoir se dépose : deux
-                    gestes différents, deux écrans. Envoyer les deux vers le dépôt de
-                    fichier obligeait l'étudiant à comprendre seul qu'il s'était trompé.
-                {% endcomment %}
-                {% if eval.devoir.modalite == 'qcm' %}
-                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Répondre</a>
-                {% else %}
-                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">Remettre</a>
-                {% endif %}
-            {% endif %}
-            {% if eval.statut == 'publie' and eval.a_ete_revisee %}
-            <span class="badge badge-gold">Note révisée</span>
-            {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
 {% endblock %}

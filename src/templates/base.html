@@ -8,13 +8,14 @@
     {# SEO meta #}
     <meta name="description" content="{% block meta_description %}{{ SITE_TAGLINE }}{% endblock %}">
     <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
-    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <link rel="canonical" href="{{ CANONICAL_URL }}">
 
     {# Open Graph #}
     <meta property="og:title" content="{% block og_title %}{{ SITE_NAME }}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{{ SITE_TAGLINE }}{% endblock %}">
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:site_name" content="{{ SITE_NAME }}">
+    <meta property="og:url" content="{{ CANONICAL_URL }}">
     {% block og_image %}{% endblock %}
 
     {# Typography premium — polices auto-hébergées (RGPD + standard TUS) #}
@@ -22,7 +23,7 @@
     <link rel="stylesheet" href="{% static 'fonts/fonts.css' %}">
 
     {# Design system ITEAG — Tailwind compilé #}
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v={{ ASSET_VERSION }}">
 
     {# Video.js (premium media playback) #}
     {% block videojs_css %}{% endblock %}
@@ -32,34 +33,7 @@
 
     {% block extra_head %}{% endblock %}
 
-    {# JSON-LD Organization — SEO standard TUS (§15 cahier des charges) #}
-    {% block json_ld %}
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
-      "name": "{{ SITE_NAME }}",
-      "legalName": "{{ SITE_FULL_NAME }}",
-      "url": "{{ request.scheme }}://{{ request.get_host }}",
-      "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'img/logo.png' %}",
-      "description": "{{ SITE_TAGLINE }}",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "201 lot Pointe d'Or",
-        "addressLocality": "Les Abymes",
-        "postalCode": "97139",
-        "addressRegion": "Guadeloupe",
-        "addressCountry": "GP"
-      },
-      "telephone": "{{ SITE_PHONE }}",
-      "email": "{{ SITE_EMAIL }}",
-      "sameAs": [
-        "{{ SITE_FACEBOOK }}",
-        "{{ SITE_YOUTUBE }}"
-      ]
-    }
-    </script>
-    {% endblock %}
+    {% block json_ld %}{% endblock %}
     {% comment %}
         Sans JavaScript, les éléments d'apparition resteraient à opacité nulle :
         la page s'afficherait presque vide. Le repli est posé ici, où il ne peut
@@ -117,7 +91,7 @@
     {# HTMX auto-hébergé avec les autres ressources du projet. #}
     <script src="{% static 'js/htmx.min.js' %}"></script>
     {# ITEAG global JS — scroll reveal, counters, HTMX handlers #}
-    <script src="{% static 'js/iteag.js' %}" defer></script>
+    <script src="{% static 'js/iteag.js' %}?v={{ ASSET_VERSION }}" defer></script>
 
     {# Video.js (chargé à la demande dans les blocs) #}
     {% block videojs_js %}{% endblock %}

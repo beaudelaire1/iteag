@@ -14,9 +14,25 @@ from wagtail.contrib.sitemaps.sitemap_generator import Sitemap as WagtailSitemap
 from wagtail.documents import urls as wagtaildocs_urls
 
 from apps.core import views as views_core
+from apps.core.sitemaps import (
+    CoursSitemap,
+    LivresBoutiqueSitemap,
+    ModulesPubliesSitemap,
+    NoticesBibliothequeSitemap,
+    PagesPubliquesSitemap,
+    ParcoursSitemap,
+    ProfesseursSitemap,
+)
 
 sitemaps = {
     "wagtail": WagtailSitemap,
+    "pages-publiques": PagesPubliquesSitemap,
+    "parcours": ParcoursSitemap,
+    "cours": CoursSitemap,
+    "professeurs": ProfesseursSitemap,
+    "modules": ModulesPubliesSitemap,
+    "bibliotheque": NoticesBibliothequeSitemap,
+    "boutique": LivresBoutiqueSitemap,
 }
 
 urlpatterns = [
