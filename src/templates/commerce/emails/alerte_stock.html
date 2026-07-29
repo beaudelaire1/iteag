@@ -1,7 +1,35 @@
 {% extends "core/emails/base_email.html" %}
 
+{% block sujet %}Alerte de stock — {{ titre }}{% endblock %}
+{% block preheader %}Le stock de « {{ titre }} » a atteint le seuil d'alerte.{% endblock %}
+{% block categorie %}Alerte interne{% endblock %}
+
 {% block corps %}
-<h1>Stock minimal</h1>
-<p><strong>{{ titre }}</strong> ({{ sku }}) ne compte plus que {{ stock_disponible }} exemplaire(s) disponible(s).</p>
-<p>Seuil configuré : {{ seuil }}.</p>
+<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#A8790C;">
+    Boutique · Stock
+</p>
+<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
+           font-weight:normal;line-height:1.25;color:#1A2D29;">Réapprovisionnement à prévoir</h1>
+<p style="margin:0 0 24px;color:#544B3D;">
+    Le stock disponible d'un ouvrage vient d'atteindre le seuil d'alerte configuré.
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background-color:#FDF8EC;border:1px solid #F3D9A0;border-radius:4px;">
+    <tr>
+        <td colspan="2" style="padding:18px 20px;border-bottom:1px solid #F3D9A0;">
+            <strong style="font-size:17px;color:#1A2D29;">{{ titre }}</strong><br>
+            <span style="font-size:11px;color:#736957;">Référence {{ sku }}</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:17px 20px;font-size:12px;color:#736957;">Stock disponible</td>
+        <td align="right" style="padding:17px 20px;font-size:20px;font-weight:bold;color:#A8790C;">
+            {{ stock_disponible }}
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:0 20px 17px;font-size:12px;color:#736957;">Seuil configuré</td>
+        <td align="right" style="padding:0 20px 17px;font-size:13px;font-weight:bold;color:#1A2D29;">{{ seuil }}</td>
+    </tr>
+</table>
 {% endblock %}

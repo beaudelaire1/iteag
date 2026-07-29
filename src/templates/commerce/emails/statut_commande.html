@@ -1,23 +1,53 @@
 {% extends "core/emails/base_email.html" %}
 
 {% block sujet %}Commande {{ numero }} — {{ statut }}{% endblock %}
+{% block preheader %}Mise à jour de votre commande {{ numero }} : {{ statut }}.{% endblock %}
+{% block categorie %}Suivi de commande{% endblock %}
 
 {% block corps %}
-<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A2D29;">
-    Commande {{ numero }} — {{ statut }}
+<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
+    Commande {{ numero }}
+</p>
+<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
+           font-weight:normal;line-height:1.25;color:#1A2D29;">
+    {{ statut }}
 </h1>
 
-<p style="margin:0 0 16px;">Bonjour {{ nom }},</p>
-<p style="margin:0 0 16px;">{{ message }}</p>
+<p style="margin:0 0 18px;">Bonjour {{ nom }},</p>
+<div style="margin:0 0 25px;padding:18px 20px;background-color:#F0F6F5;border-left:4px solid #457D70;
+            font-size:15px;line-height:1.65;color:#263F3B;">{{ message }}</div>
 
-{% if transporteur %}<p style="margin:0 0 8px;">Transporteur : {{ transporteur }}</p>{% endif %}
-{% if numero_suivi %}<p style="margin:0 0 16px;">Numéro de suivi : {{ numero_suivi }}</p>{% endif %}
-
-{% if url_suivi_transporteur %}
-<p style="margin:0 0 16px;"><a href="{{ url_suivi_transporteur }}">Suivre auprès du transporteur</a></p>
+{% if transporteur or numero_suivi %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="margin:0 0 25px;border-top:1px solid #EDE5D0;border-bottom:1px solid #EDE5D0;">
+    {% if transporteur %}
+    <tr>
+        <td style="padding:12px 0;font-size:12px;color:#736957;">Transporteur</td>
+        <td align="right" style="padding:12px 0;font-size:13px;font-weight:bold;color:#1A2D29;">{{ transporteur }}</td>
+    </tr>
+    {% endif %}
+    {% if numero_suivi %}
+    <tr>
+        <td style="padding:12px 0;border-top:1px solid #EDE5D0;font-size:12px;color:#736957;">Numéro de suivi</td>
+        <td align="right" style="padding:12px 0;border-top:1px solid #EDE5D0;font-size:13px;font-weight:bold;color:#1A2D29;">
+            {{ numero_suivi }}
+        </td>
+    </tr>
+    {% endif %}
+</table>
 {% endif %}
 
-<p style="margin:0;">
-    <a href="{{ suivi_url }}">Consulter le suivi de votre commande</a>
+{% if url_suivi_transporteur %}
+<p style="margin:0 0 12px;">
+    <a class="button" href="{{ url_suivi_transporteur }}"
+       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
+              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;">
+        Suivre auprès du transporteur <span style="color:#EEC671;">&nbsp;→</span>
+    </a>
+</p>
+{% endif %}
+
+<p style="margin:0;font-size:12px;">
+    <a href="{{ suivi_url }}" style="color:#355952;font-weight:bold;">Consulter le détail de la commande</a>
 </p>
 {% endblock %}

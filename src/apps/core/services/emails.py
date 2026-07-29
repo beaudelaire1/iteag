@@ -5,14 +5,33 @@ gabarit, de l'expéditeur et du mode d'envoi (synchrone ou différé).
 """
 
 import logging
+from email.mime.image import MIMEImage
+from pathlib import Path
 from urllib.parse import urljoin
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
+
+LOGO_CID = "logo-iteag"
+SITE_CONTEXT = {
+    "SITE_NAME": "ITEAG",
+    "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
+    "SITE_TAGLINE": "Une formation de qualité pour un service efficace",
+    "SITE_EMAIL": "secretariat@iteag.org",
+    "SITE_PHONE": "+590 690 37 64 17",
+    "SITE_ADDRESS": "201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe",
+    "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
+    "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
+}
+
+
+def _chemin_logo() -> Path:
+    return Path(settings.BASE_DIR) / "static" / "img" / "logo.png"
 
 
 def envoyer_email(
@@ -76,9 +95,12 @@ def envoyer_notification_email(
 
 def envoyer_maintenant(sujet: str, gabarit: str, contexte: dict, destinataires: list[str]) -> bool:
     """Rendu et envoi immédiats. Ne lève pas : un courriel perdu n'arrête pas un workflow."""
+    chemin_logo = _chemin_logo()
     contexte = {
-        "SITE_NAME": "ITEAG",
+        **SITE_CONTEXT,
         "SITE_URL": getattr(settings, "SITE_URL", ""),
+        "ANNEE_COURANTE": timezone.now().year,
+        "EMAIL_LOGO_CID": LOGO_CID if chemin_logo.exists() else "",
         **contexte,
     }
     try:
@@ -94,6 +116,12 @@ def envoyer_maintenant(sujet: str, gabarit: str, contexte: dict, destinataires: 
         to=destinataires,
     )
     message.attach_alternative(html, "text/html")
+    if chemin_logo.exists():
+        logo = MIMEImage(chemin_logo.read_bytes(), _subtype="png")
+        logo.add_header("Content-ID", f"<{LOGO_CID}>")
+        logo.add_header("Content-Disposition", "inline", filename="logo-iteag.png")
+        message.mixed_subtype = "related"
+        message.attach(logo)
     try:
         message.send(fail_silently=False)
     except Exception:  # noqa: BLE001

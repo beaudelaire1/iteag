@@ -265,6 +265,28 @@ class TestServiceEmail:
         assert mail.outbox[0].subject == "[ITEAG] Test"
         assert mail.outbox[0].alternatives  # une version HTML accompagne le texte
 
+    def test_email_integre_logo_et_identite_complete(self):
+        assert envoyer_email(
+            sujet="Identité ITEAG",
+            gabarit="core/emails/notification.html",
+            contexte={"titre": "Information", "message": "Message de contrôle."},
+            destinataires=["a@b.org"],
+            differe=False,
+        )
+
+        message = mail.outbox[0]
+        html = message.alternatives[0].content
+        assert 'src="cid:logo-iteag"' in html
+        assert "Institut de Théologie Évangélique des Antilles et de la Guyane" in html
+        assert "201 lot Pointe" in html
+        assert "97139 Les Abymes" in html
+        assert "+590 690 37 64 17" in html
+        assert "secretariat@iteag.org" in html
+        assert any(
+            piece.get_content_type() == "image/png" and piece["Content-ID"] == "<logo-iteag>"
+            for piece in message.attachments
+        )
+
     def test_sans_destinataire_rien_n_est_envoye(self):
         assert envoyer_email(sujet="X", gabarit="x.html", contexte={}, destinataires=[], differe=False) is False
         assert len(mail.outbox) == 0
@@ -319,7 +341,7 @@ class TestServiceEmail:
                     "mode_paiement": "Carte",
                     "suivi_url": "https://example.org/suivi/",
                 },
-                "Commande TEST-1 reçue",
+                "Merci pour votre commande",
             ),
             (
                 "commerce/emails/statut_commande.html",

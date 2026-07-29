@@ -1,39 +1,44 @@
 {% extends "core/emails/base_email.html" %}
 
 {% block sujet %}Confirmez votre inscription{% endblock %}
+{% block preheader %}Une dernière étape pour recevoir les actualités et ouvertures de sessions de l'ITEAG.{% endblock %}
+{% block categorie %}Lettre d'information{% endblock %}
 
 {% block corps %}
-<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A2D29;">
+<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
+    Restez informé
+</p>
+<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
+           font-weight:normal;line-height:1.25;color:#1A2D29;">
     Confirmez votre inscription
 </h1>
 
-<p style="margin:0 0 16px;">
+<p style="margin:0 0 17px;">
     Vous avez demandé à recevoir la lettre d'information de l'ITEAG à l'adresse
-    <strong>{{ email }}</strong>.
+    <strong style="color:#1A2D29;">{{ email }}</strong>.
 </p>
 
-<p style="margin:0 0 24px;">
+<p style="margin:0 0 27px;color:#544B3D;">
     Cliquez sur le bouton ci-dessous pour valider cette demande. Sans cette confirmation,
     aucun message ne vous sera envoyé.
 </p>
 
-<p style="margin:0 0 24px;">
-    <a href="{{ lien_confirmation }}"
-       style="display:inline-block;padding:14px 32px;background-color:#355952;color:#ffffff;
-              text-decoration:none;border-radius:2px;font-size:13px;font-weight:bold;
-              letter-spacing:0.08em;text-transform:uppercase;">
+<p style="margin:0 0 22px;">
+    <a class="button" href="{{ lien_confirmation }}"
+       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
+              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;letter-spacing:.03em;">
         Confirmer mon inscription
+        <span style="color:#EEC671;">&nbsp;→</span>
     </a>
 </p>
 
-<p style="margin:0 0 8px;font-size:13px;color:#736957;">
-    Si le bouton ne fonctionne pas, copiez cette adresse dans votre navigateur :
-</p>
-<p style="margin:0;font-size:12px;word-break:break-all;color:#355952;">
-    {{ lien_confirmation }}
+<p style="margin:0;font-size:11px;line-height:1.55;color:#978B72;">
+    Lien de confirmation :
+    <a href="{{ lien_confirmation }}" style="color:#355952;word-break:break-all;">{{ lien_confirmation }}</a>
 </p>
 
-<p style="margin:24px 0 0;font-size:13px;color:#978B72;">
+<p style="margin:25px 0 0;padding:16px 18px;background-color:#FDF8EC;border:1px solid #F3D9A0;
+          border-radius:4px;font-size:12px;line-height:1.6;color:#736957;">
     Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message :
     aucune inscription ne sera enregistrée.
 </p>
