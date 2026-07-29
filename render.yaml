@@ -19,6 +19,8 @@ envVarGroups:
         value: "60"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
       - key: EMAIL_USE_TLS
@@ -118,8 +120,6 @@ services:
         sync: false
       - key: BUNNY_CLE_SIGNATURE
         sync: false
-      - key: EMAIL_HOST
-        sync: false
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
@@ -170,8 +170,6 @@ services:
       - key: BUNNY_ZONE_DIFFUSION
         sync: false
       - key: BUNNY_CLE_SIGNATURE
-        sync: false
-      - key: EMAIL_HOST
         sync: false
       - key: EMAIL_HOST_USER
         sync: false
