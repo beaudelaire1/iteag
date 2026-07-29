@@ -31,6 +31,9 @@ def envoyer_email(
     if not destinataires:
         return False
 
+    if differe and getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        return envoyer_maintenant(sujet, gabarit, contexte, destinataires)
+
     if differe:
         from apps.core.tasks import envoyer_email_tache
 

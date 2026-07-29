@@ -128,6 +128,33 @@ class TestCandidatureWorkflow:
         dossier.refresh_from_db()
         assert dossier.statut == DossierCandidature.Statut.SOUMIS
 
+    def test_un_dossier_incomplet_declenche_un_email(
+        self,
+        dossier,
+        staff_user,
+        django_capture_on_commit_callbacks,
+    ):
+        with django_capture_on_commit_callbacks(execute=True):
+            dossier = transition_dossier(
+                dossier=dossier,
+                new_status=DossierCandidature.Statut.EN_EXAMEN,
+                changed_by=staff_user,
+            )
+        dossier.elements_manquants = "Justificatif de domicile"
+        dossier.save(update_fields=["elements_manquants", "date_derniere_maj"])
+        mail.outbox.clear()
+
+        with django_capture_on_commit_callbacks(execute=True):
+            transition_dossier(
+                dossier=dossier,
+                new_status=DossierCandidature.Statut.INCOMPLET,
+                changed_by=staff_user,
+            )
+
+        assert len(mail.outbox) == 1
+        assert "incomplet" in mail.outbox[0].subject
+        assert "Justificatif de domicile" in mail.outbox[0].body
+
 
 # ──────────────────────────────────────────────
 # Form tests

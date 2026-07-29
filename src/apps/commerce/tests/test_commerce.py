@@ -3,7 +3,9 @@ from unittest import mock
 from uuid import uuid4
 
 import pytest
+from django.core import mail
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.accounts.models import User
@@ -179,6 +181,40 @@ class TestCommande:
         ).exists()
         assert client.get(commande.get_absolute_url()).status_code == 200
         assert client.get(reverse("commerce:commande_suivi", kwargs={"jeton": uuid4()})).status_code == 404
+
+    def test_creation_envoie_une_confirmation_complete(
+        self,
+        client,
+        livre,
+        django_capture_on_commit_callbacks,
+    ):
+        reponse = client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 2})
+        lignes, _ = panier.details(reponse.wsgi_request)
+        mail.outbox.clear()
+
+        with django_capture_on_commit_callbacks(execute=True):
+            commande = services.creer_commande(donnees=donnees_commande(), lignes_panier=lignes)
+
+        assert len(mail.outbox) == 1
+        assert commande.numero in mail.outbox[0].subject
+        assert commande.numero in mail.outbox[0].body
+        assert "49.80" in mail.outbox[0].body
+
+    def test_confirmation_du_paiement_envoie_le_nouveau_statut(
+        self,
+        client,
+        livre,
+        django_capture_on_commit_callbacks,
+    ):
+        commande = creer_depuis_session(client, livre)
+        mail.outbox.clear()
+
+        with django_capture_on_commit_callbacks(execute=True):
+            services.confirmer_commande(commande)
+
+        assert len(mail.outbox) == 1
+        assert "confirmée" in mail.outbox[0].subject.lower()
+        assert "règlement a été confirmé" in mail.outbox[0].body
 
     def test_devis_depend_de_la_destination_et_du_type_de_livraison(self, client, livre):
         tarifs = {
@@ -437,6 +473,18 @@ class TestStockEtAlertes:
         alerte.refresh_from_db()
         assert alerte.resolue is True
         assert alerte.date_resolution is not None
+
+    @override_settings(COMMERCE_ALERTE_EMAIL="stock@example.org")
+    def test_alerte_de_stock_envoie_un_email(self, livre, django_capture_on_commit_callbacks):
+        mail.outbox.clear()
+
+        with django_capture_on_commit_callbacks(execute=True):
+            services.ajuster_stock(livre, -3, "Inventaire")
+
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == ["stock@example.org"]
+        assert "Stock minimal" in mail.outbox[0].subject
+        assert livre.titre in mail.outbox[0].body
 
     def test_un_ajustement_ne_peut_pas_entamer_le_stock_reserve(self, client, livre):
         creer_depuis_session(client, livre, quantite=4)

@@ -1,4 +1,5 @@
 import pytest
+from django.core import mail
 from django.test import Client
 from django.urls import reverse
 
@@ -50,3 +51,11 @@ class TestPasswordResetViews:
         url = reverse("accounts:password_reset_complete")
         response = client.get(url)
         assert response.status_code == 200
+
+    def test_une_demande_valide_envoie_le_lien(self, client: Client, user):
+        response = client.post(reverse("accounts:password_reset"), {"email": user.email})
+
+        assert response.status_code == 302
+        assert len(mail.outbox) == 1
+        assert reverse("accounts:password_reset_done") == response.url
+        assert "/mot-de-passe/confirmer/" in mail.outbox[0].body

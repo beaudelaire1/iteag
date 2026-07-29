@@ -57,6 +57,18 @@ python manage.py runserver
 
 Pendant le développement, laisser `npm run css:watch` tourner dans un second terminal.
 
+Pour tester les notifications réelles avec Google SMTP, renseigner
+`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` et `EMAIL_TEST_RECIPIENT` dans
+`src/.env`, puis lancer :
+
+```bash
+python manage.py tester_notifications_email
+```
+
+La commande envoie six messages de contrôle sans créer de candidature, de
+commande ou de compte. En développement, les notifications déclenchées depuis
+le site sont envoyées immédiatement ; Render continue à les confier au worker.
+
 > **`npm run build` est obligatoire après chaque `git pull`.**
 > `static/css/main.css` est un artefact de compilation, ignoré par git :
 > récupérer une branche apporte les gabarits mais **pas** les styles. Le site
