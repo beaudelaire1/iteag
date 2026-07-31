@@ -1,58 +1,175 @@
-name: iteag
+# ITEAG — Déploiement Coolify
+# Chemin : src/docker-compose.prod.yml
 
 x-application: &application
   build:
     context: .
     dockerfile: Dockerfile.prod
+
   env_file:
     - .env
-  depends_on:
-    db:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
+
+  environment:
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY doit être défini}
+    DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS doit être défini}
+    DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?DJANGO_CSRF_TRUSTED_ORIGINS doit être défini}
+
+    SITE_URL: ${SITE_URL:?SITE_URL doit être défini}
+    WAGTAILADMIN_BASE_URL: ${WAGTAILADMIN_BASE_URL:?WAGTAILADMIN_BASE_URL doit être défini}
+
+    DATABASE_URL: "postgresql://${POSTGRES_USER:-iteag}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-iteag}"
+
+    REDIS_URL: "redis://redis:6379/0"
+    CELERY_BROKER_URL: "redis://redis:6379/1"
+    CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    CELERY_TASK_ALWAYS_EAGER: "False"
+
+    EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+    CLOUDFLARE_TURNSTILE_ENABLED: ${CLOUDFLARE_TURNSTILE_ENABLED:-False}
+
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-iteag-media}
+    AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-}
+    AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-auto}
+    AWS_S3_ADDRESSING_STYLE: ${AWS_S3_ADDRESSING_STYLE:-path}
+
   restart: unless-stopped
+
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
 
 services:
   db:
     image: postgres:16-alpine
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-iteag}
       POSTGRES_USER: ${POSTGRES_USER:-iteag}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini}
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iteag} -d ${POSTGRES_DB:-iteag}"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-iteag} -d ${POSTGRES_DB:-iteag}
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
+
     restart: unless-stopped
+    mem_limit: 2g
 
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+
     volumes:
       - redis_data:/data
+
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD
+        - redis-cli
+        - ping
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+
     restart: unless-stopped
+    mem_limit: 512m
+
+  migrate:
+    <<: *application
+
+    command:
+      - python
+      - manage.py
+      - migrate
+      - --noinput
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: "no"
+    mem_limit: 1g
+
+    healthcheck:
+      disable: true
+
+    exclude_from_hc: true
 
   web:
     <<: *application
-    ports:
-      - "127.0.0.1:8000:8000"
+
+    expose:
+      - "8000"
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    mem_limit: 2g
 
   worker:
     <<: *application
-    command: celery -A config worker --loglevel=info
+
+    command:
+      - celery
+      - -A
+      - config
+      - worker
+      - --loglevel=info
+      - --concurrency=2
+      - --max-tasks-per-child=1000
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    mem_limit: 2g
+
+    healthcheck:
+      disable: true
 
   beat:
     <<: *application
-    command: celery -A config beat --loglevel=info
+
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - --loglevel=info
+      - --schedule=/tmp/celerybeat-schedule
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    mem_limit: 256m
+
+    healthcheck:
+      disable: true
 
 volumes:
   postgres_data:
