@@ -58,11 +58,22 @@ class StudentDocumentListView(StudentRoleRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profil = self.request.user.profil_etudiant
+        # Les notes se lisent ici, avant de décider d'éditer le relevé : il
+        # fallait jusqu'ici générer un PDF pour savoir ce qu'il contiendrait,
+        # ou changer d'écran. Seules les notes publiées paraissent — une note
+        # posée mais non publiée n'est pas un résultat arrêté.
+        notes = (
+            profil.evaluations.filter(statut="publie", note__isnull=False)
+            .select_related("cours_session__cours", "cours_session__session")
+            .order_by("-date_notation", "-created_at")
+        )
         context.update(
             {
                 "profil": profil,
                 "documents": self.request.user.documents_administratifs.all(),
                 "document_options": _document_options(profil),
+                "notes_publiees": notes,
+                "total_ects_acquis": profil.total_ects_acquis,
             }
         )
         return context
