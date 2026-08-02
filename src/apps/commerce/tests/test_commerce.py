@@ -25,6 +25,16 @@ from apps.paiements.services import reglements, webhook
 
 
 @pytest.fixture
+def secretaire(db):
+    return User.objects.create_user(
+        username="sec_commerce",
+        email="sec_commerce@iteag.org",
+        password="motdepasse-long-12",
+        role=User.Role.SECRETARIAT,
+    )
+
+
+@pytest.fixture
 def livre(db):
     # Les tests métier utilisent une grille minimale maîtrisée ; la migration
     # charge par ailleurs le barème public complet pour l'application réelle.
@@ -294,7 +304,7 @@ class TestCommande:
         assert sous_seuil.frais_livraison == Decimal("10.00")
         assert sous_seuil.total == Decimal("159.00")
 
-        services.annuler_commande(sous_seuil)
+        services.annuler_commande(sous_seuil, motif=Commande.MotifAnnulation.DEMANDE_CLIENT)
         session = client.session
         session.pop(panier.CLE_SESSION, None)
         session.save()
@@ -428,7 +438,7 @@ class TestCommande:
     def test_annulation_libere_la_reservation(self, client, livre):
         commande = creer_depuis_session(client, livre, quantite=3)
 
-        services.annuler_commande(commande)
+        services.annuler_commande(commande, motif=Commande.MotifAnnulation.RUPTURE_STOCK)
         livre.refresh_from_db()
         commande.refresh_from_db()
 
@@ -545,3 +555,74 @@ class TestGestionTarifsLivraison:
         reponse = client.get(reverse("commerce:gestion_tarifs_livraison"))
 
         assert reponse.status_code == 403
+
+
+@pytest.mark.django_db
+class TestMotifAnnulation:
+    """Annuler sans dire pourquoi rend les annulations incomptables.
+
+    Une rupture de stock et un client qui se ravise n'appellent pas la même
+    réaction — et on ne le saura jamais si chacun écrit sa propre formule dans
+    un champ libre, ou si rien n'est demandé du tout.
+    """
+
+    def test_le_motif_est_obligatoire(self, client, livre):
+        commande = creer_depuis_session(client, livre, quantite=1)
+        with pytest.raises(ValidationError):
+            services.annuler_commande(commande)
+        commande.refresh_from_db()
+        assert commande.statut != Commande.Statut.ANNULEE
+
+    def test_un_motif_hors_liste_est_refuse(self, client, livre):
+        commande = creer_depuis_session(client, livre, quantite=1)
+        with pytest.raises(ValidationError):
+            services.annuler_commande(commande, motif="parce que")
+
+    def test_autre_motif_exige_une_precision(self, client, livre):
+        """« Autre » sans précision ne dit rien de plus que rien du tout."""
+        commande = creer_depuis_session(client, livre, quantite=1)
+        with pytest.raises(ValidationError):
+            services.annuler_commande(commande, motif=Commande.MotifAnnulation.AUTRE, precision="  ")
+
+        services.annuler_commande(
+            commande, motif=Commande.MotifAnnulation.AUTRE, precision="Doublon avec la commande CMD-0012."
+        )
+        commande.refresh_from_db()
+        assert commande.statut == Commande.Statut.ANNULEE
+        assert commande.precision_annulation == "Doublon avec la commande CMD-0012."
+
+    def test_le_motif_est_conserve_et_annonce_au_client(self, client, livre, django_capture_on_commit_callbacks):
+        commande = creer_depuis_session(client, livre, quantite=1)
+        mail.outbox.clear()
+
+        # Le courriel part après validation de la transaction : sans capture,
+        # il ne serait jamais envoyé dans un test.
+        with django_capture_on_commit_callbacks(execute=True):
+            services.annuler_commande(commande, motif=Commande.MotifAnnulation.RUPTURE_STOCK)
+
+        commande.refresh_from_db()
+        assert commande.motif_annulation == Commande.MotifAnnulation.RUPTURE_STOCK
+        assert commande.get_motif_annulation_display() == "Rupture de stock"
+        assert any("Rupture de stock" in message.body for message in mail.outbox), (
+            "Le client doit savoir pourquoi sa commande est annulée"
+        )
+
+    def test_le_secretariat_annule_depuis_son_ecran(self, client, livre, secretaire):
+        commande = creer_depuis_session(client, livre, quantite=1)
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("commerce:commande_action", args=[commande.pk]),
+            {"action": "annuler", "motif_annulation": Commande.MotifAnnulation.ADRESSE_INVALIDE},
+        )
+
+        commande.refresh_from_db()
+        assert commande.statut == Commande.Statut.ANNULEE
+        assert commande.motif_annulation == Commande.MotifAnnulation.ADRESSE_INVALIDE
+
+    def test_l_ecran_propose_la_liste_des_motifs(self, client, livre, secretaire):
+        creer_depuis_session(client, livre, quantite=1)
+        client.force_login(secretaire)
+        contenu = client.get(reverse("commerce:gestion_commandes")).content.decode()
+        assert 'name="motif_annulation"' in contenu
+        assert "Rupture de stock" in contenu

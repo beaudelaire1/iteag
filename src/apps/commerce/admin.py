@@ -101,10 +101,18 @@ class CommandeAdmin(admin.ModelAdmin):
 
     @admin.action(description="Annuler et libérer le stock")
     def annuler(self, request, queryset):
+        # L'action groupée ne peut pas demander un motif par commande. Elle
+        # déclare donc le sien, et l'écran du secrétariat reste la voie normale
+        # — c'est lui qui sait pourquoi une commande précise est annulée.
         self._appliquer(
             request,
             queryset,
-            lambda commande: services.annuler_commande(commande, acteur=request.user),
+            lambda commande: services.annuler_commande(
+                commande,
+                acteur=request.user,
+                motif=Commande.MotifAnnulation.AUTRE,
+                precision="Annulation groupée depuis l'administration Django.",
+            ),
         )
 
     def _appliquer(self, request, queryset, service):

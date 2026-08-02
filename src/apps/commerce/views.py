@@ -313,6 +313,7 @@ class GestionCommandesView(StaffRoleRequiredMixin, ListView):
             **super().get_context_data(**kwargs),
             "statuts": Commande.Statut.choices,
             "statut_courant": self.request.GET.get("statut", ""),
+            "motifs_annulation": Commande.MotifAnnulation.choices,
             "alertes_stock": AlerteStock.objects.filter(resolue=False).count(),
         }
 
@@ -339,7 +340,12 @@ class CommandeActionView(StaffRoleRequiredMixin, View):
             elif action == "livrer":
                 commande = services.livrer_commande(commande)
             elif action == "annuler":
-                commande = services.annuler_commande(commande, acteur=request.user)
+                commande = services.annuler_commande(
+                    commande,
+                    acteur=request.user,
+                    motif=request.POST.get("motif_annulation", ""),
+                    precision=request.POST.get("precision_annulation", ""),
+                )
             else:
                 raise ValidationError("Action inconnue.")
         except ValidationError as erreur:
