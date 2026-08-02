@@ -21,7 +21,7 @@ boutique de livres avec commandes, suivi et gestion de stock.
 | [`docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md`](docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md) | Paiement en ligne : Stripe, webhook, TVA |
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
 | [`docs/exploitation/cloudflare.md`](docs/exploitation/cloudflare.md) | Activation Turnstile, proxy DNS, TLS et WAF Cloudflare |
-| [`docs/exploitation/render.md`](docs/exploitation/render.md) | Déploiement Render, variables secrètes, R2 et Stripe live |
+| [`docs/exploitation/coolify.md`](docs/exploitation/coolify.md) | Déploiement OVH Cloud via Coolify, variables secrètes, R2 et Stripe live |
 | [`docs/exploitation/notifications.md`](docs/exploitation/notifications.md) | Événements notifiés, destinataires et contrôle SMTP |
 
 ---
@@ -68,7 +68,8 @@ python manage.py tester_notifications_email
 
 La commande envoie sept messages de contrôle sans créer de candidature, de
 commande ou de compte. En développement, les notifications déclenchées depuis
-le site sont envoyées immédiatement ; Render continue à les confier au worker.
+le site sont envoyées immédiatement ; en production, le worker Celery s'en
+charge.
 
 > **`npm run build` est obligatoire après chaque `git pull`.**
 > `static/css/main.css` est un artefact de compilation, ignoré par git :
@@ -132,9 +133,11 @@ src/
 │   ├── commerce/            Boutique, commandes, stocks et alertes
 │   ├── paiements/           Encaissement Stripe — modules, frais, commandes
 │   ├── documents/           Documents administratifs PDF
-│   ├── website/             Pages éditoriales Wagtail
+│   ├── website/             Pages éditoriales Wagtail — et plan du site
 │   ├── elearning/           E-Learning — modules, accès, progression
-│   └── administration/      Portail administratif
+│   ├── portail_etudiant/    Espace étudiant
+│   ├── portail_enseignant/  Espace enseignant
+│   └── administration/      Portail administratif et secrétariat
 ├── assets/css/input.css     Source Tailwind (jamais servie telle quelle)
 ├── static/                  Fichiers servis — main.css y est généré
 ├── templates/               Gabarits Django
@@ -229,15 +232,25 @@ les feuilles de style, une étape Python installe les dépendances, et la collec
 statiques échoue bruyamment en cas de rupture — voir
 [ADR-004](docs/architecture/adr/ADR-004-pipeline-assets-production.md).
 
-Variables d'environnement attendues : voir `src/.env.example`.
+Variables d'environnement attendues : `src/.env.example` en développement,
+`src/.env.prod.example` en production.
 
-Le déploiement Render est décrit par `render.yaml` à la racine du dépôt. Il crée
-le service web, le worker Celery, PostgreSQL et Render Key Value. Les clés Stripe,
-Cloudflare R2, Turnstile, Sentry, Bunny et SMTP restent exclusivement dans les
-variables secrètes Render. Voir
-[`docs/exploitation/render.md`](docs/exploitation/render.md) pour le premier
-déploiement et la bascule du domaine. Ces opérations nécessitent l'accord
-explicite du client.
+La production tourne sur **OVH Cloud, administrée par Coolify**. Le déploiement
+est décrit par `src/docker-compose.prod.yml` — PostgreSQL, Redis, une tâche de
+migration, l'application, le worker Celery et le planificateur. Coolify y ajoute
+ce que le dépôt ne contient volontairement pas : le proxy, le certificat TLS et
+les variables secrètes (Stripe, Cloudflare R2, Turnstile, Sentry, Bunny, SMTP).
+
+> Le fichier Compose doit rester lisible par Docker Compose seul :
+> ```bash
+> docker compose -f src/docker-compose.prod.yml config
+> ```
+> Une clé propre à l'interface Coolify passe sa lecture mais fait échouer
+> Compose — donc le déploiement — avant le premier téléchargement d'image.
+
+Voir [`docs/exploitation/coolify.md`](docs/exploitation/coolify.md) pour le
+premier déploiement et la bascule du domaine. Ces opérations nécessitent
+l'accord explicite du client.
 
 ---
 
