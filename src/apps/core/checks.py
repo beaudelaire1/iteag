@@ -147,3 +147,47 @@ def configuration_smtp(app_configs, **kwargs):
         ]
 
     return []
+
+
+@register()
+def configuration_stockage_media(app_configs, **kwargs):
+    """Un stockage objet déclaré doit avoir de quoi s'authentifier.
+
+    Le piège est silencieux : sans identifiants, le stockage S3 construit tout
+    de même des URL, que le navigateur affiche en cadre vide. Aucune erreur
+    n'est levée côté serveur, et l'on cherche longtemps du côté des gabarits.
+
+    Le contrôle ne porte que sur le stockage réellement configuré : en
+    développement, où les fichiers restent sur le disque, il ne dit rien.
+    """
+    stockage = settings.STORAGES.get("default", {}).get("BACKEND", "")
+    if "s3" not in stockage.lower():
+        return []
+
+    manquantes = [
+        nom
+        for nom in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_STORAGE_BUCKET_NAME")
+        if not getattr(settings, nom, "")
+    ]
+    if manquantes:
+        return [
+            Error(
+                "Le stockage des fichiers déposés est un stockage objet, sans identifiants complets.",
+                hint=(
+                    f"Renseignez : {', '.join(manquantes)}. "
+                    "Sans elles, photos, couvertures et pièces jointes s'affichent en cadre vide."
+                ),
+                id="core.E005",
+            )
+        ]
+
+    if not getattr(settings, "AWS_S3_ENDPOINT_URL", "") and not getattr(settings, "AWS_S3_REGION_NAME", ""):
+        return [
+            Warning(
+                "Ni point d'entrée ni région ne sont indiqués pour le stockage objet.",
+                hint="Cloudflare R2 exige AWS_S3_ENDPOINT_URL (https://ID.r2.cloudflarestorage.com).",
+                id="core.W005",
+            )
+        ]
+
+    return []

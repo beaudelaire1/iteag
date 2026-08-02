@@ -58,11 +58,22 @@ class StudentDocumentListView(StudentRoleRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profil = self.request.user.profil_etudiant
+        # Les notes se lisent ici, avant de décider d'éditer le relevé : il
+        # fallait jusqu'ici générer un PDF pour savoir ce qu'il contiendrait,
+        # ou changer d'écran. Seules les notes publiées paraissent — une note
+        # posée mais non publiée n'est pas un résultat arrêté.
+        notes = (
+            profil.evaluations.filter(statut="publie", note__isnull=False)
+            .select_related("cours_session__cours", "cours_session__session")
+            .order_by("-date_notation", "-created_at")
+        )
         context.update(
             {
                 "profil": profil,
                 "documents": self.request.user.documents_administratifs.all(),
                 "document_options": _document_options(profil),
+                "notes_publiees": notes,
+                "total_ects_acquis": profil.total_ects_acquis,
             }
         )
         return context
@@ -103,12 +114,18 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
         # les crédits en ne listant que les évaluations ferait diverger le
         # total de ses lignes.
         credits = profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by("date_validation")
+        if document_type == DocumentAdministratif.TypeDocument.RELEVE_NOTES:
+            # Le gabarit affiche le total puis les ECTS restants. Sans cette
+            # valeur mémorisée, les deux propriétés relancent exactement la
+            # même agrégation pendant le rendu PDF.
+            profil.ects_acquis_annotes = profil.total_ects_acquis
 
         from apps.core.services.pdf import contexte_marque
 
         html = render_to_string(
             "documents/pdf/document.html",
             contexte_marque(
+                profil_polices="document_administratif",
                 user=request.user,
                 profil=profil,
                 document_type=document_type,

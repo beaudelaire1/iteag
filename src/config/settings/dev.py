@@ -2,6 +2,8 @@
 Django settings — Development environment.
 """
 
+from pathlib import Path
+
 from .base import *  # noqa: F401, F403
 
 DEBUG = True
@@ -33,18 +35,43 @@ DEBUG_TOOLBAR_CONFIG = {
 # Database — SQLite for fast local dev
 # ──────────────────────────────────────────────
 
-DATABASES = {  # noqa: F811
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
-        # SQLite ne tolère qu'un écrivain à la fois. Avec `runserver` en
-        # arrière-plan, une commande qui écrit longuement — un peuplement, une
-        # migration de données — se heurte au verrou et abandonne au bout des
-        # 5 secondes par défaut, sur un « database is locked » qui n'apprend
-        # rien. On laisse le temps d'attendre son tour.
-        "OPTIONS": {"timeout": 30},
+if not env("DATABASE_URL", default=""):  # noqa: F405
+    DATABASES = {  # noqa: F811
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
+        }
     }
-}
+
+# L'URL explicite peut elle-même désigner SQLite. On lui applique donc les
+# options locales après sa lecture, tout en laissant PostgreSQL intact dans
+# Docker. SQLite ne tolère qu'un écrivain à la fois : WAL évite qu'une écriture
+# de session bloque les lectures concurrentes, et NORMAL évite une
+# synchronisation complète pour chaque petite transaction sans compromettre
+# l'intégrité du journal.
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":  # noqa: F405
+    nom_sqlite = DATABASES["default"]["NAME"]  # noqa: F405
+    if nom_sqlite != ":memory:" and not Path(nom_sqlite).is_absolute():
+        # django-environ conserve les chemins SQLite relatifs tels quels. Sans
+        # normalisation, lancer manage.py depuis la racine crée une seconde
+        # base vide à côté de src/ au lieu d'ouvrir la base locale attendue.
+        DATABASES["default"]["NAME"] = BASE_DIR / nom_sqlite  # noqa: F405
+    DATABASES["default"].setdefault("OPTIONS", {}).update(  # noqa: F405
+        {
+            "timeout": 30,
+            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL",
+        }
+    )
+
+# Le fichier .env local peut contenir les clés destinées au futur déploiement
+# sans transformer chaque connexion localhost en aller-retour Cloudflare.
+# L'activation en développement reste possible, mais doit être explicite.
+CLOUDFLARE_TURNSTILE_ENABLED = env.bool("CLOUDFLARE_TURNSTILE_ENABLED", default=False)  # noqa: F405
+
+# En local, la session a une durée absolue de 30 minutes au lieu de réécrire
+# SQLite à chaque page. C'est plus strict que la durée glissante de production
+# et supprime trois opérations SQL sur chaque requête authentifiée.
+SESSION_SAVE_EVERY_REQUEST = False
 
 # ──────────────────────────────────────────────
 # Static files

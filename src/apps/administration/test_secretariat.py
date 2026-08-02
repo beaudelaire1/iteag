@@ -1,18 +1,18 @@
 """
 Le secrétariat gère l'ensemble du service scolarité.
 
-Ces cas couvrent les quatre gestes qui lui manquaient ou dont on doutait :
-réclamer une pièce à un candidat, traiter une demande d'inscription, ouvrir la
-fiche d'un étudiant, et administrer la boutique. Ils sont joués avec un vrai
-compte de rôle « secrétariat », et non avec un compte d'administration.
+Ces cas couvrent les trois gestes qui lui manquaient ou dont on doutait :
+traiter une demande d'inscription, ouvrir la fiche d'un étudiant, et
+administrer la boutique. Ils sont joués avec un vrai compte de rôle
+« secrétariat », et non avec un compte d'administration.
 """
 
-from datetime import date
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.academics.models import (
     CoursDeSession,
@@ -22,7 +22,6 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
-from apps.admissions.models import DossierCandidature, PieceComplementaire
 from apps.commerce.models import ProduitLivre
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 
@@ -48,144 +47,10 @@ def parcours(db):
     return Parcours.objects.create(nom="Bachelor", slug="bachelor", type_parcours=Parcours.TypeParcours.LIBRE)
 
 
-@pytest.fixture
-def dossier(parcours):
-    return DossierCandidature.objects.create(
-        nom="Abaul",
-        prenom="Léonie",
-        email="candidate@exemple.org",
-        parcours_souhaite=parcours,
-        motivations="Je souhaite me former.",
-    )
-
-
-# ──────────────────────────────────────────────
-# Pièces complémentaires
-# ──────────────────────────────────────────────
-
-
-def test_le_secretariat_reclame_une_piece(client, secretaire, dossier):
-    client.force_login(secretaire)
-
-    reponse = client.post(
-        reverse("administration:demander_piece", args=[dossier.pk]),
-        {"libelle": "Relevé de notes du baccalauréat", "description": "Recto verso, lisible.", "obligatoire": "on"},
-    )
-
-    assert reponse.status_code == 302
-    piece = dossier.pieces_complementaires.get()
-    assert piece.libelle == "Relevé de notes du baccalauréat"
-    assert piece.statut == PieceComplementaire.Statut.DEMANDEE
-    assert piece.demandee_par == secretaire
-
-    # Attendre une pièce, c'est avoir un dossier incomplet : l'état le dit.
-    dossier.refresh_from_db()
-    assert dossier.statut == DossierCandidature.Statut.INCOMPLET
-
-
-def test_une_demande_sans_libelle_est_refusee(client, secretaire, dossier):
-    client.force_login(secretaire)
-    client.post(reverse("administration:demander_piece", args=[dossier.pk]), {"libelle": "   "})
-    assert dossier.pieces_complementaires.count() == 0
-
-
-def test_le_candidat_depose_depuis_son_lien_de_suivi(client, dossier, secretaire):
-    """Le candidat n'a pas de compte : le jeton du lien est son seul titre."""
-    from apps.admissions.services import demander_piece
-
-    piece = demander_piece(dossier, libelle="Attestation d'église", par=secretaire)
-
-    reponse = client.post(
-        reverse("admissions:candidature_suivi", kwargs={"token": dossier.token_suivi}),
-        {
-            "piece": piece.pk,
-            "fichier": SimpleUploadedFile("attestation.pdf", b"%PDF-1.4", content_type="application/pdf"),
-        },
-    )
-
-    assert reponse.status_code == 302
-    piece.refresh_from_db()
-    assert piece.statut == PieceComplementaire.Statut.DEPOSEE
-    assert piece.fichier
-    assert piece.date_depot is not None
-
-
-def test_le_jeton_d_un_dossier_ne_depose_pas_sur_un_autre(client, dossier, parcours, secretaire):
-    from apps.admissions.services import demander_piece
-
-    autre = DossierCandidature.objects.create(
-        nom="Céleste",
-        prenom="Patrick",
-        email="autre@exemple.org",
-        parcours_souhaite=parcours,
-        motivations="…",
-    )
-    piece_de_l_autre = demander_piece(autre, libelle="Pièce d'identité", par=secretaire)
-
-    reponse = client.post(
-        reverse("admissions:candidature_suivi", kwargs={"token": dossier.token_suivi}),
-        {"piece": piece_de_l_autre.pk, "fichier": SimpleUploadedFile("x.pdf", b"%PDF", content_type="application/pdf")},
-    )
-
-    assert reponse.status_code == 404
-    piece_de_l_autre.refresh_from_db()
-    assert piece_de_l_autre.statut == PieceComplementaire.Statut.DEMANDEE
-
-
-def test_le_secretariat_valide_une_piece(client, secretaire, dossier):
-    from apps.admissions.services import demander_piece, deposer_piece
-
-    piece = demander_piece(dossier, libelle="Diplôme", par=secretaire)
-    deposer_piece(piece, SimpleUploadedFile("d.pdf", b"%PDF", content_type="application/pdf"))
-
-    client.force_login(secretaire)
-    client.post(reverse("administration:verifier_piece", args=[piece.pk]), {"decision": "accepter"})
-
-    piece.refresh_from_db()
-    assert piece.statut == PieceComplementaire.Statut.VALIDEE
-    assert piece.date_verification is not None
-
-
-def test_un_refus_sans_motif_est_impossible(client, secretaire, dossier):
-    """Refuser sans dire pourquoi obligerait le candidat à redéposer la même chose."""
-    from apps.admissions.services import demander_piece, deposer_piece
-
-    piece = demander_piece(dossier, libelle="Diplôme", par=secretaire)
-    deposer_piece(piece, SimpleUploadedFile("d.pdf", b"%PDF", content_type="application/pdf"))
-
-    client.force_login(secretaire)
-    client.post(reverse("administration:verifier_piece", args=[piece.pk]), {"decision": "refuser", "motif": "  "})
-
-    piece.refresh_from_db()
-    assert piece.statut == PieceComplementaire.Statut.DEPOSEE
-
-
-def test_un_refus_motive_rouvre_le_depot(client, secretaire, dossier):
-    from apps.admissions.services import demander_piece, deposer_piece
-
-    piece = demander_piece(dossier, libelle="Diplôme", par=secretaire)
-    deposer_piece(piece, SimpleUploadedFile("d.pdf", b"%PDF", content_type="application/pdf"))
-
-    client.force_login(secretaire)
-    client.post(
-        reverse("administration:verifier_piece", args=[piece.pk]),
-        {"decision": "refuser", "motif": "Document illisible."},
-    )
-
-    piece.refresh_from_db()
-    assert piece.statut == PieceComplementaire.Statut.REFUSEE
-    assert piece.motif_refus == "Document illisible."
-    assert piece.est_en_attente is True  # le candidat peut redéposer
-
-
-def test_un_etudiant_ne_reclame_pas_de_piece(client, dossier, parcours):
-    intrus = User.objects.create_user(
-        username="intrus", email="intrus@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
-    )
-    client.force_login(intrus)
-    reponse = client.post(reverse("administration:demander_piece", args=[dossier.pk]), {"libelle": "Rien"})
-    assert reponse.status_code == 403
-    assert dossier.pieces_complementaires.count() == 0
+# Les pièces réclamées à un candidat sont couvertes par
+# « apps/admissions/test_pieces.py », qui joue le même parcours — réclamation,
+# dépôt au jeton, validation, refus motivé — sur le modèle « PieceDemandee ».
+# Les cas qui vivaient ici visaient un second modèle, supprimé depuis.
 
 
 # ──────────────────────────────────────────────
@@ -195,6 +60,12 @@ def test_un_etudiant_ne_reclame_pas_de_piece(client, dossier, parcours):
 
 @pytest.fixture
 def demande(parcours):
+    # La session encadre le jour où la suite tourne. Des dates absolues
+    # faisaient passer ce cas jusqu'au dernier jour de la session écrite en
+    # dur, puis échouer tous les jours suivants sur « Cette session est
+    # terminée » — un refus légitime du domaine, contre un dossier de test
+    # devenu invraisemblable.
+    aujourd_hui = timezone.localdate()
     promotion = Promotion.objects.create(nom="Promotion 2026", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
         username="etudiante", email="etudiante@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
@@ -210,7 +81,9 @@ def demande(parcours):
     matiere = Cours.objects.create(titre="Herméneutique", slug="hermeneutique", discipline=discipline)
     professeur = Professeur.objects.create(nom="Nisus", prenom="Alain", slug="alain-nisus")
     session = SessionAcademique.objects.create(
-        nom="Session de Juillet 2026", date_debut=date(2026, 7, 1), date_fin=date(2026, 7, 31)
+        nom="Session en cours",
+        date_debut=aujourd_hui - timedelta(days=7),
+        date_fin=aujourd_hui + timedelta(days=23),
     )
     offre = CoursDeSession.objects.create(session=session, cours=matiere, enseignant=professeur)
     return DemandeInscriptionCours.objects.create(
@@ -242,6 +115,45 @@ def test_le_secretariat_ouvre_la_liste_des_demandes(client, secretaire, demande)
     reponse = client.get(reverse("administration:enrollment_requests"))
     assert reponse.status_code == 200
     assert "Herméneutique" in reponse.content.decode()
+
+
+def _compteur(reponse):
+    valeur = reponse.context["demandes_inscription_a_traiter"]
+    # Le processeur de contexte fournit un appelable, la vue un entier : la
+    # pastille doit dire la même chose dans les deux cas.
+    return valeur() if callable(valeur) else valeur
+
+
+def test_la_pastille_des_demandes_decroit_une_fois_l_inscription_confirmee(client, secretaire, demande):
+    """Une pastille qui ne retombe jamais cesse d'être lue."""
+    client.force_login(secretaire)
+    avant = _compteur(client.get(reverse("secretariat:dashboard")))
+
+    client.post(
+        reverse("administration:enrollment_request_action", args=[demande.pk]),
+        {"action": "confirmer", "exonere_paiement": "on", "commentaire": "Boursière : exonérée."},
+    )
+
+    assert _compteur(client.get(reverse("secretariat:dashboard"))) == avant - 1
+
+
+def test_la_pastille_retient_une_demande_mise_en_attente_de_paiement(client, secretaire, demande):
+    """« Valider et demander le paiement » n'est pas la fin du traitement.
+
+    La demande reste due : la retirer de la pastille ferait disparaître de la
+    file un dossier sur lequel il reste à encaisser.
+    """
+    client.force_login(secretaire)
+    avant = _compteur(client.get(reverse("secretariat:dashboard")))
+
+    client.post(
+        reverse("administration:enrollment_request_action", args=[demande.pk]),
+        {"action": "demander_paiement", "commentaire": ""},
+    )
+
+    demande.refresh_from_db()
+    assert demande.statut == DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
+    assert _compteur(client.get(reverse("secretariat:dashboard"))) == avant
 
 
 # ──────────────────────────────────────────────

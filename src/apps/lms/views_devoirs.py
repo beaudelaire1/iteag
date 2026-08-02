@@ -8,7 +8,7 @@ cours, d'annonces et de ressources restent où elles étaient.
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -16,7 +16,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
-from apps.academics.models import CoursDeSession
+from apps.academics.models import CoursDeSession, InscriptionSession
 from apps.core.mixins import TeacherRoleRequiredMixin
 from apps.lms import services
 from apps.lms.forms import DevoirForm, RevisionNoteForm
@@ -119,6 +119,10 @@ class TeacherDevoirCreateView(TeacherRoleRequiredMixin, CreateView):
         self.cours_session = get_object_or_404(_teacher_courses(request), pk=identifiant)
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        # Le formulaire restreint ses listes de destinataires à ce cours.
+        return {**super().get_form_kwargs(), "cours_session": self.cours_session}
+
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), "cours_session": self.cours_session}
 
@@ -137,6 +141,9 @@ class TeacherDevoirUpdateView(_DevoirDuProfesseur, UpdateView):
     form_class = DevoirForm
     template_name = "lms/devoir_form.html"
     context_object_name = "devoir"
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "cours_session": self.object.cours_session}
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), "cours_session": self.object.cours_session}
@@ -311,9 +318,21 @@ class TeacherEtudiantsListView(TeacherRoleRequiredMixin, ListView):
         if professeur is None:
             return ProfilEtudiant.objects.none()
 
+        # Les inscriptions préchargées sont restreintes aux cours de cet
+        # enseignant : la liste doit dire « dans lesquels de MES cours il est
+        # inscrit », et non exposer toute la scolarité de l'étudiant, qui
+        # relève du secrétariat.
+        inscriptions_du_professeur = Prefetch(
+            "inscriptions",
+            queryset=InscriptionSession.objects.filter(cours_session__enseignant=professeur)
+            .select_related("cours_session__cours", "cours_session__session")
+            .order_by("cours_session__session__date_debut"),
+            to_attr="inscriptions_chez_moi",
+        )
         requete = (
             ProfilEtudiant.objects.filter(inscriptions__cours_session__enseignant=professeur)
             .select_related("utilisateur", "promotion", "parcours")
+            .prefetch_related(inscriptions_du_professeur)
             .distinct()
             .order_by("utilisateur__last_name", "utilisateur__first_name")
         )

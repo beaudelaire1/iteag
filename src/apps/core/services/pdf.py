@@ -47,6 +47,17 @@ POLICES = [
     ("fonts/Inter-700.ttf", "Inter", 700, "normal"),
 ]
 
+# Les documents administratifs n'emploient ni le romain 400 ni l'italique de
+# Playfair Display. Ne pas les déclarer évite à WeasyPrint de lire et analyser
+# deux fichiers supplémentaires à chaque génération, sans changer un seul
+# glyphe du document.
+POLICES_DOCUMENT_ADMINISTRATIF = {
+    ("Playfair Display", 700, "normal"),
+    ("Inter", 400, "normal"),
+    ("Inter", 600, "normal"),
+    ("Inter", 700, "normal"),
+}
+
 LOGO = "img/logo.png"
 
 
@@ -65,8 +76,8 @@ def _uri(chemin_statique: str) -> str:
     return repli.resolve().as_uri() if repli.exists() else ""
 
 
-@lru_cache(maxsize=1)
-def polices_embarquees() -> list[dict]:
+@lru_cache(maxsize=2)
+def polices_embarquees(profil: str = "complet") -> list[dict]:
     """Déclarations « @font-face » des polices réellement présentes.
 
     Une police absente est omise plutôt que déclarée : une règle qui pointe
@@ -75,6 +86,16 @@ def polices_embarquees() -> list[dict]:
     """
     declarations = []
     for chemin, famille, graisse, style in POLICES:
+        if (
+            profil == "document_administratif"
+            and (
+                famille,
+                graisse,
+                style,
+            )
+            not in POLICES_DOCUMENT_ADMINISTRATIF
+        ):
+            continue
         uri = _uri(chemin)
         if uri:
             declarations.append({"uri": uri, "famille": famille, "graisse": graisse, "style": style})
@@ -136,11 +157,11 @@ def qr_data_uri(contenu: str, taille: int = 5) -> str:
     return "data:image/png;base64," + base64.b64encode(tampon.getvalue()).decode()
 
 
-def contexte_marque(**extra) -> dict:
+def contexte_marque(*, profil_polices: str = "complet", **extra) -> dict:
     """Contexte commun à tous les documents imprimés."""
     return {
         "institut": INSTITUT,
-        "polices_pdf": polices_embarquees(),
+        "polices_pdf": polices_embarquees(profil_polices),
         "logo_pdf": logo_uri(),
         **extra,
     }

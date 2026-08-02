@@ -14,6 +14,8 @@ Deux défauts, tous deux visibles à l'œil nu et qu'aucun test ne relevait :
 """
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from apps.accounts.models import User
@@ -91,3 +93,22 @@ class TestLaCloche:
     def test_le_visiteur_anonyme_ne_voit_pas_de_cloche(self, client):
         contenu = client.get(reverse("elearning:catalogue")).content.decode()
         assert "nav-cloche" not in contenu
+
+    def test_le_compteur_n_est_calcule_qu_une_fois_par_page(self, client, etudiant):
+        """La barre de bureau et le menu mobile affichent la même cloche.
+
+        Chacun résout « notifications_non_lues » pour son propre rendu : sans
+        mémorisation, la même page compterait deux fois les non-lues en base.
+        """
+        notifier(etudiant, "Annonce")
+        client.force_login(etudiant)
+
+        with CaptureQueriesContext(connection) as requetes:
+            client.get(reverse("elearning:catalogue"))
+
+        comptages = [
+            requete["sql"]
+            for requete in requetes.captured_queries
+            if "core_notification" in requete["sql"] and "COUNT" in requete["sql"].upper()
+        ]
+        assert len(comptages) == 1, f"{len(comptages)} comptages de notifications pour une seule page"

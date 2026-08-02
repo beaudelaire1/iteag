@@ -49,6 +49,21 @@
         </div>
 
         <div class="pt-2" style="border-top: 1px solid var(--color-warm-200);">
+            <p class="overline mb-4" style="margin-top: 1rem;">Destinataires</p>
+            <p class="mb-4 text-sm" style="color: var(--color-warm-500);">
+                Par défaut le devoir s'adresse à tous les inscrits. Un groupe, une promotion
+                ou une liste d'étudiants ne fait que restreindre ce périmètre :
+                un devoir ne touche jamais quelqu'un qui ne suit pas le cours.
+            </p>
+            {% include "partials/champ.html" with field=form.portee %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                {% include "partials/champ.html" with field=form.groupe %}
+                {% include "partials/champ.html" with field=form.promotion %}
+            </div>
+            {% include "partials/champ.html" with field=form.etudiants %}
+        </div>
+
+        <div class="pt-2" style="border-top: 1px solid var(--color-warm-200);">
             <p class="overline mb-4" style="margin-top: 1rem;">Notation</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
                 {% include "partials/champ.html" with field=form.bareme %}

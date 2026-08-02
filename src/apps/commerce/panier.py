@@ -16,7 +16,11 @@ class LignePanier:
 
 
 def _brut(request) -> dict[str, int]:
-    panier = request.session.get(CLE_SESSION, {})
+    session = getattr(request, "session", None)
+    if session is None:
+        return {}
+
+    panier = session.get(CLE_SESSION, {})
     return {str(cle): int(valeur) for cle, valeur in panier.items() if int(valeur) > 0}
 
 

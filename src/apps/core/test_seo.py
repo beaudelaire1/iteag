@@ -10,7 +10,10 @@ from django.test import RequestFactory, override_settings
 
 from apps.commerce.models import ProduitLivre
 from apps.core.context_processors import site_context
-from apps.core.sitemaps import (
+from apps.elearning.models import ModuleFormation
+from apps.formations.models import Cours, Discipline, Parcours, Professeur
+from apps.library.models import NoticeBibliographique
+from apps.website.sitemaps import (
     CoursSitemap,
     LivresBoutiqueSitemap,
     ModulesPubliesSitemap,
@@ -19,9 +22,6 @@ from apps.core.sitemaps import (
     ParcoursSitemap,
     ProfesseursSitemap,
 )
-from apps.elearning.models import ModuleFormation
-from apps.formations.models import Cours, Discipline, Parcours, Professeur
-from apps.library.models import NoticeBibliographique
 
 
 @override_settings(SITE_URL="https://iteag.org")

@@ -85,10 +85,33 @@
                 {% endif %}
 
                 {% if commande.statut != 'annulee' and commande.statut != 'expediee' and commande.statut != 'livree' %}
-                <form method="post" action="{% url 'commerce:commande_action' commande.pk %}" class="mt-3">
+                {% comment %}
+                Le motif est retenu dans une liste fermée : c'est ce qui rend les
+                annulations comptables. Une rupture de stock et un client qui se
+                ravise n'appellent pas la même réaction.
+                {% endcomment %}
+                <form method="post" action="{% url 'commerce:commande_action' commande.pk %}" class="mt-3 space-y-2">
                     {% csrf_token %}<input type="hidden" name="action" value="annuler">
+                    <label class="block">
+                        <span class="stat-label">Motif de l'annulation</span>
+                        <select name="motif_annulation" class="form-input mt-1" required>
+                            <option value="">— Choisir un motif —</option>
+                            {% for valeur, libelle in motifs_annulation %}
+                            <option value="{{ valeur }}">{{ libelle }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="sr-only">Précision</span>
+                        <input type="text" name="precision_annulation" class="form-input"
+                               placeholder="Précision — obligatoire si « Autre motif »">
+                    </label>
                     <button type="submit" class="text-sm font-semibold text-rose-700">Annuler et libérer le stock</button>
                 </form>
+                {% elif commande.statut == 'annulee' and commande.motif_annulation %}
+                <p class="mt-3 text-sm text-warm-600">
+                    Annulée — {{ commande.get_motif_annulation_display }}{% if commande.precision_annulation %} : {{ commande.precision_annulation }}{% endif %}
+                </p>
                 {% endif %}
             </article>
             {% empty %}

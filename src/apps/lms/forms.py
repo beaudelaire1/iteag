@@ -119,6 +119,10 @@ class DevoirForm(FormulaireModeleITEAG):
             "retard_accepte",
             "bareme",
             "ects",
+            "portee",
+            "groupe",
+            "promotion",
+            "etudiants",
         ]
         widgets = {
             "titre": forms.TextInput(attrs={"class": INPUT, "placeholder": "Dissertation sur l'épître aux Romains"}),
@@ -135,12 +139,36 @@ class DevoirForm(FormulaireModeleITEAG):
             ),
             "bareme": forms.NumberInput(attrs={"min": 1, "step": "0.5", "class": INPUT_COURT}),
             "ects": forms.NumberInput(attrs={"min": 0, "max": 30, "step": "0.5", "class": INPUT_COURT}),
+            "portee": forms.Select(attrs={"class": INPUT}),
+            "groupe": forms.Select(attrs={"class": INPUT}),
+            "promotion": forms.Select(attrs={"class": INPUT}),
+            "etudiants": forms.SelectMultiple(attrs={"class": INPUT, "size": 8}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, cours_session=None, **kwargs):
         super().__init__(*args, **kwargs)
         for nom in ("date_ouverture", "date_fermeture"):
             self.fields[nom].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"]
+
+        # Les listes de destinataires sont restreintes au cours : proposer les
+        # groupes d'un autre cours ou tous les étudiants de l'institut
+        # inviterait à désigner quelqu'un qui ne le suit pas.
+        cours_session = cours_session or getattr(self.instance, "cours_session", None)
+        if cours_session is not None and cours_session.pk:
+            from apps.academics.models import ProfilEtudiant, Promotion
+            from apps.lms.models import GroupeEtudiants
+
+            inscrits = ProfilEtudiant.objects.filter(inscriptions__cours_session=cours_session).distinct()
+            self.fields["groupe"].queryset = GroupeEtudiants.objects.filter(cours_session=cours_session)
+            self.fields["etudiants"].queryset = inscrits.select_related("utilisateur").order_by(
+                "utilisateur__last_name", "utilisateur__first_name"
+            )
+            self.fields["promotion"].queryset = Promotion.objects.filter(etudiants__in=inscrits).distinct()
+
+        self.fields["groupe"].required = False
+        self.fields["promotion"].required = False
+        self.fields["etudiants"].required = False
+        self.fields["portee"].help_text = "Le devoir ne touche jamais que des inscrits à ce cours."
 
     def clean(self):
         donnees = super().clean()

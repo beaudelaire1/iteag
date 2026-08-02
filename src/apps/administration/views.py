@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
@@ -56,35 +56,50 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         today = timezone.localdate()
 
-        candidatures_nouvelles = DossierCandidature.objects.filter(statut=DossierCandidature.Statut.SOUMIS).count()
-        candidatures_examen = DossierCandidature.objects.filter(statut=DossierCandidature.Statut.EN_EXAMEN).count()
+        dossiers = DossierCandidature.objects.aggregate(
+            total=Count("id"),
+            nouvelles=Count("id", filter=Q(statut=DossierCandidature.Statut.SOUMIS)),
+            examen=Count("id", filter=Q(statut=DossierCandidature.Statut.EN_EXAMEN)),
+            a_traiter=Count(
+                "id",
+                filter=Q(
+                    statut__in=[
+                        DossierCandidature.Statut.SOUMIS,
+                        DossierCandidature.Statut.EN_EXAMEN,
+                        DossierCandidature.Statut.INCOMPLET,
+                    ]
+                ),
+            ),
+        )
+        etudiants = ProfilEtudiant.objects.aggregate(
+            total=Count("id"),
+            actifs=Count("id", filter=Q(statut_inscription=ProfilEtudiant.StatutInscription.ACTIF)),
+        )
+        session_en_cours = SessionAcademique.objects.filter(
+            Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
+        ).first()
+        finances = pilotage.finances(session_en_cours=session_en_cours)
+        production = self._production_pedagogique()
 
         ctx.update(
             {
-                "total_etudiants": ProfilEtudiant.objects.count(),
-                "etudiants_actifs": ProfilEtudiant.objects.filter(statut_inscription="actif").count(),
+                "total_etudiants": etudiants["total"],
+                "etudiants_actifs": etudiants["actifs"],
                 "total_professeurs": Professeur.objects.filter(actif=True).count(),
-                "total_candidatures": DossierCandidature.objects.count(),
-                "candidatures_nouvelles": candidatures_nouvelles,
-                "candidatures_examen": candidatures_examen,
+                "total_candidatures": dossiers["total"],
+                "candidatures_nouvelles": dossiers["nouvelles"],
+                "candidatures_examen": dossiers["examen"],
                 "total_cours": Cours.objects.filter(actif=True).count(),
                 "total_parcours": Parcours.objects.filter(actif=True).count(),
                 "total_ouvrages": NoticeBibliographique.objects.count(),
                 "total_users": User.objects.filter(is_active=True).count(),
-                "session_en_cours": SessionAcademique.objects.filter(
-                    Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
-                ).first(),
+                "session_en_cours": session_en_cours,
                 "prochaine_session": SessionAcademique.objects.filter(date_debut__gt=today)
                 .order_by("date_debut")
                 .first(),
                 "derniers_dossiers": DossierCandidature.objects.select_related("parcours_souhaite")[:5],
                 "derniers_paiements": Paiement.objects.select_related("etudiant__utilisateur", "session")[:5],
-                "demandes_inscription_a_traiter": DemandeInscriptionCours.objects.filter(
-                    statut__in=[
-                        DemandeInscriptionCours.Statut.SOUMISE,
-                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
-                    ]
-                ).count(),
+                "demandes_inscription_a_traiter": finances["restant_du_nombre"],
                 "cours_ouverts_inscription": CoursDeSession.objects.filter(
                     inscriptions_ouvertes=True,
                     statut=CoursDeSession.StatutCours.PROGRAMME,
@@ -93,29 +108,47 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 # Production pédagogique des enseignants. Sans cette remontée,
                 # un module créé côté enseignant n'existe pour l'administration
                 # qu'une fois publié — trop tard pour relire quoi que ce soit.
-                **self._production_pedagogique(),
+                **production,
             }
         )
         # Finances, échéances, activité, résultats et alertes. Le calcul vit
         # dans un service : ce sont des règles de gestion, pas de l'affichage.
-        ctx.update(pilotage.finances(session_en_cours=ctx["session_en_cours"]))
+        ctx.update(finances)
         ctx.update(pilotage.formations())
         ctx.update(pilotage.resultats())
         ctx["echeances"] = pilotage.echeances()
-        ctx["alertes"] = pilotage.alertes()
+        ctx["alertes"] = pilotage.alertes(
+            candidatures=dossiers["a_traiter"],
+            inscriptions=finances["restant_du_nombre"],
+            acces=production["demandes_acces_video"],
+            paiements=finances["annonce_nombre"],
+            relecture=production["modules_en_relecture"],
+        )
         return ctx
 
     def _production_pedagogique(self) -> dict:
         from apps.elearning.models import InscriptionModule, ModuleFormation
 
         modules = ModuleFormation.objects.select_related("responsable", "discipline")
+        compteurs = ModuleFormation.objects.aggregate(
+            modules_en_relecture=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.RELECTURE),
+            ),
+            modules_brouillon=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.BROUILLON),
+            ),
+            modules_publies=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.PUBLIE),
+            ),
+        )
         return {
             "demandes_acces_video": InscriptionModule.objects.filter(
                 statut=InscriptionModule.StatutAcces.DEMANDE
             ).count(),
-            "modules_en_relecture": modules.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count(),
-            "modules_brouillon": modules.filter(statut=ModuleFormation.StatutPublication.BROUILLON).count(),
-            "modules_publies": modules.filter(statut=ModuleFormation.StatutPublication.PUBLIE).count(),
+            **compteurs,
             "modules_recents": modules.exclude(statut=ModuleFormation.StatutPublication.ARCHIVE).order_by(
                 "-updated_at"
             )[:5],
@@ -965,50 +998,7 @@ class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
         return redirect("administration:candidatures")
 
 
-# ──────────────────────────────────────────────
-# Pièces complémentaires d'une candidature
-# ──────────────────────────────────────────────
-
-
-class DemanderPieceView(StaffRoleRequiredMixin, View):
-    """Réclame une pièce au candidat, depuis l'examen de son dossier."""
-
-    http_method_names = ["post"]
-
-    def post(self, request, pk):
-        from apps.admissions.services import demander_piece
-
-        dossier = get_object_or_404(DossierCandidature, pk=pk)
-        try:
-            piece = demander_piece(
-                dossier,
-                libelle=request.POST.get("libelle", ""),
-                description=request.POST.get("description", ""),
-                obligatoire=request.POST.get("obligatoire") == "on",
-                par=request.user,
-            )
-        except ValidationError as erreur:
-            messages.error(request, erreur.messages[0])
-        else:
-            messages.success(request, f"« {piece.libelle} » a été demandée au candidat, qui en est averti.")
-        return redirect("administration:candidature_detail", pk=dossier.pk)
-
-
-class VerifierPieceView(StaffRoleRequiredMixin, View):
-    """Accepte ou refuse une pièce déposée par le candidat."""
-
-    http_method_names = ["post"]
-
-    def post(self, request, pk):
-        from apps.admissions.models import PieceComplementaire
-        from apps.admissions.services import verifier_piece
-
-        piece = get_object_or_404(PieceComplementaire.objects.select_related("dossier"), pk=pk)
-        acceptee = request.POST.get("decision") == "accepter"
-        try:
-            verifier_piece(piece, acceptee=acceptee, motif=request.POST.get("motif", ""), par=request.user)
-        except ValidationError as erreur:
-            messages.error(request, erreur.messages[0])
-        else:
-            messages.success(request, "Pièce validée." if acceptee else "Pièce refusée : le candidat est averti.")
-        return redirect("administration:candidature_detail", pk=piece.dossier_id)
+# Les pièces réclamées à un candidat sont traitées par « views_pieces.py » :
+# réclamation groupée, dépôt par le candidat depuis son lien de suivi, décision
+# du secrétariat. Deux vues doublaient ici ce travail sur un second modèle ;
+# elles ne figuraient plus dans « urls.py » et ont été retirées.

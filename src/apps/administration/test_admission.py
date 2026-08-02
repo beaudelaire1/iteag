@@ -1,5 +1,7 @@
 """Tests de l'orchestration admission → compte → accès aux modules."""
 
+import re
+
 import pytest
 from django.core import mail
 from django.urls import reverse
@@ -57,7 +59,8 @@ class TestAcceptationDeCandidature:
         assert profil.utilisateur.email == "marie.durand@exemple.org"
         assert profil.utilisateur.role == User.Role.ETUDIANT
         assert profil.statut_inscription == ProfilEtudiant.StatutInscription.PRE_INSCRIT
-        assert profil.numero_etudiant.startswith("ETU-")
+        # Sans séparateur : le numéro se dicte et se recherche d'une traite.
+        assert re.fullmatch(r"ETU\d{4}\d{3}", profil.numero_etudiant), profil.numero_etudiant
 
     def test_le_compte_n_a_pas_de_mot_de_passe_utilisable(self, dossier, promotion):
         """Aucun mot de passe ne transite : le candidat le définit lui-même."""
@@ -120,7 +123,17 @@ class TestAcceptationDeCandidature:
         assert profil.utilisateur.username != "marie.durand"
 
     def test_numerotation_repart_a_un_chaque_annee(self, db):
-        assert numero_etudiant_suivant(2030) == "ETU-2030-001"
+        assert numero_etudiant_suivant(2030) == "ETU2030001"
+
+    def test_la_numerotation_suit_le_dernier_numero_de_l_annee(self, db, parcours, promotion):
+        """Le rang se lit dans le numéro : sans tiret, il faut le retrouver autrement."""
+        compte = User.objects.create_user(
+            username="deja-la", email="deja@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+        )
+        ProfilEtudiant.objects.create(
+            utilisateur=compte, parcours=parcours, promotion=promotion, numero_etudiant="ETU2030007"
+        )
+        assert numero_etudiant_suivant(2030) == "ETU2030008"
 
 
 @pytest.mark.django_db

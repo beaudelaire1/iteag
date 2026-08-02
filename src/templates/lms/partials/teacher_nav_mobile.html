@@ -1,5 +1,6 @@
 {% comment %}Mêmes entrées que la barre latérale, dans le même ordre.{% endcomment %}
 <a href="{% url 'enseignant:accueil' %}" class="portal-nav-pill {% if nav == 'dashboard' %}active{% endif %}">Accueil</a>
+<a href="{% url 'enseignant:propositions' %}" class="portal-nav-pill {% if nav == 'propositions' %}active{% endif %}">Propositions</a>
 <a href="{% url 'lms:courses_list' %}" class="portal-nav-pill {% if nav == 'courses' or nav == 'course' %}active{% endif %}">Cours en session</a>
 <a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-pill {% if nav == 'modules' %}active{% endif %}">Modules vidéo</a>
 <a href="{% url 'elearning:enseignant_videos' %}" class="portal-nav-pill {% if nav == 'videos' %}active{% endif %}">Bibliothèque</a>

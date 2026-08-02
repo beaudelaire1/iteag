@@ -34,6 +34,13 @@ def _chemin_logo() -> Path:
     return Path(settings.BASE_DIR) / "static" / "img" / "logo.png"
 
 
+def _connexion_celery():
+    """Connexion d'écriture isolée, afin de borner son acquisition."""
+    from celery import current_app
+
+    return current_app.connection_for_write()
+
+
 def envoyer_email(
     *,
     sujet: str,
@@ -58,7 +65,22 @@ def envoyer_email(
         from apps.core.tasks import envoyer_email_tache
 
         try:
-            envoyer_email_tache.delay(sujet, gabarit, contexte, destinataires)
+            # Une publication Celery est faite pendant la requête HTTP. Les
+            # reprises par défaut de Kombu peuvent la retenir plus d'une
+            # minute quand Redis n'est pas lancé — cas courant en local —
+            # avant d'atteindre le repli synchrone ci-dessous. Un seul essai
+            # suffit : soit le courtier accepte immédiatement, soit le repli
+            # garantit que le message n'est pas perdu.
+            with _connexion_celery() as connexion:
+                connexion.ensure_connection(
+                    max_retries=0,
+                    timeout=getattr(settings, "CELERY_BROKER_CONNECTION_TIMEOUT", 1.0),
+                )
+                envoyer_email_tache.apply_async(
+                    args=[sujet, gabarit, contexte, destinataires],
+                    connection=connexion,
+                    retry=False,
+                )
             return True
         except Exception:  # noqa: BLE001 — courtier indisponible : on n'abandonne pas l'envoi
             logger.warning("Courtier Celery indisponible, bascule en envoi synchrone", exc_info=True)

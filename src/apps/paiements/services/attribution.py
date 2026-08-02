@@ -174,4 +174,11 @@ def _retirer_commande(reglement: Reglement, *, motif: str, acteur=None) -> None:
         commande.statut_paiement = Commande.StatutPaiement.REMBOURSE
         commande.save(update_fields=["statut_paiement", "updated_at"])
         return
-    annuler_commande(commande, acteur=acteur)
+    # Le motif est connu sans avoir à le demander : c'est le règlement qui a
+    # été retiré, remboursé ou contesté.
+    annuler_commande(
+        commande,
+        acteur=acteur,
+        motif=Commande.MotifAnnulation.PAIEMENT_NON_RECU,
+        precision=motif,
+    )

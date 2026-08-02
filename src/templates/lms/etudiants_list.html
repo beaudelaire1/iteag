@@ -42,7 +42,7 @@
 <div class="tw overflow-x-auto">
     <table class="table-premium">
         <thead>
-            <tr><th>Étudiant</th><th>Promotion</th><th>Adresse électronique</th><th>Téléphone</th></tr>
+            <tr><th>Étudiant</th><th>Promotion</th><th>Mes cours suivis</th><th>Adresse électronique</th><th>Téléphone</th></tr>
         </thead>
         <tbody>
             {% for profil in etudiants %}
@@ -67,6 +67,23 @@
                 <td class="text-sm">
                     {{ profil.promotion.nom }}
                     <span class="block text-xs text-warm-400">{{ profil.parcours.nom }}</span>
+                </td>
+                {% comment %}
+                Seulement les cours de cet enseignant : la scolarité complète de
+                l'étudiant relève du secrétariat, pas de l'écran d'un professeur.
+                {% endcomment %}
+                <td class="text-sm">
+                    {% for inscription in profil.inscriptions_chez_moi %}
+                    <a href="{% url 'lms:course_detail' inscription.cours_session.pk %}"
+                       class="block" style="color: var(--color-navy-700);">
+                        {{ inscription.cours_session.cours.titre }}
+                    </a>
+                    <span class="block text-xs text-warm-400 {% if not forloop.last %}mb-1{% endif %}">
+                        {{ inscription.cours_session.session.nom }}
+                    </span>
+                    {% empty %}
+                    <span class="text-warm-400">—</span>
+                    {% endfor %}
                 </td>
                 <td class="text-sm">
                     {% if profil.utilisateur.email %}

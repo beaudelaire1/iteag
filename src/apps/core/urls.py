@@ -17,6 +17,16 @@ urlpatterns = [
         views.NotificationToutMarquerLuView.as_view(),
         name="notifications_tout_lire",
     ),
+    path(
+        "notifications/<int:pk>/supprimer/",
+        views.NotificationSupprimerView.as_view(),
+        name="notification_supprimer",
+    ),
+    path(
+        "notifications/supprimer-lues/",
+        views.NotificationToutSupprimerView.as_view(),
+        name="notifications_supprimer_lues",
+    ),
     # Newsletter
     path("newsletter/inscription/", views.NewsletterInscriptionView.as_view(), name="newsletter_inscription"),
     path(

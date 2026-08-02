@@ -20,12 +20,16 @@
         <form method="post" class="card-elevated space-y-5">
             {% csrf_token %}
             <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
-                Référencer une vidéo
+                {% if modification %}Modifier « {{ video.titre }} »{% else %}Référencer une vidéo{% endif %}
             </h2>
 
             <p class="text-sm" style="color: var(--color-warm-600);">
+                {% if modification %}
+                Les leçons qui emploient cette vidéo suivent la correction : rien n'est à rattacher.
+                {% else %}
                 Collez le lien HTTPS d'une vidéo déjà hébergée sur Bunny Stream, Vimeo ou YouTube.
                 Le média reste chez le fournisseur et n'occupe aucun espace de stockage de l'institut.
+                {% endif %}
             </p>
 
             {% for champ in form %}
@@ -44,8 +48,11 @@
             </p>
 
             <button type="submit" class="btn-primary w-full justify-center">
-                Référencer le lien
+                {% if modification %}Enregistrer les corrections{% else %}Référencer le lien{% endif %}
             </button>
+            {% if modification %}
+            <a href="{% url 'elearning:enseignant_videos' %}" class="btn-ghost w-full justify-center">Annuler</a>
+            {% endif %}
         </form>
     </section>
 
@@ -71,6 +78,8 @@
                         <td class="num">{{ video.lecons.count }} leçon(s)</td>
                         <td>
                             <span class="flex flex-wrap gap-3">
+                                <a href="{% url 'elearning:enseignant_video_modifier' video.pk %}"
+                                   class="text-sm link-reveal" style="color: var(--color-navy-700);">Modifier</a>
                                 <a href="{% url 'elearning:enseignant_soustitre' video.pk %}"
                                    class="text-sm link-reveal" style="color: var(--color-navy-700);">Sous-titres</a>
                                 <form method="post" action="{% url 'elearning:enseignant_video_supprimer' video.pk %}"

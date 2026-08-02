@@ -29,6 +29,9 @@
         {% endif %}
         <span class="badge badge-info">{{ devoir.get_modalite_display }}</span>
         <span class="badge">Barème /{{ devoir.bareme|floatformat:0 }}</span>
+        {% if devoir.portee != 'cours' %}
+        <span class="badge badge-gold">{{ devoir.libelle_destinataires }}</span>
+        {% endif %}
     </p>
 </div>
 {% endblock %}

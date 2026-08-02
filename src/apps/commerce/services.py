@@ -457,12 +457,26 @@ def livrer_commande(commande: Commande) -> Commande:
 
 
 @transaction.atomic
-def annuler_commande(commande: Commande, *, acteur=None) -> Commande:
+def annuler_commande(commande: Commande, *, acteur=None, motif: str = "", precision: str = "") -> Commande:
+    """Annule une commande, remet le stock en rayon, et dit pourquoi.
+
+    Le motif est retenu dans une liste fermée : c'est ce qui rend les
+    annulations comptables. Une rupture de stock et un client qui se ravise
+    n'appellent pas la même réaction, et un champ libre ne permet jamais de
+    les distinguer après coup.
+    """
     commande = Commande.objects.select_for_update().prefetch_related("lignes").get(pk=commande.pk)
     if commande.statut in (Commande.Statut.EXPEDIEE, Commande.Statut.LIVREE):
         raise ValidationError("Une commande déjà expédiée ne peut pas être annulée automatiquement.")
     if commande.statut == Commande.Statut.ANNULEE:
         return commande
+
+    motif = (motif or "").strip()
+    precision = (precision or "").strip()
+    if motif not in Commande.MotifAnnulation.values:
+        raise ValidationError("Choisissez le motif de l'annulation.")
+    if motif == Commande.MotifAnnulation.AUTRE and not precision:
+        raise ValidationError("« Autre motif » demande une précision : sans elle, l'annulation reste inexpliquée.")
 
     lignes = list(commande.lignes.all())
     produits = {
@@ -489,11 +503,25 @@ def annuler_commande(commande: Commande, *, acteur=None) -> Commande:
         commande.statut_paiement = Commande.StatutPaiement.REMBOURSE
     commande.statut = Commande.Statut.ANNULEE
     commande.date_annulation = timezone.now()
-    commande.save(update_fields=["statut", "statut_paiement", "date_annulation", "updated_at"])
+    commande.motif_annulation = motif
+    commande.precision_annulation = precision
+    commande.save(
+        update_fields=[
+            "statut",
+            "statut_paiement",
+            "date_annulation",
+            "motif_annulation",
+            "precision_annulation",
+            "updated_at",
+        ]
+    )
+    libelle = commande.get_motif_annulation_display()
+    explication = f"{libelle} — {precision}" if precision else libelle
     transaction.on_commit(
         lambda: _envoyer_statut_commande(
             commande,
-            "Votre commande a été annulée. Le secrétariat reste disponible si vous avez déjà réglé.",
+            f"Votre commande a été annulée. Motif : {explication}. "
+            "Le secrétariat reste disponible si vous avez déjà réglé.",
         )
     )
     return commande

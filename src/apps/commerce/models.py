@@ -209,6 +209,34 @@ class Commande(UUIDModel, TimeStampedModel):
     date_livraison = models.DateTimeField(null=True, blank=True)
     date_annulation = models.DateTimeField(null=True, blank=True)
 
+    class MotifAnnulation(models.TextChoices):
+        """Les raisons réelles d'annuler, telles que le secrétariat les rencontre.
+
+        Une liste fermée plutôt qu'un champ libre : c'est ce qui rend les
+        annulations comptables. « Rupture de stock » et « Demande du client »
+        n'appellent pas la même réaction, et on ne le saura jamais si chacun
+        écrit sa propre formule.
+        """
+
+        DEMANDE_CLIENT = "demande_client", "Demande du client"
+        RUPTURE_STOCK = "rupture_stock", "Rupture de stock"
+        PAIEMENT_NON_RECU = "paiement_non_recu", "Paiement jamais reçu"
+        ERREUR_SAISIE = "erreur_saisie", "Erreur de saisie ou doublon"
+        ADRESSE_INVALIDE = "adresse_invalide", "Adresse de livraison invalide"
+        AUTRE = "autre", "Autre motif"
+
+    motif_annulation = models.CharField(
+        max_length=30,
+        choices=MotifAnnulation.choices,
+        blank=True,
+        verbose_name="Motif de l'annulation",
+    )
+    precision_annulation = models.TextField(
+        blank=True,
+        verbose_name="Précision",
+        help_text="Obligatoire lorsque le motif retenu est « Autre motif ».",
+    )
+
     class Meta:
         verbose_name = "Commande"
         verbose_name_plural = "Commandes"

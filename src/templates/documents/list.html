@@ -18,6 +18,57 @@
 {% endblock %}
 
 {% block portal_content %}
+
+{% comment %}
+Les notes se lisent avant de décider d'éditer le relevé : il fallait jusqu'ici
+générer un PDF pour savoir ce qu'il contiendrait. Seules les notes publiées
+paraissent — une note posée mais non publiée n'est pas un résultat arrêté.
+{% endcomment %}
+<section class="mb-8">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+        <div>
+            <h2 class="text-lg font-semibold text-navy-900">Mes notes</h2>
+            <p class="mt-1 text-sm text-warm-500">
+                {{ notes_publiees|length }} note{{ notes_publiees|length|pluralize }} publiée{{ notes_publiees|length|pluralize }}
+                · {{ total_ects_acquis }} ECTS acquis
+            </p>
+        </div>
+        <a href="{% url 'etudiant:grades' %}" class="btn-ghost">Devoirs et notes</a>
+    </div>
+
+    {% if notes_publiees %}
+    <div class="card overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-xs uppercase tracking-wider text-warm-500">
+                    <th class="pb-2">Cours</th><th class="pb-2">Session</th>
+                    <th class="pb-2 text-right">Note</th><th class="pb-2 text-right">ECTS</th>
+                    <th class="pb-2">Publiée le</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for evaluation in notes_publiees %}
+                <tr class="border-t border-warm-200">
+                    <td class="py-2 font-medium text-navy-900">{{ evaluation.cours_session.cours.titre }}</td>
+                    <td class="py-2 text-warm-600">{{ evaluation.cours_session.session.nom }}</td>
+                    <td class="py-2 text-right font-semibold num">{{ evaluation.note }}/20</td>
+                    <td class="py-2 text-right num">{{ evaluation.ects_valides }}</td>
+                    <td class="py-2 text-warm-500">
+                        <time datetime="{{ evaluation.date_notation|date:'c' }}">{{ evaluation.date_notation|date:"d/m/Y" }}</time>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card text-center py-10">
+        <p class="text-warm-600">Aucune note publiée pour le moment.</p>
+        <p class="mt-1 text-sm text-warm-500">Vos résultats apparaîtront ici dès qu'un enseignant les publiera.</p>
+    </div>
+    {% endif %}
+</section>
+
 <section class="mb-8">
     <div class="flex items-end justify-between gap-4 mb-4">
         <div>

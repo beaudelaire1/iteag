@@ -132,6 +132,7 @@ TEMPLATES = [
                 "apps.core.context_processors.navigation_publique",
                 "apps.core.context_processors.notifications_context",
                 "apps.administration.context_processors.taches_en_attente",
+                "apps.portail_enseignant.context_processors.propositions_en_attente",
                 "apps.commerce.context_processors.panier_context",
             ],
         },
@@ -163,6 +164,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+# PBKDF2 à un million d'itérations prend plus de deux secondes sur le poste
+# local de référence. Scrypt est mémoire-dur, fourni par Python sans dépendance
+# supplémentaire, et divise ce temps par près de trois sur la même machine.
+# Les formats historiques restent listés : Django les accepte puis les
+# remplace automatiquement par scrypt après une connexion réussie.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
 ]
 
 LOGIN_URL = "/connexion/"
@@ -360,6 +374,12 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
+CELERY_BROKER_CONNECTION_TIMEOUT = env.float("CELERY_BROKER_CONNECTION_TIMEOUT", default=0.5)
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "socket_connect_timeout": CELERY_BROKER_CONNECTION_TIMEOUT,
+    "socket_timeout": CELERY_BROKER_CONNECTION_TIMEOUT,
+    "retry_on_timeout": False,
+}
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
