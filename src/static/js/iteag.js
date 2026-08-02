@@ -439,6 +439,51 @@
     });
   }
 
+  /* ── Alertes effaçables ──
+     Un bandeau qu'on ne peut pas écarter finit par ne plus être lu, et occupe
+     le haut de l'écran à chaque visite. Écarté, il mémorise la valeur qu'il
+     annonçait — le nombre de cours ouverts, par exemple — et reparaît de
+     lui-même dès que cette valeur change. Écarter « pour toujours » ferait
+     manquer l'annonce suivante.
+
+     L'alerte est rendue avec « hidden » et n'est révélée qu'ici : sans script,
+     rien ne clignote à l'affichage. En contrepartie elle reste invisible si le
+     script ne s'exécute pas — c'est un rappel, jamais une information dont la
+     page dépend.
+
+     Le stockage local peut être refusé (navigation privée stricte, réglage
+     d'entreprise) : dans ce cas l'alerte s'affiche et s'écarte pour la session
+     en cours, sans erreur. */
+  function memoireLocale() {
+    try {
+      const essai = "__iteag__";
+      window.localStorage.setItem(essai, "1");
+      window.localStorage.removeItem(essai);
+      return window.localStorage;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function initAlertesEffacables() {
+    const memoire = memoireLocale();
+
+    document.querySelectorAll("[data-alerte-effacable]").forEach((alerte) => {
+      const cle = "alerte:" + alerte.getAttribute("data-alerte-effacable");
+      const valeur = alerte.getAttribute("data-alerte-valeur") || "1";
+
+      if (memoire && memoire.getItem(cle) === valeur) return;
+      alerte.removeAttribute("hidden");
+
+      const fermer = alerte.querySelector("[data-alerte-fermer]");
+      if (!fermer) return;
+      fermer.addEventListener("click", () => {
+        alerte.setAttribute("hidden", "");
+        if (memoire) memoire.setItem(cle, valeur);
+      });
+    });
+  }
+
   /* ── Boot ── */
   function boot() {
     initNavScroll();
@@ -456,6 +501,7 @@
     initMessagesFlash();
     initRevelationMotDePasse();
     initOnglets();
+    initAlertesEffacables();
   }
 
   if (document.readyState === "loading") {
