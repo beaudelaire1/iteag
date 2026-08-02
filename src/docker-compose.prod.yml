@@ -6,8 +6,13 @@ x-application: &application
     context: .
     dockerfile: Dockerfile.prod
 
+  # Coolify dépose un « .env » à côté de ce fichier à partir des variables
+  # saisies dans sa fiche, et les injecte aussi dans l'environnement. Le
+  # fichier n'est donc pas la seule source : le rendre facultatif évite qu'un
+  # déploiement échoue sur son absence alors que toutes les valeurs sont là.
   env_file:
-    - .env
+    - path: .env
+      required: false
 
   environment:
     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY doit être défini}
@@ -110,13 +115,16 @@ services:
       redis:
         condition: service_healthy
 
+    # Une tâche de migration s'exécute puis s'arrête : elle n'a pas d'état
+    # « sain » à surveiller, et « healthcheck: disable » suffit à le dire.
+    # « exclude_from_hc » est un réglage de l'interface Coolify, pas une clé du
+    # format Compose : sa présence ici faisait échouer « docker compose config »
+    # avant même le premier téléchargement d'image.
     restart: "no"
     mem_limit: 1g
 
     healthcheck:
       disable: true
-
-    exclude_from_hc: true
 
   web:
     <<: *application

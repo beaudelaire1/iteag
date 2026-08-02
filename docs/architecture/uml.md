@@ -181,7 +181,7 @@ graph TB
     elearning --> core & accounts & formations & academics
     library --> core & formations
     documents --> core & accounts
-    website --> core & formations
+    website --> core & formations & elearning & library & commerce
     administration --> core & accounts & formations & admissions & academics & library
 
     classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27

@@ -46,7 +46,13 @@ desktop.ini
 htmlcov/
 .coverage
 .coverage.*
+coverage.xml
 .pytest_cache/
+
+# Exports « dumpdata » de la base locale. Ils portent des données réelles —
+# adresses des candidats, comptes — et changent à chaque export : leur place
+# est sur le poste qui les produit, pas dans l'historique.
+iteag_local*.json
 
 # Tailwind output (regenerated)
 static/css/main.css

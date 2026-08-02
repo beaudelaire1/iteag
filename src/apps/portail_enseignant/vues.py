@@ -70,6 +70,24 @@ class AccueilEnseignantView(TeacherRoleRequiredMixin, TemplateView):
     def _video(self, professeur) -> dict:
         from apps.elearning.models import InscriptionModule, ModuleFormation, VideoAsset
 
+        compteurs = ModuleFormation.objects.filter(responsable=professeur).aggregate(
+            modules_total=Count("id", distinct=True),
+            modules_publies=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.PUBLIE),
+                distinct=True,
+            ),
+            modules_brouillons=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.BROUILLON),
+                distinct=True,
+            ),
+            apprenants_video=Count(
+                "inscriptions",
+                filter=Q(inscriptions__statut=InscriptionModule.StatutAcces.ACTIF),
+                distinct=True,
+            ),
+        )
         modules = (
             ModuleFormation.objects.filter(responsable=professeur)
             .select_related("discipline")
@@ -78,12 +96,7 @@ class AccueilEnseignantView(TeacherRoleRequiredMixin, TemplateView):
         )
         return {
             "modules_recents": modules[:5],
-            "modules_total": modules.count(),
-            "modules_publies": modules.filter(statut=ModuleFormation.StatutPublication.PUBLIE).count(),
-            "modules_brouillons": modules.filter(statut=ModuleFormation.StatutPublication.BROUILLON).count(),
-            "apprenants_video": InscriptionModule.objects.filter(module__responsable=professeur)
-            .filter(statut=InscriptionModule.StatutAcces.ACTIF)
-            .count(),
+            **compteurs,
             # Une vidéo restée en préparation bloque la publication d'un module :
             # c'est le premier incident du manuel d'exploitation, il doit se voir.
             "videos_en_attente": VideoAsset.objects.filter(uploade_par=self.request.user)

@@ -10,8 +10,7 @@ def ajouter_colonnes_manquantes(apps, schema_editor):
     table = Evaluation._meta.db_table
     with schema_editor.connection.cursor() as curseur:
         presentes = {
-            colonne.name
-            for colonne in schema_editor.connection.introspection.get_table_description(curseur, table)
+            colonne.name for colonne in schema_editor.connection.introspection.get_table_description(curseur, table)
         }
 
     for nom in COLONNES_DEVOIR:

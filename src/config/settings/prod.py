@@ -6,6 +6,11 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")  # noqa: F405
+# django-environ met « django.db.backends.postgresql » (psycopg2).
+# Le projet utilise psycopg v3 → forcer le bon backend.
+DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"  # noqa: F405
+# psycopg v3 est compatible via le même backend depuis Django 4.2+
+# à condition que psycopg (et non psycopg2) soit installé.
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)  # noqa: F405
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 

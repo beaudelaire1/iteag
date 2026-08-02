@@ -1,7 +1,10 @@
 import pytest
+from django.contrib.auth.hashers import PBKDF2PasswordHasher, identify_hasher
 from django.core import mail
-from django.test import Client
+from django.test import Client, override_settings
 from django.urls import reverse
+
+from apps.accounts.models import User
 
 # ──────────────────────────────────────────────
 # Auth views
@@ -24,6 +27,26 @@ class TestLoginView:
         url = reverse("accounts:login")
         response = client.post(url, {"username": "testuser", "password": "wrong"})
         assert response.status_code == 200  # re-renders form
+
+    @override_settings(
+        PASSWORD_HASHERS=[
+            "django.contrib.auth.hashers.ScryptPasswordHasher",
+            "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+        ]
+    )
+    def test_un_ancien_mot_de_passe_pbkdf2_migre_vers_scrypt(self, db):
+        ancien = PBKDF2PasswordHasher()
+        # Une seule itération suffit ici : le test protège la migration de
+        # format, pas le coût cryptographique exercé en production.
+        ancien.iterations = 1
+        utilisateur = User.objects.create(
+            username="migration_hash",
+            password=ancien.encode("mot-de-passe-long-12", ancien.salt()),
+        )
+
+        assert utilisateur.check_password("mot-de-passe-long-12")
+        utilisateur.refresh_from_db()
+        assert identify_hasher(utilisateur.password).algorithm == "scrypt"
 
 
 @pytest.mark.django_db

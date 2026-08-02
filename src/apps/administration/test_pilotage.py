@@ -307,3 +307,4 @@ class TestRenduDuTableauDeBord:
         grand = len(capture)
 
         assert grand - petit <= 2, f"{petit} requêtes pour 1 paiement, {grand} pour 31"
+        assert grand <= 35, f"{grand} requêtes : les compteurs du tableau de bord doivent rester agrégés"

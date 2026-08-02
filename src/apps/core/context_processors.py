@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from django.conf import settings
-from django.utils.functional import SimpleLazyObject
 
 from apps.core.navigation import rubriques_pour
 
@@ -53,7 +52,19 @@ def notifications_context(request):
 
     from apps.core.services.notifications import compter_non_lues
 
-    # Plusieurs zones de navigation affichent la cloche sur une même page.
-    # SimpleLazyObject conserve l'évaluation paresseuse tout en mémorisant le
-    # résultat : le compteur ne déclenche ainsi qu'une seule requête SQL.
-    return {"notifications_non_lues": SimpleLazyObject(lambda: compter_non_lues(utilisateur))}
+    # Plusieurs zones de navigation affichent la cloche sur une même page. Le
+    # résultat est donc mémorisé sur la requête : le compteur ne déclenche
+    # qu'une seule requête SQL, quel que soit le nombre de zones.
+    #
+    # C'est un appelable, et non un « SimpleLazyObject », parce que le gabarit
+    # filtre la valeur : Django résout l'appelable en un vrai entier, alors
+    # qu'un objet paresseux traverse le gabarit sans jamais en devenir un.
+    # « pluralize » échouait alors en silence — il rend une chaîne vide quand
+    # il ne sait pas conclure — et la cloche annonçait « 3 non lue » aux
+    # lecteurs d'écran.
+    def compteur():
+        if not hasattr(request, "_notifications_non_lues"):
+            request._notifications_non_lues = compter_non_lues(utilisateur)
+        return request._notifications_non_lues
+
+    return {"notifications_non_lues": compteur}

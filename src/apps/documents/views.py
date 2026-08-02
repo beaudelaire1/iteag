@@ -103,12 +103,18 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
         # les crédits en ne listant que les évaluations ferait diverger le
         # total de ses lignes.
         credits = profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by("date_validation")
+        if document_type == DocumentAdministratif.TypeDocument.RELEVE_NOTES:
+            # Le gabarit affiche le total puis les ECTS restants. Sans cette
+            # valeur mémorisée, les deux propriétés relancent exactement la
+            # même agrégation pendant le rendu PDF.
+            profil.ects_acquis_annotes = profil.total_ects_acquis
 
         from apps.core.services.pdf import contexte_marque
 
         html = render_to_string(
             "documents/pdf/document.html",
             contexte_marque(
+                profil_polices="document_administratif",
                 user=request.user,
                 profil=profil,
                 document_type=document_type,

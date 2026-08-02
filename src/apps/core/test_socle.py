@@ -314,6 +314,33 @@ class TestServiceEmail:
 
         envoi_immediat.assert_called_once()
 
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    def test_la_publication_ne_reessaie_pas_si_redis_est_absent(self):
+        connexion = mock.MagicMock()
+        connexion.__enter__.return_value = connexion
+        with (
+            mock.patch("apps.core.services.emails._connexion_celery", return_value=connexion),
+            mock.patch("apps.core.tasks.envoyer_email_tache.apply_async") as publication,
+        ):
+            assert envoyer_email(
+                sujet="Test différé",
+                gabarit="core/emails/notification.html",
+                contexte={"titre": "Test", "message": "Message"},
+                destinataires=["a@b.org"],
+            )
+
+        publication.assert_called_once_with(
+            args=[
+                "Test différé",
+                "core/emails/notification.html",
+                {"titre": "Test", "message": "Message"},
+                ["a@b.org"],
+            ],
+            connection=connexion,
+            retry=False,
+        )
+        connexion.ensure_connection.assert_called_once_with(max_retries=0, timeout=0.5)
+
     @pytest.mark.parametrize(
         ("gabarit", "contexte", "texte_attendu"),
         [

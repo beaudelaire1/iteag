@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('lms', '0003_evaluation_fichier_corrige'),
-        ('lms', '0004_question_choix_groupeetudiants_reponseetudiant'),
+        ("lms", "0003_evaluation_fichier_corrige"),
+        ("lms", "0004_question_choix_groupeetudiants_reponseetudiant"),
     ]
 
-    operations = [
-    ]
+    operations = []
