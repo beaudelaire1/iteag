@@ -6,7 +6,16 @@ parallèles et ont survécu tous les deux à la fusion, réconciliés par une
 migration de fusion qui ne tranchait rien. Seul « PieceDemandee » a jamais été
 relié à une URL, à un gabarit et à un courriel : c'est celui qui reste.
 
-La table supprimée est vide en production — aucune vue n'y a jamais écrit.
+**À vérifier avant de déployer.** La table est vide sur la base de
+développement, et elle devrait l'être partout : la seule vue qui y écrivait a
+perdu sa route à la fusion. Mais elle en a eu une avant, sur la branche d'où
+elle vient — si un déploiement en est parti, des lignes existent. Une
+suppression de table ne se rejoue pas :
+
+    SELECT COUNT(*) FROM admissions_piececomplementaire;
+
+Zéro : appliquer. Autre chose : exporter les lignes avant, et me le dire — le
+modèle vivant sait les accueillir.
 """
 
 from django.db import migrations
