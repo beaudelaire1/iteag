@@ -431,6 +431,10 @@ STRIPE_DEVISE = env("STRIPE_DEVISE", default="EUR")
 # sur les livres.
 PAIEMENTS_TAUX_TVA_DEFAUT = env("PAIEMENTS_TAUX_TVA_DEFAUT", default="0.00")
 
+# Réservé aux instances de recette : laisse démarrer avec des clés « sk_test_ »
+# hors DEBUG. Absent en production, où le contrôle paiements.E003 s'applique.
+PAIEMENTS_AUTORISER_CLES_TEST = env.bool("PAIEMENTS_AUTORISER_CLES_TEST", default=False)
+
 # ──────────────────────────────────────────────
 # Formation vidéo (voir ADR-001 et ADR-002)
 # ──────────────────────────────────────────────
