@@ -88,6 +88,10 @@
     overflow: hidden;
   }
 
+  /* La contrepartie de ce blocage est traitée avec « .nav-premium », dans la
+     couche « components » : une règle posée ici ne pourrait pas la corriger,
+     une couche postérieure l'emportant quelle que soit la spécificité. */
+
   body {
     font-family: var(--font-sans);
     color: var(--color-warm-900);
@@ -347,6 +351,26 @@
   }
   .nav-premium.scrolled {
     box-shadow: var(--shadow-soft);
+  }
+
+  /* Menu mobile ouvert : le fond est bloqué par « overflow: hidden » (couche
+     « base »). Mais ce blocage retire du même coup à l'en-tête son ancrage de
+     défilement — un élément « sticky » sans conteneur qui défile retombe à sa
+     position statique, en haut du document. Ouvert après avoir défilé, le
+     panneau partait donc à des milliers de pixels au-dessus du cadre, et le
+     défilement bloqué interdisait d'aller l'y chercher : menu introuvable et
+     page figée, sans la moindre erreur.
+
+     Le temps de l'ouverture, l'en-tête est donc fixé au cadre, et le panneau
+     l'y suit puisqu'il en est l'enfant. La règle vit ici, et non auprès du
+     blocage qu'elle compense : « .nav-premium » est déclaré dans cette
+     couche, et une couche l'emporte sur la précédente avant même que les
+     spécificités ne soient comparées. */
+  html.menu-ouvert .nav-premium {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
   }
 
   /* Hauteur de la barre. Elle était posée en style en ligne dans le gabarit,

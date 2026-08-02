@@ -33,7 +33,10 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Manifeste strict, à une liste d'exceptions déclarées près : voir
+        # « apps/core/stockage.py ». Le stockage nu faisait répondre 500 à
+        # toutes les pages de /django-admin/ en production.
+        "BACKEND": "apps.core.stockage.StockageStatiquesITEAG",
     },
 }
 
