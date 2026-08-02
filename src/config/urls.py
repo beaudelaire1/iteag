@@ -14,7 +14,7 @@ from wagtail.contrib.sitemaps.sitemap_generator import Sitemap as WagtailSitemap
 from wagtail.documents import urls as wagtaildocs_urls
 
 from apps.core import views as views_core
-from apps.core.sitemaps import (
+from apps.website.sitemaps import (
     CoursSitemap,
     LivresBoutiqueSitemap,
     ModulesPubliesSitemap,

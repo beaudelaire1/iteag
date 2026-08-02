@@ -53,7 +53,10 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "portail_etudiant": {"core", "accounts", "formations", "academics", "lms", "documents", "elearning"},
     "portail_enseignant": {"core", "accounts", "formations", "academics", "lms", "elearning"},
     # website est un portail : comme administration, il agrège des domaines.
-    "website": {"core", "formations", "elearning"},
+    # « library » et « commerce » s'y ajoutent pour le plan du site, qui recense
+    # les pages publiques des quatre catalogues. Aucun de ces domaines ne
+    # connaît « website » en retour : la flèche ne se referme pas.
+    "website": {"core", "formations", "elearning", "library", "commerce"},
 }
 
 # ── Dette d'architecture identifiée ──────────────────────────────────────────

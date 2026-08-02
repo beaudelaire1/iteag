@@ -1,4 +1,12 @@
-"""Sitemaps des contenus publics qui ne sont pas gérés par Wagtail."""
+"""Sitemaps des contenus publics qui ne sont pas gérés par Wagtail.
+
+Ce module vit dans « website » et non dans « core » : il connaît le catalogue
+de quatre domaines — formations, e-learning, bibliothèque, boutique — et le
+socle, lui, ne doit connaître personne. Placé dans « core », il y faisait
+entrer commerce et library, et refermait le cycle
+« accounts → core → commerce → accounts ». Recenser les pages publiques est
+le travail du portail public, qui agrège les domaines par vocation.
+"""
 
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
