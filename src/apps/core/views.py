@@ -2,7 +2,7 @@
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
@@ -50,6 +50,45 @@ class NotificationToutMarquerLuView(LoginRequiredMixin, View):
     def post(self, request):
         nombre = service_notifications.marquer_tout_lu(request.user)
         messages.success(request, f"{nombre} notification(s) marquée(s) comme lue(s).")
+        return redirect(reverse("core:notifications"))
+
+
+class NotificationSupprimerView(LoginRequiredMixin, View):
+    """Retire une notification de la liste de son destinataire.
+
+    Marquer lu ne suffit pas : une notification traitée reste à l'écran et
+    repousse les suivantes. La suppression ne porte que sur l'avis, jamais sur
+    ce qu'il annonçait — le dossier, la copie ou la commande restent.
+
+    Le filtre sur le destinataire est la garde : sans lui, un identifiant
+    deviné suffirait à effacer l'avis d'un autre.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        notification = get_object_or_404(Notification, pk=pk, destinataire=request.user)
+        notification.delete()
+        if request.headers.get("HX-Request"):
+            # La ligne disparaît sans recharger la page ; le gabarit remplace
+            # l'élément par la réponse vide.
+            return HttpResponse(status=200)
+        messages.success(request, "Notification supprimée.")
+        return redirect(reverse("core:notifications"))
+
+
+class NotificationToutSupprimerView(LoginRequiredMixin, View):
+    """Vide la liste des notifications déjà lues.
+
+    Les non lues sont épargnées : les effacer en bloc ferait disparaître ce
+    qu'on n'a pas encore vu.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request):
+        nombre, _ = Notification.objects.filter(destinataire=request.user, lu=True).delete()
+        messages.success(request, f"{nombre} notification(s) lue(s) supprimée(s).")
         return redirect(reverse("core:notifications"))
 
 
