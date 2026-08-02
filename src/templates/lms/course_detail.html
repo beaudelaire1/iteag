@@ -195,9 +195,24 @@
                             </td>
                             <td class="px-5 py-3 text-sm text-right font-semibold">{% if eval.note is not None %}{{ eval.note }}/20{% else %}—{% endif %}</td>
                             <td class="px-5 py-3 text-sm">
-                                {% if eval.statut == 'soumis' or eval.statut == 'en_correction' %}
-                                <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="text-navy-700 hover:underline">Noter</a>
-                                {% endif %}
+                                {% comment %}
+                                Publier copie par copie : attendre que les trente
+                                soient corrigées faisait patienter le premier rendu
+                                des semaines, sans raison.
+                                {% endcomment %}
+                                <div class="flex items-center gap-3">
+                                    {% if eval.statut == 'soumis' or eval.statut == 'en_correction' %}
+                                    <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="text-navy-700 hover:underline">Noter</a>
+                                    {% elif eval.statut == 'note' %}
+                                    <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="text-navy-700 hover:underline">Corriger</a>
+                                    <form method="post" action="{% url 'lms:publish_grade' eval.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-emerald-700 hover:underline font-medium">Publier</button>
+                                    </form>
+                                    {% elif eval.statut == 'publie' %}
+                                    <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="text-navy-700 hover:underline">Corriger</a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

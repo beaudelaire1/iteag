@@ -355,6 +355,54 @@ class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
         return redirect(reverse("lms:course_detail", kwargs={"pk": evaluation.cours_session.pk}))
 
 
+class TeacherPublishGradeView(TeacherRoleRequiredMixin, View):
+    """Publie une copie, sans attendre que tout le cours soit corrigé.
+
+    Jusqu'ici la publication était forcément collective : une copie notée
+    restait invisible de son étudiant tant que la dernière du cours n'était pas
+    corrigée. Sur une session de trente inscrits, cela fait attendre le premier
+    rendu pendant des semaines, sans raison.
+
+    Le geste reste le même que pour le lot : le crédit ECTS est porté au
+    dossier dans le même mouvement, sinon le relevé resterait vierge.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from apps.academics.services.credits import crediter_publication
+
+        professeur = _get_professeur(request)
+        if professeur is None:
+            raise Http404("Aucune fiche enseignant n'est rattachée à ce compte.")
+
+        evaluation = get_object_or_404(
+            Evaluation.objects.select_related("etudiant__utilisateur", "cours_session__cours"),
+            pk=pk,
+            cours_session__enseignant=professeur,
+        )
+        if evaluation.statut != Evaluation.StatutEvaluation.NOTE:
+            messages.error(request, "Seule une copie notée peut être publiée.")
+            return redirect(reverse("lms:course_detail", kwargs={"pk": evaluation.cours_session_id}))
+
+        evaluation.statut = Evaluation.StatutEvaluation.PUBLIE
+        evaluation.save(update_fields=["statut", "updated_at"])
+        crediter_publication(evaluation.cours_session)
+
+        notifier(
+            evaluation.etudiant.utilisateur,
+            f"Note publiée — {evaluation.cours_session.cours.titre}",
+            type_notification=Notification.Type.NOTE_PUBLIEE,
+            message="Votre note et l'appréciation de l'enseignant sont disponibles.",
+            url_cible=reverse("etudiant:grades"),
+        )
+        messages.success(
+            request,
+            f"Note de {evaluation.etudiant.utilisateur.get_full_name()} publiée : l'étudiant en est averti.",
+        )
+        return redirect(reverse("lms:course_detail", kwargs={"pk": evaluation.cours_session_id}))
+
+
 # ──────────────────────────────────────────────
 # Publish grades (batch action)
 # ──────────────────────────────────────────────
