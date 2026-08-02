@@ -56,35 +56,50 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         today = timezone.localdate()
 
-        candidatures_nouvelles = DossierCandidature.objects.filter(statut=DossierCandidature.Statut.SOUMIS).count()
-        candidatures_examen = DossierCandidature.objects.filter(statut=DossierCandidature.Statut.EN_EXAMEN).count()
+        dossiers = DossierCandidature.objects.aggregate(
+            total=Count("id"),
+            nouvelles=Count("id", filter=Q(statut=DossierCandidature.Statut.SOUMIS)),
+            examen=Count("id", filter=Q(statut=DossierCandidature.Statut.EN_EXAMEN)),
+            a_traiter=Count(
+                "id",
+                filter=Q(
+                    statut__in=[
+                        DossierCandidature.Statut.SOUMIS,
+                        DossierCandidature.Statut.EN_EXAMEN,
+                        DossierCandidature.Statut.INCOMPLET,
+                    ]
+                ),
+            ),
+        )
+        etudiants = ProfilEtudiant.objects.aggregate(
+            total=Count("id"),
+            actifs=Count("id", filter=Q(statut_inscription=ProfilEtudiant.StatutInscription.ACTIF)),
+        )
+        session_en_cours = SessionAcademique.objects.filter(
+            Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
+        ).first()
+        finances = pilotage.finances(session_en_cours=session_en_cours)
+        production = self._production_pedagogique()
 
         ctx.update(
             {
-                "total_etudiants": ProfilEtudiant.objects.count(),
-                "etudiants_actifs": ProfilEtudiant.objects.filter(statut_inscription="actif").count(),
+                "total_etudiants": etudiants["total"],
+                "etudiants_actifs": etudiants["actifs"],
                 "total_professeurs": Professeur.objects.filter(actif=True).count(),
-                "total_candidatures": DossierCandidature.objects.count(),
-                "candidatures_nouvelles": candidatures_nouvelles,
-                "candidatures_examen": candidatures_examen,
+                "total_candidatures": dossiers["total"],
+                "candidatures_nouvelles": dossiers["nouvelles"],
+                "candidatures_examen": dossiers["examen"],
                 "total_cours": Cours.objects.filter(actif=True).count(),
                 "total_parcours": Parcours.objects.filter(actif=True).count(),
                 "total_ouvrages": NoticeBibliographique.objects.count(),
                 "total_users": User.objects.filter(is_active=True).count(),
-                "session_en_cours": SessionAcademique.objects.filter(
-                    Q(date_debut__lte=today, date_fin__gte=today) | Q(statut=SessionAcademique.StatutSession.EN_COURS)
-                ).first(),
+                "session_en_cours": session_en_cours,
                 "prochaine_session": SessionAcademique.objects.filter(date_debut__gt=today)
                 .order_by("date_debut")
                 .first(),
                 "derniers_dossiers": DossierCandidature.objects.select_related("parcours_souhaite")[:5],
                 "derniers_paiements": Paiement.objects.select_related("etudiant__utilisateur", "session")[:5],
-                "demandes_inscription_a_traiter": DemandeInscriptionCours.objects.filter(
-                    statut__in=[
-                        DemandeInscriptionCours.Statut.SOUMISE,
-                        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
-                    ]
-                ).count(),
+                "demandes_inscription_a_traiter": finances["restant_du_nombre"],
                 "cours_ouverts_inscription": CoursDeSession.objects.filter(
                     inscriptions_ouvertes=True,
                     statut=CoursDeSession.StatutCours.PROGRAMME,
@@ -93,29 +108,47 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 # Production pédagogique des enseignants. Sans cette remontée,
                 # un module créé côté enseignant n'existe pour l'administration
                 # qu'une fois publié — trop tard pour relire quoi que ce soit.
-                **self._production_pedagogique(),
+                **production,
             }
         )
         # Finances, échéances, activité, résultats et alertes. Le calcul vit
         # dans un service : ce sont des règles de gestion, pas de l'affichage.
-        ctx.update(pilotage.finances(session_en_cours=ctx["session_en_cours"]))
+        ctx.update(finances)
         ctx.update(pilotage.formations())
         ctx.update(pilotage.resultats())
         ctx["echeances"] = pilotage.echeances()
-        ctx["alertes"] = pilotage.alertes()
+        ctx["alertes"] = pilotage.alertes(
+            candidatures=dossiers["a_traiter"],
+            inscriptions=finances["restant_du_nombre"],
+            acces=production["demandes_acces_video"],
+            paiements=finances["annonce_nombre"],
+            relecture=production["modules_en_relecture"],
+        )
         return ctx
 
     def _production_pedagogique(self) -> dict:
         from apps.elearning.models import InscriptionModule, ModuleFormation
 
         modules = ModuleFormation.objects.select_related("responsable", "discipline")
+        compteurs = ModuleFormation.objects.aggregate(
+            modules_en_relecture=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.RELECTURE),
+            ),
+            modules_brouillon=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.BROUILLON),
+            ),
+            modules_publies=Count(
+                "id",
+                filter=Q(statut=ModuleFormation.StatutPublication.PUBLIE),
+            ),
+        )
         return {
             "demandes_acces_video": InscriptionModule.objects.filter(
                 statut=InscriptionModule.StatutAcces.DEMANDE
             ).count(),
-            "modules_en_relecture": modules.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count(),
-            "modules_brouillon": modules.filter(statut=ModuleFormation.StatutPublication.BROUILLON).count(),
-            "modules_publies": modules.filter(statut=ModuleFormation.StatutPublication.PUBLIE).count(),
+            **compteurs,
             "modules_recents": modules.exclude(statut=ModuleFormation.StatutPublication.ARCHIVE).order_by(
                 "-updated_at"
             )[:5],

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Count, F, Sum
+from django.db.models import Avg, Count, F, Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
@@ -31,10 +31,6 @@ from apps.elearning.models import InscriptionModule, ModuleFormation, VideoAsset
 from apps.lms.models import Evaluation
 
 ZERO = Decimal("0.00")
-
-
-def _somme(requete, champ: str) -> Decimal:
-    return requete.aggregate(total=Sum(champ))["total"] or ZERO
 
 
 # ══════════════════════════════════════════════
@@ -53,35 +49,37 @@ def finances(session_en_cours=None) -> dict:
       confirmée ne s'y trouve pas : elle a été réglée ou exonérée, c'est ce que
       la confirmation atteste.
     """
-    paiements = Paiement.objects.all()
-    confirmes = paiements.filter(statut=Paiement.StatutPaiement.CONFIRME)
-    attendus = paiements.filter(statut=Paiement.StatutPaiement.EN_ATTENTE)
+    confirme = Q(statut=Paiement.StatutPaiement.CONFIRME)
+    en_attente = Q(statut=Paiement.StatutPaiement.EN_ATTENTE)
+    agregats_paiements = {
+        "encaisse_total": Sum("montant", filter=confirme, default=ZERO),
+        "encaisse_nombre": Count("id", filter=confirme),
+        "annonce_total": Sum("montant", filter=en_attente, default=ZERO),
+        "annonce_nombre": Count("id", filter=en_attente),
+    }
+    if session_en_cours is not None:
+        agregats_paiements["encaisse_session"] = Sum(
+            "montant",
+            filter=confirme & Q(session=session_en_cours),
+            default=ZERO,
+        )
+    paiements = Paiement.objects.aggregate(**agregats_paiements)
 
-    a_recouvrer = DemandeInscriptionCours.objects.filter(
+    a_recouvrer = Q(
         statut__in=[
             DemandeInscriptionCours.Statut.SOUMISE,
             DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
         ]
     )
+    relance = Q(statut=DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE)
+    demandes = DemandeInscriptionCours.objects.aggregate(
+        restant_du_total=Sum("montant_du", filter=a_recouvrer, default=ZERO),
+        restant_du_nombre=Count("id", filter=a_recouvrer),
+        relance_total=Sum("montant_du", filter=relance, default=ZERO),
+    )
 
-    resultat = {
-        "encaisse_total": _somme(confirmes, "montant"),
-        "encaisse_nombre": confirmes.count(),
-        # « En cours » au sens comptable : annoncé par l'étudiant, pas encore
-        # vérifié par le secrétariat.
-        "annonce_total": _somme(attendus, "montant"),
-        "annonce_nombre": attendus.count(),
-        "restant_du_total": _somme(a_recouvrer, "montant_du"),
-        "restant_du_nombre": a_recouvrer.count(),
-        # Un règlement réclamé mais toujours pas produit : c'est le sous-ensemble
-        # sur lequel une relance a un sens.
-        "relance_total": _somme(
-            a_recouvrer.filter(statut=DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE), "montant_du"
-        ),
-    }
-
+    resultat = {**paiements, **demandes}
     if session_en_cours is not None:
-        resultat["encaisse_session"] = _somme(confirmes.filter(session=session_en_cours), "montant")
         resultat["session_finances"] = session_en_cours
     return resultat
 
@@ -158,14 +156,19 @@ def echeances(horizon_jours: int = 60, limite: int = 6) -> list[Echeance]:
 def formations() -> dict:
     """Ce qui se déroule, ce qui vient, ce qui est achevé."""
     aujourd_hui = timezone.localdate()
-    offres = CoursDeSession.objects.all()
+    compteurs = CoursDeSession.objects.aggregate(
+        cours_en_cours=Count(
+            "id",
+            filter=Q(
+                session__date_debut__lte=aujourd_hui,
+                session__date_fin__gte=aujourd_hui,
+            ),
+        ),
+        cours_a_venir=Count("id", filter=Q(session__date_debut__gt=aujourd_hui)),
+        cours_termines=Count("id", filter=Q(statut=CoursDeSession.StatutCours.TERMINE)),
+    )
     return {
-        "cours_en_cours": offres.filter(
-            session__date_debut__lte=aujourd_hui,
-            session__date_fin__gte=aujourd_hui,
-        ).count(),
-        "cours_a_venir": offres.filter(session__date_debut__gt=aujourd_hui).count(),
-        "cours_termines": offres.filter(statut=CoursDeSession.StatutCours.TERMINE).count(),
+        **compteurs,
         "inscriptions_actives": ProfilEtudiant.objects.filter(
             inscriptions__cours_session__session__date_fin__gte=aujourd_hui
         )
@@ -181,19 +184,29 @@ def resultats() -> dict:
     correction n'est pas un résultat, et la faire entrer dans la moyenne
     donnerait un chiffre qui bouge sans qu'aucun étudiant n'ait rien passé.
     """
-    evaluations = Evaluation.objects.all()
-    publiees = evaluations.filter(statut=Evaluation.StatutEvaluation.PUBLIE, note__isnull=False)
-    agrege = publiees.aggregate(moyenne=Avg("note"), nombre=Count("id"))
+    publiee = Q(statut=Evaluation.StatutEvaluation.PUBLIE, note__isnull=False)
+    agrege = Evaluation.objects.aggregate(
+        moyenne=Avg("note", filter=publiee),
+        nombre=Count("id", filter=publiee),
+        reussite_nombre=Count("id", filter=publiee & Q(note__gte=10)),
+        copies_a_corriger=Count(
+            "id",
+            filter=Q(
+                statut__in=[
+                    Evaluation.StatutEvaluation.SOUMIS,
+                    Evaluation.StatutEvaluation.EN_CORRECTION,
+                ]
+            ),
+        ),
+    )
 
     return {
         "notes_publiees": agrege["nombre"] or 0,
         # Aucune note publiée : on ne montre pas « 0/20 », qui se lirait comme un
         # résultat catastrophique alors qu'il n'y a simplement rien à afficher.
         "note_moyenne": round(agrege["moyenne"], 2) if agrege["moyenne"] is not None else None,
-        "reussite_nombre": publiees.filter(note__gte=10).count(),
-        "copies_a_corriger": evaluations.filter(
-            statut__in=[Evaluation.StatutEvaluation.SOUMIS, Evaluation.StatutEvaluation.EN_CORRECTION]
-        ).count(),
+        "reussite_nombre": agrege["reussite_nombre"],
+        "copies_a_corriger": agrege["copies_a_corriger"],
     }
 
 
@@ -210,7 +223,14 @@ class Alerte:
     urgent: bool = False
 
 
-def alertes() -> list[Alerte]:
+def alertes(
+    *,
+    candidatures: int | None = None,
+    inscriptions: int | None = None,
+    acces: int | None = None,
+    paiements: int | None = None,
+    relecture: int | None = None,
+) -> list[Alerte]:
     """Ce qui attend une décision, du plus urgent au moins pressant.
 
     Une alerte à zéro n'est pas affichée : un tableau de bord constellé de
@@ -218,22 +238,27 @@ def alertes() -> list[Alerte]:
     """
     aujourd_hui = timezone.localdate()
 
-    candidatures = DossierCandidature.objects.filter(
-        statut__in=[
-            DossierCandidature.Statut.SOUMIS,
-            DossierCandidature.Statut.EN_EXAMEN,
-            DossierCandidature.Statut.INCOMPLET,
-        ]
-    ).count()
-    inscriptions = DemandeInscriptionCours.objects.filter(
-        statut__in=[
-            DemandeInscriptionCours.Statut.SOUMISE,
-            DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
-        ]
-    ).count()
-    acces = InscriptionModule.objects.filter(statut=InscriptionModule.StatutAcces.DEMANDE).count()
-    paiements = Paiement.objects.filter(statut=Paiement.StatutPaiement.EN_ATTENTE).count()
-    relecture = ModuleFormation.objects.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count()
+    if candidatures is None:
+        candidatures = DossierCandidature.objects.filter(
+            statut__in=[
+                DossierCandidature.Statut.SOUMIS,
+                DossierCandidature.Statut.EN_EXAMEN,
+                DossierCandidature.Statut.INCOMPLET,
+            ]
+        ).count()
+    if inscriptions is None:
+        inscriptions = DemandeInscriptionCours.objects.filter(
+            statut__in=[
+                DemandeInscriptionCours.Statut.SOUMISE,
+                DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE,
+            ]
+        ).count()
+    if acces is None:
+        acces = InscriptionModule.objects.filter(statut=InscriptionModule.StatutAcces.DEMANDE).count()
+    if paiements is None:
+        paiements = Paiement.objects.filter(statut=Paiement.StatutPaiement.EN_ATTENTE).count()
+    if relecture is None:
+        relecture = ModuleFormation.objects.filter(statut=ModuleFormation.StatutPublication.RELECTURE).count()
     # Une vidéo non prête empêche la publication de son module : c'est le
     # premier incident du manuel d'exploitation.
     videos = VideoAsset.objects.filter(
