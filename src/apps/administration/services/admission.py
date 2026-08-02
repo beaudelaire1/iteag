@@ -23,14 +23,20 @@ from apps.elearning.services.octroi import octroyer_modules_du_parcours
 
 
 def numero_etudiant_suivant(annee: int) -> str:
-    prefixe = f"ETU-{annee}-"
+    """Numéro d'un nouvel étudiant, sous la forme « ETU2026001 ».
+
+    Sans séparateur : le numéro se dicte au téléphone, se recopie sur un
+    formulaire papier et se recherche sans que personne n'ait à se demander
+    combien de tirets il comportait.
+    """
+    prefixe = f"ETU{annee}"
     dernier = (
         ProfilEtudiant.objects.filter(numero_etudiant__startswith=prefixe)
         .order_by("-numero_etudiant")
         .values_list("numero_etudiant", flat=True)
         .first()
     )
-    rang = int(dernier.rsplit("-", 1)[1]) + 1 if dernier else 1
+    rang = int(dernier.removeprefix(prefixe)) + 1 if dernier else 1
     return f"{prefixe}{rang:03d}"
 
 

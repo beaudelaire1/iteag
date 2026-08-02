@@ -42,18 +42,18 @@ MOT_DE_PASSE_DEMO = "DemoIteag!2026"
 
 # (prénom, nom, n° étudiant, statut, parcours (slug ou None), église fondatrice)
 ETUDIANTS = [
-    ("Josiane", "Marceline", "ETU-2026-001", ProfilEtudiant.StatutInscription.ACTIF, True),
-    ("Emmanuel", "Sainte-Rose", "ETU-2026-002", ProfilEtudiant.StatutInscription.ACTIF, False),
-    ("Marie-Claire", "Bhagavan", "ETU-2026-003", ProfilEtudiant.StatutInscription.ACTIF, False),
-    ("Alexandre", "Nordé", "ETU-2026-004", ProfilEtudiant.StatutInscription.ACTIF, True),
-    ("Sylviane", "Kancel", "ETU-2026-005", ProfilEtudiant.StatutInscription.INSCRIT, False),
-    ("Gérard", "Toussaint", "ETU-2026-006", ProfilEtudiant.StatutInscription.INSCRIT, False),
-    ("Léonie", "Abaul", "ETU-2026-007", ProfilEtudiant.StatutInscription.PAIEMENT_ATTENTE, False),
-    ("Patrick", "Céleste", "ETU-2026-008", ProfilEtudiant.StatutInscription.PRE_INSCRIT, False),
-    ("Nadège", "Boisrond", "ETU-2026-009", ProfilEtudiant.StatutInscription.SUSPENDU, False),
-    ("Rosemonde", "Lauriette", "ETU-2025-014", ProfilEtudiant.StatutInscription.DIPLOME, True),
-    ("Jean-Marc", "Édouard", "ETU-2025-021", ProfilEtudiant.StatutInscription.DIPLOME, False),
-    ("Christiane", "Pancrate", "ETU-2026-010", ProfilEtudiant.StatutInscription.ACTIF, False),
+    ("Josiane", "Marceline", "ETU2026001", ProfilEtudiant.StatutInscription.ACTIF, True),
+    ("Emmanuel", "Sainte-Rose", "ETU2026002", ProfilEtudiant.StatutInscription.ACTIF, False),
+    ("Marie-Claire", "Bhagavan", "ETU2026003", ProfilEtudiant.StatutInscription.ACTIF, False),
+    ("Alexandre", "Nordé", "ETU2026004", ProfilEtudiant.StatutInscription.ACTIF, True),
+    ("Sylviane", "Kancel", "ETU2026005", ProfilEtudiant.StatutInscription.INSCRIT, False),
+    ("Gérard", "Toussaint", "ETU2026006", ProfilEtudiant.StatutInscription.INSCRIT, False),
+    ("Léonie", "Abaul", "ETU2026007", ProfilEtudiant.StatutInscription.PAIEMENT_ATTENTE, False),
+    ("Patrick", "Céleste", "ETU2026008", ProfilEtudiant.StatutInscription.PRE_INSCRIT, False),
+    ("Nadège", "Boisrond", "ETU2026009", ProfilEtudiant.StatutInscription.SUSPENDU, False),
+    ("Rosemonde", "Lauriette", "ETU2025014", ProfilEtudiant.StatutInscription.DIPLOME, True),
+    ("Jean-Marc", "Édouard", "ETU2025021", ProfilEtudiant.StatutInscription.DIPLOME, False),
+    ("Christiane", "Pancrate", "ETU2026010", ProfilEtudiant.StatutInscription.ACTIF, False),
 ]
 
 

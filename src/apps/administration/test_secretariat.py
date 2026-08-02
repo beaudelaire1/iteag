@@ -117,6 +117,45 @@ def test_le_secretariat_ouvre_la_liste_des_demandes(client, secretaire, demande)
     assert "Herméneutique" in reponse.content.decode()
 
 
+def _compteur(reponse):
+    valeur = reponse.context["demandes_inscription_a_traiter"]
+    # Le processeur de contexte fournit un appelable, la vue un entier : la
+    # pastille doit dire la même chose dans les deux cas.
+    return valeur() if callable(valeur) else valeur
+
+
+def test_la_pastille_des_demandes_decroit_une_fois_l_inscription_confirmee(client, secretaire, demande):
+    """Une pastille qui ne retombe jamais cesse d'être lue."""
+    client.force_login(secretaire)
+    avant = _compteur(client.get(reverse("secretariat:dashboard")))
+
+    client.post(
+        reverse("administration:enrollment_request_action", args=[demande.pk]),
+        {"action": "confirmer", "exonere_paiement": "on", "commentaire": "Boursière : exonérée."},
+    )
+
+    assert _compteur(client.get(reverse("secretariat:dashboard"))) == avant - 1
+
+
+def test_la_pastille_retient_une_demande_mise_en_attente_de_paiement(client, secretaire, demande):
+    """« Valider et demander le paiement » n'est pas la fin du traitement.
+
+    La demande reste due : la retirer de la pastille ferait disparaître de la
+    file un dossier sur lequel il reste à encaisser.
+    """
+    client.force_login(secretaire)
+    avant = _compteur(client.get(reverse("secretariat:dashboard")))
+
+    client.post(
+        reverse("administration:enrollment_request_action", args=[demande.pk]),
+        {"action": "demander_paiement", "commentaire": ""},
+    )
+
+    demande.refresh_from_db()
+    assert demande.statut == DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
+    assert _compteur(client.get(reverse("secretariat:dashboard"))) == avant
+
+
 # ──────────────────────────────────────────────
 # Fiche étudiant et boutique
 # ──────────────────────────────────────────────
