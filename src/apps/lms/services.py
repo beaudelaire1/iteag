@@ -32,9 +32,14 @@ def publier_devoir(devoir: Devoir, *, par=None) -> Devoir:
     étudiant qui ne dépose rien n'existe pas dans le suivi, et l'enseignant ne
     voit pas qui lui manque.
     """
-    inscrits = list(devoir.cours_session.inscriptions.select_related("etudiant__utilisateur"))
+    inscrits = list(devoir.inscriptions_destinataires())
     if not inscrits:
-        raise ValidationError("Aucun étudiant n'est inscrit à ce cours : le devoir n'aurait aucun destinataire.")
+        if devoir.portee == Devoir.Portee.COURS:
+            raise ValidationError("Aucun étudiant n'est inscrit à ce cours : le devoir n'aurait aucun destinataire.")
+        raise ValidationError(
+            f"{devoir.libelle_destinataires} ne recouvre aucun inscrit de ce cours : "
+            "le devoir n'aurait aucun destinataire."
+        )
 
     devoir.statut = Devoir.Statut.PUBLIE
     devoir.save(update_fields=["statut", "updated_at"])

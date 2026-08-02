@@ -295,6 +295,49 @@ class Devoir(TimeStampedModel):
         verbose_name="ECTS attribués",
     )
 
+    # ── À qui le devoir s'adresse ──
+    # Il ne s'adressait qu'à tout le cours. Un travail de groupe, un rattrapage
+    # pour un seul étudiant ou un sujet propre à une promotion devaient donc
+    # être donnés hors de la plateforme, et rien n'en était suivi.
+    #
+    # La cible ne remplace jamais l'inscription : quelle qu'elle soit, seuls
+    # les inscrits au cours reçoivent une copie. Désigner une promotion entière
+    # n'ouvre pas le devoir à qui n'a pas suivi le cours.
+
+    class Portee(models.TextChoices):
+        COURS = "cours", "Tous les inscrits au cours"
+        GROUPE = "groupe", "Un groupe de travail"
+        PROMOTION = "promotion", "Une promotion"
+        ETUDIANTS = "etudiants", "Des étudiants désignés"
+
+    portee = models.CharField(
+        max_length=20,
+        choices=Portee.choices,
+        default=Portee.COURS,
+        verbose_name="Destinataires",
+    )
+    groupe = models.ForeignKey(
+        "GroupeEtudiants",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="devoirs",
+        verbose_name="Groupe de travail",
+    )
+    promotion = models.ForeignKey(
+        "academics.Promotion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="devoirs",
+    )
+    etudiants = models.ManyToManyField(
+        "academics.ProfilEtudiant",
+        blank=True,
+        related_name="devoirs_designes",
+        verbose_name="Étudiants désignés",
+    )
+
     class Meta:
         verbose_name = "Devoir"
         verbose_name_plural = "Devoirs"
@@ -314,6 +357,43 @@ class Devoir(TimeStampedModel):
         super().clean()
         if self.date_ouverture and self.date_fermeture and self.date_fermeture <= self.date_ouverture:
             raise ValidationError({"date_fermeture": "La fermeture doit suivre l'ouverture."})
+        if self.portee == self.Portee.GROUPE and self.groupe_id is None:
+            raise ValidationError({"groupe": "Désignez le groupe destinataire."})
+        if self.portee == self.Portee.PROMOTION and self.promotion_id is None:
+            raise ValidationError({"promotion": "Désignez la promotion destinataire."})
+        if self.groupe_id and self.groupe.cours_session_id != self.cours_session_id:
+            raise ValidationError({"groupe": "Ce groupe appartient à un autre cours."})
+
+    # ── Destinataires ──
+
+    def inscriptions_destinataires(self):
+        """Les inscriptions du cours que ce devoir concerne réellement.
+
+        Le filtre part toujours des inscrits : une promotion ou un groupe ne
+        peut qu'en restreindre la liste, jamais l'élargir. Sans cela, désigner
+        une promotion donnerait le devoir à des étudiants qui ne suivent pas
+        le cours — et leur créerait une copie qu'ils n'attendent pas.
+        """
+        inscriptions = self.cours_session.inscriptions.select_related("etudiant__utilisateur")
+
+        if self.portee == self.Portee.GROUPE and self.groupe_id:
+            return inscriptions.filter(etudiant__in=self.groupe.membres.all())
+        if self.portee == self.Portee.PROMOTION and self.promotion_id:
+            return inscriptions.filter(etudiant__promotion_id=self.promotion_id)
+        if self.portee == self.Portee.ETUDIANTS:
+            return inscriptions.filter(etudiant__in=self.etudiants.all())
+        return inscriptions
+
+    @property
+    def libelle_destinataires(self) -> str:
+        if self.portee == self.Portee.GROUPE and self.groupe_id:
+            return f"Groupe « {self.groupe.nom} »"
+        if self.portee == self.Portee.PROMOTION and self.promotion_id:
+            return f"Promotion {self.promotion.nom}"
+        if self.portee == self.Portee.ETUDIANTS:
+            nombre = self.etudiants.count()
+            return f"{nombre} étudiant{'s' if nombre > 1 else ''} désigné{'s' if nombre > 1 else ''}"
+        return "Tous les inscrits au cours"
 
     # ── État de la fenêtre ──
 

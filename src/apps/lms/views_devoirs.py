@@ -119,6 +119,10 @@ class TeacherDevoirCreateView(TeacherRoleRequiredMixin, CreateView):
         self.cours_session = get_object_or_404(_teacher_courses(request), pk=identifiant)
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        # Le formulaire restreint ses listes de destinataires à ce cours.
+        return {**super().get_form_kwargs(), "cours_session": self.cours_session}
+
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), "cours_session": self.cours_session}
 
@@ -137,6 +141,9 @@ class TeacherDevoirUpdateView(_DevoirDuProfesseur, UpdateView):
     form_class = DevoirForm
     template_name = "lms/devoir_form.html"
     context_object_name = "devoir"
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "cours_session": self.object.cours_session}
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), "cours_session": self.object.cours_session}
