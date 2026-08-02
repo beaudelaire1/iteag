@@ -27,6 +27,11 @@ urlpatterns = [
         name="enseignant_soustitre",
     ),
     path(
+        "espace-enseignant/videos/<uuid:pk>/modifier/",
+        views_enseignant.VideoUpdateView.as_view(),
+        name="enseignant_video_modifier",
+    ),
+    path(
         "espace-enseignant/videos/<uuid:pk>/supprimer/",
         views_enseignant.VideoDeleteView.as_view(),
         name="enseignant_video_supprimer",

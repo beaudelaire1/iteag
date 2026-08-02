@@ -500,6 +500,56 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         return redirect(reverse("elearning:enseignant_videos"))
 
 
+class VideoUpdateView(ProfesseurMixin, TemplateView):
+    """Corriger une vidéo déjà référencée, plutôt que la supprimer et refaire.
+
+    Le référencement ne se faisait qu'une fois : un titre mal orthographié, une
+    durée oubliée ou un lien remplacé chez le fournisseur obligeaient à
+    supprimer la vidéo — donc à la détacher de ses leçons — puis à tout
+    reconstituer. Corriger un titre est pourtant le geste le plus banal.
+    """
+
+    template_name = "elearning/enseignant/video_form.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            self.video = get_object_or_404(VideoAsset, pk=kwargs["pk"], uploade_par=request.user)
+        return super().dispatch(request, *args, **kwargs)
+
+    def _valeurs_initiales(self):
+        return {
+            "titre": self.video.titre,
+            "adresse_video": self.video.cle_stockage,
+            "duree_secondes": self.video.duree_secondes or None,
+            "transcription": self.video.transcription,
+        }
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.setdefault("form", VideoExterneForm(initial=self._valeurs_initiales()))
+        contexte["video"] = self.video
+        contexte["modification"] = True
+        contexte["videos"] = VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:30]
+        return contexte
+
+    def post(self, request, *args, **kwargs):
+        formulaire = VideoExterneForm(request.POST)
+        if not formulaire.is_valid():
+            return self.render_to_response(self.get_context_data(form=formulaire))
+
+        self.video.titre = formulaire.cleaned_data["titre"]
+        self.video.cle_stockage = formulaire.cleaned_data["identifiant"]
+        self.video.fournisseur = formulaire.cleaned_data["fournisseur"]
+        self.video.duree_secondes = formulaire.cleaned_data.get("duree_secondes") or 0
+        self.video.transcription = formulaire.cleaned_data["transcription"]
+        self.video.save(
+            update_fields=["titre", "cle_stockage", "fournisseur", "duree_secondes", "transcription", "updated_at"]
+        )
+        journaliser("modification", request=request, objet=self.video)
+        messages.success(request, f"« {self.video.titre} » mise à jour. Les leçons qui l'emploient suivent.")
+        return redirect(reverse("elearning:enseignant_videos"))
+
+
 class SousTitreCreateView(ProfesseurMixin, CreateView):
     form_class = SousTitreForm
     template_name = "elearning/enseignant/soustitre_form.html"
