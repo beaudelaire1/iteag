@@ -19,7 +19,6 @@ db.sqlite3
 *.log
 nginx
 docker-compose*.yml
-scripts/deploy.sh
 .local-audit
 .local-prod-deps
 .plan
