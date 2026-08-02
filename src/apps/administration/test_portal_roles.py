@@ -29,14 +29,12 @@ class TestPortalRoleSeparation:
     @pytest.mark.parametrize(
         "route",
         [
+            # Seul le pilotage reste fermé. Comptes utilisateurs, VAE,
+            # tarifs et suppressions ont rejoint le secrétariat : dans un
+            # institut de quatre personnes, attendre la direction pour un
+            # geste courant bloque le travail. Voir la doctrine énoncée dans
+            # « apps/core/mixins.py ».
             "administration:dashboard",
-            "administration:utilisateurs",
-            # « professeurs » et « formations » ont rejoint l'opérationnel :
-            # dans un institut de quatre personnes, tenir les fiches
-            # enseignants et consulter l'offre sont des gestes courants du
-            # secrétariat, pas des actes de gouvernance. Voir la doctrine
-            # énoncée dans « apps/core/mixins.py ».
-            "administration:vae",
         ],
     )
     def test_secretary_cannot_access_governance(self, client, secretary, route):

@@ -24,7 +24,7 @@ from apps.academics.models import (
 )
 from apps.academics.services.inscriptions import traiter_demande
 from apps.accounts.models import User
-from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
+from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.models import Notification
 from apps.core.services.audit import journaliser
 from apps.core.services.notifications import notifier, notifier_plusieurs
@@ -314,7 +314,7 @@ class CourseOfferingUpdateView(StaffRoleRequiredMixin, UpdateView):
         return reponse
 
 
-class CourseOfferingDeleteView(AdminRoleRequiredMixin, DeleteView):
+class CourseOfferingDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = CoursDeSession
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:course_offerings")
@@ -445,7 +445,7 @@ class PaymentUpdateView(StaffRoleRequiredMixin, UpdateView):
         return reponse
 
 
-class PaymentDeleteView(AdminRoleRequiredMixin, DeleteView):
+class PaymentDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = Paiement
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:payments")
@@ -544,7 +544,7 @@ class CourseUpdateView(StaffRoleRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class CourseDeleteView(AdminRoleRequiredMixin, DeleteView):
+class CourseDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = Cours
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:courses")
@@ -628,7 +628,7 @@ class PromotionUpdateView(StaffRoleRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class PromotionDeleteView(AdminRoleRequiredMixin, DeleteView):
+class PromotionDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = Promotion
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:promotions")
@@ -660,7 +660,7 @@ class TarifListView(StaffRoleRequiredMixin, ListView):
         return Tarif.objects.order_by("formule", "type_membre")
 
 
-class TarifCreateView(AdminRoleRequiredMixin, CreateView):
+class TarifCreateView(StaffRoleRequiredMixin, CreateView):
     model = Tarif
     form_class = TarifForm
     template_name = "administration/form.html"
@@ -678,7 +678,7 @@ class TarifCreateView(AdminRoleRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class TarifUpdateView(AdminRoleRequiredMixin, UpdateView):
+class TarifUpdateView(StaffRoleRequiredMixin, UpdateView):
     model = Tarif
     form_class = TarifForm
     template_name = "administration/form.html"
@@ -700,7 +700,7 @@ class TarifUpdateView(AdminRoleRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class TarifDeleteView(AdminRoleRequiredMixin, DeleteView):
+class TarifDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = Tarif
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:tarifs")
@@ -812,7 +812,7 @@ class CreditECTSUpdateView(StaffRoleRequiredMixin, UpdateView):
         return reponse
 
 
-class CreditECTSDeleteView(AdminRoleRequiredMixin, DeleteView):
+class CreditECTSDeleteView(StaffRoleRequiredMixin, DeleteView):
     """
     Retirer un crédit modifie un dossier académique : réservé à
     l'administration, et tracé comme tout ce qui touche au dossier.
@@ -963,7 +963,7 @@ class StageUpdateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, UpdateVie
         return reponse
 
 
-class StageDeleteView(AdminRoleRequiredMixin, DeleteView):
+class StageDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = Stage
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:stages")
@@ -990,7 +990,7 @@ class StageDeleteView(AdminRoleRequiredMixin, DeleteView):
 # ══════════════════════════════════════════════
 
 
-class VAEListView(AdminRoleRequiredMixin, ListView):
+class VAEListView(StaffRoleRequiredMixin, ListView):
     model = VAE
     template_name = "administration/vae.html"
     context_object_name = "dossiers"
@@ -1021,7 +1021,7 @@ class VAEListView(AdminRoleRequiredMixin, ListView):
         return context
 
 
-class VAECreateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, CreateView):
+class VAECreateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, CreateView):
     model = VAE
     form_class = VAEForm
     template_name = "administration/form.html"
@@ -1048,7 +1048,7 @@ class VAECreateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, CreateView)
         return reponse
 
 
-class VAEUpdateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, UpdateView):
+class VAEUpdateView(_CreditAutomatiqueMixin, StaffRoleRequiredMixin, UpdateView):
     model = VAE
     form_class = VAEForm
     template_name = "administration/form.html"
@@ -1085,7 +1085,7 @@ class VAEUpdateView(_CreditAutomatiqueMixin, AdminRoleRequiredMixin, UpdateView)
         return reponse
 
 
-class VAEDeleteView(AdminRoleRequiredMixin, DeleteView):
+class VAEDeleteView(StaffRoleRequiredMixin, DeleteView):
     model = VAE
     template_name = "administration/confirm_delete.html"
     success_url = reverse_lazy("administration:vae")

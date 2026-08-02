@@ -252,7 +252,15 @@ class TestInventaireDesPertes:
 
 
 @pytest.mark.django_db
-class TestSeuleLAdministrationSupprime:
+class TestLeSecretariatSupprimeAussi:
+    """L'écran de confirmation, et non le rôle, est ce qui protège.
+
+    La maîtrise d'ouvrage a ouvert les suppressions au secrétariat : dans un
+    institut de quatre personnes, attendre la direction pour retirer une fiche
+    erronée bloquait le travail. Ce qui protège reste l'inventaire de ce qui
+    disparaîtrait, montré avant l'acte — il vaut pour tous les rôles.
+    """
+
     @pytest.mark.parametrize(
         "nom_route,cle",
         [
@@ -261,11 +269,9 @@ class TestSeuleLAdministrationSupprime:
             ("administration:professeur_delete", "professeur"),
         ],
     )
-    def test_le_secretariat_ne_supprime_pas(self, client, univers, nom_route, cle, db):
+    def test_le_secretariat_atteint_l_ecran_de_confirmation(self, client, univers, nom_route, cle, db):
         secretaire = User.objects.create_user(
             username="sec_supp", email="ss@iteag.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
         )
         client.force_login(secretaire)
-        reponse = client.post(reverse(nom_route, args=[univers[cle].pk]))
-        assert reponse.status_code in (302, 403)
-        assert type(univers[cle]).objects.filter(pk=univers[cle].pk).exists()
+        assert client.get(reverse(nom_route, args=[univers[cle].pk])).status_code == 200

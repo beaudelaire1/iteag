@@ -40,6 +40,32 @@ class AdminUserForm(FormulaireModeleITEAG):
             "is_active": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
         }
 
+    def __init__(self, *args, auteur=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.auteur = auteur
+        # Le secrétariat tient les comptes, mais ne peut pas se hisser au rang
+        # qu'il administre : sans cela, la séparation des rôles ne tiendrait
+        # qu'à la bonne volonté de celui qui remplit le formulaire.
+        if self._auteur_est_secretariat():
+            self.fields["role"].choices = [
+                (valeur, libelle) for valeur, libelle in User.Role.choices if valeur != User.Role.ADMIN
+            ]
+
+    def _auteur_est_secretariat(self) -> bool:
+        return bool(self.auteur and not self.auteur.is_superuser and self.auteur.role == User.Role.SECRETARIAT)
+
+    def clean_role(self):
+        role = self.cleaned_data.get("role")
+        if role == User.Role.ADMIN and self._auteur_est_secretariat():
+            raise forms.ValidationError("Seule la direction peut attribuer le rôle d'administrateur.")
+        return role
+
+    def clean(self):
+        donnees = super().clean()
+        if self.instance.pk and self.instance.role == User.Role.ADMIN and self._auteur_est_secretariat():
+            raise forms.ValidationError("Un compte de direction ne se modifie que depuis la direction.")
+        return donnees
+
     def save(self, commit=True):
         user = super().save(commit=False)
         pw = self.cleaned_data.get("password1")

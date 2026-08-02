@@ -131,10 +131,10 @@ class TestStages:
 
 @pytest.mark.django_db
 class TestValidationDesAcquis:
-    def test_la_vae_est_fermee_au_secretariat(self, client, secretaire):
-        """La maîtrise d'ouvrage réserve la VAE à l'administration."""
+    def test_la_vae_est_ouverte_au_secretariat(self, client, secretaire):
+        """La maîtrise d'ouvrage a ouvert la VAE : le secrétariat instruit les dossiers."""
         client.force_login(secretaire)
-        assert client.get(reverse("administration:vae")).status_code in (302, 403)
+        assert client.get(reverse("administration:vae")).status_code == 200
 
     def test_l_administration_ouvre_un_dossier(self, client, admin, etudiant):
         client.force_login(admin)

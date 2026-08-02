@@ -1,14 +1,13 @@
 """Ce que le secrétariat a le droit d'ouvrir doit être atteignable depuis sa barre.
 
-Le partage des rôles lui-même est énoncé dans « test_perimetre.py », et il n'est
-pas remis en cause ici : l'opérationnel au secrétariat, le régalien à la
-direction — donner des droits, engager l'institut, détruire.
+Le partage des rôles lui-même est énoncé dans « test_perimetre.py », et il
+n'est pas remis en cause ici : toute la gestion au secrétariat, le pilotage à
+la direction.
 
-Le défaut corrigé est ailleurs, et plus banal : **quatre écrans que le
-secrétariat avait déjà le droit d'ouvrir ne figuraient pas dans sa barre**. Le
-corps enseignant, les parcours et cours, la grille tarifaire et le catalogue de
-la bibliothèque n'étaient atteignables qu'en devinant leur adresse. Un droit
-sans chemin pour l'exercer n'existe pas dans les faits.
+Le défaut corrigé est ailleurs, et plus banal : **des écrans que le
+secrétariat avait déjà le droit d'ouvrir ne figuraient pas dans sa barre**, et
+n'étaient atteignables qu'en devinant leur adresse. Un droit sans chemin pour
+l'exercer n'existe pas dans les faits.
 """
 
 import pytest
@@ -26,12 +25,12 @@ REVELES = [
     ("administration:formations", "consulter l'offre de parcours"),
     ("administration:tarifs", "consulter la grille tarifaire"),
     ("library:gestion", "tenir le fonds documentaire"),
+    ("administration:vae", "instruire les validations d'acquis"),
+    ("administration:utilisateurs", "tenir les comptes"),
 ]
 
-# Réservés à la direction : la barre ne doit pas y mener non plus.
+# Réservé à la direction : la barre ne doit pas y mener non plus.
 RESERVES = [
-    ("administration:utilisateurs", "créer des comptes donne des droits"),
-    ("administration:vae", "la maîtrise d'ouvrage réserve la VAE à la direction"),
     ("administration:dashboard", "le pilotage n'est pas la scolarité"),
 ]
 
@@ -65,7 +64,7 @@ def test_la_barre_mene_aux_ecrans_autorises(barre, route, raison):
 
 
 @pytest.mark.parametrize(("route", "raison"), RESERVES, ids=[nom for nom, _ in RESERVES])
-def test_la_barre_ne_mene_pas_au_regalien(barre, route, raison):
+def test_la_barre_ne_mene_pas_au_pilotage(barre, route, raison):
     assert _lien(route) not in barre, f"Écran réservé à la direction : {raison} ({route})."
 
 

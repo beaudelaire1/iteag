@@ -138,11 +138,10 @@ class TestCloisonnementDesPortails:
                 fuites.append(nom_route)
         assert not fuites, f"Accessibles au rôle « {role} » : {fuites}"
 
-    def test_le_secretariat_n_atteint_pas_les_pages_reservees(self, client, comptes):
-        """La VAE et la grille tarifaire relèvent de l'administration seule."""
+    def test_le_secretariat_n_atteint_pas_le_pilotage(self, client, comptes):
+        """Seuls les indicateurs de direction restent fermés au secrétariat."""
         client.force_login(comptes[User.Role.SECRETARIAT])
-        for nom_route in ("administration:vae", "administration:vae_create", "administration:tarif_create"):
-            assert client.get(reverse(nom_route)).status_code != 200, nom_route
+        assert client.get(reverse("administration:dashboard")).status_code != 200
 
     def test_l_espace_etudiant_est_ferme_aux_autres(self, client, comptes):
         client.force_login(comptes[User.Role.ENSEIGNANT])

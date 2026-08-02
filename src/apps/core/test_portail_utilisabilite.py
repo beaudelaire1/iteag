@@ -86,7 +86,10 @@ def test_le_volet_ne_mene_au_profil_que_par_un_chemin():
         TEMPLATES / "etudiant" / "partials" / "student_nav.html",
         TEMPLATES / "administration" / "partials" / "admin_nav.html",
         TEMPLATES / "administration" / "partials" / "secretariat_nav.html",
-        TEMPLATES / "elearning" / "enseignant" / "partials" / "nav.html",
+        # L'espace enseignant n'a qu'une barre, réutilisée par le présentiel et
+        # la vidéo ; « elearning/enseignant/partials/nav.html » ne fait que
+        # l'inclure, et rajoutait un second « Mon profil » à la suite.
+        TEMPLATES / "lms" / "partials" / "teacher_nav.html",
     ]
     for barre in barres:
         contenu = lire(barre)

@@ -127,11 +127,11 @@ class TestGrilleTarifaire:
         )
         assert Tarif.objects.filter(montant_session="180.00").exists()
 
-    def test_le_secretariat_consulte_mais_ne_cree_pas(self, client, secretaire):
-        """Le tarif est affiché au public : la décision appartient à l'administration."""
+    def test_le_secretariat_tient_aussi_la_grille(self, client, secretaire):
+        """La maîtrise d'ouvrage a ouvert la grille : quatre personnes, pas de relais."""
         client.force_login(secretaire)
         assert client.get(reverse("administration:tarifs")).status_code == 200
-        assert client.get(reverse("administration:tarif_create")).status_code in (302, 403)
+        assert client.get(reverse("administration:tarif_create")).status_code == 200
 
     def test_modification(self, client, admin):
         tarif = Tarif.objects.create(
@@ -221,16 +221,13 @@ class TestCreditsECTS:
         assert "déjà crédité" in reponse.content.decode()
         assert CreditECTS.objects.filter(etudiant=etudiant).count() == 1
 
-    def test_le_retrait_est_reserve_a_l_administration(self, client, secretaire, etudiant):
+    def test_le_retrait_est_ouvert_au_secretariat(self, client, secretaire, etudiant):
+        """Une erreur de saisie se corrige où elle a été faite ; la trace, elle, reste."""
         credit = CreditECTS.objects.create(
             etudiant=etudiant, ects_obtenus="3", source=CreditECTS.SourceCredit.FLTE, date_validation="2026-06-30"
         )
         client.force_login(secretaire)
-        assert client.post(reverse("administration:credit_ects_delete", kwargs={"pk": credit.pk})).status_code in (
-            302,
-            403,
-        )
-        assert CreditECTS.objects.filter(pk=credit.pk).exists()
+        assert client.get(reverse("administration:credit_ects_delete", kwargs={"pk": credit.pk})).status_code == 200
 
     def test_le_retrait_par_l_administration_est_journalise(self, client, admin, etudiant):
         """Retirer un crédit modifie un dossier académique : la trace n'est pas optionnelle."""

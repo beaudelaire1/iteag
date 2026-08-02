@@ -509,7 +509,7 @@ class AdminSessionListView(StaffRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
-class AdminUserListView(AdminRoleRequiredMixin, ListView):
+class AdminUserListView(StaffRoleRequiredMixin, ListView):
     model = User
     template_name = "administration/utilisateurs.html"
     context_object_name = "users"
@@ -538,11 +538,14 @@ class AdminUserListView(AdminRoleRequiredMixin, ListView):
 # ══════════════════════════════════════════════
 
 
-class AdminUserCreateView(AdminRoleRequiredMixin, CreateView):
+class AdminUserCreateView(StaffRoleRequiredMixin, CreateView):
     model = User
     form_class = AdminUserCreateForm
     template_name = "administration/form.html"
     success_url = reverse_lazy("administration:utilisateurs")
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "auteur": self.request.user}
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -556,11 +559,14 @@ class AdminUserCreateView(AdminRoleRequiredMixin, CreateView):
         return response
 
 
-class AdminUserUpdateView(AdminRoleRequiredMixin, UpdateView):
+class AdminUserUpdateView(StaffRoleRequiredMixin, UpdateView):
     model = User
     form_class = AdminUserForm
     template_name = "administration/form.html"
     success_url = reverse_lazy("administration:utilisateurs")
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "auteur": self.request.user}
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -574,7 +580,7 @@ class AdminUserUpdateView(AdminRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminUserDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+class AdminUserDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
     """
     Supprimer un compte emportait le profil étudiant en cascade, et avec lui
     inscriptions, notes, crédits ECTS et historique de paiements. En deux clics,
@@ -592,6 +598,9 @@ class AdminUserDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteVie
     def raison_de_bloquer(self):
         if self.object.pk == self.request.user.pk:
             return "Vous ne pouvez pas supprimer votre propre compte."
+        acteur = self.request.user
+        if self.object.role == User.Role.ADMIN and not acteur.is_superuser and acteur.role == User.Role.SECRETARIAT:
+            return "Un compte de direction ne se supprime que depuis la direction."
         if hasattr(self.object, "profil_etudiant"):
             return (
                 "Ce compte porte un dossier étudiant : sa suppression effacerait notes, crédits et "
@@ -652,7 +661,7 @@ class AdminSessionUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminSessionDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+class AdminSessionDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
     """Supprimer une session emportait en cascade tous ses cours programmés."""
 
     model = SessionAcademique
@@ -718,7 +727,7 @@ class AdminProfesseurUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminProfesseurDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+class AdminProfesseurDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
     """
     « CoursDeSession.enseignant » est en PROTECT : sans ce garde-fou, la
     suppression produisait une erreur de base opaque au lieu d'une explication.
@@ -786,7 +795,7 @@ class AdminEtudiantUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
-class AdminEtudiantDeleteView(SuppressionProtegee, AdminRoleRequiredMixin, DeleteView):
+class AdminEtudiantDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
     """
     Un dossier étudiant porte des notes, des crédits et des paiements. Un
     étudiant qui s'en va se désactive : il ne s'efface pas, sans quoi

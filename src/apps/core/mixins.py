@@ -2,23 +2,21 @@
 Contrôle d'accès par rôle.
 
 **Doctrine de partage entre secrétariat et direction.** L'ITEAG compte quatre
-personnes hors enseignants : le secrétariat *est* le back-office, et le traiter
-comme un rôle diminué crée des impasses quotidiennes — quelqu'un doit
-interrompre la direction pour un acte courant.
+personnes hors enseignants. La maîtrise d'ouvrage a tranché : le secrétariat
+*est* le back-office et tient l'ensemble des écrans de gestion. Une séparation
+plus fine y produisait surtout des impasses — quelqu'un devait interrompre la
+direction pour un acte courant.
 
-La ligne de partage ne porte donc pas sur l'importance de l'écran mais sur la
-nature du pouvoir qu'il confère :
+* `StaffRoleRequiredMixin` — **toute la gestion** : dossiers, étudiants,
+  professeurs, cours, sessions, inscriptions, encaissements, tarifs, stages,
+  VAE, comptes utilisateurs, suppressions, bibliothèque, boutique.
+* `AdminRoleRequiredMixin` — **le pilotage** : les tableaux de bord et
+  indicateurs de direction, ainsi que l'administration Django avancée.
 
-* `StaffRoleRequiredMixin` — **l'opérationnel** : tout ce qui fait tourner
-  l'institut au jour le jour. Dossiers, étudiants, professeurs, cours,
-  sessions, inscriptions, encaissements, stages, VAE, bibliothèque, boutique.
-* `AdminRoleRequiredMixin` — **le régalien**, trois cas et trois seulement :
-  ce qui donne des droits (comptes utilisateurs), ce qui engage
-  financièrement l'institut (grille tarifaire), et ce qui détruit
-  (suppressions). Une erreur y est coûteuse ou irréversible.
-
-Ajouter un écran au régalien se justifie contre ces trois critères ; à défaut,
-il relève de l'opérationnel.
+Deux garde-fous subsistent, portés par les formulaires et non par les rôles :
+le secrétariat ne peut ni attribuer le rôle « admin », ni modifier ou
+supprimer un compte de direction. Sans cela, un rôle pourrait s'élever
+lui-même et la distinction ci-dessus ne vaudrait plus rien.
 """
 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
