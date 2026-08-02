@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_academics, views_elearning, views_enseignants, views_pieces
+from . import views, views_academics, views_elearning, views_enseignants, views_pieces, views_tableurs
 
 app_name = "administration"
 
@@ -19,6 +19,20 @@ urlpatterns = [
     path("etudiants/<int:pk>/modifier/", views.AdminEtudiantUpdateView.as_view(), name="etudiant_update"),
     path("etudiants/<int:pk>/supprimer/", views.AdminEtudiantDeleteView.as_view(), name="etudiant_delete"),
     # Professeurs
+    # Import / export des fichiers du secrétariat
+    path("tableurs/", views_tableurs.TableursView.as_view(), name="tableurs"),
+    path("tableurs/<str:cle>/", views_tableurs.TableurDetailView.as_view(), name="tableur_detail"),
+    path(
+        "tableurs/<str:cle>/gabarit.<str:format_fichier>",
+        views_tableurs.GabaritView.as_view(),
+        name="tableur_gabarit",
+    ),
+    path(
+        "tableurs/<str:cle>/export.<str:format_fichier>",
+        views_tableurs.ExportView.as_view(),
+        name="tableur_export",
+    ),
+    path("tableurs/<str:cle>/importer/", views_tableurs.ImportView.as_view(), name="tableur_import"),
     path("professeurs/", views.AdminProfesseurListView.as_view(), name="professeurs"),
     path("professeurs/ajouter/", views.AdminProfesseurCreateView.as_view(), name="professeur_create"),
     path("professeurs/<int:pk>/", views_enseignants.AdminProfesseurDetailView.as_view(), name="professeur_detail"),

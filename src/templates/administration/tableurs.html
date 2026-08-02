@@ -1,0 +1,47 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Imports et exports — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='tableurs' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='tableurs' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Fichiers</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Imports et exports</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        Chaque jeu de données se télécharge, se remplit dans Excel ou LibreOffice, et se redépose.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid gap-5 sm:grid-cols-2">
+    {% for schema in schemas %}
+    <div class="card flex flex-col">
+        <h2 class="text-base font-semibold text-navy-900">{{ schema.libelle }}</h2>
+        <p class="mt-1 mb-4 flex-1 text-sm text-warm-500">
+            {{ schema.colonnes|length }} colonne{{ schema.colonnes|length|pluralize }}
+            {% if schema.importable %}· import et export{% else %}· export seul{% endif %}
+        </p>
+        <a href="{% url 'administration:tableur_detail' schema.cle %}" class="btn-primary">Ouvrir</a>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card mt-8">
+    <h2 class="text-base font-semibold text-navy-900">Ce qu'il faut savoir avant d'importer</h2>
+    <ul class="mt-3 space-y-2 text-sm text-warm-600">
+        <li><strong>Tout ou rien.</strong> Une seule ligne fautive annule l'import entier : la base
+            n'est jamais laissée à moitié à jour. Le rapport liste toutes les erreurs d'un coup.</li>
+        <li><strong>Une clé par entité.</strong> Numéro étudiant, ISBN, code de cours… Une ligne dont
+            la clé existe déjà met l'enregistrement à jour ; elle ne le duplique pas.</li>
+        <li><strong>Partez de l'export.</strong> Il porte exactement les colonnes attendues, déjà
+            remplies : c'est la façon la plus sûre de préparer une mise à jour en masse.</li>
+    </ul>
+</div>
+{% endblock %}

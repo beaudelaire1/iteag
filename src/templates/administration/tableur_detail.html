@@ -1,0 +1,128 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ schema.libelle }} — Imports et exports — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='tableurs' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='tableurs' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2"><a href="{% url 'administration:tableurs' %}">Imports et exports</a></p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ schema.libelle }}</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if rapport and rapport.est_en_echec %}
+{% comment %}
+Toutes les erreurs d'un coup, avec le numéro de ligne tel qu'Excel l'affiche
+— en-tête comprise. S'arrêter à la première obligerait à redéposer le fichier
+autant de fois qu'il compte de fautes.
+{% endcomment %}
+<div class="card mb-8" style="border-left: 3px solid var(--color-danger, #b91c1c);">
+    <h2 class="text-base font-semibold" style="color: var(--color-danger, #b91c1c);">
+        Import refusé — rien n'a été enregistré
+    </h2>
+    <p class="mt-1 text-sm text-warm-600">
+        Corrigez les {{ rapport.erreurs|length }} ligne{{ rapport.erreurs|length|pluralize }} ci-dessous,
+        puis redéposez le fichier.
+    </p>
+    <table class="mt-4 w-full text-sm">
+        <thead>
+            <tr class="text-left text-xs uppercase tracking-wider text-warm-500">
+                <th class="pb-2 w-24">Ligne</th><th class="pb-2">Motif</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for numero, motif in rapport.erreurs %}
+            <tr class="border-t border-warm-200">
+                <td class="py-2 num font-semibold">{% if numero %}{{ numero }}{% else %}—{% endif %}</td>
+                <td class="py-2">{{ motif }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="grid gap-6 lg:grid-cols-2">
+
+    {# ── Télécharger ── #}
+    <div class="card">
+        <h2 class="text-base font-semibold text-navy-900">Télécharger</h2>
+        <p class="mt-1 text-sm text-warm-500">
+            Le gabarit est vide, avec une ligne d'exemple. L'export contient les données actuelles :
+            c'est la meilleure base pour une mise à jour en masse.
+        </p>
+        <div class="mt-4 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="stat-label w-28">Gabarit vide</span>
+                <a href="{% url 'administration:tableur_gabarit' schema.cle 'xlsx' %}" class="btn-ghost">Excel</a>
+                <a href="{% url 'administration:tableur_gabarit' schema.cle 'csv' %}" class="btn-ghost">CSV</a>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="stat-label w-28">Données actuelles</span>
+                <a href="{% url 'administration:tableur_export' schema.cle 'xlsx' %}" class="btn-primary">Excel</a>
+                <a href="{% url 'administration:tableur_export' schema.cle 'csv' %}" class="btn-ghost">CSV</a>
+            </div>
+        </div>
+    </div>
+
+    {# ── Importer ── #}
+    <div class="card">
+        <h2 class="text-base font-semibold text-navy-900">Importer</h2>
+        {% if schema.importable %}
+        <p class="mt-1 text-sm text-warm-500">
+            Fichier <code>.xlsx</code> ou <code>.csv</code>. Une ligne dont la clé existe déjà met
+            l'enregistrement à jour ; une seule erreur annule l'import entier.
+        </p>
+        <form method="post" action="{% url 'administration:tableur_import' schema.cle %}"
+              enctype="multipart/form-data" class="mt-4 space-y-3">
+            {% csrf_token %}
+            <label class="block">
+                <span class="sr-only">Fichier à importer</span>
+                <input type="file" name="fichier" class="form-file" accept=".csv,.xlsx,.xlsm" required>
+            </label>
+            <button type="submit" class="btn-primary">Importer</button>
+        </form>
+        {% else %}
+        <p class="mt-1 text-sm text-warm-500">Ce jeu de données ne peut être qu'exporté.</p>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Colonnes attendues ── #}
+<div class="card mt-6">
+    <h2 class="text-base font-semibold text-navy-900">Colonnes attendues</h2>
+    <p class="mt-1 text-sm text-warm-500">
+        L'ordre n'a pas d'importance : les colonnes sont reconnues par leur en-tête.
+        La casse et les espaces de bord non plus.
+    </p>
+    <div class="mt-4 overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-xs uppercase tracking-wider text-warm-500">
+                    <th class="pb-2">En-tête</th><th class="pb-2">Attendu</th>
+                    <th class="pb-2">Exemple</th><th class="pb-2">Obligatoire</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for colonne in colonnes %}
+                <tr class="border-t border-warm-200">
+                    <td class="py-2"><code class="font-semibold text-navy-900">{{ colonne.nom }}</code></td>
+                    <td class="py-2 text-warm-600">{{ colonne.aide }}</td>
+                    <td class="py-2 text-warm-500">{{ colonne.exemple }}</td>
+                    <td class="py-2">{% if colonne.requise %}<span class="badge badge-gold">Oui</span>{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
