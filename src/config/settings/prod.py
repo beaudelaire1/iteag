@@ -64,6 +64,15 @@ STORAGES["default"] = {
     "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
 }
 
+# Les médias (images Wagtail, pièces jointes) sont servis depuis l'origine du
+# bucket R2 en URL signée : la CSP globale ne connaît que 'self' et Stripe,
+# le navigateur bloquerait chaque <img> sans cette ouverture.
+_origine_medias = (f"https://{AWS_S3_CUSTOM_DOMAIN}" if AWS_S3_CUSTOM_DOMAIN else AWS_S3_ENDPOINT_URL)
+if _origine_medias:
+    for _directive in ("img-src", "media-src"):
+        CONTENT_SECURITY_POLICY["DIRECTIVES"][_directive].append(_origine_medias)  # noqa: F405
+
+
 # ──────────────────────────────────────────────
 # Cache — Redis
 # ──────────────────────────────────────────────
