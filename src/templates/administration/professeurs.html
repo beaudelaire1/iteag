@@ -16,6 +16,7 @@
         <p class="text-sm mt-1" style="color: var(--color-warm-500);">{{ professeurs.paginator.count }} enseignant{{ professeurs.paginator.count|pluralize }}</p>
     </div>
     <a href="{% url 'administration:professeur_create' %}" class="btn-primary text-sm">+ Nouveau professeur</a>
+
 </div>
 {% endblock %}
 
@@ -50,7 +51,9 @@
             </div>
             {% endif %}
             <div class="min-w-0">
-                <h3 class="font-semibold truncate" style="color: var(--color-navy-900);">{{ prof.nom_complet }}</h3>
+                <h3 class="font-semibold truncate" style="color: var(--color-navy-900);">
+                    <a href="{% url 'administration:professeur_detail' prof.pk %}">{{ prof.nom_complet }}</a>
+                </h3>
                 {% if prof.specialite %}
                 <p class="text-xs mt-0.5 truncate" style="color: var(--color-warm-500);">{{ prof.specialite }}</p>
                 {% endif %}
@@ -76,6 +79,7 @@
         {% endif %}
 
         <div class="flex items-center gap-3 mt-4 pt-3" style="border-top: 1px solid var(--color-warm-100);">
+            <a href="{% url 'administration:professeur_detail' prof.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Voir la fiche</a>
             <a href="{% url 'administration:professeur_update' prof.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>
             <a href="{% url 'administration:professeur_delete' prof.pk %}" class="lien-danger">Supprimer</a>
         </div>

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_academics, views_elearning, views_pieces
+from . import views, views_academics, views_elearning, views_enseignants, views_pieces
 
 app_name = "administration"
 
@@ -21,6 +21,17 @@ urlpatterns = [
     # Professeurs
     path("professeurs/", views.AdminProfesseurListView.as_view(), name="professeurs"),
     path("professeurs/ajouter/", views.AdminProfesseurCreateView.as_view(), name="professeur_create"),
+    path("professeurs/<int:pk>/", views_enseignants.AdminProfesseurDetailView.as_view(), name="professeur_detail"),
+    path(
+        "professeurs/<int:pk>/proposer-cours/",
+        views_enseignants.ProposerCoursView.as_view(),
+        name="professeur_proposer_cours",
+    ),
+    path(
+        "professeurs/<int:pk>/module/",
+        views_enseignants.AssocierModuleView.as_view(),
+        name="professeur_associer_module",
+    ),
     path("professeurs/<int:pk>/modifier/", views.AdminProfesseurUpdateView.as_view(), name="professeur_update"),
     path("professeurs/<int:pk>/supprimer/", views.AdminProfesseurDeleteView.as_view(), name="professeur_delete"),
     # Formations

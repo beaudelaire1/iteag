@@ -1,0 +1,108 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Propositions d'enseignement — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='propositions' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='propositions' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Mes enseignements</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Propositions</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        Un cours ne vous est affecté qu'après votre acceptation.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if en_attente %}
+<ul class="space-y-4 mb-10" role="list">
+    {% for proposition in en_attente %}
+    <li class="card shadow-card">
+        <p class="flex flex-wrap items-center gap-2">
+            <span class="badge badge-gold">À décider</span>
+            <span class="text-xs uppercase tracking-wider text-warm-500">
+                {{ proposition.cours_session.cours.discipline.nom }}
+            </span>
+        </p>
+        <h2 class="mt-2 text-lg font-semibold text-navy-900">{{ proposition.cours_session.cours.titre }}</h2>
+        <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+                <dt class="stat-label">Session</dt>
+                <dd class="mt-1">{{ proposition.cours_session.session.nom }}</dd>
+            </div>
+            <div>
+                <dt class="stat-label">Période</dt>
+                <dd class="mt-1">
+                    du {{ proposition.cours_session.session.date_debut|date:"d/m/Y" }}
+                    au {{ proposition.cours_session.session.date_fin|date:"d/m/Y" }}
+                </dd>
+            </div>
+            <div>
+                <dt class="stat-label">Proposé par</dt>
+                <dd class="mt-1">{{ proposition.proposee_par.get_full_name|default:"L'administration" }}</dd>
+            </div>
+        </dl>
+
+        {% if proposition.message %}
+        <p class="mt-3 rounded border border-warm-200 bg-warm-50 p-3 text-sm text-warm-700">
+            « {{ proposition.message }} »
+        </p>
+        {% endif %}
+
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
+            <form method="post" action="{% url 'enseignant:proposition_reponse' proposition.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="accepter">
+                <button type="submit" class="btn-primary whitespace-nowrap">Accepter ce cours</button>
+            </form>
+
+            <form method="post" action="{% url 'enseignant:proposition_reponse' proposition.pk %}"
+                  class="flex flex-1 flex-col gap-2 sm:flex-row">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="decliner">
+                <label class="min-w-0 flex-1">
+                    <span class="sr-only">Motif du refus</span>
+                    <input type="text" name="motif" class="form-input"
+                           placeholder="Motif du refus — obligatoire" required>
+                </label>
+                <button type="submit" class="btn-ghost whitespace-nowrap">Décliner</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card text-center py-12 mb-10">
+    <p class="text-warm-600">Aucune proposition en attente.</p>
+</div>
+{% endif %}
+
+{% if traitees %}
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">Déjà répondu</h2>
+<ul class="space-y-2" role="list">
+    {% for proposition in traitees %}
+    <li class="card flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span>
+            <span class="font-medium text-navy-900">{{ proposition.cours_session.cours.titre }}</span>
+            — {{ proposition.cours_session.session.nom }}
+        </span>
+        <span class="flex items-center gap-2">
+            {% if proposition.motif_refus %}
+            <span class="text-warm-500">{{ proposition.motif_refus }}</span>
+            {% endif %}
+            <span class="badge{% if proposition.statut == 'acceptee' %} badge-gold{% endif %}">
+                {{ proposition.get_statut_display }}
+            </span>
+            <time class="text-warm-400" datetime="{{ proposition.date_reponse|date:'c' }}">
+                {{ proposition.date_reponse|date:"d/m/Y" }}
+            </time>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% endblock %}

@@ -132,6 +132,7 @@ TEMPLATES = [
                 "apps.core.context_processors.navigation_publique",
                 "apps.core.context_processors.notifications_context",
                 "apps.administration.context_processors.taches_en_attente",
+                "apps.portail_enseignant.context_processors.propositions_en_attente",
                 "apps.commerce.context_processors.panier_context",
             ],
         },

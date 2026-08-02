@@ -1,0 +1,195 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{{ professeur.nom_complet }} — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='professeurs' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='professeurs' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <div class="flex items-start gap-4">
+        {% if professeur.photo %}
+        <img src="{{ professeur.photo.url }}" alt=""
+             class="h-16 w-16 shrink-0 rounded-full object-cover" style="border: 1px solid var(--color-warm-200);">
+        {% else %}
+        <span class="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-navy-700 text-lg font-bold text-white" aria-hidden="true">
+            {{ professeur.prenom|slice:":1"|upper }}{{ professeur.nom|slice:":1"|upper }}
+        </span>
+        {% endif %}
+        <div>
+            <p class="overline mb-1">Corps enseignant</p>
+            <h1 style="font-size: clamp(1.4rem, 3vw, 1.9rem);">{{ professeur.nom_complet }}</h1>
+            {% if professeur.specialite %}
+            <p class="mt-1 text-sm text-warm-600">{{ professeur.specialite }}</p>
+            {% endif %}
+            {% if not professeur.actif %}
+            <span class="badge">Fiche inactive</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'administration:professeur_update' professeur.pk %}" class="btn-ghost">Modifier</a>
+        <a href="{{ professeur.get_absolute_url }}" class="btn-ghost">Fiche publique</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{# ── Coordonnées ── #}
+<div class="card mb-8">
+    <h2 class="text-lg font-semibold text-navy-900">Coordonnées</h2>
+    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+        <div>
+            <dt class="stat-label">Adresse électronique</dt>
+            <dd class="mt-1">
+                {% if compte and compte.email %}
+                <a href="mailto:{{ compte.email }}" class="text-navy-700 underline">{{ compte.email }}</a>
+                {% else %}<span class="text-warm-500">Non renseignée</span>{% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt class="stat-label">Téléphone</dt>
+            <dd class="mt-1">
+                {% if compte and compte.phone %}{{ compte.phone }}
+                {% else %}<span class="text-warm-500">Non renseigné</span>{% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt class="stat-label">Compte de connexion</dt>
+            <dd class="mt-1">
+                {% if compte %}{{ compte.username }} — {{ compte.get_role_display }}
+                {% else %}<span class="text-warm-500">Aucun compte : il ne peut ni se connecter ni répondre aux propositions</span>{% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt class="stat-label">Disciplines</dt>
+            <dd class="mt-1">
+                {% for discipline in professeur.disciplines.all %}{{ discipline.nom }}{% if not forloop.last %}, {% endif %}
+                {% empty %}<span class="text-warm-500">Aucune</span>{% endfor %}
+            </dd>
+        </div>
+    </dl>
+</div>
+
+{# ── Cours enseignés ── #}
+<div class="card mb-8">
+    <h2 class="text-lg font-semibold text-navy-900">Cours enseignés</h2>
+    {% if cours_enseignes %}
+    <div class="mt-4 overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-xs uppercase tracking-wider text-warm-500">
+                    <th class="pb-2">Cours</th><th class="pb-2">Session</th>
+                    <th class="pb-2">Inscrits</th><th class="pb-2">État</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for offre in cours_enseignes %}
+                <tr class="border-t border-warm-200">
+                    <td class="py-2 font-medium text-navy-900">{{ offre.cours.titre }}</td>
+                    <td class="py-2">{{ offre.session.nom }}</td>
+                    <td class="py-2">{{ offre.nombre_inscrits }}</td>
+                    <td class="py-2">{{ offre.get_statut_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="mt-3 text-sm text-warm-500">Aucun cours ne lui est affecté.</p>
+    {% endif %}
+</div>
+
+{# ── Proposer un cours ── #}
+<div class="card mb-8">
+    <h2 class="text-lg font-semibold text-navy-900">Proposer un cours</h2>
+    <p class="mt-1 text-sm text-warm-600">
+        L'enseignant reçoit une notification et reste libre de décliner en indiquant un motif.
+        Le cours ne change de main qu'à son acceptation.
+    </p>
+
+    {% if cours_proposables %}
+    <form method="post" action="{% url 'administration:professeur_proposer_cours' professeur.pk %}" class="mt-4 space-y-3">
+        {% csrf_token %}
+        <label class="block">
+            <span class="stat-label">Cours de session</span>
+            <select name="cours_session" class="form-input mt-1" required>
+                {% for offre in cours_proposables %}
+                <option value="{{ offre.pk }}">{{ offre.cours.titre }} — {{ offre.session.nom }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block">
+            <span class="stat-label">Mot d'accompagnement (facultatif)</span>
+            <textarea name="message" rows="2" class="form-input mt-1"
+                      placeholder="Pourquoi ce cours lui est proposé…"></textarea>
+        </label>
+        <button type="submit" class="btn-primary">Proposer</button>
+    </form>
+    {% else %}
+    <p class="mt-3 text-sm text-warm-500">Aucun cours à venir ne peut lui être proposé.</p>
+    {% endif %}
+
+    {% if propositions %}
+    <h3 class="mt-6 text-sm font-semibold uppercase tracking-wider text-warm-500">Propositions récentes</h3>
+    <ul class="mt-3 space-y-2" role="list">
+        {% for proposition in propositions %}
+        <li class="flex flex-wrap items-center justify-between gap-2 border-t border-warm-200 pt-2 text-sm">
+            <span>{{ proposition.cours_session.cours.titre }} — {{ proposition.cours_session.session.nom }}</span>
+            <span class="flex items-center gap-2">
+                <span class="badge{% if proposition.statut == 'acceptee' %} badge-gold{% endif %}">{{ proposition.get_statut_display }}</span>
+                {% if proposition.motif_refus %}<span class="text-warm-500">{{ proposition.motif_refus }}</span>{% endif %}
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+{# ── Modules e-learning ── #}
+<div class="card">
+    <h2 class="text-lg font-semibold text-navy-900">Modules e-learning</h2>
+
+    {% if modules_video %}
+    <ul class="mt-4 space-y-2" role="list">
+        {% for module in modules_video %}
+        <li class="flex flex-wrap items-center justify-between gap-2 border-t border-warm-200 pt-2 text-sm">
+            <span class="font-medium text-navy-900">{{ module.titre }}</span>
+            <span class="flex items-center gap-2">
+                <span class="badge">{{ module.get_statut_display }}</span>
+                <form method="post" action="{% url 'administration:professeur_associer_module' professeur.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="module" value="{{ module.pk }}">
+                    <input type="hidden" name="action" value="retirer">
+                    <button type="submit" class="btn-ghost" style="padding: 0.35rem 0.9rem;">Retirer</button>
+                </form>
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-3 text-sm text-warm-500">Aucun module ne lui est confié.</p>
+    {% endif %}
+
+    {% if modules_sans_responsable %}
+    <form method="post" action="{% url 'administration:professeur_associer_module' professeur.pk %}" class="mt-5 flex flex-wrap items-end gap-3">
+        {% csrf_token %}
+        <label class="min-w-0 flex-1">
+            <span class="stat-label">Confier un module sans responsable</span>
+            <select name="module" class="form-input mt-1" required>
+                {% for module in modules_sans_responsable %}
+                <option value="{{ module.pk }}">{{ module.titre }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="btn-primary">Confier</button>
+    </form>
+    {% endif %}
+</div>
+
+{% endblock %}

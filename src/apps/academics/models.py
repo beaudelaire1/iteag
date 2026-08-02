@@ -558,3 +558,92 @@ class VAE(TimeStampedModel):
 
     def __str__(self):
         return f"{self.etudiant} — VAE {self.ects_demandes} ECTS ({self.get_statut_display()})"
+
+
+class PropositionEnseignement(TimeStampedModel):
+    """Un cours proposé à un enseignant, qui l'accepte ou le décline.
+
+    Jusqu'ici l'administration désignait l'enseignant d'un cours sans lui
+    demander : il le découvrait sur son tableau de bord, parfois la veille, et
+    le refus se réglait par téléphone sans laisser de trace. Une proposition
+    est donc un objet avec un état — proposée, acceptée, déclinée — et un motif
+    quand elle est refusée.
+
+    L'affectation ne bouge qu'à l'acceptation : proposer n'engage rien, et deux
+    propositions peuvent coexister sur un même cours tant qu'aucune n'a abouti.
+    """
+
+    class Statut(models.TextChoices):
+        PROPOSEE = "proposee", "Proposée"
+        ACCEPTEE = "acceptee", "Acceptée"
+        DECLINEE = "declinee", "Déclinée"
+
+    cours_session = models.ForeignKey(
+        "CoursDeSession",
+        on_delete=models.CASCADE,
+        related_name="propositions",
+        verbose_name="Cours de session",
+    )
+    professeur = models.ForeignKey(
+        "formations.Professeur",
+        on_delete=models.CASCADE,
+        related_name="propositions_enseignement",
+    )
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.PROPOSEE)
+    message = models.TextField(blank=True, verbose_name="Mot de l'administration")
+    motif_refus = models.TextField(blank=True, verbose_name="Motif du refus")
+    proposee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="propositions_envoyees",
+    )
+    date_reponse = models.DateTimeField(null=True, blank=True, verbose_name="Répondu le")
+
+    class Meta:
+        verbose_name = "Proposition d'enseignement"
+        verbose_name_plural = "Propositions d'enseignement"
+        ordering = ["-created_at"]
+        constraints = [
+            # Reproposer un cours déjà proposé n'ajoute rien et brouille la
+            # file de l'enseignant. Une réponse donnée, en revanche, libère la
+            # place : l'administration peut reproposer après un refus.
+            models.UniqueConstraint(
+                fields=["cours_session", "professeur"],
+                condition=models.Q(statut="proposee"),
+                name="une_seule_proposition_en_cours",
+            ),
+        ]
+        indexes = [models.Index(fields=["professeur", "statut"])]
+
+    def __str__(self):
+        return f"{self.cours_session} → {self.professeur} ({self.get_statut_display()})"
+
+    @property
+    def est_en_attente(self) -> bool:
+        return self.statut == self.Statut.PROPOSEE
+
+    def accepter(self):
+        """L'enseignant prend le cours : c'est ici, et seulement ici, qu'il change de main."""
+        if not self.est_en_attente:
+            raise ValidationError("Cette proposition a déjà reçu une réponse.")
+        self.statut = self.Statut.ACCEPTEE
+        self.date_reponse = timezone.now()
+        self.save(update_fields=["statut", "date_reponse", "updated_at"])
+        self.cours_session.enseignant = self.professeur
+        self.cours_session.save(update_fields=["enseignant", "updated_at"])
+        return self
+
+    def decliner(self, motif: str):
+        """Décliner sans dire pourquoi obligerait l'administration à rappeler."""
+        motif = (motif or "").strip()
+        if not self.est_en_attente:
+            raise ValidationError("Cette proposition a déjà reçu une réponse.")
+        if not motif:
+            raise ValidationError("Indiquez le motif du refus.")
+        self.statut = self.Statut.DECLINEE
+        self.motif_refus = motif
+        self.date_reponse = timezone.now()
+        self.save(update_fields=["statut", "motif_refus", "date_reponse", "updated_at"])
+        return self
