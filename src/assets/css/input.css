@@ -339,6 +339,80 @@
   }
 
   /* ── Navigation sticky premium ── */
+  /* Corps d'un article de recherche. Le balisage vient de l'éditeur des
+     enseignants, qui n'écrivent aucune classe : la mise en forme doit donc
+     porter sur les balises elles-mêmes, faute de quoi un article s'affiche en
+     texte brut sans titre ni liste. */
+  .prose-article {
+    line-height: 1.8;
+    color: var(--color-warm-800);
+  }
+  .prose-article > * + * {
+    margin-top: 1.1em;
+  }
+  .prose-article h2 {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-navy-900);
+    margin-top: 2em;
+  }
+  .prose-article h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-navy-800);
+    margin-top: 1.6em;
+  }
+  .prose-article ul,
+  .prose-article ol {
+    padding-left: 1.5rem;
+  }
+  .prose-article ul {
+    list-style: disc;
+  }
+  .prose-article ol {
+    list-style: decimal;
+  }
+  .prose-article li + li {
+    margin-top: 0.35em;
+  }
+  .prose-article blockquote {
+    border-left: 3px solid var(--color-gold-400, #d4b483);
+    padding-left: 1.25rem;
+    font-style: italic;
+    color: var(--color-warm-600);
+  }
+  .prose-article a {
+    color: var(--color-navy-700);
+    text-decoration: underline;
+  }
+  .prose-article img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.25rem;
+  }
+  .prose-article figure figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-warm-500);
+  }
+  .prose-article table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .prose-article th,
+  .prose-article td {
+    border: 1px solid var(--color-warm-200);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+  /* Le « div » éditable ne doit pas paraître vide : sans repère, l'enseignant
+     ne sait pas qu'il peut y écrire. */
+  .prose-article[contenteditable]:empty::before {
+    content: "Rédigez votre article ici…";
+    color: var(--color-warm-400);
+  }
+
   .nav-premium {
     position: sticky;
     top: 0;

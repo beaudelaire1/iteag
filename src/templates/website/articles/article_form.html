@@ -1,0 +1,158 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if article %}{{ article.titre }}{% else %}Nouvel article{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2"><a href="{% url 'website:mes_articles' %}">Mes articles</a></p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+        {% if article %}Modifier l'article{% else %}Nouvel article{% endif %}
+    </h1>
+    {% if article %}
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        <span class="badge">{{ article.get_statut_display }}</span>
+        {% if article.date_publication %}· publié le {{ article.date_publication|date:"d/m/Y" }}{% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if article and article.motif_refus %}
+<div class="card mb-6" style="border-left: 3px solid var(--color-gold-600, #b45309);">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-warm-500">Retour du relecteur</h2>
+    <p class="mt-2">{{ article.motif_refus }}</p>
+</div>
+{% endif %}
+
+{% if verrouille %}
+<div class="card mb-6">
+    <p class="font-semibold text-navy-900">Cet article est publié.</p>
+    <p class="mt-1 text-sm text-warm-600">
+        Il n'est plus modifiable en l'état : le changer transformerait sous les yeux du lecteur
+        une page déjà en ligne, sans qu'elle repasse par la relecture. Demandez son retrait à
+        l'administration pour le reprendre.
+    </p>
+</div>
+{% else %}
+
+<form method="post" enctype="multipart/form-data" class="space-y-6"
+      action="{% if article %}{% url 'website:article_edition' article.pk %}{% else %}{% url 'website:article_creation' %}{% endif %}">
+    {% csrf_token %}
+
+    <div class="card space-y-4">
+        {% include "partials/champ.html" with field=form.titre %}
+        {% include "partials/champ.html" with field=form.sous_titre %}
+        {% include "partials/champ.html" with field=form.chapeau %}
+    </div>
+
+    {# ── L'éditeur ── #}
+    <div class="card">
+        <label class="form-label" for="editeur-corps">Corps de l'article</label>
+
+        {% comment %}
+        Barre d'outils maison : la politique de sécurité du site interdit
+        « unsafe-eval », que réclament la plupart des éditeurs tiers, et un
+        script d'une autre origine serait de toute façon bloqué.
+        {% endcomment %}
+        <div class="mt-2 flex flex-wrap gap-1 rounded-t border border-warm-200 bg-warm-50 p-2">
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="bold" title="Gras"><strong>G</strong></button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="italic" title="Italique"><em>I</em></button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="underline" title="Souligné"><u>S</u></button>
+            <span class="mx-1 self-center text-warm-300">|</span>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="titre2" title="Titre de section">T1</button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="titre3" title="Sous-titre">T2</button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="paragraphe" title="Paragraphe">¶</button>
+            <span class="mx-1 self-center text-warm-300">|</span>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="insertUnorderedList" title="Liste à puces">•</button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="insertOrderedList" title="Liste numérotée">1.</button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="citation" title="Citation">❝</button>
+            <span class="mx-1 self-center text-warm-300">|</span>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="lien" title="Lien">🔗</button>
+            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="removeFormat" title="Retirer la mise en forme">✕</button>
+        </div>
+
+        <div id="editeur-corps" contenteditable="true" role="textbox" aria-multiline="true"
+             aria-label="Corps de l'article"
+             data-editeur data-editeur-champ="#{{ form.corps.auto_id }}"
+             class="prose-article rounded-b border border-t-0 border-warm-200 bg-white p-4"
+             style="min-height: 24rem; overflow-y: auto;"></div>
+        {{ form.corps }}
+
+        <p class="mt-2 text-xs" style="color: var(--color-warm-500);">
+            Le collage est ramené au texte brut : la mise en forme de Word ne survivrait pas à
+            l'enregistrement, et la voir disparaître après coup serait pire que de ne pas l'avoir eue.
+        </p>
+        {% for erreur in form.corps.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+    </div>
+
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Image à la une</h2>
+        {% include "partials/champ.html" with field=form.image_principale %}
+        {% include "partials/champ.html" with field=form.credit_image %}
+        {% include "partials/champ.html" with field=form.mots_cles %}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn-primary">Enregistrer le brouillon</button>
+        <a href="{% url 'website:mes_articles' %}" class="btn-ghost">Retour</a>
+    </div>
+</form>
+
+{% if article %}
+{# ── Illustrations ── #}
+<div class="card mt-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Illustrations</h2>
+    <p class="mt-1 text-sm text-warm-500">
+        Déposez vos figures ici, puis insérez-les à l'endroit voulu du texte.
+    </p>
+
+    {% if article.illustrations.all %}
+    <div class="mt-4 grid gap-4 sm:grid-cols-3">
+        {% for illustration in article.illustrations.all %}
+        <figure class="rounded border border-warm-200 p-2">
+            <img src="{{ illustration.fichier.url }}" alt="{{ illustration.legende }}"
+                 class="w-full rounded object-cover" style="max-height: 8rem;">
+            <figcaption class="mt-2 text-xs text-warm-500">{{ illustration.legende|default:"Sans légende" }}</figcaption>
+            <div class="mt-2 flex gap-2">
+                <button type="button" class="btn-ghost" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;"
+                        data-inserer-image="{{ illustration.fichier.url }}"
+                        data-legende="{{ illustration.legende }}">Insérer</button>
+                <form method="post" action="{% url 'website:illustration_supprimer' illustration.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs text-danger">Retirer</button>
+                </form>
+            </div>
+        </figure>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="mt-5 space-y-3"
+          action="{% url 'website:article_illustration' article.pk %}">
+        {% csrf_token %}
+        {% include "partials/champ.html" with field=form_illustration.fichier %}
+        {% include "partials/champ.html" with field=form_illustration.legende %}
+        <button type="submit" class="btn-ghost">Déposer l'illustration</button>
+    </form>
+</div>
+
+{# ── Soumission ── #}
+<div class="card mt-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Publication</h2>
+    <p class="mt-1 mb-4 text-sm text-warm-500">
+        L'article est relu par l'administration avant de paraître sur le site public.
+    </p>
+    <form method="post" action="{% url 'website:article_soumettre' article.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">Soumettre à relecture</button>
+    </form>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

@@ -3,6 +3,7 @@
 <a href="{% url 'enseignant:propositions' %}" class="portal-nav-pill {% if nav == 'propositions' %}active{% endif %}">Propositions</a>
 <a href="{% url 'lms:courses_list' %}" class="portal-nav-pill {% if nav == 'courses' or nav == 'course' %}active{% endif %}">Cours en session</a>
 <a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-pill {% if nav == 'modules' %}active{% endif %}">Modules vidéo</a>
+<a href="{% url 'website:mes_articles' %}" class="portal-nav-pill {% if nav == 'articles' %}active{% endif %}">Mes articles</a>
 <a href="{% url 'elearning:enseignant_videos' %}" class="portal-nav-pill {% if nav == 'videos' %}active{% endif %}">Bibliothèque</a>
 <a href="{% url 'lms:evaluations_list' %}" class="portal-nav-pill {% if nav == 'evaluations' %}active{% endif %}">Évaluations</a>
 <a href="{% url 'lms:documents' %}" class="portal-nav-pill {% if nav == 'documents' %}active{% endif %}">Copies</a>

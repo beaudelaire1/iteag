@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.titre }} — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ article.resume }}{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container-narrow">
+
+        <header class="mb-8">
+            <p class="overline mb-2">
+                <a href="{% url 'website:articles' %}">Articles de recherche</a>
+            </p>
+            <h1>{{ article.titre }}</h1>
+            {% if article.sous_titre %}
+            <p class="mt-2 text-lg" style="color: var(--color-warm-600);">{{ article.sous_titre }}</p>
+            {% endif %}
+            <p class="mt-4 text-sm" style="color: var(--color-warm-500);">
+                Par <strong style="color: var(--color-navy-800);">{{ article.auteur.nom_complet }}</strong>
+                {% if article.auteur.specialite %}, {{ article.auteur.specialite }}{% endif %}
+                · <time datetime="{{ article.date_publication|date:'c' }}">
+                    {{ article.date_publication|date:"d F Y" }}
+                  </time>
+            </p>
+        </header>
+
+        {% if article.image_principale %}
+        <figure class="mb-8">
+            <img src="{{ article.image_principale.url }}" alt="" class="w-full rounded">
+            {% if article.credit_image %}
+            <figcaption class="mt-2 text-xs" style="color: var(--color-warm-500);">{{ article.credit_image }}</figcaption>
+            {% endif %}
+        </figure>
+        {% endif %}
+
+        {% if article.chapeau %}
+        <p class="mb-8 text-lg" style="color: var(--color-warm-700); line-height: 1.8;">{{ article.chapeau }}</p>
+        {% endif %}
+
+        {% comment %}
+        « safe » sans arrière-pensée : le corps est passé par la liste blanche
+        au moment de l'enregistrement, jamais à l'affichage. Ce qui est en base
+        est déjà propre, et une page qui oublierait un filtre ne deviendrait
+        pas pour autant vulnérable.
+        {% endcomment %}
+        <div class="prose-article">{{ article.corps|safe }}</div>
+
+        {% if article.mots_cles %}
+        <footer class="mt-10 border-t pt-6" style="border-color: var(--color-warm-200);">
+            <p class="text-sm" style="color: var(--color-warm-500);">
+                Mots-clés : {{ article.mots_cles }}
+            </p>
+        </footer>
+        {% endif %}
+
+        <p class="mt-10">
+            <a href="{% url 'website:articles' %}" class="btn-ghost">← Tous les articles</a>
+        </p>
+
+    </div>
+</article>
+{% endblock %}

@@ -484,6 +484,97 @@
     });
   }
 
+  /* ── Éditeur d'article ──
+     Un éditeur maison de quelques dizaines de lignes, et non une bibliothèque
+     tierce : la politique de sécurité du site interdit « unsafe-eval », que la
+     plupart d'entre elles réclament, et un script servi depuis une autre
+     origine serait bloqué par « script-src 'self' ».
+
+     Le texte est composé dans un « div » éditable, puis recopié dans un champ
+     caché à l'envoi. Le serveur ne fait jamais confiance à ce qui arrive : il
+     repasse tout par une liste blanche avant l'enregistrement. Ce qui suit
+     sert donc au confort de rédaction, jamais de garde-fou.
+
+     Sans script, le champ caché reste vide et le formulaire refuse un article
+     sans corps : on perd la mise en forme, jamais les données. */
+  function initEditeurArticle() {
+    const zone = document.querySelector("[data-editeur]");
+    if (!zone) return;
+
+    const champ = document.querySelector(zone.getAttribute("data-editeur-champ"));
+    const formulaire = zone.closest("form");
+    if (!champ || !formulaire) return;
+
+    // Contenu déjà enregistré : on le replace dans la zone éditable.
+    zone.innerHTML = champ.value || "";
+
+    function appliquer(commande, valeur) {
+      zone.focus();
+      document.execCommand(commande, false, valeur || null);
+    }
+
+    document.querySelectorAll("[data-editeur-action]").forEach((bouton) => {
+      bouton.addEventListener("click", () => {
+        const action = bouton.getAttribute("data-editeur-action");
+        if (action === "lien") {
+          const adresse = window.prompt("Adresse du lien (https://…)");
+          if (!adresse) return;
+          // Un lien « javascript: » serait retiré côté serveur, mais autant ne
+          // pas le laisser s'écrire.
+          if (!/^https?:\/\//i.test(adresse) && !/^mailto:/i.test(adresse)) {
+            window.alert("Seules les adresses http, https et mailto sont acceptées.");
+            return;
+          }
+          appliquer("createLink", adresse);
+        } else if (action === "titre2" || action === "titre3") {
+          appliquer("formatBlock", action === "titre2" ? "h2" : "h3");
+        } else if (action === "citation") {
+          appliquer("formatBlock", "blockquote");
+        } else if (action === "paragraphe") {
+          appliquer("formatBlock", "p");
+        } else {
+          appliquer(action);
+        }
+      });
+    });
+
+    // Insertion d'une illustration déjà déposée.
+    document.querySelectorAll("[data-inserer-image]").forEach((bouton) => {
+      bouton.addEventListener("click", () => {
+        const source = bouton.getAttribute("data-inserer-image");
+        const legende = bouton.getAttribute("data-legende") || "";
+        zone.focus();
+        document.execCommand(
+          "insertHTML",
+          false,
+          `<figure><img src="${source}" alt="${legende}"><figcaption>${legende}</figcaption></figure><p><br></p>`
+        );
+      });
+    });
+
+    // Le collage est ramené au texte brut : coller depuis Word entraîne des
+    // dizaines d'attributs de style qui seraient retirés côté serveur, et qui
+    // font croire entre-temps à une mise en forme qui ne survivra pas.
+    zone.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const texte = (e.clipboardData || window.clipboardData).getData("text/plain");
+      document.execCommand("insertText", false, texte);
+    });
+
+    // Le champ caché est tenu à jour en continu, et pas seulement à l'envoi.
+    // « form.submit() » appelé depuis un script ne déclenche pas l'événement
+    // « submit » : s'y fier seul ferait perdre le corps de l'article en
+    // silence dès qu'un envoi est déclenché autrement que par le bouton.
+    function recopier() {
+      champ.value = zone.innerHTML.trim();
+    }
+
+    zone.addEventListener("input", recopier);
+    zone.addEventListener("blur", recopier);
+    formulaire.addEventListener("submit", recopier);
+    recopier();
+  }
+
   /* ── Boot ── */
   function boot() {
     initNavScroll();
@@ -502,6 +593,7 @@
     initRevelationMotDePasse();
     initOnglets();
     initAlertesEffacables();
+    initEditeurArticle();
   }
 
   if (document.readyState === "loading") {

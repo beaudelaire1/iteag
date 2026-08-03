@@ -20,3 +20,8 @@ stripe>=12.0,<14.0
 # ferait dépendre le secrétariat d'un choix interne au CMS : le jour où
 # Wagtail s'en passe, l'import du fichier étudiant casse sans rapport visible.
 openpyxl>=3.1,<4.0
+# Assainissement du HTML rédigé par les enseignants. Leur éditeur produit du
+# balisage qui finit sur une page publique : sans liste blanche, un compte
+# compromis y injecterait du script. nh3 est une liaison Rust d'ammonia, sans
+# dépendance Python transitive.
+nh3>=0.2,<1.0

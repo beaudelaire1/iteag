@@ -456,3 +456,12 @@ class ContactPage(AbstractForm):
             ),
             destinataires=[email],
         )
+
+
+# ──────────────────────────────────────────────
+# Articles de recherche des enseignants
+# ──────────────────────────────────────────────
+# Modèles ordinaires, hors arborescence Wagtail : leurs auteurs les rédigent
+# depuis leur espace enseignant, sans passer par l'admin du CMS.
+
+from apps.website.models_publications import Article, ImageArticle  # noqa: E402,F401

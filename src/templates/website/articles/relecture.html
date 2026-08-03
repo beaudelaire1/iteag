@@ -1,0 +1,101 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Articles à relire — Administration — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='articles' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='articles' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Publications</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Articles de recherche</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        Rien ne paraît sous le nom de l'institut sans un second regard.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    À relire ({{ a_relire|length }})
+</h2>
+{% if a_relire %}
+<ul class="mb-10 space-y-4" role="list">
+    {% for article in a_relire %}
+    <li class="card shadow-card">
+        <p class="flex flex-wrap items-center gap-2">
+            <span class="badge badge-gold">À décider</span>
+            <span class="text-xs text-warm-500">
+                {{ article.auteur.nom_complet }} · soumis le {{ article.date_soumission|date:"d/m/Y" }}
+            </span>
+        </p>
+        <h3 class="mt-2 text-lg font-semibold text-navy-900">{{ article.titre }}</h3>
+        {% if article.sous_titre %}<p class="text-warm-600">{{ article.sous_titre }}</p>{% endif %}
+        {% if article.chapeau %}<p class="mt-2 text-sm text-warm-600">{{ article.chapeau }}</p>{% endif %}
+
+        <details class="mt-4">
+            <summary class="cursor-pointer text-sm font-medium text-navy-700">Lire l'article entier</summary>
+            <div class="prose-article mt-3 rounded border border-warm-200 p-4">
+                {% if article.image_principale %}
+                <img src="{{ article.image_principale.url }}" alt="" class="mb-4 w-full rounded">
+                {% endif %}
+                {{ article.corps|safe }}
+            </div>
+        </details>
+
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
+            <form method="post" action="{% url 'website:article_decision' article.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="publier">
+                <button type="submit" class="btn-primary whitespace-nowrap">Publier</button>
+            </form>
+            <form method="post" action="{% url 'website:article_decision' article.pk %}"
+                  class="flex flex-1 flex-col gap-2 sm:flex-row">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="renvoyer">
+                <label class="min-w-0 flex-1">
+                    <span class="sr-only">Ce qui doit être repris</span>
+                    <input type="text" name="motif" class="form-input"
+                           placeholder="Ce qui doit être repris — obligatoire" required>
+                </label>
+                <button type="submit" class="btn-ghost whitespace-nowrap">Renvoyer à l'auteur</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card mb-10 py-10 text-center">
+    <p class="text-warm-600">Aucun article en attente de relecture.</p>
+</div>
+{% endif %}
+
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    En ligne ({{ publies|length }})
+</h2>
+{% if publies %}
+<ul class="space-y-2" role="list">
+    {% for article in publies %}
+    <li class="card flex flex-wrap items-center justify-between gap-3 text-sm">
+        <span class="min-w-0">
+            <a href="{{ article.get_absolute_url }}" class="font-medium text-navy-900">{{ article.titre }}</a>
+            <span class="block text-xs text-warm-500">
+                {{ article.auteur.nom_complet }} · {{ article.date_publication|date:"d/m/Y" }}
+            </span>
+        </span>
+        <form method="post" action="{% url 'website:article_decision' article.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="retirer">
+            <button type="submit" class="text-sm text-danger">Retirer de la publication</button>
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm text-warm-500">Aucun article publié pour le moment.</p>
+{% endif %}
+
+{% include "partials/pagination.html" %}
+
+{% endblock %}

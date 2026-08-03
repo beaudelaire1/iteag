@@ -64,7 +64,11 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     # « library » et « commerce » s'y ajoutent pour le plan du site, qui recense
     # les pages publiques des quatre catalogues. Aucun de ces domaines ne
     # connaît « website » en retour : la flèche ne se referme pas.
-    "website": {"core", "formations", "elearning", "library", "commerce"},
+    #
+    # « accounts » s'y ajoute avec les articles de recherche : la soumission
+    # d'un article avertit les relecteurs, qui se désignent par leur rôle. Le
+    # sens de la flèche reste sain — « accounts » ne connaît que « core ».
+    "website": {"core", "accounts", "formations", "elearning", "library", "commerce"},
 }
 
 # ── Dette d'architecture identifiée ──────────────────────────────────────────
