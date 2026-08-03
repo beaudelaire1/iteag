@@ -13,6 +13,12 @@ Deux propriétés sont vérifiées pour chaque route et chaque rôle :
 2. **le cloisonnement** — une page d'administration ne doit jamais répondre 200
    à un étudiant. Un test de fumée qui ne regarderait que « ça ne plante pas »
    laisserait passer une fuite de droits.
+
+Ce fichier ne retient que les routes **sans argument**. Les autres — fiches,
+formulaires d'édition, actions sur un objet — sont couvertes par
+« test_fumee_detail.py », qui exige en outre qu'aucune ne puisse être ajoutée
+sans être déclarée. La séparation tient à ce que les secondes ont besoin d'un
+jeu de données, et les premières de rien.
 """
 
 import pytest
