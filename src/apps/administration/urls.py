@@ -62,6 +62,28 @@ urlpatterns = [
         views_academics.CourseDeleteView.as_view(),
         name="course_delete",
     ),
+    path("formations/disciplines/ajouter/", views_academics.DisciplineCreateView.as_view(), name="discipline_create"),
+    path(
+        "formations/disciplines/<int:pk>/modifier/",
+        views_academics.DisciplineUpdateView.as_view(),
+        name="discipline_update",
+    ),
+    path(
+        "formations/disciplines/<int:pk>/supprimer/",
+        views_academics.DisciplineDeleteView.as_view(),
+        name="discipline_delete",
+    ),
+    path("formations/parcours/ajouter/", views_academics.ParcoursCreateView.as_view(), name="parcours_create"),
+    path(
+        "formations/parcours/<int:pk>/modifier/",
+        views_academics.ParcoursUpdateView.as_view(),
+        name="parcours_update",
+    ),
+    path(
+        "formations/parcours/<int:pk>/supprimer/",
+        views_academics.ParcoursDeleteView.as_view(),
+        name="parcours_delete",
+    ),
     # Sessions
     path("sessions/", views.AdminSessionListView.as_view(), name="sessions"),
     path("sessions/ajouter/", views.AdminSessionCreateView.as_view(), name="session_create"),

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django import forms
 from django.contrib.auth.password_validation import validate_password
+from django.utils.text import slugify
 
 from apps.academics.models import (
     VAE,
@@ -16,7 +17,7 @@ from apps.academics.models import (
 )
 from apps.accounts.models import User
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
-from apps.formations.models import Cours, Professeur, Tarif
+from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 
 
 class AdminUserForm(FormulaireModeleITEAG):
@@ -170,6 +171,60 @@ class AdminCoursForm(FormulaireModeleITEAG):
             "objectifs": forms.Textarea(attrs={"class": "form-input", "rows": 5}),
             "ects": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.5"}),
             "actif": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
+        }
+
+
+class SlugDeriveDuNom:
+    """Le secrétariat nomme, il n'a pas à inventer d'adresse : le slug se déduit."""
+
+    champ_source = "nom"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["slug"].required = False
+        self.fields["slug"].help_text = "Laisser vide pour le déduire du nom."
+
+    def clean_slug(self):
+        slug = self.cleaned_data.get("slug")
+        return slug or slugify(self.data.get(self.champ_source, ""))[: self.fields["slug"].max_length]
+
+
+class AdminDisciplineForm(SlugDeriveDuNom, FormulaireModeleITEAG):
+    class Meta:
+        model = Discipline
+        fields = ["nom", "slug", "description", "ordre"]
+        widgets = {
+            "nom": forms.TextInput(attrs={"class": "form-input"}),
+            "slug": forms.TextInput(attrs={"class": "form-input"}),
+            "description": forms.Textarea(attrs={"class": "form-input", "rows": 4}),
+            "ordre": forms.NumberInput(attrs={"class": "form-input", "min": 0}),
+        }
+
+
+class AdminParcoursForm(SlugDeriveDuNom, FormulaireModeleITEAG):
+    class Meta:
+        model = Parcours
+        fields = [
+            "nom",
+            "slug",
+            "type_parcours",
+            "description",
+            "conditions_entree",
+            "ects_requis",
+            "duree_annees",
+            "actif",
+            "meta_description",
+        ]
+        widgets = {
+            "nom": forms.TextInput(attrs={"class": "form-input"}),
+            "slug": forms.TextInput(attrs={"class": "form-input"}),
+            "type_parcours": forms.Select(attrs={"class": "form-input"}),
+            "description": forms.Textarea(attrs={"class": "form-input", "rows": 5}),
+            "conditions_entree": forms.Textarea(attrs={"class": "form-input", "rows": 4}),
+            "ects_requis": forms.NumberInput(attrs={"class": "form-input", "min": 0}),
+            "duree_annees": forms.NumberInput(attrs={"class": "form-input", "min": 1}),
+            "actif": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
+            "meta_description": forms.TextInput(attrs={"class": "form-input"}),
         }
 
 

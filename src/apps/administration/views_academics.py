@@ -28,10 +28,12 @@ from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.models import Notification
 from apps.core.services.audit import journaliser
 from apps.core.services.notifications import notifier, notifier_plusieurs
-from apps.formations.models import Cours, Discipline, Tarif
+from apps.formations.models import Cours, Discipline, Parcours, Tarif
 
 from .forms import (
     AdminCoursForm,
+    AdminDisciplineForm,
+    AdminParcoursForm,
     CoursDeSessionForm,
     CreditECTSForm,
     EnrollmentDecisionForm,
@@ -41,6 +43,7 @@ from .forms import (
     TarifForm,
     VAEForm,
 )
+from .suppression import SuppressionProtegee
 
 
 def _notifier_dossier_etudiant(objet, titre, message, url_cible):
@@ -554,6 +557,117 @@ class CourseDeleteView(StaffRoleRequiredMixin, DeleteView):
             messages.error(self.request, "Ce cours a déjà été programmé : désactivez-le au lieu de le supprimer.")
             return redirect("administration:courses")
         return super().form_valid(form)
+
+
+# ══════════════════════════════════════════════
+# Disciplines et parcours
+# ══════════════════════════════════════════════
+
+
+class _EcranReferentielFormation(StaffRoleRequiredMixin):
+    """Les deux référentiels se tiennent depuis la page « Formations »."""
+
+    template_name = "administration/form.html"
+    success_url = reverse_lazy("administration:formations")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({"nav": "formations", "cancel_url": reverse("administration:formations")})
+        return context
+
+
+class DisciplineCreateView(_EcranReferentielFormation, CreateView):
+    model = Discipline
+    form_class = AdminDisciplineForm
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "form_title": "Créer une discipline"}
+
+    def form_valid(self, form):
+        messages.success(self.request, "La discipline a été créée.")
+        return super().form_valid(form)
+
+
+class DisciplineUpdateView(_EcranReferentielFormation, UpdateView):
+    model = Discipline
+    form_class = AdminDisciplineForm
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "form_title": f"Modifier — {self.object.nom}"}
+
+    def form_valid(self, form):
+        messages.success(self.request, "La discipline a été mise à jour.")
+        return super().form_valid(form)
+
+
+class DisciplineDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
+    """« Cours.discipline » est en PROTECT : sans explication, l'erreur serait opaque."""
+
+    model = Discipline
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:formations")
+    url_retour = "administration:formations"
+
+    def libelle(self):
+        return f"la discipline « {self.object.nom} »"
+
+    def raison_de_bloquer(self):
+        nombre = self.object.cours.count()
+        if nombre:
+            return (
+                f"Cette discipline porte {nombre} cours : rattachez-les d'abord à une autre "
+                "discipline, sinon tout le référentiel perdrait son classement."
+            )
+        return ""
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "nav": "formations"}
+
+
+class ParcoursCreateView(_EcranReferentielFormation, CreateView):
+    model = Parcours
+    form_class = AdminParcoursForm
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "form_title": "Créer un parcours"}
+
+    def form_valid(self, form):
+        messages.success(self.request, "Le parcours a été créé.")
+        return super().form_valid(form)
+
+
+class ParcoursUpdateView(_EcranReferentielFormation, UpdateView):
+    model = Parcours
+    form_class = AdminParcoursForm
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "form_title": f"Modifier — {self.object.nom}"}
+
+    def form_valid(self, form):
+        messages.success(self.request, "Le parcours a été mis à jour.")
+        return super().form_valid(form)
+
+
+class ParcoursDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
+    """Un parcours suivi par un étudiant est son diplôme : il se désactive, il ne s'efface pas."""
+
+    model = Parcours
+    template_name = "administration/confirm_delete.html"
+    success_url = reverse_lazy("administration:formations")
+    url_retour = "administration:formations"
+
+    def libelle(self):
+        return f"le parcours « {self.object.nom} »"
+
+    def raison_de_bloquer(self):
+        if self.object.etudiants.exists():
+            return "Des étudiants suivent ce parcours : décochez « actif » plutôt que de supprimer."
+        if self.object.promotions.exists():
+            return "Des promotions reposent sur ce parcours : décochez « actif » plutôt que de supprimer."
+        return ""
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), "nav": "formations"}
 
 
 # ══════════════════════════════════════════════
