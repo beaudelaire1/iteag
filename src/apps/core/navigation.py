@@ -81,6 +81,10 @@ def rubriques() -> list[Rubrique]:
             entrees=(
                 Entree(libelle="Découvrir l'ITEAG", url="/presentation/"),
                 Entree(libelle="Actualités", url="/actualites/"),
+                # Les travaux des enseignants-chercheurs. Sans cette entrée,
+                # les articles publiés existaient à leur adresse sans qu'aucun
+                # chemin n'y mène : un visiteur ne les trouvait jamais.
+                Entree(libelle="Articles de recherche", url=reverse("website:articles")),
                 Entree(libelle="Nous contacter", url="/contact/"),
             ),
         ),

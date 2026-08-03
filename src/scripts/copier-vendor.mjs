@@ -17,9 +17,20 @@ const racine = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const FICHIERS = [
   ["node_modules/hls.js/dist/hls.light.min.js", "static/js/vendor/hls.min.js"],
+  // Quill — éditeur des articles de recherche. Sous licence BSD-3-Clause,
+  // contrairement à TinyMCE et CKEditor, passés au GPL : une bibliothèque
+  // copyleft au cœur d'une application propriétaire est un risque juridique,
+  // pas un détail de dépendance.
+  //
+  // Il n'emploie ni « eval » ni « iframe » : le seul « new Function » de son
+  // paquet est le repli « globalThis » de webpack, protégé par un try/catch et
+  // jamais atteint sur un navigateur moderne. « script-src 'self' » suffit donc.
+  ["node_modules/quill/dist/quill.js", "static/js/vendor/quill.js"],
+  ["node_modules/quill/dist/quill.snow.css", "static/css/vendor/quill.snow.css"],
 ];
 
 mkdirSync(resolve(racine, "static/js/vendor"), { recursive: true });
+mkdirSync(resolve(racine, "static/css/vendor"), { recursive: true });
 
 let erreurs = 0;
 for (const [source, cible] of FICHIERS) {
@@ -33,8 +44,14 @@ for (const [source, cible] of FICHIERS) {
   // nous ne livrons pas — le manifeste de production refuse alors la collecte,
   // et l'image ne se construit plus. Livrer la map à la place exposerait le
   // source d'une dépendance sans rien apporter en production.
-  const source_js = readFileSync(chemin, "utf8").replace(/\n?\/\/# sourceMappingURL=.*$/m, "\n");
-  writeFileSync(resolve(racine, cible), source_js);
+  //
+  // Les deux syntaxes sont traitées : « //# » pour le JavaScript, « /*# … */ »
+  // pour les feuilles de style. N'en couvrir qu'une laissait passer le défaut
+  // au premier CSS embarqué, et il ne se voit qu'à la collecte des statiques.
+  const contenu = readFileSync(chemin, "utf8")
+    .replace(/\n?\/\/# sourceMappingURL=.*$/m, "\n")
+    .replace(/\n?\/\*# sourceMappingURL=.*?\*\/\s*$/m, "\n");
+  writeFileSync(resolve(racine, cible), contenu);
   console.log(`✓ ${cible}`);
 }
 

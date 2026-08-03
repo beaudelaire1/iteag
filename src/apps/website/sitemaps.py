@@ -99,3 +99,23 @@ class LivresBoutiqueSitemap(Sitemap):
 
     def lastmod(self, item):
         return item.updated_at
+
+
+class ArticlesRechercheSitemap(Sitemap):
+    """Les travaux des enseignants-chercheurs.
+
+    Ils sont publics et destinés à être trouvés : c'est ce qui donne de la
+    visibilité aux travaux et à l'institut. Les omettre du plan du site
+    reviendrait à les publier sans que personne ne les cherche.
+    """
+
+    protocol = "https"
+    changefreq = "monthly"
+
+    def items(self):
+        from apps.website.models_publications import Article
+
+        return Article.objects.filter(statut=Article.Statut.PUBLIE).only("slug", "updated_at")
+
+    def lastmod(self, item):
+        return item.updated_at

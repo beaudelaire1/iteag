@@ -311,3 +311,45 @@ class TestPagesPubliques:
         contenu = client.get(reverse("website:articles"), {"q": "Patristique"}).content.decode()
         assert "Patristique latine" in contenu
         assert "ecclésiologie" not in contenu
+
+
+class TestMarquageDeQuill:
+    """Quill n'écrit pas le HTML qu'on croit, et le défaut est silencieux.
+
+    Il encode **toutes** les listes en « <ol> », la puce étant portée par un
+    attribut « data-list » que la liste blanche retire. Sans normalisation, une
+    liste à puces ressortirait numérotée : le texte est là, seule la sémantique
+    a changé, et cela ne se voit qu'à la lecture de l'article publié.
+
+    Le balisage ci-dessous est celui relevé dans un navigateur, pas une
+    reconstitution.
+    """
+
+    MARQUAGE_REEL = (
+        "<h2>Titre</h2>"
+        '<ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>puce un</li>'
+        '<li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>puce deux</li>'
+        '<li data-list="ordered"><span class="ql-ui" contenteditable="false"></span>numero un</li></ol>'
+    )
+
+    def test_les_puces_redeviennent_une_liste_a_puces(self, enseignant):
+        article = Article.objects.create(titre="Listes", auteur=enseignant, corps=self.MARQUAGE_REEL)
+        article.refresh_from_db()
+        assert "<ul><li>puce un</li><li>puce deux</li></ul>" in article.corps
+
+    def test_les_numeros_restent_numerotes(self, enseignant):
+        article = Article.objects.create(titre="Listes", auteur=enseignant, corps=self.MARQUAGE_REEL)
+        article.refresh_from_db()
+        assert "<ol><li>numero un</li></ol>" in article.corps
+
+    def test_la_decoration_de_l_editeur_ne_survit_pas(self, enseignant):
+        """« ql-ui » est un artefact d'édition : il n'a rien à faire dans l'article."""
+        article = Article.objects.create(titre="Listes", auteur=enseignant, corps=self.MARQUAGE_REEL)
+        article.refresh_from_db()
+        assert "ql-ui" not in article.corps
+        assert "data-list" not in article.corps
+
+    def test_un_corps_sans_liste_traverse_intact(self, enseignant):
+        article = Article.objects.create(titre="Sans liste", auteur=enseignant, corps="<h2>A</h2><p>Du texte.</p>")
+        article.refresh_from_db()
+        assert article.corps == "<h2>A</h2><p>Du texte.</p>"

@@ -15,6 +15,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from apps.core import views as views_core
 from apps.website.sitemaps import (
+    ArticlesRechercheSitemap,
     CoursSitemap,
     LivresBoutiqueSitemap,
     ModulesPubliesSitemap,
@@ -27,6 +28,7 @@ from apps.website.sitemaps import (
 sitemaps = {
     "wagtail": WagtailSitemap,
     "pages-publiques": PagesPubliquesSitemap,
+    "articles": ArticlesRechercheSitemap,
     "parcours": ParcoursSitemap,
     "cours": CoursSitemap,
     "professeurs": ProfesseursSitemap,

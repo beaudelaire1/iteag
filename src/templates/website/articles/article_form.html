@@ -1,6 +1,22 @@
 {% extends "partials/portal_base.html" %}
+{% load static %}
 
 {% block title %}{% if article %}{{ article.titre }}{% else %}Nouvel article{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/vendor/quill.snow.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+{% comment %}
+Sans « defer », volontairement : « iteag.js » est différé, donc exécuté après
+l'analyse du document. Un script classique placé ici s'exécute pendant cette
+analyse, c'est-à-dire avant — et « window.Quill » est défini quand l'éditeur
+cherche à s'en servir. L'ordre inverse laisserait la zone en simple champ
+éditable, sans barre d'outils.
+{% endcomment %}
+<script src="{% static 'js/vendor/quill.js' %}"></script>
+{% endblock %}
 
 {% block portal_nav %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
 {% block portal_nav_mobile %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
@@ -55,37 +71,21 @@
         <label class="form-label" for="editeur-corps">Corps de l'article</label>
 
         {% comment %}
-        Barre d'outils maison : la politique de sécurité du site interdit
-        « unsafe-eval », que réclament la plupart des éditeurs tiers, et un
-        script d'une autre origine serait de toute façon bloqué.
+        Quill construit lui-même sa barre d'outils dans cet emplacement. Il est
+        servi depuis notre origine, jamais depuis un CDN (ADR-003), et sa
+        licence BSD-3-Clause convient à un dépôt propriétaire — contrairement à
+        TinyMCE et CKEditor, passés au GPL.
         {% endcomment %}
-        <div class="mt-2 flex flex-wrap gap-1 rounded-t border border-warm-200 bg-warm-50 p-2">
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="bold" title="Gras"><strong>G</strong></button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="italic" title="Italique"><em>I</em></button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="underline" title="Souligné"><u>S</u></button>
-            <span class="mx-1 self-center text-warm-300">|</span>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="titre2" title="Titre de section">T1</button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="titre3" title="Sous-titre">T2</button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="paragraphe" title="Paragraphe">¶</button>
-            <span class="mx-1 self-center text-warm-300">|</span>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="insertUnorderedList" title="Liste à puces">•</button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="insertOrderedList" title="Liste numérotée">1.</button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="citation" title="Citation">❝</button>
-            <span class="mx-1 self-center text-warm-300">|</span>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="lien" title="Lien">🔗</button>
-            <button type="button" class="btn-ghost" style="padding: 0.3rem 0.7rem;" data-editeur-action="removeFormat" title="Retirer la mise en forme">✕</button>
-        </div>
-
-        <div id="editeur-corps" contenteditable="true" role="textbox" aria-multiline="true"
-             aria-label="Corps de l'article"
-             data-editeur data-editeur-champ="#{{ form.corps.auto_id }}"
-             class="prose-article rounded-b border border-t-0 border-warm-200 bg-white p-4"
-             style="min-height: 24rem; overflow-y: auto;"></div>
+        <div id="editeur-corps" data-editeur
+             data-editeur-champ="#{{ form.corps.auto_id }}"
+             style="min-height: 24rem;"></div>
         {{ form.corps }}
 
         <p class="mt-2 text-xs" style="color: var(--color-warm-500);">
-            Le collage est ramené au texte brut : la mise en forme de Word ne survivrait pas à
-            l'enregistrement, et la voir disparaître après coup serait pire que de ne pas l'avoir eue.
+            La mise en forme conservée à l'enregistrement est celle de la barre d'outils :
+            titres, gras, italique, listes, citations et liens. Ce qu'un collage depuis Word
+            apporterait en plus serait retiré, et le voir disparaître après coup serait pire
+            que de ne pas l'avoir eu.
         </p>
         {% for erreur in form.corps.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
     </div>
