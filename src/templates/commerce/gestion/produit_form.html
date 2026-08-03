@@ -1,30 +1,36 @@
-{% extends "base.html" %}
+{% extends "partials/portal_base.html" %}
 
 {% block title %}{% if produit %}Modifier {{ produit.titre }}{% else %}Ajouter un livre{% endif %} — {{ SITE_NAME }}{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
 
-{% block content %}
-<section class="section">
-    <div class="container-wide" style="max-width: 52rem;">
-        <div class="mb-8">
-            <p class="overline mb-2">Administration de la boutique</p>
-            <h1>{% if produit %}Modifier le livre{% else %}Ajouter un livre{% endif %}</h1>
+{% block portal_nav %}
+{% with nav='stock' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='stock' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Administration de la boutique</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{% if produit %}Modifier le livre{% else %}Ajouter un livre{% endif %}</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="post" enctype="multipart/form-data" class="card-elevated p-7" style="max-width: 52rem;">
+    {% csrf_token %}
+    {% include "partials/erreurs_formulaire.html" with form=form %}
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        {% for champ in form %}
+        <div class="{% if champ.name == 'description' or champ.name == 'notice' or champ.name == 'image' %}sm:col-span-2{% endif %}">
+            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
         </div>
-        <form method="post" enctype="multipart/form-data" class="card-elevated p-7">
-            {% csrf_token %}
-            {% include "partials/erreurs_formulaire.html" with form=form %}
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                {% for champ in form %}
-                <div class="{% if champ.name == 'description' or champ.name == 'notice' or champ.name == 'image' %}sm:col-span-2{% endif %}">
-                    {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
-                </div>
-                {% endfor %}
-            </div>
-            <div class="mt-8 flex gap-3">
-                <button type="submit" class="btn-primary">Enregistrer</button>
-                <a href="{% url 'commerce:gestion_stock' %}" class="btn-ghost">Annuler</a>
-            </div>
-        </form>
+        {% endfor %}
     </div>
-</section>
+    <div class="mt-8 flex gap-3">
+        <button type="submit" class="btn-primary">Enregistrer</button>
+        <a href="{% url 'commerce:gestion_stock' %}" class="btn-ghost">Annuler</a>
+    </div>
+</form>
 {% endblock %}

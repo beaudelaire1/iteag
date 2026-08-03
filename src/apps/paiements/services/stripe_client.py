@@ -53,46 +53,6 @@ def _adresse_absolue(request, nom_url: str, **kwargs) -> str:
     return f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{chemin}"
 
 
-def creer_session(reglement, request=None) -> str:
-    """Ouvre une session Checkout et retourne l'adresse où envoyer le payeur.
-
-    Deux points méritent d'être signalés :
-
-    * `client_reference_id` porte l'identifiant du règlement. C'est lui qui
-      permettra de retrouver la contrepartie à la réception de la notification,
-      même si la redirection de retour n'a jamais eu lieu.
-    * `idempotency_key` empêche qu'un double clic ouvre deux sessions — donc
-      deux encaissements — pour un même règlement.
-    """
-    client = _client()
-    session = client.checkout.Session.create(
-        mode="payment",
-        client_reference_id=str(reglement.pk),
-        customer_email=reglement.email or None,
-        line_items=[
-            {
-                "quantity": 1,
-                "price_data": {
-                    "currency": reglement.devise.lower(),
-                    "unit_amount": reglement.montant_en_centimes,
-                    "product_data": {"name": reglement.libelle},
-                },
-            }
-        ],
-        metadata={
-            "reglement": str(reglement.pk),
-            "nature": reglement.nature,
-            "taux_tva": str(reglement.taux_tva),
-        },
-        success_url=_adresse_absolue(request, "paiements:succes", pk=reglement.pk),
-        cancel_url=_adresse_absolue(request, "paiements:annulation", pk=reglement.pk),
-        idempotency_key=f"reglement-{reglement.pk}",
-    )
-    reglement.session_stripe = session.id
-    reglement.save(update_fields=["session_stripe", "updated_at"])
-    return session.url
-
-
 def creer_session_integree(reglement, request=None) -> str:
     """Ouvre ou reprend une session Checkout intégrée et renvoie son secret client.
 

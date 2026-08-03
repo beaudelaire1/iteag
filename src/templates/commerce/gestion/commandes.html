@@ -1,41 +1,48 @@
-{% extends "base.html" %}
+{% extends "partials/portal_base.html" %}
 
 {% block title %}Gestion des commandes — {{ SITE_NAME }}{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
 
-{% block content %}
-<section class="section">
-    <div class="container-wide">
-        <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between mb-10">
-            <div>
-                <p class="overline mb-2">Administration de la boutique</p>
-                <h1>Commandes</h1>
-            </div>
-            <div class="flex flex-wrap gap-3">
-                {% if request.user.role == "admin" or request.user.is_superuser %}
-                <a href="{% url 'commerce:gestion_tarifs_livraison' %}" class="btn-secondary">Tarifs de livraison</a>
-                {% endif %}
-                <a href="{% url 'commerce:gestion_stock' %}" class="btn-secondary">
-                    Stock{% if alertes_stock %} — {{ alertes_stock }} alerte{{ alertes_stock|pluralize }}{% endif %}
-                </a>
-                <a href="{% url 'commerce:catalogue' %}" class="btn-ghost">Voir la boutique</a>
-            </div>
-        </div>
+{% block portal_nav %}
+{% with nav='commandes' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='commandes' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
 
-        <form method="get" class="mb-7 flex items-end gap-3">
-            <div>
-                <label for="statut" class="form-label">Statut</label>
-                <select id="statut" name="statut" class="form-select">
-                    <option value="">Tous</option>
-                    {% for valeur, libelle in statuts %}
-                    <option value="{{ valeur }}" {% if valeur == statut_courant %}selected{% endif %}>{{ libelle }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button class="btn-secondary" type="submit">Filtrer</button>
-        </form>
+{% block portal_header %}
+<div class="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <div>
+        <p class="overline mb-2">Administration de la boutique</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Commandes</h1>
+    </div>
+    <div class="flex flex-wrap gap-3">
+        {% if request.user.role == "admin" or request.user.is_superuser %}
+        <a href="{% url 'commerce:gestion_tarifs_livraison' %}" class="btn-secondary">Tarifs de livraison</a>
+        {% endif %}
+        <a href="{% url 'commerce:gestion_stock' %}" class="btn-secondary">
+            Stock{% if alertes_stock %} — {{ alertes_stock }} alerte{{ alertes_stock|pluralize }}{% endif %}
+        </a>
+        <a href="{% url 'commerce:catalogue' %}" class="btn-ghost">Voir la boutique</a>
+    </div>
+</div>
+{% endblock %}
 
-        <div class="space-y-6">
+{% block portal_content %}
+<form method="get" class="mb-7 flex items-end gap-3">
+    <div>
+        <label for="statut" class="form-label">Statut</label>
+        <select id="statut" name="statut" class="form-select">
+            <option value="">Tous</option>
+            {% for valeur, libelle in statuts %}
+            <option value="{{ valeur }}" {% if valeur == statut_courant %}selected{% endif %}>{{ libelle }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button class="btn-secondary" type="submit">Filtrer</button>
+</form>
+
+<div class="space-y-6">
             {% for commande in commandes %}
             <article class="card-elevated p-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -117,9 +124,7 @@
             {% empty %}
             <div class="card text-center py-14"><p class="text-warm-500">Aucune commande.</p></div>
             {% endfor %}
-        </div>
+</div>
 
-        {% include "partials/pagination.html" %}
-    </div>
-</section>
+{% include "partials/pagination.html" %}
 {% endblock %}

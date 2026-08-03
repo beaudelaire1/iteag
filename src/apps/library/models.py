@@ -59,11 +59,16 @@ class NoticeBibliographique(TimeStampedModel):
         super().save(*args, **kwargs)
         # Mise à jour du search_vector via SQL pour bénéficier de la config 'french'
         if connection.vendor == "postgresql":
-            NoticeBibliographique.objects.filter(pk=self.pk).update(
-                search_vector=(
-                    SearchVector("titre", weight="A", config="french")
-                    + SearchVector("auteur", weight="A", config="french")
-                    + SearchVector("mots_cles", weight="B", config="french")
-                    + SearchVector("description", weight="C", config="french")
-                )
-            )
+            NoticeBibliographique.objects.filter(pk=self.pk).update(search_vector=self.vecteur_de_recherche())
+
+    @staticmethod
+    def vecteur_de_recherche():
+        """Cote et ISBN en font partie : ce sont eux qu'un bibliothécaire tape."""
+        return (
+            SearchVector("titre", weight="A", config="french")
+            + SearchVector("auteur", weight="A", config="french")
+            + SearchVector("cote", weight="A", config="french")
+            + SearchVector("isbn", weight="B", config="french")
+            + SearchVector("mots_cles", weight="B", config="french")
+            + SearchVector("description", weight="C", config="french")
+        )

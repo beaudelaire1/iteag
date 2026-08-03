@@ -1,34 +1,44 @@
-{% extends "base.html" %}
+{% extends "partials/portal_base.html" %}
 
 {% block title %}Gestion du stock — {{ SITE_NAME }}{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
 
-{% block content %}
-<section class="section">
-    <div class="container-wide">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-10">
-            <div><p class="overline mb-2">Administration de la boutique</p><h1>Stock des livres</h1></div>
-            <div class="flex gap-3">
-                {% if request.user.role == "admin" or request.user.is_superuser %}
-                <a href="{% url 'commerce:gestion_tarifs_livraison' %}" class="btn-secondary">Tarifs de livraison</a>
-                {% endif %}
-                <a href="{% url 'commerce:gestion_commandes' %}" class="btn-secondary">Commandes</a>
-                <a href="{% url 'commerce:produit_ajouter' %}" class="btn-primary">+ Ajouter un livre</a>
-            </div>
-        </div>
+{% block portal_nav %}
+{% with nav='stock' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='stock' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endblock %}
 
-        {% if alertes %}
-        <div class="mb-8 rounded border border-amber-200 bg-amber-50 p-5">
-            <h2 class="text-base text-amber-950">Alertes de stock minimal</h2>
-            <ul class="mt-3 space-y-1 text-sm text-amber-900">
-                {% for alerte in alertes %}
-                <li><strong>{{ alerte.produit.titre }}</strong> : {{ alerte.produit.stock_disponible }} disponible(s), seuil {{ alerte.seuil }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+{% block portal_header %}
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+        <p class="overline mb-2">Administration de la boutique</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Stock des livres</h1>
+    </div>
+    <div class="flex gap-3">
+        {% if request.user.role == "admin" or request.user.is_superuser %}
+        <a href="{% url 'commerce:gestion_tarifs_livraison' %}" class="btn-secondary">Tarifs de livraison</a>
         {% endif %}
+        <a href="{% url 'commerce:gestion_commandes' %}" class="btn-secondary">Commandes</a>
+        <a href="{% url 'commerce:produit_ajouter' %}" class="btn-primary">+ Ajouter un livre</a>
+    </div>
+</div>
+{% endblock %}
 
-        <div class="overflow-x-auto card-elevated">
+{% block portal_content %}
+{% if alertes %}
+<div class="mb-8 rounded border border-amber-200 bg-amber-50 p-5">
+    <h2 class="text-base text-amber-950">Alertes de stock minimal</h2>
+    <ul class="mt-3 space-y-1 text-sm text-amber-900">
+        {% for alerte in alertes %}
+        <li><strong>{{ alerte.produit.titre }}</strong> : {{ alerte.produit.stock_disponible }} disponible(s), seuil {{ alerte.seuil }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="overflow-x-auto card-elevated">
             <table class="w-full text-left text-sm">
                 <thead class="bg-warm-100 text-warm-600">
                     <tr><th class="p-4">Livre</th><th class="p-4 text-right">Physique</th><th class="p-4 text-right">Réservé</th><th class="p-4 text-right">Disponible</th><th class="p-4">Ajustement</th><th class="p-4"></th></tr>
@@ -55,8 +65,6 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        {% include "partials/pagination.html" %}
-    </div>
-</section>
+</div>
+{% include "partials/pagination.html" %}
 {% endblock %}

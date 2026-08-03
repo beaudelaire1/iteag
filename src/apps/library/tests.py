@@ -69,6 +69,31 @@ class TestCatalogueView:
         response = client.get(url, {"q": "Ancien"})
         assert response.status_code == 200
 
+    @pytest.mark.parametrize(
+        ("terme", "raison"),
+        [
+            ("TP-222", "la cote est ce qu'un bibliothécaire tape en premier"),
+            ("Dillard", "chercher un auteur par son nom est le cas le plus courant"),
+            ("978-2-755-0001", "l'ISBN identifie l'ouvrage sans ambiguïté"),
+        ],
+    )
+    def test_le_catalogue_retrouve_une_notice_non_indexee(self, client: Client, notice, terme, raison):
+        """Le vecteur plein texte n'est calculé qu'au `save()`.
+
+        Une notice écrite en masse — import, chargement de données, migration —
+        garde un vecteur nul et disparaissait alors de toute recherche, sans
+        qu'aucune erreur ne le signale. La recherche ne doit donc pas dépendre
+        du seul index.
+        """
+        notice.cote = "TP-222"
+        notice.save()
+        NoticeBibliographique.objects.filter(pk=notice.pk).update(search_vector=None)
+
+        reponse = client.get(reverse("library:catalogue"), {"q": terme})
+
+        assert reponse.status_code == 200
+        assert notice in reponse.context["notices"], raison
+
     def test_catalogue_filter_discipline(self, client: Client, notice, discipline):
         url = reverse("library:catalogue")
         response = client.get(url, {"discipline": discipline.pk})

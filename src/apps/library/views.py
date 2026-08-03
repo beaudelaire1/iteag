@@ -52,22 +52,28 @@ class CatalogueView(ListView):
         return qs
 
     def _apply_search(self, qs, q):
-        """Full-text PostgreSQL search avec fallback icontains pour SQLite."""
+        """Full-text PostgreSQL, doublé d'un « contient » qui ne dépend pas de l'index.
+
+        Le vecteur n'est calculé qu'au `save()` : une notice importée en masse
+        reste invisible au plein texte seul. Et une cote comme « TP-222 » ne
+        survit pas toujours à l'analyse lexicale. Les deux voies sont donc
+        réunies plutôt qu'opposées.
+        """
         from django.db import connection
+
+        litteral = Q(titre__icontains=q) | Q(auteur__icontains=q) | Q(cote__icontains=q) | Q(isbn__icontains=q)
 
         if connection.vendor == "postgresql":
             from django.contrib.postgres.search import SearchQuery, SearchRank
 
             search_query = SearchQuery(q, config="french")
             qs = (
-                qs.filter(search_vector=search_query)
+                qs.filter(Q(search_vector=search_query) | litteral)
                 .annotate(rank=SearchRank("search_vector", search_query))
-                .order_by("-rank")
+                .order_by("-rank", "titre")
             )
         else:
-            qs = qs.filter(
-                Q(titre__icontains=q) | Q(auteur__icontains=q) | Q(mots_cles__icontains=q) | Q(cote__icontains=q)
-            )
+            qs = qs.filter(litteral | Q(mots_cles__icontains=q))
         return qs
 
     def get_context_data(self, **kwargs):
