@@ -932,11 +932,15 @@ class ExportEtudiantsCsvView(StaffRoleRequiredMixin, View):
             ]
         )
 
+        # Le total d'ECTS est annoté, comme sur la liste : sans cela chaque
+        # ligne exportée coûtait une agrégation, et l'export d'un fichier
+        # complet en comptait autant que l'établissement a d'étudiants.
+        # `total_ects_acquis` lit l'annotation lorsqu'elle est posée.
         qs = ProfilEtudiant.objects.select_related(
             "utilisateur",
             "parcours",
             "promotion",
-        )
+        ).annotate(ects_acquis_annotes=Coalesce(Sum("credits_ects__ects_obtenus"), Decimal("0")))
         statut = request.GET.get("statut")
         if statut:
             qs = qs.filter(statut_inscription=statut)

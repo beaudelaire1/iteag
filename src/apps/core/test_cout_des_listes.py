@@ -152,6 +152,18 @@ class TestStabiliteDuCoutDesListes:
         client.force_login(admin)
         self._verifier(client, "administration:courses", creer_cours, referentiel)
 
+    def test_export_csv_des_etudiants(self, client, admin, referentiel):
+        """
+        L'export est le pire cas : rien ne le pagine.
+
+        La liste affiche vingt lignes ; l'export les prend toutes. Une
+        agrégation par étudiant y coûte donc autant de requêtes que
+        l'établissement compte d'inscrits, sur une page que le secrétariat
+        ouvre en fin de session — le moment où la base est la plus sollicitée.
+        """
+        client.force_login(admin)
+        self._verifier(client, "administration:export_etudiants", creer_etudiants, referentiel)
+
 
 @pytest.mark.django_db
 class TestAnnotationDesEcts:
@@ -171,6 +183,21 @@ class TestAnnotationDesEcts:
         annote = float(reponse.context["etudiants"][0].total_ects_acquis)
 
         assert annote == direct == 7.5
+
+    def test_l_export_reprend_la_meme_valeur_que_le_calcul(self, client, admin, referentiel):
+        """Une colonne annotée ne vaut que si elle dit la même chose que la propriété."""
+        creer_etudiants(referentiel, 1, "exportconcord")
+        profil = ProfilEtudiant.objects.get(numero_etudiant="EXPORTCONCORD-0000")
+        CreditECTS.objects.create(
+            etudiant=profil, ects_obtenus="5", source=CreditECTS.SourceCredit.FLTE, date_validation="2027-01-10"
+        )
+
+        client.force_login(admin)
+        contenu = client.get(reverse("administration:export_etudiants")).content.decode("utf-8-sig")
+        ligne = next(l for l in contenu.splitlines() if "EXPORTCONCORD-0000" in l)  # noqa: E741
+
+        assert float(profil.total_ects_acquis) == 7.5
+        assert ligne.split(";")[7] == "7.5"
 
     def test_un_etudiant_sans_credit_affiche_zero(self, client, admin, referentiel):
         """Sans crédit, la somme est nulle et non « None » — la page l'affiche."""
