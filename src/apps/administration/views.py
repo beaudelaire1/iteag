@@ -1,4 +1,5 @@
 import csv
+import logging
 from decimal import Decimal
 
 from django.contrib import messages
@@ -38,6 +39,8 @@ from .forms import (
     AdminUserCreateForm,
     AdminUserForm,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_csv_cell(value):
@@ -1001,9 +1004,19 @@ class ExportPaiementsCsvView(StaffRoleRequiredMixin, View):
 
 
 class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
-    """Changement de statut en masse pour les candidatures sélectionnées."""
+    """Changement de statut en masse pour les candidatures sélectionnées.
+
+    L'acceptation n'est pas un statut de plus : elle crée le compte, le profil
+    et ouvre les accès. Passée en masse par la seule machine à états, elle
+    laissait des dossiers « acceptés » sans compte — et sans recours, puisque
+    « accepté » est terminal.
+    """
+
+    http_method_names = ["post"]
 
     def post(self, request):
+        from apps.administration.services.admission import accepter_dossier, promotion_par_defaut
+
         ids = request.POST.getlist("selected")
         new_statut = request.POST.get("bulk_statut")
 
@@ -1017,24 +1030,40 @@ class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
             return redirect("administration:candidatures")
 
         dossiers = DossierCandidature.objects.filter(pk__in=ids).exclude(statut=new_statut)
-        count = 0
-        skipped = 0
+        traites = 0
+        ignores = []
         for dossier in dossiers:
+            # Un dossier par transaction : la peine d'un dossier ne doit pas
+            # défaire le travail des autres. `accepter_dossier` et
+            # `transition_dossier` portent chacun la leur.
             try:
-                transition_dossier(
-                    dossier=dossier,
-                    new_status=new_statut,
-                    changed_by=request.user,
-                    comment="Action groupée",
-                )
-            except ValidationError:
-                skipped += 1
+                if new_statut == DossierCandidature.Statut.ACCEPTE:
+                    promotion = promotion_par_defaut(dossier)
+                    if promotion is None:
+                        ignores.append(f"{dossier.nom_complet} (aucune promotion active pour son parcours)")
+                        continue
+                    accepter_dossier(dossier, promotion=promotion, par=request.user, request=request)
+                else:
+                    transition_dossier(
+                        dossier=dossier,
+                        new_status=new_statut,
+                        changed_by=request.user,
+                        comment="Action groupée",
+                    )
+            except ValidationError as erreur:
+                ignores.append(f"{dossier.nom_complet} ({erreur.messages[0]})")
+            except Exception:
+                logger.exception("Échec de l'action groupée sur le dossier %s", dossier.pk)
+                ignores.append(f"{dossier.nom_complet} (erreur inattendue, voir le journal)")
             else:
-                count += 1
+                traites += 1
 
-        messages.success(request, f"{count} dossier(s) mis à jour → {DossierCandidature.Statut(new_statut).label}.")
-        if skipped:
-            messages.warning(request, f"{skipped} dossier(s) ignoré(s) : transition non autorisée.")
+        if traites:
+            messages.success(
+                request, f"{traites} dossier(s) mis à jour → {DossierCandidature.Statut(new_statut).label}."
+            )
+        if ignores:
+            messages.warning(request, "Dossier(s) ignoré(s) : " + " ; ".join(ignores))
         return redirect("administration:candidatures")
 
 

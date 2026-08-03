@@ -4,6 +4,7 @@ import re
 
 import pytest
 from django.core import mail
+from django.core.management import call_command
 from django.urls import reverse
 
 from apps.academics.models import ProfilEtudiant, Promotion
@@ -177,4 +178,159 @@ class TestVueAcceptation:
         )
         dossier.refresh_from_db()
         assert dossier.statut == DossierCandidature.Statut.INCOMPLET
+        assert dossier.utilisateur_cree is None
+
+
+def _dossier(parcours, prenom, nom, statut=DossierCandidature.Statut.EN_EXAMEN):
+    return DossierCandidature.objects.create(
+        nom=nom,
+        prenom=prenom,
+        email=f"{prenom}.{nom}@exemple.org".lower(),
+        parcours_souhaite=parcours,
+        motivations="Servir l'Église.",
+        statut=statut,
+    )
+
+
+@pytest.mark.django_db
+class TestAcceptationGroupee:
+    """
+    L'action groupée doit faire ce que fait la fiche, pas moins.
+
+    Elle se contentait de changer le statut : les dossiers finissaient
+    « acceptés » sans compte, et « accepté » étant terminal, plus rien ne
+    permettait de les rattraper depuis l'interface.
+    """
+
+    @pytest.fixture
+    def secretaire(self, db):
+        return User.objects.create_user(
+            username="sec-groupee",
+            email="sec-groupee@iteag.org",
+            password="motdepasse-long-12",
+            role=User.Role.SECRETARIAT,
+            is_staff=True,
+        )
+
+    def test_l_acceptation_groupee_cree_un_compte_par_dossier(self, client, secretaire, parcours, promotion):
+        premier = _dossier(parcours, "Marie", "Durand")
+        second = _dossier(parcours, "Paul", "Martin")
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("administration:candidatures_bulk_status"),
+            {"selected": [premier.pk, second.pk], "bulk_statut": DossierCandidature.Statut.ACCEPTE},
+        )
+
+        for dossier in (premier, second):
+            dossier.refresh_from_db()
+            assert dossier.statut == DossierCandidature.Statut.ACCEPTE
+            assert dossier.utilisateur_cree is not None
+            assert dossier.utilisateur_cree.profil_etudiant.promotion == promotion
+
+    def test_un_dossier_en_echec_ne_prive_pas_les_autres(self, client, secretaire, parcours, promotion):
+        """Un dossier qu'aucune transition n'autorise ne doit pas bloquer la fournée."""
+        bloque = _dossier(parcours, "Jean", "Soumis", statut=DossierCandidature.Statut.SOUMIS)
+        valide = _dossier(parcours, "Anne", "Examen")
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("administration:candidatures_bulk_status"),
+            {"selected": [bloque.pk, valide.pk], "bulk_statut": DossierCandidature.Statut.ACCEPTE},
+        )
+
+        bloque.refresh_from_db()
+        valide.refresh_from_db()
+        assert bloque.statut == DossierCandidature.Statut.SOUMIS
+        assert bloque.utilisateur_cree is None
+        assert valide.utilisateur_cree is not None
+
+    def test_sans_promotion_active_le_dossier_reste_en_examen(self, client, secretaire, parcours, promotion):
+        """Mieux vaut ne rien faire que verser un candidat dans une promotion close."""
+        promotion.actif = False
+        promotion.save(update_fields=["actif"])
+        dossier = _dossier(parcours, "Sara", "Sanspromo")
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("administration:candidatures_bulk_status"),
+            {"selected": [dossier.pk], "bulk_statut": DossierCandidature.Statut.ACCEPTE},
+        )
+
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.EN_EXAMEN
+        assert dossier.utilisateur_cree is None
+
+    def test_les_autres_statuts_passent_toujours_par_la_machine_a_etats(self, client, secretaire, parcours):
+        dossier = _dossier(parcours, "Luc", "Incomplet")
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("administration:candidatures_bulk_status"),
+            {"selected": [dossier.pk], "bulk_statut": DossierCandidature.Statut.INCOMPLET},
+        )
+
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.INCOMPLET
+        assert dossier.utilisateur_cree is None
+
+    def test_un_etudiant_ne_peut_pas_declencher_l_action(self, client, parcours, promotion, db):
+        dossier = _dossier(parcours, "Zoé", "Intruse")
+        intrus = User.objects.create_user(
+            username="intrus-groupee",
+            email="intrus-groupee@iteag.org",
+            password="motdepasse-long-12",
+            role=User.Role.ETUDIANT,
+        )
+        client.force_login(intrus)
+
+        client.post(
+            reverse("administration:candidatures_bulk_status"),
+            {"selected": [dossier.pk], "bulk_statut": DossierCandidature.Statut.ACCEPTE},
+        )
+
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.EN_EXAMEN
+
+
+@pytest.mark.django_db
+class TestRattrapageDesComptes:
+    """La commande répare ce que l'action groupée fautive a laissé derrière elle."""
+
+    def test_recree_le_compte_d_un_dossier_accepte_sans_utilisateur(self, parcours, promotion):
+        dossier = _dossier(parcours, "Orpheline", "Candidature", statut=DossierCandidature.Statut.ACCEPTE)
+
+        call_command("rattraper_comptes_acceptes", verbosity=0)
+
+        dossier.refresh_from_db()
+        assert dossier.utilisateur_cree is not None
+        assert dossier.utilisateur_cree.profil_etudiant.promotion == promotion
+
+    def test_est_idempotente(self, parcours, promotion):
+        dossier = _dossier(parcours, "Deuxfois", "Candidature", statut=DossierCandidature.Statut.ACCEPTE)
+
+        call_command("rattraper_comptes_acceptes", verbosity=0)
+        dossier.refresh_from_db()
+        compte = dossier.utilisateur_cree
+
+        call_command("rattraper_comptes_acceptes", verbosity=0)
+        dossier.refresh_from_db()
+        assert dossier.utilisateur_cree == compte
+        assert User.objects.filter(email=dossier.email).count() == 1
+
+    def test_ne_touche_pas_aux_dossiers_deja_pourvus(self, parcours, promotion, dossier):
+        profil = accepter_dossier(dossier, promotion=promotion)
+
+        call_command("rattraper_comptes_acceptes", verbosity=0)
+
+        dossier.refresh_from_db()
+        assert dossier.utilisateur_cree == profil.utilisateur
+        assert ProfilEtudiant.objects.count() == 1
+
+    def test_la_simulation_ne_cree_rien(self, parcours, promotion):
+        dossier = _dossier(parcours, "Simulee", "Candidature", statut=DossierCandidature.Statut.ACCEPTE)
+
+        call_command("rattraper_comptes_acceptes", "--simuler", verbosity=0)
+
+        dossier.refresh_from_db()
         assert dossier.utilisateur_cree is None

@@ -40,6 +40,17 @@ def numero_etudiant_suivant(annee: int) -> str:
     return f"{prefixe}{rang:03d}"
 
 
+def promotion_par_defaut(dossier: DossierCandidature) -> Promotion | None:
+    """La promotion vers laquelle verser ce candidat faute d'indication.
+
+    La plus récente encore active de son parcours : c'est celle qui ouvre, et
+    c'est ce que le secrétariat choisit à la main sur chaque fiche. La fonction
+    existe pour l'acceptation groupée et pour le rattrapage, qui n'ont pas de
+    formulaire où poser la question dossier par dossier.
+    """
+    return Promotion.objects.filter(actif=True, parcours=dossier.parcours_souhaite).order_by("-annee_debut").first()
+
+
 @transaction.atomic
 def accepter_dossier(
     dossier: DossierCandidature,
@@ -81,12 +92,18 @@ def accepter_dossier(
     # La transition passe par la machine à états d'admissions : l'acceptation
     # n'est pas un cas particulier qui la contournerait. Une transition
     # interdite lève ici, et la transaction annule la création du compte.
-    transition_dossier(
-        dossier=dossier,
-        new_status=DossierCandidature.Statut.ACCEPTE,
-        changed_by=par,
-        comment="Acceptation : compte étudiant créé et accès ouverts.",
-    )
+    #
+    # Sauf pour un dossier déjà marqué « accepté » et resté sans compte : sa
+    # transition a eu lieu, seul le compte manque. « Accepté » étant terminal,
+    # la rejouer échouerait et le dossier resterait irréparable — c'est
+    # exactement ce que l'acceptation groupée produisait avant correction.
+    if dossier.statut != DossierCandidature.Statut.ACCEPTE:
+        transition_dossier(
+            dossier=dossier,
+            new_status=DossierCandidature.Statut.ACCEPTE,
+            changed_by=par,
+            comment="Acceptation : compte étudiant créé et accès ouverts.",
+        )
     dossier.refresh_from_db()
     dossier.utilisateur_cree = utilisateur
     dossier.save(update_fields=["utilisateur_cree", "date_derniere_maj"])

@@ -27,7 +27,6 @@ from apps.formations.models import Parcours, Professeur
 EXCLUES = {
     "accounts:logout",  # déconnecte, ce qui fausse les vérifications suivantes
     "administration:acces_action",  # POST seul, agit sur des données
-    "administration:candidatures_bulk_status",  # idem
     "core:notifications_tout_lire",  # idem
 }
 
