@@ -84,7 +84,7 @@ def rubriques() -> list[Rubrique]:
                 # Les travaux des enseignants-chercheurs. Sans cette entrée,
                 # les articles publiés existaient à leur adresse sans qu'aucun
                 # chemin n'y mène : un visiteur ne les trouvait jamais.
-                Entree(libelle="Articles de recherche", url=reverse("website:articles")),
+                Entree(libelle="Articles", url=reverse("website:articles")),
                 Entree(libelle="Nous contacter", url="/contact/"),
             ),
         ),

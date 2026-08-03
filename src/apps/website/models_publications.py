@@ -77,8 +77,8 @@ class Article(TimeStampedModel):
     )
 
     class Meta:
-        verbose_name = "Article de recherche"
-        verbose_name_plural = "Articles de recherche"
+        verbose_name = "Article"
+        verbose_name_plural = "Articles"
         ordering = ["-date_publication", "-created_at"]
         indexes = [
             models.Index(fields=["statut", "-date_publication"]),
