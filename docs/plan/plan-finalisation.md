@@ -7,19 +7,27 @@ contrôle d'accès sécurisé aux modules.
 
 ---
 
-## 1. Point de départ mesuré
+## 1. Point de départ et état constaté
 
-| Indicateur | Valeur constatée | Cible de livraison |
-|-----------|------------------|--------------------|
-| Tests | 95, tous verts | ≥ 200, tous verts |
-| Couverture | 84 % | ≥ 90 % global, **100 % sur le contrôle d'accès** |
-| Lint `ruff check` | **232 erreurs** | 0 |
-| Format `ruff format` | **38 fichiers à reformater** | 0 |
-| Intégration continue | **Rouge** (le job `lint` échoue en premier) | Verte |
-| Build de production | **Rompu** (CSS jamais compilé) | Image déployable vérifiée |
-| Apps métier | 9 | 10 (+ `elearning`) |
-| Formation vidéo | Absente | Livrée |
-| Notifications, newsletter, audit | Absents | Livrés |
+Les deux colonnes de gauche sont des mesures, pas des estimations : la première
+date de l'ouverture du plan, la seconde du **3 août 2026**, relevée sur la
+branche principale (`pytest --cov=apps`, `ruff check .`, `ruff format --check .`).
+
+| Indicateur | Au démarrage | Constaté le 2026-08-03 | Cible de livraison |
+|-----------|--------------|------------------------|--------------------|
+| Tests | 95, tous verts | **2 426 verts**, 3 ignorés | ≥ 200, tous verts |
+| Couverture | 84 % | **92 %** | ≥ 90 % global, **100 % sur le contrôle d'accès** |
+| Lint `ruff check` | **232 erreurs** | 0 | 0 |
+| Format `ruff format` | **38 fichiers à reformater** | 0 | 0 |
+| Intégration continue | **Rouge** (le job `lint` échoue en premier) | **Verte** | Verte |
+| Build de production | **Rompu** (CSS jamais compilé) | Image construite et servie | Image déployable vérifiée |
+| Apps métier | 9 | 14 | 10 (+ `elearning`) |
+| Formation vidéo | Absente | Livrée | Livrée |
+| Notifications, newsletter, audit | Absents | Livrés | Livrés |
+
+> Les valeurs de la colonne « au démarrage » ont longtemps figuré ici comme
+> « valeur constatée », bien après qu'elles eurent cessé de l'être. Un tableau
+> d'état périmé est pire qu'absent : il est lu et cru.
 
 ## 2. Principes de conduite
 
@@ -36,7 +44,7 @@ contrôle d'accès sécurisé aux modules.
 
 ## 3. Lots de travail
 
-### LOT 0 — Remise à niveau du socle *(bloquant)*
+### LOT 0 — Remise à niveau du socle *(bloquant)* — ✅ livré
 
 Objet : rendre le projet déployable et l'intégration continue exploitable.
 
@@ -55,7 +63,7 @@ Objet : rendre le projet déployable et l'intégration continue exploitable.
 
 ---
 
-### LOT 1 — Socle transverse
+### LOT 1 — Socle transverse — ✅ livré
 
 Objet : fournir les briques que tous les autres lots consomment.
 
@@ -71,7 +79,7 @@ Objet : fournir les briques que tous les autres lots consomment.
 
 ---
 
-### LOT 2 — Domaine e-learning vidéo *(cœur de l'extension)*
+### LOT 2 — Domaine e-learning vidéo *(cœur de l'extension)* — ✅ livré
 
 Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
@@ -88,7 +96,7 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
 ---
 
-### LOT 3 — Portail étudiant : suivre une formation vidéo
+### LOT 3 — Portail étudiant : suivre une formation vidéo — ✅ livré
 
 | # | Tâche | Critère d'acceptation |
 |---|-------|----------------------|
@@ -103,7 +111,7 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
 ---
 
-### LOT 4 — Portail enseignant : produire le contenu
+### LOT 4 — Portail enseignant : produire le contenu — ✅ livré
 
 | # | Tâche | Critère d'acceptation |
 |---|-------|----------------------|
@@ -116,7 +124,7 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
 ---
 
-### LOT 5 — Portail administratif
+### LOT 5 — Portail administratif — ✅ livré
 
 | # | Tâche | Critère d'acceptation |
 |---|-------|----------------------|
@@ -129,7 +137,7 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
 ---
 
-### LOT 6 — Portail public : vendre la formation
+### LOT 6 — Portail public : vendre la formation — ✅ livré
 
 | # | Tâche | Critère d'acceptation |
 |---|-------|----------------------|
@@ -141,7 +149,7 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
 ---
 
-### LOT 7 — Qualité, accessibilité, performance
+### LOT 7 — Qualité, accessibilité, performance — ✅ livré
 
 | # | Tâche | Critère d'acceptation |
 |---|-------|----------------------|
@@ -154,7 +162,7 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 
 ---
 
-### LOT 8 — Mise en exploitation
+### LOT 8 — Mise en exploitation — ✅ livré au dépôt, reste à éprouver en production
 
 | # | Tâche | Critère d'acceptation |
 |---|-------|----------------------|
@@ -165,6 +173,37 @@ Objet : le modèle, les règles et les services. Aucune interface à ce stade.
 | 8.5 | Supervision et alertes | Sentry actif, alerte sur taux d'erreur |
 | 8.6 | Documentation d'exploitation et de reprise | Un exploitant tiers peut reprendre la main |
 | 8.7 | Guides utilisateur par rôle | Livrables L01 à L09 du CDC |
+
+---
+
+### LOT 9 — Correction d'audit *(2026-08-03)*
+
+Objet : les défauts relevés par l'audit en lecture seule du 3 août 2026. Le
+détail, les reproductions et les critères d'acceptation vivent dans
+[`plan-correction-audit.md`](plan-correction-audit.md) ; ce tableau n'en tient
+que le décompte.
+
+| # | Tâche | État |
+|---|-------|------|
+| 9.1 | Recorrection d'une note publiée : révision tracée et notifiée | ✅ livré |
+| 9.2 | Acceptation groupée : création du compte, gabarit, commande de rattrapage | ✅ livré |
+| 9.3 | Cloisonnement des pages de retour de paiement | ✅ livré |
+| 9.4 | Purge quotidienne des sessions expirées | ✅ livré |
+| 9.5 | Formateur JSON du journal de production | ✅ livré |
+| 9.6 | Export CSV des étudiants : suppression du N+1 | ✅ livré |
+| 9.7 | Test de fumée étendu aux 147 routes à paramètre | ✅ livré |
+| 9.8 | Relevé de notes : assertion sur le contenu du PDF | ✅ livré |
+| 9.9 | Remise à jour du présent plan | ✅ livré |
+
+**Reste à faire, hors dépôt** — ces deux points ne se ferment pas depuis le
+code et demandent un accès aux environnements :
+
+- exécuter `python manage.py rattraper_comptes_acceptes` en production, après
+  un passage `--simuler`, pour les dossiers déjà marqués « accepté » sans
+  compte (tâche 1.2 du plan de correction) ;
+- rejouer la suite complète sur PostgreSQL, ce que l'intégration continue fait
+  à chaque poussée : la vérification locale s'est faite sur SQLite, faute de
+  service PostgreSQL sur le poste.
 
 ---
 

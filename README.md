@@ -17,6 +17,7 @@ boutique de livres avec commandes, suivi et gestion de stock.
 | [`docs/architecture/uml.md`](docs/architecture/uml.md) | Dossier de conception UML |
 | [`docs/architecture/adr/`](docs/architecture/adr/) | Décisions d'architecture |
 | [`docs/plan/plan-finalisation.md`](docs/plan/plan-finalisation.md) | Plan de finalisation par lots |
+| [`docs/plan/plan-correction-audit.md`](docs/plan/plan-correction-audit.md) | Correction des constats de l'audit du 3 août 2026 |
 | [`docs/architecture/adr/ADR-005-fournisseurs-video-externes.md`](docs/architecture/adr/ADR-005-fournisseurs-video-externes.md) | Choix du fournisseur de diffusion vidéo |
 | [`docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md`](docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md) | Paiement en ligne : Stripe, webhook, TVA |
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
