@@ -34,6 +34,14 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
         # portail qui agrège les domaines — c'est sa raison d'être.
         "documents",
         "elearning",
+        # La page de statistiques rend compte de TOUTES les applications :
+        # une page de pilotage qui laisserait la boutique et les encaissements
+        # hors champ obligerait à ouvrir deux autres écrans pour se faire une
+        # idée, ce qui est exactement ce qu'on cherche à supprimer. Ni
+        # « commerce » ni « paiements » ne connaissent « administration » en
+        # retour, donc la flèche ne se referme pas.
+        "commerce",
+        "paiements",
     },
     "formations": {"core"},
     "admissions": {"core", "formations", "accounts"},

@@ -6,6 +6,7 @@ app_name = "administration"
 
 urlpatterns = [
     path("", views.AdminDashboardView.as_view(), name="dashboard"),
+    path("statistiques/", views.AdminStatistiquesView.as_view(), name="statistiques"),
     # Candidatures
     path("candidatures/", views.AdminCandidatureListView.as_view(), name="candidatures"),
     path("candidatures/<int:pk>/", views.AdminCandidatureDetailView.as_view(), name="candidature_detail"),

@@ -1,0 +1,103 @@
+{% extends "partials/portal_base.html" %}
+
+{% comment %}
+Un bloc par application, tous bâtis sur le même moule : des compteurs pour
+l'état, une répartition pour la structure, une série de douze mois pour la
+tendance. La régularité est voulue — on apprend à lire la page une fois, puis
+on la lit partout.
+
+Les graphiques sont en HTML et CSS, sans bibliothèque : la politique de
+sécurité du site interdit le script en ligne (ADR-003), et une barre reste une
+barre.
+{% endcomment %}
+
+{% block title %}Statistiques — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='statistiques' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='statistiques' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2">Pilotage</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Statistiques de l'institut</h1>
+    <p class="mt-2" style="color: var(--color-warm-600); max-width: 60ch;">
+        Chaque application rend compte de son activité : un état, une structure, une tendance
+        sur douze mois glissants. Un taux dont la base est vide s'affiche « — » plutôt que « 0 % ».
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+<nav class="tw flex flex-wrap gap-2 mb-10" aria-label="Aller à une application">
+    {% for domaine in domaines %}
+    <a href="#{{ domaine.cle }}" class="badge">{{ domaine.titre }}</a>
+    {% endfor %}
+</nav>
+
+{% for domaine in domaines %}
+<section id="{{ domaine.cle }}" class="mb-14" style="scroll-margin-top: 5rem;">
+
+    <div class="tw flex flex-wrap items-baseline justify-between gap-3 mb-1">
+        <h2 class="text-lg">{{ domaine.titre }}</h2>
+        {% if domaine.lien_url %}
+        <a href="{{ domaine.lien_url }}" class="link-underline text-sm">{{ domaine.lien_libelle }}</a>
+        {% endif %}
+    </div>
+    <p class="text-sm mb-5" style="color: var(--color-warm-600);">{{ domaine.explication }}</p>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {% for indicateur in domaine.indicateurs %}
+        <div class="card-elevated">
+            <p class="stat-number" style="font-size: 1.6rem;">{{ indicateur.valeur }}</p>
+            <p class="stat-label">{{ indicateur.libelle }}</p>
+            {% if indicateur.precision %}
+            <p class="text-xs mt-1" style="color: var(--color-warm-600);">{{ indicateur.precision }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {% if domaine.repartition %}
+        <div class="card">
+            <h3 class="text-sm font-medium mb-4">{{ domaine.repartition_titre }}</h3>
+            <ul class="tw space-y-3">
+                {% for barre in domaine.repartition %}
+                <li>
+                    <span class="flex items-baseline justify-between gap-3 text-sm mb-1">
+                        <span>{{ barre.libelle }}</span>
+                        <span class="num">{{ barre.texte }}</span>
+                    </span>
+                    <span class="progress-bar block">
+                        <span class="progress-bar-fill block" style="width: {{ barre.part }}%"></span>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if domaine.serie %}
+        <div class="card {% if not domaine.repartition %}lg:col-span-2{% endif %}">
+            <h3 class="text-sm font-medium mb-4">{{ domaine.serie_titre }}</h3>
+            <ul class="tw space-y-2">
+                {% for barre in domaine.serie %}
+                <li class="flex items-center gap-3 text-xs">
+                    <span style="width: 4.5rem; color: var(--color-warm-600);">{{ barre.libelle }}</span>
+                    <span class="progress-bar block flex-1">
+                        <span class="progress-bar-fill block" style="width: {{ barre.part }}%"></span>
+                    </span>
+                    <span class="num" style="width: 6rem; text-align: right;">{{ barre.texte }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endfor %}
+
+{% endblock %}

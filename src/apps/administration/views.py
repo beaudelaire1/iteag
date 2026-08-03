@@ -22,7 +22,7 @@ from apps.academics.models import (
 )
 from apps.accounts.models import User
 from apps.accounts.services.securite import alerter_du_changement, alerter_du_mot_de_passe, etat_sensible
-from apps.administration.services import pilotage
+from apps.administration.services import pilotage, statistiques
 from apps.administration.suppression import SuppressionProtegee
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
@@ -155,6 +155,22 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 "-updated_at"
             )[:5],
         }
+
+
+class AdminStatistiquesView(AdminRoleRequiredMixin, TemplateView):
+    """Ce que devient l'institut, application par application.
+
+    Le tableau de bord dit ce qui attend une décision aujourd'hui ; il ne dit
+    rien de la tendance. Cette page couvre l'autre besoin, et elle le fait pour
+    toutes les applications — sinon les rubriques métier suffiraient.
+    """
+
+    template_name = "administration/statistiques.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["domaines"] = statistiques.tous_les_domaines()
+        return ctx
 
 
 class SecretariatDashboardView(SecretariatRoleRequiredMixin, TemplateView):
