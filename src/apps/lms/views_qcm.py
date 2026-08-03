@@ -196,7 +196,7 @@ class TeacherRecorrigerView(_QuestionnaireDuProfesseur, View):
 
     def post(self, request, pk):
         devoir = self.devoir_ou_404(pk)
-        nombre = services.recorriger(devoir)
+        nombre = services.recorriger(devoir, par=request.user)
         messages.success(request, f"{nombre} copie(s) recorrigée(s) avec le barème actuel.")
         return redirect("lms:devoir_detail", pk=devoir.pk)
 

@@ -23,9 +23,10 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.lms import services
-from apps.lms.models import Choix, Devoir, Evaluation, GroupeEtudiants, Question
+from apps.lms.models import Choix, Devoir, Evaluation, GroupeEtudiants, Question, RevisionNote
 
 pytestmark = pytest.mark.django_db
 
@@ -251,6 +252,77 @@ def test_recorriger_rejoue_le_bareme_sans_redemander_les_copies(questionnaire, e
 
     copie.refresh_from_db()
     assert copie.note == Decimal("20.00")
+
+
+def test_recorriger_accorde_la_note_l_appreciation_et_la_date(questionnaire, etudiant):
+    """La fiche ne doit jamais afficher la note d'un barème et le détail d'un autre."""
+    services.publier_devoir(questionnaire)
+    copie = questionnaire.copies.get()
+    unique, multiple = list(questionnaire.questions.all())
+
+    services.enregistrer_reponses(
+        copie,
+        {unique.pk: _bonnes(unique), multiple.pk: list(multiple.choix.values_list("pk", flat=True))},
+    )
+    copie.refresh_from_db()
+    notee_le = copie.date_notation
+    assert "2.00 / 5.00" in copie.appreciation
+
+    multiple.choix.filter(libelle="Jean").update(correct=True)
+    services.recorriger(questionnaire)
+
+    copie.refresh_from_db()
+    assert copie.statut == Evaluation.StatutEvaluation.NOTE
+    assert copie.note == Decimal("20.00")
+    assert "5.00 / 5.00" in copie.appreciation
+    assert copie.date_notation > notee_le
+
+
+def test_recorriger_une_copie_publiee_laisse_une_trace_et_avertit(questionnaire, etudiant):
+    """Une note rendue ne se réécrit pas en silence : elle se révise."""
+    services.publier_devoir(questionnaire)
+    copie = questionnaire.copies.get()
+    unique, multiple = list(questionnaire.questions.all())
+
+    services.enregistrer_reponses(
+        copie,
+        {unique.pk: _bonnes(unique), multiple.pk: list(multiple.choix.values_list("pk", flat=True))},
+    )
+    copie.refresh_from_db()
+    copie.statut = Evaluation.StatutEvaluation.PUBLIE
+    copie.save(update_fields=["statut"])
+    Notification.objects.all().delete()
+
+    multiple.choix.filter(libelle="Jean").update(correct=True)
+    assert services.recorriger(questionnaire) == 1
+
+    copie.refresh_from_db()
+    assert copie.note == Decimal("20.00")
+    assert "5.00 / 5.00" in copie.appreciation
+
+    revision = RevisionNote.objects.get(evaluation=copie)
+    assert revision.note_avant == Decimal("8.00")
+    assert revision.note_apres == Decimal("20.00")
+    assert revision.motif == services.MOTIF_RECORRECTION
+    assert Notification.objects.filter(destinataire=etudiant.utilisateur).exists()
+
+
+def test_recorriger_sans_effet_sur_une_copie_publiee_n_invente_pas_de_revision(questionnaire, etudiant):
+    """Un barème rectifié ailleurs ne doit pas alerter qui n'est pas concerné."""
+    services.publier_devoir(questionnaire)
+    copie = questionnaire.copies.get()
+    questions = list(questionnaire.questions.all())
+
+    services.enregistrer_reponses(copie, {q.pk: _bonnes(q) for q in questions})
+    copie.refresh_from_db()
+    copie.statut = Evaluation.StatutEvaluation.PUBLIE
+    copie.save(update_fields=["statut"])
+    Notification.objects.all().delete()
+
+    services.recorriger(questionnaire)
+
+    assert not RevisionNote.objects.filter(evaluation=copie).exists()
+    assert not Notification.objects.filter(destinataire=etudiant.utilisateur).exists()
 
 
 # ──────────────────────────────────────────────

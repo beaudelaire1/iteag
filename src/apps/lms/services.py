@@ -222,6 +222,18 @@ def reviser(evaluation: Evaluation, *, note, motif: str, appreciation=None, ects
 # ──────────────────────────────────────────────
 
 
+MOTIF_RECORRECTION = "Recorrection après modification du barème."
+
+
+def _appreciation_qcm(obtenus: Decimal, total_points: Decimal) -> str:
+    """Le détail chiffré qui accompagne la note d'un questionnaire.
+
+    Écrit une fois : la note et l'appréciation sont produites au même endroit à
+    la remise comme à la recorrection, ce qui interdit qu'elles se contredisent.
+    """
+    return f"Questionnaire corrigé automatiquement : {obtenus} / {total_points} points."
+
+
 def motif_qcm_incomplet(devoir: Devoir) -> str:
     """Ce qui empêche d'ouvrir ce questionnaire — vide s'il est prêt.
 
@@ -281,7 +293,7 @@ def enregistrer_reponses(evaluation: Evaluation, choix_par_question: dict) -> Ev
     evaluation.date_soumission = timezone.now()
     evaluation.date_notation = timezone.now()
     evaluation.depot_tardif = bool(evaluation.echeance() and evaluation.date_soumission > evaluation.echeance())
-    evaluation.appreciation = f"Questionnaire corrigé automatiquement : {obtenus} / {total_points} points."
+    evaluation.appreciation = _appreciation_qcm(obtenus, total_points)
     evaluation.save(
         update_fields=[
             "note",
@@ -297,12 +309,17 @@ def enregistrer_reponses(evaluation: Evaluation, choix_par_question: dict) -> Ev
 
 
 @transaction.atomic
-def recorriger(devoir: Devoir) -> int:
+def recorriger(devoir: Devoir, *, par=None) -> int:
     """Rejoue la correction de toutes les copies d'un questionnaire.
 
     Sert lorsqu'un barème est rectifié après coup — question retirée, seconde
     bonne réponse admise. Les réponses des étudiants sont conservées telles
     quelles, ce qui rend l'opération possible sans redemander quoi que ce soit.
+
+    Une copie déjà publiée n'est pas réécrite en silence : elle passe par la
+    révision, qui conserve l'ancienne note, porte un motif et avertit
+    l'étudiant. Sans cela, une note rendue changeait sans que personne ne
+    puisse dire ce qu'elle valait la veille ni pourquoi elle a bougé.
     """
     questions = list(devoir.questions.prefetch_related("choix"))
     total_points = sum((question.points for question in questions), Decimal("0"))
@@ -316,8 +333,23 @@ def recorriger(devoir: Devoir) -> int:
         obtenus = sum((reponse.corriger() for reponse in copie.reponses.all()), Decimal("0"))
         for reponse in copie.reponses.all():
             reponse.save(update_fields=["points_obtenus", "updated_at"])
-        copie.note = (obtenus / total_points * devoir.bareme).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        copie.save(update_fields=["note", "updated_at"])
+
+        note = (obtenus / total_points * devoir.bareme).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        appreciation = _appreciation_qcm(obtenus, total_points)
+
+        if copie.est_publiee:
+            # Une note publiée que le nouveau barème laisse inchangée n'a pas
+            # été révisée : lui inventer une trace et en avertir l'étudiant
+            # ferait du bruit là où rien n'a bougé.
+            if copie.note != note:
+                reviser(copie, note=note, motif=MOTIF_RECORRECTION, appreciation=appreciation, par=par)
+        else:
+            # Note, appréciation et date partent ensemble : la fiche affichait
+            # la note recalculée à côté du détail chiffré de l'ancien barème.
+            copie.note = note
+            copie.appreciation = appreciation
+            copie.date_notation = timezone.now()
+            copie.save(update_fields=["note", "appreciation", "date_notation", "updated_at"])
         recorrigees += 1
     return recorrigees
 
