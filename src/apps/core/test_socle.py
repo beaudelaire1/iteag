@@ -479,3 +479,31 @@ class TestTachesPurge:
         assert purger_notifications(jours=120) == 1
         assert Notification.objects.filter(pk=recente.pk).exists()
         assert not Notification.objects.filter(pk=ancienne.pk).exists()
+
+    def test_purge_des_sessions_expirees(self, db):
+        """La table des sessions est écrite à chaque requête et ne se vide pas seule."""
+        from datetime import timedelta
+
+        from django.contrib.sessions.backends.db import SessionStore
+        from django.contrib.sessions.models import Session
+        from django.utils import timezone
+
+        from apps.core.tasks import purger_sessions
+
+        expiree = SessionStore()
+        expiree["qui"] = "parti depuis longtemps"
+        expiree.create()
+        Session.objects.filter(session_key=expiree.session_key).update(expire_date=timezone.now() - timedelta(days=1))
+
+        valide = SessionStore()
+        valide["qui"] = "encore là"
+        valide.create()
+
+        assert purger_sessions() == 1
+        assert not Session.objects.filter(session_key=expiree.session_key).exists()
+        assert Session.objects.filter(session_key=valide.session_key).exists()
+
+    def test_la_purge_des_sessions_est_programmee(self, settings):
+        """Une tâche que rien ne déclenche ne purge rien."""
+        planifiee = settings.CELERY_BEAT_SCHEDULE.values()
+        assert any(entree["task"] == "core.purger_sessions" for entree in planifiee)

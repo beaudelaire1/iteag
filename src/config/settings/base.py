@@ -6,6 +6,7 @@ Base configuration shared across all environments.
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 # ──────────────────────────────────────────────
 # Paths
@@ -397,6 +398,12 @@ CELERY_BEAT_SCHEDULE = {
     "core-purger-notifications": {
         "task": "core.purger_notifications",
         "schedule": 7 * 24 * 60 * 60,
+    },
+    # À heure creuse : la purge balaie une table écrite à chaque requête, et
+    # le verrou qu'elle prend se paierait aux heures d'affluence.
+    "core-purger-sessions": {
+        "task": "core.purger_sessions",
+        "schedule": crontab(hour=4, minute=0),
     },
     "core-purger-journal-audit": {
         "task": "core.purger_journal_audit",
