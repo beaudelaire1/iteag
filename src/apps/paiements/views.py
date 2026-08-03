@@ -101,10 +101,14 @@ class SuccesView(View):
     Le règlement peut y apparaître « en attente » : la notification Stripe
     arrive parfois après la redirection du navigateur. C'est normal, et c'est
     dit à l'écran plutôt que masqué par un message de succès mensonger.
+
+    La page nomme le payeur, son courriel et ce qu'il a réglé : elle passe donc
+    par le même filtre que le paiement lui-même. Un identifiant reste un
+    identifiant, pas un droit de lecture.
     """
 
     def get(self, request, pk):
-        reglement = get_object_or_404(Reglement, pk=pk)
+        reglement = _reglement_visible(request, pk)
         return render(
             request,
             "paiements/succes.html",
@@ -114,7 +118,7 @@ class SuccesView(View):
 
 class AnnulationView(View):
     def get(self, request, pk):
-        reglement = get_object_or_404(Reglement, pk=pk)
+        reglement = _reglement_visible(request, pk)
         return render(request, "paiements/annulation.html", {"reglement": reglement})
 
 
