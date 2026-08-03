@@ -104,11 +104,27 @@ class HomePage(Page):
         FieldPanel("meta_description"),
     ]
 
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "La page d'accueil du site. Il n'y en a qu'une."
+
     class Meta:
         verbose_name = "Page d'accueil"
 
     parent_page_types = ["wagtailcore.Page"]
-    subpage_types = ["website.ContentPage", "website.NewsIndexPage", "website.EventIndexPage", "website.FAQPage"]
+    # Wagtail exige l'accord des deux côtés : un type absent d'ici ne peut être
+    # créé nulle part, quoi qu'en dise son propre « parent_page_types ». La page
+    # de contact et celle du catalogue étaient dans ce cas — elles n'existaient
+    # que parce qu'une commande de peuplement les avait écrites directement en
+    # base, et le secrétariat ne pouvait ni en créer ni en recréer.
+    subpage_types = [
+        "website.ContentPage",
+        "website.NewsIndexPage",
+        "website.EventIndexPage",
+        "website.FAQPage",
+        "website.ContactPage",
+        "website.ModuleCataloguePage",
+    ]
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
@@ -160,11 +176,21 @@ class ContentPage(Page):
         FieldPanel("meta_description"),
     ]
 
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = (
+        "Page éditoriale libre — présentation, historique, mentions légales. Peut contenir des sous-pages."
+    )
+
     class Meta:
         verbose_name = "Page de contenu"
         verbose_name_plural = "Pages de contenu"
 
-    parent_page_types = ["website.HomePage"]
+    parent_page_types = ["website.HomePage", "website.ContentPage"]
+    # Une rubrique éditoriale se compose de sous-pages — « L'institut » et ses
+    # chapitres, par exemple. Sans cela le site reste plat, et les douze pages
+    # à reprendre de l'ancien site s'alignent toutes à la racine.
+    subpage_types = ["website.ContentPage"]
 
 
 class NewsIndexPage(Page):
@@ -180,6 +206,10 @@ class NewsIndexPage(Page):
     promote_panels = Page.promote_panels + [
         FieldPanel("meta_description"),
     ]
+
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "La liste des actualités. Les actualités se créent à l'intérieur."
 
     class Meta:
         verbose_name = "Index des actualités"
@@ -221,6 +251,10 @@ class NewsPage(Page):
         FieldPanel("meta_description"),
     ]
 
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "Une actualité datée, avec image à la une."
+
     class Meta:
         verbose_name = "Actualité"
         verbose_name_plural = "Actualités"
@@ -237,6 +271,10 @@ class EventIndexPage(Page):
     content_panels = Page.content_panels + [
         FieldPanel("introduction"),
     ]
+
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "La liste des événements. Les événements se créent à l'intérieur."
 
     class Meta:
         verbose_name = "Index des événements"
@@ -275,6 +313,10 @@ class EventPage(Page):
         FieldPanel("description"),
     ]
 
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "Un événement daté et localisé."
+
     class Meta:
         verbose_name = "Événement"
         verbose_name_plural = "Événements"
@@ -298,6 +340,10 @@ class FAQPage(Page):
         FieldPanel("introduction"),
         FieldPanel("questions"),
     ]
+
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "Questions fréquentes, présentées en accordéons."
 
     class Meta:
         verbose_name = "Page FAQ"
@@ -344,6 +390,10 @@ class ModuleCataloguePage(Page):
         FieldPanel("arguments"),
         FieldPanel("texte_appel"),
     ]
+
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "L'introduction éditoriale au catalogue des modules vidéo."
 
     class Meta:
         verbose_name = "Page catalogue E-Learning"
@@ -392,6 +442,10 @@ class ContactPage(AbstractForm):
     promote_panels = Page.promote_panels + [
         FieldPanel("meta_description"),
     ]
+
+    # Affiché sous le nom du type dans « Ajouter une page ». Sans lui,
+    # le rédacteur choisit entre neuf noms sans savoir lequel fait quoi.
+    page_description = "Le formulaire de contact et les coordonnées de l'institut."
 
     class Meta:
         verbose_name = "Page de contact"
