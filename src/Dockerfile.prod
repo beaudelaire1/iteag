@@ -36,9 +36,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements/base.txt requirements/base.txt
-COPY requirements/prod.txt requirements/prod.txt
-RUN pip install --no-cache-dir -r requirements/prod.txt
+# Le verrou, et non les intervalles : deux constructions à six mois d'écart
+# installent ainsi les mêmes octets. Les empreintes mettent pip en mode
+# vérification, si bien qu'une archive substituée sur l'index est refusée
+# au lieu d'être installée.
+COPY requirements/prod.lock requirements/prod.lock
+RUN pip install --no-cache-dir --require-hashes -r requirements/prod.lock
 
 # ── Étape 3 : image d'exécution ──
 FROM python:3.12-slim AS runtime

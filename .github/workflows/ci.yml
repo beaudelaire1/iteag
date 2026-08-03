@@ -53,8 +53,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-          cache-dependency-path: src/requirements/dev.txt
-      - run: pip install -r requirements/dev.txt
+          cache-dependency-path: src/requirements/dev.lock
+      # Le verrou, et non les intervalles : l'intégration continue teste
+      # les versions exactes qui seront déployées.
+      - run: pip install --require-hashes -r requirements/dev.lock
       # La suite vérifie que chaque « {% static %} » désigne un fichier livré.
       # Sans les bibliothèques tierces, elle échouerait sur une référence
       # pourtant valide en production. Elles sont construites plutôt que
@@ -101,7 +103,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-          cache-dependency-path: src/requirements/prod.txt
+          cache-dependency-path: src/requirements/prod.lock
       - run: npm install --no-audit --no-fund
       # « npm run build » et non « css:build » : c'est la commande qu'exécute
       # Dockerfile.prod. Vérifier autre chose que ce qui est déployé laisserait
@@ -111,7 +113,7 @@ jobs:
           npm run build
           test -s static/css/main.css
           test -s static/js/vendor/hls.min.js
-      - run: pip install -r requirements/prod.txt
+      - run: pip install --require-hashes -r requirements/prod.lock
       # Détecte au commit la rupture de chaîne qui, sinon, ne se voit qu'au
       # déploiement : référence statique non résolue, feuille absente.
       - name: Collecte des statiques (manifeste)
@@ -134,4 +136,6 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install pip-audit
-      - run: pip-audit -r requirements/base.txt
+      # Audité sur le verrou : ce sont ces versions-là qui partent en
+      # production, transitives comprises — les intervalles n'en disent rien.
+      - run: pip-audit -r requirements/prod.lock

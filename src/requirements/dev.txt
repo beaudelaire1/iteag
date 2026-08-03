@@ -10,3 +10,7 @@ django-browser-reload>=1.16,<2.0
 # Lecture des PDF produits : les tests vérifient le texte réellement imprimé
 # plutôt que le gabarit qui l'a produit.
 PyMuPDF>=1.24,<2.0
+# Résolveur des verrous « *.lock ». Il compile pour Python 3.12 sous Linux
+# depuis n'importe quel poste, ce que pip ne sait pas faire : un verrou produit
+# sous Windows en Python 3.14 n'aurait aucun rapport avec l'image déployée.
+uv>=0.12,<1.0
