@@ -118,7 +118,8 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "json": {
-            "format": '{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","message":"%(message)s"}',
+            "()": "apps.core.journalisation.JsonFormatter",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
     },
     "handlers": {
