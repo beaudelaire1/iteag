@@ -48,6 +48,7 @@ class Notification(TimeStampedModel):
         RAPPEL_SESSION = "rappel_session", "Rappel de session"
         ACCES_OCTROYE = "acces_octroye", "Accès octroyé"
         ATTESTATION = "attestation", "Attestation disponible"
+        SECURITE = "securite", "Sécurité du compte"
         SYSTEME = "systeme", "Information"
 
     destinataire = models.ForeignKey(

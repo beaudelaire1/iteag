@@ -21,11 +21,13 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
+from apps.accounts.services.securite import alerter_du_changement, alerter_du_mot_de_passe, etat_sensible
 from apps.administration.services import pilotage
 from apps.administration.suppression import SuppressionProtegee
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
 from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
+from apps.core.services.audit import journaliser
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 from apps.library.models import NoticeBibliographique
 
@@ -575,7 +577,20 @@ class AdminUserUpdateView(StaffRoleRequiredMixin, UpdateView):
         return ctx
 
     def form_valid(self, form):
+        avant = etat_sensible(User.objects.get(pk=self.object.pk))
+        mot_de_passe_change = bool(form.cleaned_data.get("password1"))
         response = super().form_valid(form)
+        modifications = alerter_du_changement(self.object, avant, auteur=self.request.user)
+        if mot_de_passe_change:
+            alerter_du_mot_de_passe(self.object, auteur=self.request.user)
+        journaliser(
+            "modification",
+            request=self.request,
+            objet=self.object,
+            objet_libelle=f"Compte « {self.object} »",
+            champs_sensibles=sorted(modifications),
+            mot_de_passe=mot_de_passe_change,
+        )
         messages.success(self.request, f"Utilisateur « {self.object} » modifié.")
         return response
 

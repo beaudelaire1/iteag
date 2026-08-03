@@ -4,7 +4,7 @@ import io
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView
+from django.contrib.auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import TemplateView
@@ -15,6 +15,7 @@ from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
 from .forms import EmailOrUsernameAuthenticationForm, MotDePasseForm, ProfilForm
 from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
+from .services.securite import alerter_du_changement, alerter_du_mot_de_passe, etat_sensible
 
 
 def tableau_de_bord(utilisateur) -> str:
@@ -67,6 +68,22 @@ class IteagPasswordResetView(PasswordResetView):
             form.add_error(None, MESSAGE_ECHEC)
             return self.form_invalid(form)
         return super().form_valid(form)
+
+
+class IteagPasswordResetConfirmView(PasswordResetConfirmView):
+    """Une réinitialisation aboutie est un changement de mot de passe : elle s'annonce."""
+
+    def form_valid(self, form):
+        reponse = super().form_valid(form)
+        alerter_du_mot_de_passe(form.user)
+        journaliser(
+            "modification",
+            utilisateur=form.user,
+            request=self.request,
+            objet=form.user,
+            objet_libelle="Réinitialisation du mot de passe",
+        )
+        return reponse
 
 
 # ──────────────────────────────────────────────
@@ -124,12 +141,21 @@ class ProfilView(LoginRequiredMixin, TemplateView):
         return self._coordonnees(request)
 
     def _coordonnees(self, request):
+        # La validation écrit déjà dans l'instance : la photographie se prend avant.
+        avant = etat_sensible(request.user)
         form = ProfilForm(request.POST, request.FILES, instance=request.user)
         if not form.is_valid():
             return self.render_to_response(self.get_context_data(form_profil=form))
 
         form.save()
-        journaliser("modification", request=request, objet=request.user, objet_libelle="Mise à jour du profil")
+        modifications = alerter_du_changement(request.user, avant)
+        journaliser(
+            "modification",
+            request=request,
+            objet=request.user,
+            objet_libelle="Mise à jour du profil",
+            champs_sensibles=sorted(modifications),
+        )
         messages.success(request, "Vos informations ont été enregistrées.")
         return redirect("accounts:profil")
 
@@ -141,6 +167,7 @@ class ProfilView(LoginRequiredMixin, TemplateView):
         form.save()
         # Sans cela, changer son mot de passe déconnecte l'auteur du changement.
         update_session_auth_hash(request, form.user)
+        alerter_du_mot_de_passe(request.user)
         journaliser("modification", request=request, objet=request.user, objet_libelle="Changement de mot de passe")
         messages.success(request, "Votre mot de passe a été modifié.")
         return redirect("accounts:profil")
