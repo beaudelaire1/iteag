@@ -19,9 +19,14 @@ COPY assets/ assets/
 COPY static/ static/
 COPY templates/ templates/
 COPY scripts/ scripts/
+# Un contrôle par fichier produit, et non sur un seul d'entre eux : c'est en
+# n'en vérifiant qu'un que l'ajout de Quill est passé inaperçu jusqu'au rendu
+# en production.
 RUN npm run build \
     && test -s static/css/main.css \
-    && test -s static/js/vendor/hls.min.js
+    && test -s static/js/vendor/hls.min.js \
+    && test -s static/js/vendor/quill.js \
+    && test -s static/css/vendor/quill.snow.css
 
 # ── Étape 2 : dépendances Python ──
 FROM python:3.12-slim AS deps
@@ -77,7 +82,17 @@ COPY . .
 
 # Feuille de style compilée à l'étape 1 (jamais commitée : elle est reproductible)
 COPY --from=assets /app/static/css/main.css static/css/main.css
+COPY --from=assets /app/static/css/vendor/ static/css/vendor/
 COPY --from=assets /app/static/js/vendor/ static/js/vendor/
+
+# Les artefacts de construction sont ignorés par git : s'ils manquaient ici,
+# « collectstatic » n'en dirait rien — il ne se plaint pas d'un fichier absent —
+# et la page ne tomberait qu'au rendu, chez l'utilisateur. On échoue donc à la
+# construction, seul moment où la correction ne coûte rien.
+RUN test -s static/css/main.css \
+    && test -s static/css/vendor/quill.snow.css \
+    && test -s static/js/vendor/quill.js \
+    && test -s static/js/vendor/hls.min.js
 
 # Collecte des statiques — sans masquage d'erreur : un échec ici doit arrêter
 # le build, pas produire une image qui servira un site sans style.
