@@ -18,10 +18,18 @@ def notifier(
     *,
     type_notification: str = Notification.Type.SYSTEME,
     message: str = "",
+    details: list[dict] | None = None,
     url_cible: str = "",
     envoyer_par_email: bool = True,
 ) -> Notification | None:
-    """Crée une notification interne et son email institutionnel."""
+    """Crée une notification interne et son email institutionnel.
+
+    `details` — une liste de « {libelle, valeur} » — est reprise telle quelle
+    dans le courriel. C'est ce qui permet à un destinataire de savoir de quoi
+    il s'agit sans se connecter : un avis qui dit « une information est
+    disponible » oblige à ouvrir la plateforme pour apprendre qu'elle ne
+    concernait pas le lecteur.
+    """
     if destinataire is None or not getattr(destinataire, "is_active", False):
         return None
     notification = Notification.objects.create(
@@ -33,12 +41,19 @@ def notifier(
     )
     email = getattr(destinataire, "email", "")
     if envoyer_par_email and email:
+        # Le courriel s'adresse à quelqu'un : le prénom seul, jamais
+        # l'identifiant de connexion, qui n'a pas sa place dans un en-tête.
+        prenom = (getattr(destinataire, "first_name", "") or "").strip()
+        categorie = Notification.Type(type_notification).label
         transaction.on_commit(
             lambda: envoyer_notification_email(
                 sujet=titre,
                 titre=titre,
                 message=message or titre,
                 destinataires=[email],
+                prenom=prenom,
+                categorie=categorie,
+                details=details,
                 lien=url_cible,
             )
         )

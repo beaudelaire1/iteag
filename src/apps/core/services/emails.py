@@ -94,11 +94,21 @@ def envoyer_notification_email(
     titre: str,
     message: str,
     destinataires: list[str],
+    prenom: str = "",
+    categorie: str = "",
+    details: list[dict] | None = None,
     lien: str = "",
     libelle_lien: str = "Consulter dans mon espace",
     differe: bool = True,
 ) -> bool:
-    """Envoie une information métier avec le gabarit institutionnel ITEAG."""
+    """Envoie une information métier avec le gabarit institutionnel ITEAG.
+
+    `prenom` et `details` sont ce qui distingue un courrier d'un avis de
+    service : le premier s'adresse à quelqu'un, le second dit de quoi il
+    retourne sans obliger à se connecter pour le savoir. `details` est une
+    liste de « {libelle, valeur} » — elle traverse Celery, donc rien qui ne
+    soit sérialisable en JSON.
+    """
     if lien and not lien.startswith(("http://", "https://")):
         lien = urljoin(f"{settings.SITE_URL.rstrip('/')}/", lien.lstrip("/"))
     return envoyer_email(
@@ -107,6 +117,9 @@ def envoyer_notification_email(
         contexte={
             "titre": titre,
             "message": message,
+            "prenom": prenom,
+            "categorie": categorie,
+            "details": details or [],
             "lien": lien,
             "libelle_lien": libelle_lien,
         },
@@ -132,7 +145,9 @@ def envoyer_maintenant(sujet: str, gabarit: str, contexte: dict, destinataires: 
         return False
 
     message = EmailMultiAlternatives(
-        subject=f"[ITEAG] {sujet}",
+        # « ITEAG - » plutôt que « [ITEAG] » : des crochets dans un objet font
+        # message de service automatisé, et certains filtres les pénalisent.
+        subject=f"ITEAG - {sujet}",
         body=strip_tags(html),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=destinataires,

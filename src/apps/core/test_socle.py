@@ -262,7 +262,9 @@ class TestServiceEmail:
         )
         assert envoye is True
         assert len(mail.outbox) == 1
-        assert mail.outbox[0].subject == "[ITEAG] Test"
+        # « ITEAG - » et non « [ITEAG] » : des crochets dans un objet font
+        # message de service, et certains filtres les pénalisent.
+        assert mail.outbox[0].subject == "ITEAG - Test"
         assert mail.outbox[0].alternatives  # une version HTML accompagne le texte
 
     def test_email_integre_logo_et_identite_complete(self):

@@ -32,6 +32,34 @@ def _teacher_courses(request):
     return CoursDeSession.objects.filter(enseignant=prof).select_related("cours", "session")
 
 
+def _message_note_publiee(cours_session) -> str:
+    """Ce que l'étudiant lit dans son courriel.
+
+    Le cours est nommé : un avis qui annonce « une note » sans dire laquelle
+    oblige à se connecter pour découvrir de quoi il s'agissait, et se confond
+    avec les précédents dans une boîte de réception.
+    """
+    return (
+        f"Votre note pour le cours « {cours_session.cours.titre} » vient d'être publiée par votre enseignant. "
+        "Elle est consultable, avec son appréciation, dans votre espace étudiant."
+    )
+
+
+def _details_note_publiee(cours_session) -> list[dict]:
+    """Les précisions du courriel. La note elle-même n'y figure pas.
+
+    Un résultat n'a pas à circuler par messagerie : il est lisible dans
+    l'espace, derrière une authentification, et non dans une boîte de
+    réception partagée ou consultée par-dessus l'épaule.
+    """
+    details = [{"libelle": "Cours", "valeur": cours_session.cours.titre}]
+    if cours_session.session_id:
+        details.append({"libelle": "Session", "valeur": str(cours_session.session)})
+    if cours_session.enseignant_id:
+        details.append({"libelle": "Enseignant", "valeur": str(cours_session.enseignant)})
+    return details
+
+
 # ──────────────────────────────────────────────
 # Dashboard
 # ──────────────────────────────────────────────
@@ -393,7 +421,8 @@ class TeacherPublishGradeView(TeacherRoleRequiredMixin, View):
             evaluation.etudiant.utilisateur,
             f"Note publiée — {evaluation.cours_session.cours.titre}",
             type_notification=Notification.Type.NOTE_PUBLIEE,
-            message="Votre note et l'appréciation de l'enseignant sont disponibles.",
+            message=_message_note_publiee(evaluation.cours_session),
+            details=_details_note_publiee(evaluation.cours_session),
             url_cible=reverse("etudiant:grades"),
         )
         messages.success(
@@ -441,7 +470,8 @@ class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
                 evaluation.etudiant.utilisateur,
                 f"Note publiée — {cours_session.cours.titre}",
                 type_notification=Notification.Type.NOTE_PUBLIEE,
-                message="Votre note et l'appréciation de l'enseignant sont disponibles.",
+                message=_message_note_publiee(cours_session),
+                details=_details_note_publiee(cours_session),
                 url_cible=reverse("etudiant:grades"),
             )
 
