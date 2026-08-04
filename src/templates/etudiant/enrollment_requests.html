@@ -44,7 +44,7 @@
             <a href="{% url 'etudiant:course_offering_detail' demande.cours_session.pk %}" class="btn-secondary text-sm">Voir le cours</a>
             {% if demande.statut == 'paiement_attente' %}<a href="{% url 'etudiant:payments' %}" class="btn-primary text-sm">Consulter les instructions de paiement</a>{% endif %}
             {% if demande.peut_etre_annulee %}
-            <form method="post" action="{% url 'etudiant:enrollment_request_cancel' demande.pk %}" onsubmit="return confirm('Annuler cette demande d’inscription ?');">
+            <form method="post" action="{% url 'etudiant:enrollment_request_cancel' demande.pk %}" data-confirmer="Annuler cette demande d’inscription ?">
                 {% csrf_token %}
                 <button type="submit" class="text-sm font-semibold text-rose-700">Annuler la demande</button>
             </form>

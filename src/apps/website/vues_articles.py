@@ -3,9 +3,15 @@
 Trois publics dans un seul module, parce qu'ils portent sur le même objet et
 que les séparer obligerait à répéter les mêmes gardes trois fois :
 
-- l'**auteur** rédige et soumet ce qui lui appartient ;
-- le **relecteur** (administration ou secrétariat) publie, renvoie ou retire ;
+- l'**auteur** rédige, soumet, supprime ce qui n'engage que lui, et demande le
+  retrait de ce qui est en ligne ;
+- le **relecteur** — la direction, et elle seule — publie, renvoie ou retire ;
 - le **visiteur** ne voit que ce qui est publié.
+
+La relecture était ouverte au secrétariat. Elle ne l'est plus : un article
+paraît sous la signature d'un enseignant et sous le nom de l'institut, et cet
+arbitrage-là relève de la direction. C'est la seule exception à la doctrine de
+« apps/core/mixins.py », où toute la gestion revient au secrétariat.
 """
 
 from django.contrib import messages
@@ -17,7 +23,7 @@ from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 
-from apps.core.mixins import StaffRoleRequiredMixin, TeacherRoleRequiredMixin
+from apps.core.mixins import AdminRoleRequiredMixin, TeacherRoleRequiredMixin
 from apps.core.models import JournalAudit, Notification
 from apps.core.services.audit import journaliser
 from apps.core.services.notifications import notifier, notifier_plusieurs
@@ -145,7 +151,7 @@ class ArticleSoumettreView(TeacherRoleRequiredMixin, View):
         from apps.accounts.models import User
 
         notifier_plusieurs(
-            User.objects.filter(is_active=True, role__in=[User.Role.ADMIN, User.Role.SECRETARIAT]),
+            User.objects.filter(is_active=True, role=User.Role.ADMIN),
             f"Article à relire — {article.titre}",
             type_notification=Notification.Type.SYSTEME,
             message=(
@@ -163,12 +169,91 @@ class ArticleSoumettreView(TeacherRoleRequiredMixin, View):
         return redirect("website:mes_articles")
 
 
+class ArticleDemandeRetraitView(TeacherRoleRequiredMixin, View):
+    """L'auteur demande que son article publié redescende.
+
+    Il ne dépublie pas lui-même : la page est en ligne, indexée, peut-être
+    citée, et sa disparition se décide là où sa parution s'est décidée. La
+    demande part vers la direction avec son motif.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        article = get_object_or_404(Article, pk=pk, auteur=_fiche_enseignant(request.user))
+        try:
+            article.demander_le_retrait(request.POST.get("motif", ""))
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+            return redirect("website:mes_articles")
+
+        from apps.accounts.models import User
+
+        notifier_plusieurs(
+            User.objects.filter(is_active=True, role=User.Role.ADMIN),
+            f"Retrait demandé — {article.titre}",
+            type_notification=Notification.Type.SYSTEME,
+            message=(
+                f"{article.auteur.nom_complet} demande le retrait de son article « {article.titre} », "
+                "aujourd'hui en ligne. La page reste publiée tant que vous n'avez pas tranché."
+            ),
+            details=[
+                {"libelle": "Article", "valeur": article.titre},
+                {"libelle": "Auteur", "valeur": article.auteur.nom_complet},
+                {"libelle": "Motif", "valeur": article.motif_retrait},
+            ],
+            url_cible=reverse("website:articles_relecture"),
+        )
+        messages.success(
+            request,
+            "Demande transmise à la direction. L'article reste en ligne jusqu'à sa décision.",
+        )
+        return redirect("website:mes_articles")
+
+
+class ArticleSupprimerView(TeacherRoleRequiredMixin, View):
+    """Suppression par l'auteur, et seulement de ce qui n'engage personne.
+
+    Un brouillon ou un article retiré ne sont lus que par lui. Un article
+    soumis attend une décision, un article publié a une adresse en ligne : ni
+    l'un ni l'autre ne disparaît sur un clic d'auteur.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        article = get_object_or_404(Article, pk=pk, auteur=_fiche_enseignant(request.user))
+        if not article.est_supprimable:
+            messages.error(
+                request,
+                "Cet article ne peut pas être supprimé en l'état : "
+                f"il est « {article.get_statut_display().lower()} ». "
+                "Demandez son retrait, ou attendez la décision du relecteur.",
+            )
+            return redirect("website:mes_articles")
+
+        titre, identifiant = article.titre, str(article.pk)
+        article.delete()
+        # Journalisé après coup, avec l'identité recopiée : un objet détruit
+        # n'a plus de « pk » à faire lire au service.
+        journaliser(
+            JournalAudit.Action.SUPPRESSION,
+            utilisateur=request.user,
+            request=request,
+            objet_type="Article",
+            objet_id=identifiant,
+            objet_libelle=f"Article « {titre} »",
+        )
+        messages.success(request, f"« {titre} » a été supprimé.")
+        return redirect("website:mes_articles")
+
+
 # ══════════════════════════════════════════════
 # Le relecteur
 # ══════════════════════════════════════════════
 
 
-class ArticlesRelectureView(StaffRoleRequiredMixin, ListView):
+class ArticlesRelectureView(AdminRoleRequiredMixin, ListView):
     template_name = "website/articles/relecture.html"
     context_object_name = "articles"
     paginate_by = 25
@@ -183,11 +268,14 @@ class ArticlesRelectureView(StaffRoleRequiredMixin, ListView):
         contexte["nav"] = "articles"
         contexte["a_relire"] = [a for a in contexte["articles"] if a.statut == Article.Statut.RELECTURE]
         contexte["publies"] = [a for a in contexte["articles"] if a.est_public]
+        # Les retraits demandés remontent en tête : ce sont les seuls articles
+        # publiés qui attendent quelque chose du relecteur.
+        contexte["retraits_demandes"] = [a for a in contexte["publies"] if a.retrait_demande]
         return contexte
 
 
-class ArticleDecisionView(StaffRoleRequiredMixin, View):
-    """Publier, renvoyer à l'auteur, ou retirer de la publication."""
+class ArticleDecisionView(AdminRoleRequiredMixin, View):
+    """Publier, renvoyer à l'auteur, retirer, ou refuser un retrait demandé."""
 
     http_method_names = ["post"]
 
@@ -205,6 +293,18 @@ class ArticleDecisionView(StaffRoleRequiredMixin, View):
             elif action == "retirer":
                 article.retirer(par=request.user)
                 titre_avis, message_avis = "Votre article a été retiré de la publication", article.titre
+            elif action == "refuser_retrait":
+                # Une demande qu'on ne peut pas décliner reste éternellement en
+                # tête de liste, et l'auteur n'apprend jamais la décision.
+                if not article.retrait_demande:
+                    raise ValidationError("Aucun retrait n'est demandé pour cet article.")
+                motif = (request.POST.get("motif", "") or "").strip()
+                if not motif:
+                    raise ValidationError("Dites à l'auteur pourquoi l'article reste en ligne.")
+                article.retrait_demande_le = None
+                article.motif_retrait = ""
+                article.save(update_fields=["retrait_demande_le", "motif_retrait", "updated_at"])
+                titre_avis, message_avis = "Votre article reste en ligne", motif
             else:
                 raise ValidationError("Action inconnue.")
         except ValidationError as erreur:

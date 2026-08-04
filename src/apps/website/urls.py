@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, vues_articles
+from . import views, vues_actualites, vues_articles
 
 app_name = "website"
 
@@ -27,6 +27,16 @@ urlpatterns = [
         name="article_soumettre",
     ),
     path(
+        "espace-enseignant/articles/<int:pk>/demander-le-retrait/",
+        vues_articles.ArticleDemandeRetraitView.as_view(),
+        name="article_demande_retrait",
+    ),
+    path(
+        "espace-enseignant/articles/<int:pk>/supprimer/",
+        vues_articles.ArticleSupprimerView.as_view(),
+        name="article_supprimer",
+    ),
+    path(
         "espace-enseignant/articles/<int:pk>/illustration/",
         vues_articles.IllustrationCreateView.as_view(),
         name="article_illustration",
@@ -35,6 +45,27 @@ urlpatterns = [
         "espace-enseignant/illustrations/<int:pk>/supprimer/",
         vues_articles.IllustrationDeleteView.as_view(),
         name="illustration_supprimer",
+    ),
+    # ── Actualités, côté back-office (direction et secrétariat) ──
+    path(
+        "espace-admin/actualites/",
+        vues_actualites.ActualitesGestionView.as_view(),
+        name="actualites_gestion",
+    ),
+    path(
+        "espace-admin/actualites/nouvelle/",
+        vues_actualites.ActualiteEditionView.as_view(),
+        name="actualite_creation",
+    ),
+    path(
+        "espace-admin/actualites/<int:pk>/",
+        vues_actualites.ActualiteEditionView.as_view(),
+        name="actualite_edition",
+    ),
+    path(
+        "espace-admin/actualites/<int:pk>/decision/",
+        vues_actualites.ActualiteDecisionView.as_view(),
+        name="actualite_decision",
     ),
     # ── Relecture, côté administration ──
     path("espace-admin/articles/", vues_articles.ArticlesRelectureView.as_view(), name="articles_relecture"),

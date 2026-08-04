@@ -48,6 +48,14 @@ def enseignant(db):
 
 @pytest.fixture
 def relecteur(db):
+    """La direction, et elle seule : voir « TestPerimetreDeLaRelecture »."""
+    return User.objects.create_user(
+        username="dir_art", email="da@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+    )
+
+
+@pytest.fixture
+def secretaire(db):
     return User.objects.create_user(
         username="sec_art", email="sa@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
@@ -183,6 +191,84 @@ class TestCycle:
         assert article.est_modifiable
         assert not article.est_public
 
+    def test_un_article_retire_se_resoumet(self, article, relecteur):
+        """C'est la seule issue laissée à l'auteur après un retrait."""
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.retirer(par=relecteur)
+
+        article.soumettre()
+        assert article.statut == Article.Statut.RELECTURE
+
+
+class TestDemandeDeRetrait:
+    """L'auteur ne dépublie pas lui-même : il demande, la direction tranche."""
+
+    def test_seul_un_article_publie_fait_l_objet_d_une_demande(self, article):
+        with pytest.raises(ValidationError):
+            article.demander_le_retrait("Une erreur de date.")
+
+    def test_une_demande_sans_motif_est_refusee(self, article, relecteur):
+        article.soumettre()
+        article.publier(par=relecteur)
+        with pytest.raises(ValidationError):
+            article.demander_le_retrait("   ")
+        assert not article.retrait_demande
+
+    def test_la_demande_laisse_l_article_en_ligne(self, article, relecteur):
+        """Rien ne disparaît du site sur la seule demande de son auteur."""
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("Une source s'est révélée fausse.")
+
+        assert article.retrait_demande
+        assert article.est_public
+        assert article.motif_retrait == "Une source s'est révélée fausse."
+
+    def test_le_retrait_accorde_clot_la_demande(self, article, relecteur):
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("À reprendre.")
+        article.retirer(par=relecteur)
+
+        assert article.retrait_demande_le is None
+        assert not article.retrait_demande
+
+    def test_une_demande_ne_survit_pas_a_une_nouvelle_soumission(self, article, relecteur):
+        """Sinon elle reparaîtrait, satisfaite, à la republication."""
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("À reprendre.")
+        article.retirer(par=relecteur)
+        article.soumettre()
+        article.publier(par=relecteur)
+
+        assert not article.retrait_demande
+
+
+class TestSuppressionParLAuteur:
+    """Ce qui n'engage que l'auteur se supprime ; le reste, non."""
+
+    def test_un_brouillon_est_supprimable(self, article):
+        assert article.est_supprimable
+
+    def test_un_article_soumis_ne_l_est_pas(self, article):
+        """Un relecteur est peut-être en train d'écrire sa décision."""
+        article.soumettre()
+        assert not article.est_supprimable
+
+    def test_un_article_publie_ne_l_est_pas(self, article, relecteur):
+        """La page est en ligne, indexée, peut-être citée."""
+        article.soumettre()
+        article.publier(par=relecteur)
+        assert not article.est_supprimable
+
+    def test_un_article_retire_le_redevient(self, article, relecteur):
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.retirer(par=relecteur)
+        assert article.est_supprimable
+
 
 # ══════════════════════════════════════════════
 # Les écrans
@@ -244,6 +330,67 @@ class TestEcransEnseignant:
         )
         assert article.illustrations.count() == 0
 
+    def test_l_auteur_supprime_son_brouillon(self, client, enseignant, article):
+        client.force_login(enseignant.user)
+        client.post(reverse("website:article_supprimer", args=[article.pk]))
+        assert not Article.objects.filter(pk=article.pk).exists()
+
+    def test_l_auteur_ne_supprime_pas_ce_qui_est_en_ligne(self, client, enseignant, article, relecteur):
+        client.force_login(enseignant.user)
+        article.soumettre()
+        article.publier(par=relecteur)
+
+        client.post(reverse("website:article_supprimer", args=[article.pk]))
+        assert Article.objects.filter(pk=article.pk).exists()
+
+    def test_on_ne_supprime_pas_l_article_d_un_collegue(self, client, db, article):
+        autre = User.objects.create_user(
+            username="voleur_prof", email="vp@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        )
+        Professeur.objects.create(nom="Voleur", prenom="Prof", slug="voleur-art", user=autre)
+
+        client.force_login(autre)
+        assert client.post(reverse("website:article_supprimer", args=[article.pk])).status_code == 404
+        assert Article.objects.filter(pk=article.pk).exists()
+
+    def test_la_suppression_laisse_une_trace(self, client, enseignant, article):
+        """Un article disparu sans trace est un article qu'on ne peut pas expliquer."""
+        from apps.core.models import JournalAudit
+
+        client.force_login(enseignant.user)
+        client.post(reverse("website:article_supprimer", args=[article.pk]))
+
+        assert JournalAudit.objects.filter(
+            action=JournalAudit.Action.SUPPRESSION, objet_type="Article"
+        ).exists()
+
+    def test_l_auteur_demande_le_retrait_de_son_article_publie(
+        self, client, enseignant, article, relecteur
+    ):
+        article.soumettre()
+        article.publier(par=relecteur)
+        client.force_login(enseignant.user)
+
+        client.post(
+            reverse("website:article_demande_retrait", args=[article.pk]),
+            {"motif": "Une source s'est révélée fausse."},
+        )
+
+        article.refresh_from_db()
+        assert article.retrait_demande
+        assert article.est_public, "La page reste en ligne tant que la direction n'a pas tranché."
+        assert Notification.objects.filter(destinataire=relecteur).exists()
+
+    def test_une_demande_de_retrait_sans_motif_ne_passe_pas(self, client, enseignant, article, relecteur):
+        article.soumettre()
+        article.publier(par=relecteur)
+        client.force_login(enseignant.user)
+
+        client.post(reverse("website:article_demande_retrait", args=[article.pk]), {"motif": ""})
+
+        article.refresh_from_db()
+        assert not article.retrait_demande
+
     def test_un_etudiant_n_accede_pas_a_la_redaction(self, client, db):
         etudiant = User.objects.create_user(
             username="etu_art", email="ea@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
@@ -279,6 +426,100 @@ class TestEcransRelecture:
         assert reponse.status_code in (302, 403)
         article.refresh_from_db()
         assert not article.est_public
+
+
+class TestPerimetreDeLaRelecture:
+    """La relecture revient à la direction, et à elle seule.
+
+    C'est la seule exception à la doctrine de « apps/core/mixins.py », où toute
+    la gestion courante revient au secrétariat. La raison : un article paraît
+    sous la signature d'un enseignant et sous le nom de l'institut, et cet
+    arbitrage-là n'est pas un acte de scolarité.
+    """
+
+    def test_le_secretariat_n_ouvre_pas_l_ecran_de_relecture(self, client, secretaire):
+        client.force_login(secretaire)
+        assert client.get(reverse("website:articles_relecture")).status_code in (302, 403)
+
+    def test_le_secretariat_ne_publie_pas(self, client, article, secretaire):
+        article.soumettre()
+        client.force_login(secretaire)
+
+        client.post(reverse("website:article_decision", args=[article.pk]), {"action": "publier"})
+
+        article.refresh_from_db()
+        assert not article.est_public
+
+    def test_la_barre_du_secretariat_ne_mene_pas_aux_articles(self, client, secretaire):
+        """Un lien vers un écran interdit est une promesse qui ne tient pas."""
+        client.force_login(secretaire)
+        barre = client.get(reverse("secretariat:dashboard")).content.decode()
+        assert f'href="{reverse("website:articles_relecture")}"' not in barre
+
+    def test_la_soumission_avertit_la_direction_et_non_le_secretariat(
+        self, client, enseignant, article, relecteur, secretaire
+    ):
+        """Avertir qui ne peut rien décider produit un avis que personne ne traite."""
+        client.force_login(enseignant.user)
+        client.post(reverse("website:article_soumettre", args=[article.pk]))
+
+        assert Notification.objects.filter(destinataire=relecteur).exists()
+        assert not Notification.objects.filter(destinataire=secretaire).exists()
+
+
+class TestArbitrageDuRetrait:
+    def test_le_relecteur_honore_la_demande(self, client, article, relecteur, enseignant):
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("Une source s'est révélée fausse.")
+        client.force_login(relecteur)
+
+        client.post(reverse("website:article_decision", args=[article.pk]), {"action": "retirer"})
+
+        article.refresh_from_db()
+        assert article.statut == Article.Statut.RETIRE
+        assert Notification.objects.filter(destinataire=enseignant.user).exists()
+
+    def test_le_relecteur_peut_maintenir_l_article_en_ligne(self, client, article, relecteur):
+        """Une demande qu'on ne peut pas décliner resterait éternellement en tête."""
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("Je préfère la retravailler.")
+        client.force_login(relecteur)
+
+        client.post(
+            reverse("website:article_decision", args=[article.pk]),
+            {"action": "refuser_retrait", "motif": "Le texte reste juste ; corrigez la note 12."},
+        )
+
+        article.refresh_from_db()
+        assert article.est_public
+        assert not article.retrait_demande
+
+    def test_maintenir_en_ligne_exige_de_dire_pourquoi(self, client, article, relecteur):
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("Je préfère la retravailler.")
+        client.force_login(relecteur)
+
+        client.post(
+            reverse("website:article_decision", args=[article.pk]),
+            {"action": "refuser_retrait", "motif": "  "},
+        )
+
+        article.refresh_from_db()
+        assert article.retrait_demande, "La demande reste ouverte tant que rien n'est dit à l'auteur."
+
+    def test_l_ecran_de_relecture_montre_les_retraits_demandes(self, client, article, relecteur):
+        article.soumettre()
+        article.publier(par=relecteur)
+        article.demander_le_retrait("Une source s'est révélée fausse.")
+        client.force_login(relecteur)
+
+        contenu = client.get(reverse("website:articles_relecture")).content.decode()
+        assert "Retraits demandés" in contenu
+        # Sans l'apostrophe : Django l'échappe en « &#x27; » au rendu.
+        assert "révélée fausse" in contenu
 
 
 class TestPagesPubliques:

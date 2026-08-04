@@ -24,7 +24,8 @@
 <a href="{% url 'administration:payments' %}" class="portal-nav-pill {% if nav == 'payments' %}active{% endif %}">Paiements</a>
 <a href="{% url 'administration:tarifs' %}" class="portal-nav-pill {% if nav == 'tarifs' %}active{% endif %}">Tarifs</a>
 <a href="{% url 'administration:utilisateurs' %}" class="portal-nav-pill {% if nav == 'utilisateurs' %}active{% endif %}">Utilisateurs</a>
-{% endif %}
+<a href="{% url 'website:actualites_gestion' %}" class="portal-nav-pill {% if nav == 'actualites' %}active{% endif %}">Actualités</a>
 <a href="{% url 'website:articles_relecture' %}" class="portal-nav-pill {% if nav == 'articles' %}active{% endif %}">Articles</a>
 <a href="{% url 'administration:tableurs' %}" class="portal-nav-pill {% if nav == 'tableurs' %}active{% endif %}">Imports</a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-pill {% if nav == 'profil' %}active{% endif %}">Mon profil</a>
+{% endif %}

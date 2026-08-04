@@ -31,6 +31,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import get_resolver, reverse
 from django.utils import timezone
+from wagtail.models import Page
 
 from apps.academics.models import (
     VAE,
@@ -71,6 +72,7 @@ from apps.lms.models import (
     RessourcePedagogique,
 )
 from apps.paiements.models import Reglement
+from apps.website.models import NewsIndexPage, NewsPage
 from apps.website.models_publications import Article, ImageArticle
 
 ADMIN, SECRETARIAT = User.Role.ADMIN, User.Role.SECRETARIAT
@@ -348,6 +350,21 @@ def univers(db, settings, tmp_path):
         article=monde["article"], fichier=SimpleUploadedFile("figure.png", b"figure"), legende="Figure 1"
     )
 
+    # Une actualité vit dans l'arbre Wagtail : elle a besoin de son index, qui
+    # a besoin de la racine créée par les migrations. « add_child » ne vérifie
+    # pas « parent_page_types » — cette contrainte n'existe qu'à l'écran de
+    # création —, l'index est donc accroché directement à la racine.
+    racine = Page.objects.filter(depth=1).first()
+    index_actualites = NewsIndexPage(title="Actualités", slug="actualites-detail")
+    racine.add_child(instance=index_actualites)
+    monde["actualite"] = NewsPage(
+        title="Rentrée académique",
+        slug="rentree-academique-detail",
+        date=timezone.localdate(),
+        body="<p>La rentrée est fixée.</p>",
+    )
+    index_actualites.add_child(instance=monde["actualite"])
+
     # ── Divers ──
     monde["notification"] = notifier(monde[ETUDIANT], "Une nouvelle note", envoyer_par_email=False)
     monde["abonne"] = AbonneNewsletter.objects.create(email="abonne.detail@example.org")
@@ -550,9 +567,16 @@ FABRIQUES = {
     "website:article_detail": (PUBLIC, lambda m: {"slug": m["article"].slug}),
     "website:article_edition": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),
     "website:article_soumettre": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),
+    "website:article_demande_retrait": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),
+    "website:article_supprimer": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),
     "website:article_illustration": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),
     "website:illustration_supprimer": (ENSEIGNANT, lambda m: {"pk": m["illustration"].pk}),
-    "website:article_decision": (SECRETARIAT, lambda m: {"pk": m["article"].pk}),
+    # La relecture revient à la direction seule : l'article paraît sous la
+    # signature d'un enseignant et sous le nom de l'institut.
+    "website:article_decision": (ADMIN, lambda m: {"pk": m["article"].pk}),
+    # ── Actualités ──
+    "website:actualite_edition": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
+    "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
 }
 
 # Routes dont la propriété n'est pas contrôlable par un tiers du même rôle, et

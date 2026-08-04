@@ -83,7 +83,7 @@
                                 <a href="{% url 'elearning:enseignant_soustitre' video.pk %}"
                                    class="text-sm link-reveal" style="color: var(--color-navy-700);">Sous-titres</a>
                                 <form method="post" action="{% url 'elearning:enseignant_video_supprimer' video.pk %}"
-                                      onsubmit="return confirm('Retirer cette référence de la bibliothèque ? Le média restera chez le fournisseur.');">
+                                      data-confirmer="Retirer cette référence de la bibliothèque ? Le média restera chez le fournisseur.">
                                     {% csrf_token %}
                                     <button type="submit" class="text-sm text-danger link-reveal">Retirer</button>
                                 </form>

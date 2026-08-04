@@ -521,7 +521,9 @@
 
     const editeur = new window.Quill(zone, {
       theme: "snow",
-      placeholder: "Rédigez votre article ici…",
+      // L'écran dit ce qu'on y écrit : un article de recherche et une
+      // actualité partagent l'éditeur, pas la même invite.
+      placeholder: zone.getAttribute("data-editeur-invite") || "Rédigez votre article ici…",
       modules: {
         toolbar: [
           [{ header: [2, 3, false] }],
@@ -563,8 +565,28 @@
     });
   }
 
+  /* ── Confirmations avant un envoi irréversible ──
+     Écrit ici, et non dans un « onsubmit » posé sur la balise : la politique
+     de sécurité n'accorde que « script-src 'self' », donc un gestionnaire
+     d'événement inline n'est jamais exécuté. Le garde-fou paraissait posé et
+     ne retenait rien — la suppression partait au premier clic.
+
+     Le formulaire porte « data-confirmer="La question ?" ». Sans script, la
+     confirmation disparaît mais l'action reste possible : c'est un
+     avertissement, pas une autorisation. */
+  function initConfirmations() {
+    document.querySelectorAll("form[data-confirmer]").forEach((formulaire) => {
+      formulaire.addEventListener("submit", (evenement) => {
+        if (!window.confirm(formulaire.getAttribute("data-confirmer"))) {
+          evenement.preventDefault();
+        }
+      });
+    });
+  }
+
   /* ── Boot ── */
   function boot() {
+    initConfirmations();
     initNavScroll();
     initTextReveal();
     initReveals();

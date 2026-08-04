@@ -8,6 +8,11 @@ d'autorité, et le résultat n'est plus celui qu'on lit dans le gabarit.
 
 Les entrées sont regroupées par métier plutôt que listées à plat. Aucune n'est
 supprimée : chacune est le seul chemin vers son écran.
+
+La barre du secrétariat est **rendue seule**, et non suivie de la fin de
+celle-ci : le groupe « Mon compte » vivait hors du « if », si bien qu'un
+secrétariat voyait Articles, Imports et Mon profil une deuxième fois, sous un
+second intitulé « Mon compte ». Ce qui suit n'appartient qu'à la direction.
 {% endcomment %}
 
 {% if user.is_secretariat and not user.is_superuser %}
@@ -126,13 +131,17 @@ supprimée : chacune est le seul chemin vers son écran.
     Django Admin (avancé)
 </a>
 
-{% endif %}
+<p class="portal-nav-group">Publications</p>
+<a href="{% url 'website:actualites_gestion' %}" class="portal-nav-link {% if nav == 'actualites' %}active{% endif %}">
+    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5"/></svg>
+    Actualités
+</a>
+<a href="{% url 'website:articles_relecture' %}" class="portal-nav-link {% if nav == 'articles' %}active{% endif %}">
+    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814"/></svg>
+    Articles de recherche
+</a>
 
 <p class="portal-nav-group">Mon compte</p>
-<a href="{% url 'website:articles_relecture' %}" class="portal-nav-link {% if nav == 'articles' %}active{% endif %}">
-    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5"/></svg>
-    Articles
-</a>
 <a href="{% url 'administration:tableurs' %}" class="portal-nav-link {% if nav == 'tableurs' %}active{% endif %}">
     <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6"/></svg>
     Imports et exports
@@ -141,3 +150,5 @@ supprimée : chacune est le seul chemin vers son écran.
     <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
     Mon profil
 </a>
+
+{% endif %}

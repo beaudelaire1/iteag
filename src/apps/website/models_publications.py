@@ -61,6 +61,11 @@ class Article(TimeStampedModel):
     date_publication = models.DateTimeField(null=True, blank=True, verbose_name="Publié le")
     date_soumission = models.DateTimeField(null=True, blank=True, verbose_name="Soumis le")
     motif_refus = models.TextField(blank=True, verbose_name="Motif du renvoi en brouillon")
+    # L'auteur ne dépublie pas lui-même — le retrait d'une page indexée est une
+    # décision éditoriale. Il la demande, et la demande doit se voir : sans
+    # trace en base, elle vivrait dans un courriel que personne ne relit.
+    retrait_demande_le = models.DateTimeField(null=True, blank=True, verbose_name="Retrait demandé le")
+    motif_retrait = models.TextField(blank=True, verbose_name="Motif de la demande de retrait")
     relu_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -124,6 +129,22 @@ class Article(TimeStampedModel):
         return self.statut in (self.Statut.BROUILLON, self.Statut.RETIRE)
 
     @property
+    def est_supprimable(self) -> bool:
+        """L'auteur ne détruit que ce qui n'engage personne d'autre.
+
+        Un brouillon et un article retiré ne sont lus que par lui : les
+        supprimer ne prend rien à personne. Un article soumis attend une
+        décision qu'un relecteur est peut-être en train d'écrire, et un article
+        publié a une adresse en ligne, indexée et peut-être citée — il se
+        retire d'abord, il se supprime ensuite.
+        """
+        return self.statut in (self.Statut.BROUILLON, self.Statut.RETIRE)
+
+    @property
+    def retrait_demande(self) -> bool:
+        return self.est_public and self.retrait_demande_le is not None
+
+    @property
     def resume(self) -> str:
         return self.chapeau or en_texte(self.corps, limite=200)
 
@@ -137,7 +158,39 @@ class Article(TimeStampedModel):
         self.statut = self.Statut.RELECTURE
         self.date_soumission = timezone.now()
         self.motif_refus = ""
-        self.save(update_fields=["statut", "date_soumission", "motif_refus", "updated_at"])
+        # Un article retiré puis resoumis repart d'une page blanche : la
+        # demande de retrait qui l'a fait descendre est honorée, donc close.
+        self.retrait_demande_le = None
+        self.motif_retrait = ""
+        self.save(
+            update_fields=[
+                "statut",
+                "date_soumission",
+                "motif_refus",
+                "retrait_demande_le",
+                "motif_retrait",
+                "updated_at",
+            ]
+        )
+        return self
+
+    def demander_le_retrait(self, motif: str):
+        """L'auteur demande que son article publié redescende.
+
+        Il ne le dépublie pas lui-même : une page en ligne relève de la même
+        décision éditoriale que sa mise en ligne. Le motif est obligatoire —
+        sans lui, le relecteur arbitre à l'aveugle.
+        """
+        from django.core.exceptions import ValidationError
+
+        motif = (motif or "").strip()
+        if self.statut != self.Statut.PUBLIE:
+            raise ValidationError("Seul un article publié fait l'objet d'une demande de retrait.")
+        if not motif:
+            raise ValidationError("Indiquez pourquoi cet article doit être retiré.")
+        self.retrait_demande_le = timezone.now()
+        self.motif_retrait = motif
+        self.save(update_fields=["retrait_demande_le", "motif_retrait", "updated_at"])
         return self
 
     def publier(self, *, par=None):
@@ -174,7 +227,13 @@ class Article(TimeStampedModel):
             raise ValidationError("Seul un article publié peut être retiré.")
         self.statut = self.Statut.RETIRE
         self.relu_par = par
-        self.save(update_fields=["statut", "relu_par", "updated_at"])
+        # La demande, s'il y en avait une, vient d'être satisfaite : la laisser
+        # ouverte la ferait reparaître au prochain passage en ligne.
+        self.retrait_demande_le = None
+        self.motif_retrait = ""
+        self.save(
+            update_fields=["statut", "relu_par", "retrait_demande_le", "motif_retrait", "updated_at"]
+        )
         return self
 
 

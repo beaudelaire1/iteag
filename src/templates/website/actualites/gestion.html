@@ -1,0 +1,95 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Actualités — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='actualites' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='actualites' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Publications</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Actualités</h1>
+        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+            Les annonces de l'institut, telles qu'elles paraissent sur le site public.
+        </p>
+    </div>
+    <a href="{% url 'website:actualite_creation' %}" class="btn-primary">Écrire une actualité</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% comment %}
+Brouillons d'abord : ce sont les seules actualités qui attendent quelque chose.
+Une annonce oubliée en brouillon n'existe pour personne.
+{% endcomment %}
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    Brouillons ({{ brouillons|length }})
+</h2>
+{% if brouillons %}
+<ul class="mb-10 space-y-3" role="list">
+    {% for actualite in brouillons %}
+    <li class="card flex flex-wrap items-center justify-between gap-3">
+        <span class="min-w-0">
+            <span class="badge">Hors ligne</span>
+            <a href="{% url 'website:actualite_edition' actualite.pk %}"
+               class="ml-2 font-semibold text-navy-900">{{ actualite.title }}</a>
+            <span class="block text-xs text-warm-500">{{ actualite.date|date:"d/m/Y" }}</span>
+        </span>
+        <span class="flex flex-wrap items-center gap-2">
+            <form method="post" action="{% url 'website:actualite_decision' actualite.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="publier">
+                <button type="submit" class="btn-primary whitespace-nowrap">Publier</button>
+            </form>
+            <a href="{% url 'website:actualite_edition' actualite.pk %}" class="btn-ghost">Modifier</a>
+            <form method="post" action="{% url 'website:actualite_decision' actualite.pk %}"
+                  data-confirmer="Supprimer « {{ actualite.title }} » ? Le texte sera perdu.">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="supprimer">
+                <button type="submit" class="text-sm text-danger">Supprimer</button>
+            </form>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card mb-10 py-10 text-center">
+    <p class="text-warm-600">Aucune actualité en attente de publication.</p>
+</div>
+{% endif %}
+
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    En ligne ({{ en_ligne|length }})
+</h2>
+{% if en_ligne %}
+<ul class="space-y-3" role="list">
+    {% for actualite in en_ligne %}
+    <li class="card flex flex-wrap items-center justify-between gap-3">
+        <span class="min-w-0">
+            <span class="badge badge-gold">En ligne</span>
+            <a href="{{ actualite.url }}" class="ml-2 font-semibold text-navy-900">{{ actualite.title }}</a>
+            <span class="block text-xs text-warm-500">
+                {{ actualite.date|date:"d/m/Y" }}
+                {% if actualite.has_unpublished_changes %} · modifications non publiées{% endif %}
+            </span>
+        </span>
+        <span class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'website:actualite_edition' actualite.pk %}" class="btn-ghost">Modifier</a>
+            <form method="post" action="{% url 'website:actualite_decision' actualite.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="depublier">
+                <button type="submit" class="text-sm text-danger">Retirer du site</button>
+            </form>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm text-warm-500">Aucune actualité publiée pour le moment.</p>
+{% endif %}
+
+{% include "partials/pagination.html" %}
+
+{% endblock %}

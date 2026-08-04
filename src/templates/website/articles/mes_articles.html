@@ -29,6 +29,7 @@
                     <span class="badge{% if article.statut == 'publie' %} badge-gold{% endif %}">
                         {{ article.get_statut_display }}
                     </span>
+                    {% if article.retrait_demande %}<span class="badge">Retrait demandé</span>{% endif %}
                     {% if article.date_publication %}
                     <time class="text-xs text-warm-400" datetime="{{ article.date_publication|date:'c' }}">
                         {{ article.date_publication|date:"d/m/Y" }}
@@ -44,6 +45,12 @@
                     À reprendre : {{ article.motif_refus }}
                 </p>
                 {% endif %}
+                {% if article.retrait_demande %}
+                <p class="mt-2 text-sm" style="color: var(--color-gold-700, #92400e);">
+                    Retrait demandé le {{ article.retrait_demande_le|date:"d/m/Y" }} —
+                    l'article reste en ligne jusqu'à la décision de la direction.
+                </p>
+                {% endif %}
             </div>
             <div class="flex shrink-0 flex-wrap gap-2">
                 {% if article.est_public %}
@@ -52,8 +59,55 @@
                 <a href="{% url 'website:article_edition' article.pk %}" class="btn-ghost">
                     {% if article.est_modifiable %}Modifier{% else %}Consulter{% endif %}
                 </a>
+
+                {% comment %}
+                Les actions suivent le statut, plutôt que d'être toutes offertes
+                puis refusées à l'envoi : un bouton qui échoue une fois sur deux
+                n'apprend rien de ce qui est permis.
+                {% endcomment %}
+                {% if article.est_modifiable %}
+                <form method="post" action="{% url 'website:article_soumettre' article.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary">Soumettre à relecture</button>
+                </form>
+                {% endif %}
+
+                {% if article.est_supprimable %}
+                <form method="post" action="{% url 'website:article_supprimer' article.pk %}"
+                      data-confirmer="Supprimer « {{ article.titre }} » ? Le texte et ses illustrations seront perdus.">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-ghost" style="color: var(--color-danger, #b91c1c);">
+                        Supprimer
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
+
+        {% if article.est_public and not article.retrait_demande %}
+        <details class="mt-4 border-t border-warm-100 pt-3">
+            <summary class="cursor-pointer text-sm font-medium text-navy-700">Demander le retrait</summary>
+            <p class="mt-2 text-sm text-warm-600">
+                Un article en ligne est indexé, et peut-être déjà cité : son retrait se décide
+                là où sa parution s'est décidée. Dites pourquoi, la direction tranchera.
+            </p>
+            <form method="post" action="{% url 'website:article_demande_retrait' article.pk %}"
+                  class="mt-3 flex flex-col gap-2 sm:flex-row">
+                {% csrf_token %}
+                <label class="min-w-0 flex-1">
+                    <span class="sr-only">Motif du retrait</span>
+                    <input type="text" name="motif" class="form-input" required
+                           placeholder="Ce qui justifie le retrait — obligatoire">
+                </label>
+                <button type="submit" class="btn-ghost whitespace-nowrap">Transmettre la demande</button>
+            </form>
+        </details>
+        {% elif article.statut == 'relecture' %}
+        <p class="mt-3 border-t border-warm-100 pt-3 text-sm text-warm-500">
+            En attente de la décision du relecteur. L'article n'est ni modifiable ni supprimable
+            tant qu'elle n'est pas rendue.
+        </p>
+        {% endif %}
     </li>
     {% endfor %}
 </ul>

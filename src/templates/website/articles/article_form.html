@@ -47,11 +47,19 @@ cherche à s'en servir. L'ordre inverse laisserait la zone en simple champ
 
 {% if verrouille %}
 <div class="card mb-6">
-    <p class="font-semibold text-navy-900">Cet article est publié.</p>
+    <p class="font-semibold text-navy-900">
+        {% if article.statut == 'relecture' %}Cet article est soumis à relecture.{% else %}Cet article est publié.{% endif %}
+    </p>
     <p class="mt-1 text-sm text-warm-600">
+        {% if article.statut == 'relecture' %}
+        Il n'est plus modifiable tant que la décision n'est pas rendue : le texte qu'on relit
+        doit être celui qui a été soumis. Vous serez averti dès qu'elle est prise.
+        {% else %}
         Il n'est plus modifiable en l'état : le changer transformerait sous les yeux du lecteur
-        une page déjà en ligne, sans qu'elle repasse par la relecture. Demandez son retrait à
-        l'administration pour le reprendre.
+        une page déjà en ligne, sans qu'elle repasse par la relecture. Le retrait se demande
+        depuis <a href="{% url 'website:mes_articles' %}" class="link-reveal">Mes articles</a>,
+        et rouvre la rédaction une fois accordé.
+        {% endif %}
     </p>
 </div>
 {% else %}

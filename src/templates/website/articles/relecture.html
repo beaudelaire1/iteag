@@ -17,6 +17,52 @@
 
 {% block portal_content %}
 
+{% comment %}
+Les retraits demandés passent avant la relecture : ce sont des pages déjà en
+ligne, et l'auteur attend. Ils figurent aussi plus bas dans « En ligne » — un
+même article, deux raisons de le regarder.
+{% endcomment %}
+{% if retraits_demandes %}
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    Retraits demandés ({{ retraits_demandes|length }})
+</h2>
+<ul class="mb-10 space-y-4" role="list">
+    {% for article in retraits_demandes %}
+    <li class="card shadow-card">
+        <p class="flex flex-wrap items-center gap-2">
+            <span class="badge badge-gold">Retrait demandé</span>
+            <span class="text-xs text-warm-500">
+                {{ article.auteur.nom_complet }} · le {{ article.retrait_demande_le|date:"d/m/Y" }}
+            </span>
+        </p>
+        <h3 class="mt-2 text-lg font-semibold text-navy-900">
+            <a href="{{ article.get_absolute_url }}">{{ article.titre }}</a>
+        </h3>
+        <p class="mt-2 text-sm text-warm-600">Motif invoqué : {{ article.motif_retrait }}</p>
+
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
+            <form method="post" action="{% url 'website:article_decision' article.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="retirer">
+                <button type="submit" class="btn-primary whitespace-nowrap">Retirer de la publication</button>
+            </form>
+            <form method="post" action="{% url 'website:article_decision' article.pk %}"
+                  class="flex flex-1 flex-col gap-2 sm:flex-row">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="refuser_retrait">
+                <label class="min-w-0 flex-1">
+                    <span class="sr-only">Pourquoi l'article reste en ligne</span>
+                    <input type="text" name="motif" class="form-input" required
+                           placeholder="Pourquoi il reste en ligne — obligatoire">
+                </label>
+                <button type="submit" class="btn-ghost whitespace-nowrap">Maintenir en ligne</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
 <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
     À relire ({{ a_relire|length }})
 </h2>
@@ -82,6 +128,7 @@
             <a href="{{ article.get_absolute_url }}" class="font-medium text-navy-900">{{ article.titre }}</a>
             <span class="block text-xs text-warm-500">
                 {{ article.auteur.nom_complet }} · {{ article.date_publication|date:"d/m/Y" }}
+                {% if article.retrait_demande %} · <strong>retrait demandé</strong>{% endif %}
             </span>
         </span>
         <form method="post" action="{% url 'website:article_decision' article.pk %}">
