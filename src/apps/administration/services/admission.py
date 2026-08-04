@@ -125,7 +125,11 @@ def accepter_dossier(
         utilisateur,
         "Bienvenue à l'ITEAG",
         type_notification=Notification.Type.CANDIDATURE,
-        message="Votre candidature est acceptée. Votre espace étudiant est ouvert.",
+        message=(
+            f"Votre candidature au parcours « {dossier.parcours_souhaite} » est acceptée. "
+            f"Votre espace étudiant est ouvert sous le numéro {profil.numero_etudiant}, et les "
+            "modules obligatoires de votre parcours y sont déjà accessibles."
+        ),
         envoyer_par_email=False,
     )
     _envoyer_bienvenue(utilisateur, dossier, request)

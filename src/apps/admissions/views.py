@@ -31,7 +31,15 @@ def candidature_form(request):
                     ),
                     f"Nouvelle candidature — {dossier.nom_complet}",
                     type_notification=Notification.Type.CANDIDATURE,
-                    message=f"Parcours demandé : {dossier.parcours_souhaite}.",
+                    message=(
+                        f"{dossier.nom_complet} a déposé une candidature pour le parcours "
+                        f"« {dossier.parcours_souhaite} ». Le dossier attend un premier examen."
+                    ),
+                    details=[
+                        {"libelle": "Candidat", "valeur": dossier.nom_complet},
+                        {"libelle": "Parcours demandé", "valeur": str(dossier.parcours_souhaite)},
+                        {"libelle": "Courriel", "valeur": dossier.email},
+                    ],
                     url_cible=reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
                 )
                 messages.success(request, "Votre candidature a bien été enregistrée.")
@@ -102,7 +110,14 @@ def deposer_piece(request, token, piece_id):
             ),
             f"Pièce déposée — {dossier.nom_complet}",
             type_notification=Notification.Type.CANDIDATURE,
-            message=f"Le document « {piece.libelle} » est prêt à être vérifié.",
+            message=(
+                f"{dossier.nom_complet} a déposé la pièce « {piece.libelle} » réclamée à son dossier. "
+                "Elle attend une vérification."
+            ),
+            details=[
+                {"libelle": "Candidat", "valeur": dossier.nom_complet},
+                {"libelle": "Pièce déposée", "valeur": piece.libelle},
+            ],
             url_cible=reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
         )
         messages.success(request, f"« {piece.libelle} » a bien été transmis. Le secrétariat va le vérifier.")

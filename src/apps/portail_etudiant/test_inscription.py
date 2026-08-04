@@ -108,13 +108,17 @@ class TestStudentEnrollmentJourney:
         assert demande.statut == DemandeInscriptionCours.Statut.SOUMISE
         assert demande.montant_du == Decimal("120.00")
         assert demande.historique.count() == 1
+        # Les titres portent désormais le cours concerné : on vérifie que
+        # l'avis part et qu'il nomme sa demande, sans figer la formulation.
         assert Notification.objects.filter(
             destinataire=etudiant.utilisateur,
-            titre="Votre demande d'inscription est enregistrée",
+            titre__startswith="Demande d'inscription enregistrée",
+            titre__contains=offre.cours.titre,
         ).exists()
         assert Notification.objects.filter(
             destinataire=enrollment_context["secretariat"],
-            titre="Nouvelle demande d'inscription à un cours",
+            titre__startswith="Nouvelle demande d'inscription",
+            titre__contains=offre.cours.titre,
         ).exists()
 
         response = client.post(reverse("etudiant:enrollment_request_cancel", kwargs={"pk": demande.pk}))
@@ -124,7 +128,8 @@ class TestStudentEnrollmentJourney:
         assert demande.historique.count() == 2
         assert Notification.objects.filter(
             destinataire=etudiant.utilisateur,
-            titre="Votre demande d'inscription est annulée",
+            titre__startswith="Demande d'inscription annulée",
+            titre__contains=offre.cours.titre,
         ).exists()
 
     def test_student_payment_and_request_tracking_pages(self, client, enrollment_context):

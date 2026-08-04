@@ -83,9 +83,20 @@ class PropositionReponseView(TeacherRoleRequiredMixin, View):
         if proposition.proposee_par_id:
             notifier(
                 proposition.proposee_par,
-                f"{professeur.nom_complet} — {proposition.get_statut_display().lower()} : {intitule}",
+                f"Proposition {proposition.get_statut_display().lower()} — {intitule}",
                 type_notification=Notification.Type.SYSTEME,
-                message=proposition.motif_refus,
+                # Le motif reste dans le message : c'est la seule chose qui
+                # explique un refus, et les précisions ne partent qu'au courriel.
+                message=(
+                    f"{professeur.nom_complet} a {proposition.get_statut_display().lower()} "
+                    f"la proposition d'enseigner « {intitule} »."
+                    + (f" Motif : {proposition.motif_refus}." if proposition.motif_refus else "")
+                ),
+                details=[
+                    {"libelle": "Enseignant", "valeur": professeur.nom_complet},
+                    {"libelle": "Cours", "valeur": intitule},
+                    {"libelle": "Réponse", "valeur": proposition.get_statut_display()},
+                ],
                 url_cible=reverse("administration:professeur_detail", kwargs={"pk": professeur.pk}),
             )
         return redirect("enseignant:propositions")

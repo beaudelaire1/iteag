@@ -243,7 +243,11 @@ class TestDecisionDuSecretariat:
         inscription.refresh_from_db()
         assert inscription.statut == InscriptionModule.StatutAcces.REVOQUE
         assert inscription.motif_revocation == "Cursus incompatible"
-        assert Notification.objects.filter(destinataire=etudiant.utilisateur, message="Cursus incompatible").exists()
+        # Le motif doit figurer dans le message, sans que sa formulation exacte
+        # soit figée : ce qui compte est que le refus s'explique de lui-même.
+        assert Notification.objects.filter(
+            destinataire=etudiant.utilisateur, message__contains="Cursus incompatible"
+        ).exists()
 
     def test_un_refus_sans_motif_ne_passe_pas(self, client, etudiant, module, secretaire):
         """Un refus muet est inexploitable — pour l'étudiant comme pour l'audit."""

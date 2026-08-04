@@ -264,7 +264,11 @@ class TeacherResourceUploadView(TeacherRoleRequiredMixin, CreateView):
             notifier_etudiants(
                 self.cours_session,
                 f"Nouvelle ressource — {ressource.titre}",
-                message=f"Une nouvelle ressource est disponible pour « {self.cours_session.cours.titre} ».",
+                message=(
+                    f"Votre enseignant a déposé un nouveau support pour le cours "
+                    f"« {self.cours_session.cours.titre} ». Il est téléchargeable depuis la page du cours, "
+                    "dans votre espace étudiant."
+                ),
                 url_cible=reverse("etudiant:courses"),
                 type_notification=Notification.Type.NOUVELLE_RESSOURCE,
             )
@@ -297,7 +301,10 @@ class TeacherResourceUpdateView(TeacherRoleRequiredMixin, UpdateView):
             notifier_etudiants(
                 self.object.cours_session,
                 f"Ressource mise à jour — {self.object.titre}",
-                message=f"Une ressource de « {self.object.cours_session.cours.titre} » a été mise à jour.",
+                message=(
+                    f"Un support du cours « {self.object.cours_session.cours.titre} » a été remplacé par une "
+                    "version plus récente. Si vous l'aviez déjà téléchargé, pensez à reprendre la nouvelle."
+                ),
                 url_cible=reverse("etudiant:courses"),
                 type_notification=Notification.Type.NOUVELLE_RESSOURCE,
             )
@@ -374,7 +381,12 @@ class TeacherGradeEvaluationView(TeacherRoleRequiredMixin, UpdateView):
                 evaluation.etudiant.utilisateur,
                 f"Votre note a été corrigée — {evaluation.cours_session.cours.titre}",
                 type_notification=Notification.Type.NOTE_PUBLIEE,
-                message="Une note déjà publiée vient d'être corrigée par votre enseignant.",
+                message=(
+                    f"Une note déjà publiée pour le cours « {evaluation.cours_session.cours.titre} » vient "
+                    "d'être corrigée par votre enseignant. La valeur précédente reste conservée dans votre "
+                    "dossier ; le détail est consultable dans votre espace étudiant."
+                ),
+                details=_details_note_publiee(evaluation.cours_session),
                 url_cible=reverse("etudiant:grades"),
             )
             messages.success(self.request, f"Note de {nom} corrigée. Elle est visible immédiatement par l'étudiant.")
@@ -513,7 +525,15 @@ class TeacherPrepareEvaluationsView(TeacherRoleRequiredMixin, DetailView):
                     evaluation.etudiant.utilisateur,
                     f"Nouvelle évaluation — {cours_session.cours.titre}",
                     type_notification=Notification.Type.SYSTEME,
-                    message=f"Un travail de type « {evaluation.get_type_evaluation_display()} » est à remettre.",
+                    message=(
+                        f"Une évaluation a été ouverte pour le cours « {cours_session.cours.titre} ». "
+                        "Elle apparaît désormais dans vos notes ; votre enseignant vous en précisera les "
+                        "modalités en cours."
+                    ),
+                    details=[
+                        *_details_note_publiee(cours_session),
+                        {"libelle": "Type d'évaluation", "valeur": evaluation.get_type_evaluation_display()},
+                    ],
                     url_cible=reverse("etudiant:grades"),
                 )
         messages.success(request, f"{created} évaluation(s) préparée(s) pour les étudiants inscrits.")
@@ -629,7 +649,11 @@ class TeacherParametresEvaluationView(TeacherRoleRequiredMixin, UpdateView):
         notifier_etudiants(
             self.object,
             f"Calendrier d'évaluation mis à jour — {self.object.cours.titre}",
-            message="La date d'examen ou la période de remise a été modifiée.",
+            message=(
+                f"Le calendrier d'évaluation du cours « {self.object.cours.titre} » a été modifié : "
+                "date d'examen ou période de remise. Vérifiez les nouvelles dates dans votre espace "
+                "avant de préparer votre travail."
+            ),
             url_cible=reverse("etudiant:grades"),
             type_notification=Notification.Type.SYSTEME,
         )

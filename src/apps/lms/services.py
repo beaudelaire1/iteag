@@ -63,9 +63,11 @@ def publier_devoir(devoir: Devoir, *, par=None) -> Devoir:
                 f"Nouveau devoir — {devoir.titre}",
                 type_notification=Notification.Type.ANNONCE,
                 message=(
-                    f"À remettre avant le {timezone.localtime(devoir.date_fermeture):%d/%m/%Y à %H:%M} "
-                    f"pour « {devoir.cours_session.cours.titre} »."
+                    f"Un travail vous est demandé pour le cours « {devoir.cours_session.cours.titre} ». "
+                    "Vous pouvez consulter la consigne et déposer votre copie depuis votre espace étudiant, "
+                    "jusqu'à la date de remise indiquée ci-dessous."
                 ),
+                details=_details_devoir(devoir),
                 url_cible="/espace-etudiant/notes/",
             )
 
@@ -102,10 +104,19 @@ def accorder_delai(evaluation: Evaluation, *, jusqu_au, par=None) -> Evaluation:
         objet_libelle=f"Délai accordé à {evaluation.etudiant}",
         jusqu_au=str(jusqu_au),
     )
+    cours = evaluation.cours_session.cours.titre
     notifier(
         evaluation.etudiant.utilisateur,
-        "Délai accordé",
-        message=f"Vous pouvez remettre votre travail jusqu'au {timezone.localtime(jusqu_au):%d/%m/%Y à %H:%M}.",
+        f"Délai accordé — {cours}",
+        message=(
+            f"Votre enseignant vous accorde un délai supplémentaire pour remettre votre travail "
+            f"du cours « {cours} ». Aucune démarche n'est nécessaire : le dépôt reste ouvert dans "
+            "votre espace jusqu'à la nouvelle échéance."
+        ),
+        details=[
+            {"libelle": "Cours", "valeur": cours},
+            {"libelle": "Nouvelle échéance", "valeur": f"{timezone.localtime(jusqu_au):%d/%m/%Y à %H:%M}"},
+        ],
         url_cible="/espace-etudiant/notes/",
     )
     return evaluation
@@ -207,11 +218,20 @@ def reviser(evaluation: Evaluation, *, note, motif: str, appreciation=None, ects
         note_apres=str(revision.note_apres),
         motif=revision.motif,
     )
+    cours = evaluation.cours_session.cours.titre
     notifier(
         evaluation.etudiant.utilisateur,
-        f"Note révisée — {evaluation.cours_session.cours.titre}",
+        f"Note révisée — {cours}",
         type_notification=Notification.Type.NOTE_PUBLIEE,
-        message=f"Votre note est passée de {revision.note_avant} à {revision.note_apres}. Motif : {revision.motif}",
+        message=(
+            f"Votre note pour le cours « {cours} » a été révisée par votre enseignant. "
+            "La note précédente est conservée dans votre dossier : les deux valeurs, ainsi que "
+            "le motif de la révision, sont consultables dans votre espace étudiant."
+        ),
+        details=[
+            {"libelle": "Cours", "valeur": cours},
+            {"libelle": "Motif de la révision", "valeur": revision.motif},
+        ],
         url_cible="/espace-etudiant/notes/",
     )
     return revision
@@ -223,6 +243,27 @@ def reviser(evaluation: Evaluation, *, note, motif: str, appreciation=None, ects
 
 
 MOTIF_RECORRECTION = "Recorrection après modification du barème."
+
+
+def _details_devoir(devoir: Devoir) -> list[dict]:
+    """Les faits d'un devoir, tels qu'ils figurent dans le courriel.
+
+    Une échéance dans un tableau se retrouve ; noyée dans une phrase, elle se
+    relit trois fois. C'est la seule information que l'étudiant cherche
+    vraiment en ouvrant l'avis.
+    """
+    details = [
+        {"libelle": "Devoir", "valeur": devoir.titre},
+        {"libelle": "Cours", "valeur": devoir.cours_session.cours.titre},
+        {"libelle": "Modalité", "valeur": devoir.get_modalite_display()},
+        {
+            "libelle": "À remettre avant le",
+            "valeur": f"{timezone.localtime(devoir.date_fermeture):%d/%m/%Y à %H:%M}",
+        },
+    ]
+    if devoir.bareme:
+        details.append({"libelle": "Barème", "valeur": f"{devoir.bareme:g} points"})
+    return details
 
 
 def _appreciation_qcm(obtenus: Decimal, total_points: Decimal) -> str:
@@ -369,6 +410,13 @@ def message_au_groupe(groupe, *, titre: str, message: str, par=None) -> int:
         titre,
         type_notification=Notification.Type.ANNONCE,
         message=message,
+        # Le message est celui de l'enseignant ; les précisions disent à quel
+        # titre l'étudiant le reçoit — un groupe de travail se confond
+        # facilement avec un autre.
+        details=[
+            {"libelle": "Groupe", "valeur": groupe.nom},
+            {"libelle": "Cours", "valeur": groupe.cours_session.cours.titre},
+        ],
         url_cible="/espace-etudiant/cours/",
     )
     journaliser(

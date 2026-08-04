@@ -123,7 +123,17 @@ def emettre_attestation(inscription: InscriptionModule) -> AttestationModule | N
             inscription.etudiant.utilisateur,
             f"Attestation disponible — {inscription.module.titre}",
             type_notification=Notification.Type.ATTESTATION,
-            message="Votre attestation de suivi est prête à être téléchargée.",
+            message=(
+                f"Vous avez terminé le module « {inscription.module.titre} » : félicitations. "
+                "Votre attestation de suivi est établie à votre nom et téléchargeable depuis votre "
+                "espace. Elle porte un code de vérification qui permet à un tiers d'en contrôler "
+                "l'authenticité en ligne."
+            ),
+            details=[
+                {"libelle": "Module", "valeur": inscription.module.titre},
+                {"libelle": "Progression", "valeur": f"{inscription.progression_percent} %"},
+                {"libelle": "N° d'attestation", "valeur": attestation.numero},
+            ],
             url_cible=inscription.module.get_absolute_url(),
         )
         if getattr(settings, "ELEARNING_ATTESTATION_PDF", True):

@@ -148,7 +148,15 @@ class ArticleSoumettreView(TeacherRoleRequiredMixin, View):
             User.objects.filter(is_active=True, role__in=[User.Role.ADMIN, User.Role.SECRETARIAT]),
             f"Article à relire — {article.titre}",
             type_notification=Notification.Type.SYSTEME,
-            message=f"Proposé par {article.auteur.nom_complet}.",
+            message=(
+                f"{article.auteur.nom_complet} soumet l'article « {article.titre} » à relecture. "
+                "Rien ne paraît sous le nom de l'institut sans ce second regard : le texte attend "
+                "votre décision, publication ou renvoi en brouillon."
+            ),
+            details=[
+                {"libelle": "Article", "valeur": article.titre},
+                {"libelle": "Auteur", "valeur": article.auteur.nom_complet},
+            ],
             url_cible=reverse("website:articles_relecture"),
         )
         messages.success(request, "Article soumis à relecture. Vous serez averti de la décision.")

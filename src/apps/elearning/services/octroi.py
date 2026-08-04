@@ -83,7 +83,12 @@ def octroyer(
                 profil.utilisateur,
                 f"Nouveau module accessible — {module.titre}",
                 type_notification=Notification.Type.ACCES_OCTROYE,
-                message="Ce module de formation est désormais disponible dans votre espace.",
+                message=(
+                    f"Le module de formation « {module.titre} » vient de vous être ouvert. "
+                    "Vous pouvez le suivre à votre rythme depuis votre espace : les leçons y sont "
+                    "accessibles, et votre progression est enregistrée à chaque séance."
+                ),
+                details=_details_acces(inscription),
                 url_cible=module.get_absolute_url(),
             )
 
@@ -183,9 +188,32 @@ def _prevenir_le_secretariat(profil, module: ModuleFormation) -> None:
             destinataire,
             "Demande d'accès à un module",
             type_notification=Notification.Type.ACCES_OCTROYE,
-            message=f"{profil} demande l'accès à « {module.titre} ».",
+            message=(
+                f"{profil} sollicite l'accès au module « {module.titre} ». "
+                "La demande attend une décision dans la gestion des accès."
+            ),
+            details=[
+                {"libelle": "Étudiant", "valeur": str(profil)},
+                {"libelle": "Module", "valeur": module.titre},
+            ],
             url_cible=f"{reverse('administration:acces')}?statut={InscriptionModule.StatutAcces.DEMANDE}",
         )
+
+
+def _details_acces(inscription) -> list[dict]:
+    """Situer un accès : le module, son responsable, et jusqu'à quand il court.
+
+    Un étudiant suit plusieurs modules et reçoit plusieurs avis d'accès ; sans
+    l'échéance — la plus utile des trois — il doit se connecter pour savoir de
+    combien de temps il dispose.
+    """
+    module = inscription.module
+    details = [{"libelle": "Module", "valeur": module.titre}]
+    if module.responsable_id:
+        details.append({"libelle": "Responsable", "valeur": str(module.responsable)})
+    if inscription.date_fin_acces:
+        details.append({"libelle": "Accès jusqu'au", "valeur": f"{inscription.date_fin_acces:%d/%m/%Y}"})
+    return details
 
 
 def refuser_demande(inscription: InscriptionModule, *, motif: str, par=None) -> InscriptionModule:
@@ -209,7 +237,16 @@ def refuser_demande(inscription: InscriptionModule, *, motif: str, par=None) -> 
         inscription.etudiant.utilisateur,
         f"Demande d'accès non retenue — {inscription.module.titre}",
         type_notification=Notification.Type.ACCES_OCTROYE,
-        message=motif,
+        # Le motif reste dans le message, et pas seulement dans les précisions :
+        # celles-ci ne partent qu'au courriel, tandis que le message est ce que
+        # l'étudiant relit dans son espace. Un refus qui ne s'y explique plus
+        # serait une régression, non une amélioration.
+        message=(
+            f"Votre demande d'accès au module « {inscription.module.titre} » n'a pas été retenue. "
+            f"Motif : {motif}. Si cette décision vous paraît résulter d'une erreur, écrivez au "
+            "secrétariat, qui réexaminera votre situation."
+        ),
+        details=[{"libelle": "Module", "valeur": inscription.module.titre}],
         url_cible=inscription.module.get_absolute_url(),
     )
     return inscription
@@ -231,7 +268,13 @@ def revoquer(inscription: InscriptionModule, *, motif: str = "", par=None) -> In
         inscription.etudiant.utilisateur,
         f"Accès retiré — {inscription.module.titre}",
         type_notification=Notification.Type.ACCES_OCTROYE,
-        message=motif or "Votre accès à ce module a été retiré.",
+        message=(
+            f"Votre accès au module « {inscription.module.titre} » a été retiré."
+            + (f" Motif : {motif}." if motif else "")
+            + " Vos travaux et votre progression restent conservés : ils vous seront rendus si"
+            " l'accès vous est réouvert. Le secrétariat répond à toute question sur cette décision."
+        ),
+        details=[{"libelle": "Module", "valeur": inscription.module.titre}],
         url_cible=inscription.module.get_absolute_url(),
     )
     return inscription
@@ -245,7 +288,12 @@ def suspendre(inscription: InscriptionModule, *, par=None) -> InscriptionModule:
         inscription.etudiant.utilisateur,
         f"Accès suspendu — {inscription.module.titre}",
         type_notification=Notification.Type.ACCES_OCTROYE,
-        message="Votre accès à ce module est temporairement suspendu.",
+        message=(
+            f"Votre accès au module « {inscription.module.titre} » est suspendu à titre temporaire. "
+            "La mesure est réversible : votre progression est conservée et vous retrouverez le "
+            "module en l'état dès sa réactivation. Le secrétariat vous en dira la raison."
+        ),
+        details=[{"libelle": "Module", "valeur": inscription.module.titre}],
         url_cible=inscription.module.get_absolute_url(),
     )
     return inscription
@@ -260,7 +308,11 @@ def reactiver(inscription: InscriptionModule, *, par=None) -> InscriptionModule:
         inscription.etudiant.utilisateur,
         f"Accès réactivé — {inscription.module.titre}",
         type_notification=Notification.Type.ACCES_OCTROYE,
-        message="Votre accès au module est de nouveau actif.",
+        message=(
+            f"Votre accès au module « {inscription.module.titre} » est rétabli. "
+            "Vous le retrouvez là où vous l'aviez laissé : votre progression n'a pas été perdue."
+        ),
+        details=_details_acces(inscription),
         url_cible=inscription.module.get_absolute_url(),
     )
     return inscription
@@ -280,7 +332,11 @@ def prolonger(inscription: InscriptionModule, *, jours: int, par=None) -> Inscri
         inscription.etudiant.utilisateur,
         f"Accès prolongé — {inscription.module.titre}",
         type_notification=Notification.Type.ACCES_OCTROYE,
-        message=f"Votre accès est prolongé jusqu'au {inscription.date_fin_acces:%d/%m/%Y}.",
+        message=(
+            f"Votre accès au module « {inscription.module.titre} » est prolongé. "
+            "Vous disposez de plus de temps pour le terminer ; la nouvelle échéance figure ci-dessous."
+        ),
+        details=_details_acces(inscription),
         url_cible=inscription.module.get_absolute_url(),
     )
     return inscription

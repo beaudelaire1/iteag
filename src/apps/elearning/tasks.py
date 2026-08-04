@@ -101,7 +101,14 @@ def _notifier_depositaire(video) -> None:
         video.uploade_par,
         f"Vidéo prête — {video.titre}",
         type_notification=Notification.Type.SYSTEME,
-        message="La vidéo est préparée : le module peut être publié.",
+        message=(
+            f"La vidéo « {video.titre} » que vous aviez déposée a fini d'être préparée. "
+            "Elle est lisible dans l'atelier, et le module qui la contient peut désormais être publié."
+        ),
+        details=[
+            {"libelle": "Vidéo", "valeur": video.titre},
+            {"libelle": "État", "valeur": video.get_statut_traitement_display()},
+        ],
     )
 
 

@@ -41,7 +41,7 @@ from apps.elearning.models import (
 )
 
 
-def _notifier_inscrits_module(module, titre, message):
+def _notifier_inscrits_module(module, titre, message, details=None):
     destinataires = [
         inscription.etudiant.utilisateur
         for inscription in module.inscriptions.filter(
@@ -56,6 +56,13 @@ def _notifier_inscrits_module(module, titre, message):
         titre,
         type_notification=Notification.Type.NOUVEAU_MODULE,
         message=message,
+        # À défaut de précisions propres à l'événement, on situe au moins le
+        # module : un inscrit à quatre modules reçoit quatre avis semblables.
+        details=details
+        or [
+            {"libelle": "Module", "valeur": module.titre},
+            {"libelle": "Responsable", "valeur": str(module.responsable) if module.responsable_id else "—"},
+        ],
         url_cible=module.get_absolute_url(),
     )
 
@@ -180,7 +187,11 @@ class ModulePublierView(ProfesseurMixin, View):
             _notifier_inscrits_module(
                 module,
                 f"Module disponible — {module.titre}",
-                "Le contenu du module est maintenant disponible dans votre espace E-Learning.",
+                (
+                    f"Le module « {module.titre} » est publié : son contenu est désormais "
+                    "consultable dans votre espace E-Learning. Vous pouvez le suivre à votre rythme, "
+                    "votre progression étant enregistrée d'une séance à l'autre."
+                ),
             )
             messages.success(request, "Module publié. Il est désormais visible au catalogue.")
         return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": slug}))
@@ -302,7 +313,16 @@ class LeconCreateView(LeconFormMixin, CreateView):
             _notifier_inscrits_module(
                 self.chapitre.module,
                 f"Nouvelle leçon — {lecon.titre}",
-                f"Une nouvelle leçon est disponible dans « {self.chapitre.module.titre} ».",
+                (
+                    f"Une leçon a été ajoutée au module « {self.chapitre.module.titre} », "
+                    "que vous suivez. Elle apparaît à sa place dans le sommaire ; votre progression "
+                    "sur les leçons précédentes reste acquise."
+                ),
+                [
+                    {"libelle": "Module", "valeur": self.chapitre.module.titre},
+                    {"libelle": "Chapitre", "valeur": self.chapitre.titre},
+                    {"libelle": "Leçon", "valeur": lecon.titre},
+                ],
             )
         messages.success(self.request, "Leçon ajoutée.")
         return redirect(self.get_success_url())
@@ -359,7 +379,15 @@ class LeconUpdateView(LeconFormMixin, UpdateView):
             _notifier_inscrits_module(
                 lecon.chapitre.module,
                 f"Leçon mise à jour — {lecon.titre}",
-                f"Une leçon de « {lecon.chapitre.module.titre} » a été mise à jour.",
+                (
+                    f"La leçon « {lecon.titre} » du module « {lecon.chapitre.module.titre} » a été "
+                    "modifiée par son responsable. Si vous l'aviez déjà suivie, il peut être utile "
+                    "de la reprendre."
+                ),
+                [
+                    {"libelle": "Module", "valeur": lecon.chapitre.module.titre},
+                    {"libelle": "Leçon", "valeur": lecon.titre},
+                ],
             )
         messages.success(self.request, "Leçon mise à jour.")
         return redirect(self.get_success_url())

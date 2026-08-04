@@ -73,9 +73,25 @@ def _notifier_cours_disponible(cours_session):
         destinataires,
         f"Cours disponible — {cours_session.cours.titre}",
         type_notification=Notification.Type.NOUVEAU_MODULE,
-        message=f"Les inscriptions sont ouvertes pour la session « {cours_session.session.nom} ».",
+        message=(
+            f"Le cours « {cours_session.cours.titre} » est ouvert aux inscriptions pour la session "
+            f"« {cours_session.session.nom} ». Il correspond à votre parcours ; vous pouvez demander "
+            "à le suivre depuis votre espace étudiant."
+        ),
+        details=_details_programmation(cours_session),
         url_cible=reverse("etudiant:course_offering_detail", kwargs={"pk": cours_session.pk}),
     )
+
+
+def _details_programmation(cours_session) -> list[dict]:
+    """Cours, session et enseignant : de quoi savoir de quelle séance on parle."""
+    details = [
+        {"libelle": "Cours", "valeur": cours_session.cours.titre},
+        {"libelle": "Session", "valeur": cours_session.session.nom},
+    ]
+    if cours_session.enseignant_id:
+        details.append({"libelle": "Enseignant", "valeur": str(cours_session.enseignant)})
+    return details
 
 
 def _notifier_programmation_cours(cours_session, *, creation=False):
@@ -84,7 +100,12 @@ def _notifier_programmation_cours(cours_session, *, creation=False):
         enseignant,
         f"Cours {'attribué' if creation else 'mis à jour'} — {cours_session.cours.titre}",
         type_notification=Notification.Type.RAPPEL_SESSION,
-        message=f"Session : {cours_session.session.nom}.",
+        message=(
+            f"Le cours « {cours_session.cours.titre} » vous est "
+            + ("attribué" if creation else "confié, et sa programmation vient d'être modifiée")
+            + ". Vous en trouverez la fiche, les inscrits et les évaluations dans votre espace enseignant."
+        ),
+        details=_details_programmation(cours_session),
         url_cible=reverse("lms:course_detail", kwargs={"pk": cours_session.pk}),
     )
     inscrits = User.objects.filter(
@@ -95,7 +116,12 @@ def _notifier_programmation_cours(cours_session, *, creation=False):
         inscrits,
         f"Programmation mise à jour — {cours_session.cours.titre}",
         type_notification=Notification.Type.RAPPEL_SESSION,
-        message=f"Consultez les informations de la session « {cours_session.session.nom} ».",
+        message=(
+            f"La programmation du cours « {cours_session.cours.titre} » a été modifiée : dates, "
+            "salle ou enseignant. Vérifiez les informations à jour dans votre espace avant la "
+            "prochaine séance."
+        ),
+        details=_details_programmation(cours_session),
         url_cible=reverse("etudiant:courses"),
     )
 

@@ -137,7 +137,15 @@ def _notifier_alerte_stock(alerte: AlerteStock) -> None:
     notifier_plusieurs(
         _personnel(),
         f"Stock minimal — {produit.titre}",
-        message=f"{produit.stock_disponible} exemplaire(s) disponible(s), seuil fixé à {produit.seuil_alerte}.",
+        message=(
+            f"Le stock de « {produit.titre} » est descendu au niveau d'alerte. "
+            "Pensez au réapprovisionnement : en deçà de zéro, l'ouvrage ne peut plus être commandé."
+        ),
+        details=[
+            {"libelle": "Ouvrage", "valeur": produit.titre},
+            {"libelle": "Disponible", "valeur": f"{produit.stock_disponible} exemplaire(s)"},
+            {"libelle": "Seuil d'alerte", "valeur": f"{produit.seuil_alerte} exemplaire(s)"},
+        ],
         url_cible=reverse("commerce:gestion_stock"),
     )
     destinataire = getattr(settings, "COMMERCE_ALERTE_EMAIL", "")
@@ -211,7 +219,16 @@ def _notification_commande(commande: Commande) -> None:
     notifier_plusieurs(
         _personnel(),
         f"Nouvelle commande {commande.numero}",
-        message=f"{commande.nom_complet} — {commande.total} €",
+        message=(
+            f"{commande.nom_complet} a passé une commande dans la boutique. "
+            "Elle attend sa préparation dans la gestion des commandes."
+        ),
+        details=[
+            {"libelle": "Commande", "valeur": commande.numero},
+            {"libelle": "Client", "valeur": commande.nom_complet},
+            {"libelle": "Montant", "valeur": f"{commande.total} €"},
+            {"libelle": "Livraison", "valeur": commande.get_pays_display()},
+        ],
         url_cible=reverse("commerce:gestion_commandes"),
     )
     suivi_url = f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{commande.get_absolute_url()}"
@@ -348,7 +365,10 @@ def confirmer_commande(commande: Commande, *, acteur=None) -> Commande:
         notifier(
             commande.utilisateur,
             f"Commande {commande.numero} confirmée",
-            message="Votre règlement a été confirmé. La commande va être préparée.",
+            message=(
+                f"Votre règlement pour la commande {commande.numero} est confirmé. "
+                "Elle passe en préparation ; vous serez averti de son expédition."
+            ),
             url_cible=commande.get_absolute_url(),
             envoyer_par_email=False,
         )
@@ -431,7 +451,10 @@ def expedier_commande(
         notifier(
             commande.utilisateur,
             f"Commande {commande.numero} expédiée",
-            message=(f"Numéro de suivi : {commande.numero_suivi}" if commande.numero_suivi else ""),
+            message=(
+                f"Votre commande {commande.numero} vient d'être expédiée."
+                + (f" Vous pouvez la suivre avec le numéro {commande.numero_suivi}." if commande.numero_suivi else "")
+            ),
             url_cible=commande.get_absolute_url(),
             envoyer_par_email=False,
         )

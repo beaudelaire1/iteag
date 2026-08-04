@@ -137,3 +137,57 @@ def test_l_apercu_reprend_le_message_et_non_le_titre():
     html = _dernier_html()
     assert "Herméneutique" in html, "Le message doit apparaître, et pas seulement le titre"
     assert "pour le cours" in html
+
+
+# ──────────────────────────────────────────────
+# Les règles tenues par le socle
+# ──────────────────────────────────────────────
+
+
+def test_aucun_message_ne_reste_interchangeable():
+    """
+    Garde-fou de style, sur le code source plutôt que sur un rendu.
+
+    Les formules ci-dessous ont toutes été employées telles quelles : elles
+    annoncent qu'il s'est passé quelque chose sans dire quoi, et obligent à se
+    connecter pour l'apprendre. Leur réapparition est un retour en arrière.
+    """
+    import pathlib
+    import re
+
+    bannies = [
+        "est disponible dans votre espace.",
+        "sont disponibles.",
+        "Consultez les informations",
+    ]
+    fautifs = []
+    for fichier in pathlib.Path("apps").rglob("*.py"):
+        chemin = str(fichier).replace("\\", "/")
+        if "/migrations/" in chemin or "/test" in chemin:
+            continue
+        texte = fichier.read_text(encoding="utf-8")
+        if not re.search(r"notifier(?:_plusieurs)?\(", texte):
+            continue
+        for formule in bannies:
+            if formule in texte:
+                fautifs.append(f"{chemin} : « {formule} »")
+
+    assert not fautifs, "Messages trop génériques :\n  " + "\n  ".join(fautifs)
+
+
+def test_la_note_chiffree_ne_circule_pas_par_courriel(etudiante, django_capture_on_commit_callbacks):
+    """Un résultat se lit derrière une authentification, pas dans une boîte de réception."""
+    from apps.core.services.notifications import notifier as notifier_note
+
+    mail.outbox.clear()
+    with django_capture_on_commit_callbacks(execute=True):
+        notifier_note(
+            etudiante,
+            "Note publiée — Herméneutique",
+            message="Votre note pour le cours « Herméneutique » vient d'être publiée.",
+            details=[{"libelle": "Cours", "valeur": "Herméneutique"}],
+        )
+
+    html = _dernier_html()
+    assert "Herméneutique" in html
+    assert "/20" not in html, "Aucune note chiffrée ne doit figurer dans le courriel"

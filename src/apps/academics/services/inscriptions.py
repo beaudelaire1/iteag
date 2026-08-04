@@ -102,9 +102,14 @@ def soumettre_demande(
     )
     notifier(
         etudiant.utilisateur,
-        "Votre demande d'inscription est enregistrée",
+        f"Demande d'inscription enregistrée — {cours_session.cours.titre}",
         type_notification=Notification.Type.RAPPEL_SESSION,
-        message=f"{cours_session.cours.titre} — le secrétariat va examiner votre demande.",
+        message=(
+            f"Votre demande d'inscription au cours « {cours_session.cours.titre} » a bien été reçue. "
+            "Le secrétariat va l'examiner ; vous serez averti dès qu'une décision sera prise. "
+            "Aucune démarche n'est à faire de votre part dans l'intervalle."
+        ),
+        details=_details_demande(demande),
         url_cible=reverse("etudiant:enrollment_requests"),
     )
     notifier_plusieurs(
@@ -112,9 +117,13 @@ def soumettre_demande(
             is_active=True,
             role__in=[User.Role.ADMIN, User.Role.SECRETARIAT],
         ),
-        "Nouvelle demande d'inscription à un cours",
+        f"Nouvelle demande d'inscription — {cours_session.cours.titre}",
         type_notification=Notification.Type.RAPPEL_SESSION,
-        message=f"{etudiant} demande à suivre « {cours_session.cours.titre} ».",
+        message=(
+            f"{etudiant} demande à suivre le cours « {cours_session.cours.titre} ». "
+            "La demande attend une décision dans l'espace administratif."
+        ),
+        details=[{"libelle": "Étudiant", "valeur": str(etudiant)}, *_details_demande(demande)],
         url_cible=reverse("administration:enrollment_request_detail", kwargs={"pk": demande.pk}),
     )
     return demande
@@ -140,9 +149,14 @@ def annuler_demande(*, demande, etudiant, request=None):
     )
     notifier(
         etudiant.utilisateur,
-        "Votre demande d'inscription est annulée",
+        f"Demande d'inscription annulée — {demande.cours_session.cours.titre}",
         type_notification=Notification.Type.RAPPEL_SESSION,
-        message=f"{demande.cours_session.cours.titre} — votre annulation a bien été enregistrée.",
+        message=(
+            f"Votre demande d'inscription au cours « {demande.cours_session.cours.titre} » a été "
+            "annulée à votre initiative. Ce message en vaut confirmation. Vous pouvez déposer une "
+            "nouvelle demande tant que les inscriptions restent ouvertes."
+        ),
+        details=_details_demande(demande),
         url_cible=reverse("etudiant:enrollment_requests"),
     )
     return demande
@@ -239,9 +253,10 @@ def traiter_demande(
     )
     notifier(
         demande.etudiant.utilisateur,
-        _titre_notification(demande.statut),
+        f"{_titre_notification(demande.statut)} — {demande.cours_session.cours.titre}",
         type_notification=Notification.Type.RAPPEL_SESSION,
-        message=f"{demande.cours_session.cours.titre} — {demande.get_statut_display()}.",
+        message=_message_notification(demande),
+        details=_details_demande(demande),
         url_cible=reverse("etudiant:enrollment_requests"),
     )
     return demande
@@ -322,10 +337,58 @@ def _changer_statut(demande, statut, *, acteur, commentaire):
     )
 
 
+def _details_demande(demande) -> list[dict]:
+    """Cours, session et état : de quoi reconnaître la demande dont on parle."""
+    cours_session = demande.cours_session
+    details = [
+        {"libelle": "Cours", "valeur": cours_session.cours.titre},
+        {"libelle": "Session", "valeur": str(cours_session.session)},
+        {"libelle": "État de la demande", "valeur": demande.get_statut_display()},
+    ]
+    if demande.montant_du:
+        details.append({"libelle": "Montant dû", "valeur": f"{demande.montant_du} €"})
+    return details
+
+
+def _message_notification(demande) -> str:
+    """Ce que l'étudiant doit comprendre — et faire — selon l'état de sa demande.
+
+    Un avis qui se contente de nommer un statut laisse son destinataire deviner
+    ce qu'on attend de lui. C'est l'action requise qui manquait.
+    """
+    cours = demande.cours_session.cours.titre
+    return {
+        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE: (
+            f"Votre inscription au cours « {cours} » est acceptée sous réserve de règlement. "
+            "Elle sera définitive dès réception du paiement, dont le montant figure ci-dessous. "
+            "Le secrétariat se tient à votre disposition pour en convenir des modalités."
+        ),
+        DemandeInscriptionCours.Statut.CONFIRMEE: (
+            f"Votre inscription au cours « {cours} » est confirmée. Le cours apparaît désormais "
+            "dans votre espace étudiant, avec ses ressources et ses évaluations."
+        ),
+        DemandeInscriptionCours.Statut.REFUSEE: (
+            f"Votre demande d'inscription au cours « {cours} » n'a pas été retenue. "
+            "Le secrétariat vous en précisera les raisons et pourra vous orienter vers une "
+            "autre session ou un autre cours."
+        ),
+        DemandeInscriptionCours.Statut.SOUMISE: (
+            f"Votre demande d'inscription au cours « {cours} » a été rouverte et va être réexaminée par le secrétariat."
+        ),
+    }.get(
+        demande.statut,
+        f"L'état de votre demande d'inscription au cours « {cours} » a changé : "
+        f"{demande.get_statut_display().lower()}.",
+    )
+
+
 def _titre_notification(statut):
     return {
-        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE: "Paiement requis pour votre inscription",
-        DemandeInscriptionCours.Statut.CONFIRMEE: "Votre inscription au cours est confirmée",
-        DemandeInscriptionCours.Statut.REFUSEE: "Décision concernant votre demande d'inscription",
-        DemandeInscriptionCours.Statut.SOUMISE: "Votre demande d'inscription a été rouverte",
+        # Le cours est ajouté au titre par l'appelant : ces libellés restent
+        # courts pour que l'objet du courriel tienne dans une ligne de boîte
+        # de réception, où il est tronqué au-delà d'une soixantaine de signes.
+        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE: "Paiement requis",
+        DemandeInscriptionCours.Statut.CONFIRMEE: "Inscription confirmée",
+        DemandeInscriptionCours.Statut.REFUSEE: "Demande d'inscription non retenue",
+        DemandeInscriptionCours.Statut.SOUMISE: "Demande d'inscription rouverte",
     }.get(statut, "Mise à jour de votre demande d'inscription")

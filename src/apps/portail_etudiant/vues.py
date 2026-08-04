@@ -280,13 +280,28 @@ class StudentEvaluationSubmitView(StudentRoleRequiredMixin, UpdateView):
             self.request.user,
             f"Travail remis — {titre_cours}",
             type_notification=Notification.Type.SYSTEME,
-            message="Votre dépôt est enregistré. L'enseignant peut maintenant le corriger.",
+            message=(
+                f"Votre travail pour le cours « {titre_cours} » a bien été reçu. "
+                "Ce message vaut accusé de réception : conservez-le. Votre enseignant le corrigera "
+                "et vous serez averti dès que la note sera publiée."
+            ),
+            details=[
+                {"libelle": "Cours", "valeur": titre_cours},
+                {
+                    "libelle": "Reçu le",
+                    "valeur": f"{timezone.localtime(evaluation.date_soumission):%d/%m/%Y à %H:%M}",
+                },
+                {"libelle": "Dépôt", "valeur": "Hors délai" if evaluation.depot_tardif else "Dans les temps"},
+            ],
             url_cible=reverse("etudiant:grades"),
         )
         notifier_enseignant(
             evaluation.cours_session,
             f"Nouveau travail remis — {titre_cours}",
-            message=f"{evaluation.etudiant} a déposé son travail.",
+            message=(
+                f"{evaluation.etudiant} a déposé son travail pour le cours « {titre_cours} ». "
+                "La copie vous attend dans votre espace enseignant."
+            ),
             url_cible=reverse("lms:evaluations_list"),
         )
 
