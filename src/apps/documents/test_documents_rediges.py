@@ -723,9 +723,13 @@ class TestSocleWagtail:
         # la politique de base doit demander l'insertion du nonce dans
         # « script-src », faute de quoi l'attribut posé sur le bloc n'autorise
         # rien.
+        from csp.constants import NONCE
+
         from config.settings import base
 
         directives = base.CONTENT_SECURITY_POLICY["DIRECTIVES"]
-        assert "script-src" in directives.get("include-nonce-in", []), (
-            "Sans « include-nonce-in », le nonce du bloc n'est pas repris dans la politique."
+        assert NONCE in directives["script-src"], (
+            "Sans la sentinelle NONCE dans « script-src », l'en-tête ne reprend pas le nonce "
+            "du bloc, et le navigateur l'écarte. « include-nonce-in » est la forme de "
+            "django-csp 3 : la version 4 l'ignore en silence."
         )

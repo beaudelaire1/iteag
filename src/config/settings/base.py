@@ -548,16 +548,22 @@ SESSION_SAVE_EVERY_REQUEST = True
 _turnstile_origins = ["https://challenges.cloudflare.com"] if CLOUDFLARE_TURNSTILE_ENABLED else []
 _stripe_script_origins = ["https://js.stripe.com"]
 _stripe_frame_origins = ["https://js.stripe.com", "https://hooks.stripe.com", "https://checkout.stripe.com"]
+from csp.constants import NONCE  # noqa: E402
+
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
-        "script-src": ["'self'", *_turnstile_origins, *_stripe_script_origins],
-        # Le nonce est ajouté à « script-src » pour chaque réponse. Il permet
-        # d'autoriser un bloc en ligne précis — la configuration JSON que les
-        # bundles Wagtail lisent au démarrage — sans ouvrir « unsafe-inline » à
-        # toute la page. Un attaquant qui parvient à injecter du script ne
-        # connaît pas le nonce du jour.
-        "include-nonce-in": ["script-src"],
+        # « NONCE » est une sentinelle de django-csp 4 : elle est remplacée à
+        # chaque réponse par le nonce de la requête. Elle autorise un bloc en
+        # ligne précis — la configuration JSON que les bundles Wagtail lisent au
+        # démarrage — sans ouvrir « unsafe-inline » à toute la page. Un script
+        # injecté ne connaît pas le nonce de la requête.
+        #
+        # Le premier jet déclarait « include-nonce-in », qui est la forme de
+        # django-csp 3. La version 4 l'ignore **en silence** : le bloc portait
+        # bien son attribut, l'en-tête ne le reprenait pas, et le navigateur
+        # continuait de l'écarter.
+        "script-src": [NONCE, "'self'", *_turnstile_origins, *_stripe_script_origins],
         "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:", "https://*.stripe.com"],
         "media-src": ["'self'", "blob:"],
