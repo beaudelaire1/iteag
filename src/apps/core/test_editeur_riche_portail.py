@@ -100,3 +100,78 @@ def test_le_dialogue_de_lien_est_prive_mais_accessible_hors_admin(client):
 
     assert reponse.status_code == 200
     assert "external-link-chooser" in reponse.content.decode()
+
+
+# ══════════════════════════════════════════════
+# Le repli, et ce qu'il n'a pas le droit de faire
+# ══════════════════════════════════════════════
+
+
+def _script_amorcage() -> str:
+    from pathlib import Path
+
+    from django.conf import settings
+
+    return (Path(settings.BASE_DIR) / "static" / "js" / "draftail-portail.js").read_text(encoding="utf-8")
+
+
+def _code_seul() -> str:
+    """Le script sans ses commentaires.
+
+    Un test qui lit le fichier brut se fait piéger par les commentaires : celui
+    qui interdit « bloc.text » trouvait l'expression dans la note expliquant
+    pourquoi elle est interdite, et échouait sur sa propre documentation.
+    """
+    import re
+
+    sans_blocs = re.sub(r"/\*.*?\*/", "", _script_amorcage(), flags=re.S)
+    return re.sub(r"^\s*//.*$", "", sans_blocs, flags=re.M)
+
+
+class TestRepliDeLEditeur:
+    """Le défaut qui faisait dire « les boutons sont là mais rien ne marche ».
+
+    L'amorçage repliait l'éditeur sur un « textarea » si « .Draftail-Editor »
+    n'était pas peint au bout de 750 ms. Or Draftail a 739 Ko de script à
+    analyser avant de peindre : sur une machine chargée, le repli se
+    déclenchait sur un éditeur parfaitement fonctionnel, qui apparaissait
+    ensuite par-dessus un champ désactivé. La barre d'outils restait visible et
+    ne commandait plus rien.
+
+    Pire : le repli aplatissait le contenu à « bloc.text ». Ouvrir un document
+    formaté sur un chargement lent puis enregistrer suffisait à en détruire la
+    mise en forme, sans le moindre avertissement.
+    """
+
+    def test_l_apparition_de_l_editeur_est_observee_et_non_chronometree(self):
+        assert "MutationObserver" in _code_seul(), (
+            "L'amorçage doit observer l'apparition de l'éditeur. Un délai fixe est une course "
+            "que Draftail perd dès que la machine est chargée."
+        )
+
+    def test_aucun_repli_sous_cinq_secondes(self):
+        """750 ms était plus court que le temps d'analyse du script lui-même."""
+        import re
+
+        # « }, 10000) » : le délai est le dernier argument, après la fonction.
+        # Une expression qui s'arrête à la première virgule ne franchit pas le
+        # corps de la fonction fléchée et ne trouve jamais rien.
+        delais = [int(v) for v in re.findall(r"\}\s*,\s*(\d+)\s*\)", _code_seul())]
+        assert delais, "Un filet de sécurité reste attendu."
+        assert min(delais) >= 5000, f"Repli trop hâtif : {min(delais)} ms."
+
+    def test_le_repli_ne_deforme_pas_le_contenu(self):
+        """« bloc.text » jette gras, titres et alignements sans rien dire."""
+        assert "bloc.text" not in _code_seul(), (
+            "Le repli ne doit pas reconstruire le contenu à partir du seul texte des blocs : "
+            "il détruirait la mise en forme de ce qui était déjà enregistré."
+        )
+
+    def test_le_repli_retire_la_barre_d_outils(self):
+        """Des commandes qui ne commandent rien sont pires qu'aucune commande."""
+        assert "Draftail-Toolbar" in _code_seul()
+
+    def test_le_repli_se_signale(self):
+        assert 'role", "alert"' in _code_seul(), (
+            "Un éditeur dégradé qui se tait laisse conclure à une panne de formatage."
+        )

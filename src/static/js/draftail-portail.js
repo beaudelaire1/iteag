@@ -25,25 +25,44 @@
     });
   }
 
-  function activerRepli(input) {
+  /* Repli : l'éditeur n'a pas pu se charger du tout.
+
+     Deux règles, apprises d'un défaut coûteux. Le repli remplaçait le champ
+     par un « textarea » portant le même « name », après avoir aplati le
+     contenu à « bloc.text » — sans gras, sans titre, sans alignement. Ouvrir
+     un document formaté puis enregistrer suffisait donc à le détruire, et rien
+     ne le signalait : la barre d'outils restait affichée au-dessus du champ de
+     repli, si bien que les boutons paraissaient simplement inopérants.
+
+     1. **On ne jette jamais le contenu.** Le champ d'origine garde sa valeur et
+        reste celui qui est envoyé ; la zone de secours ne sert qu'à ajouter du
+        texte, et n'écrase pas ce qui existe.
+     2. **On le dit.** Un éditeur dégradé qui se tait laisse croire à une panne
+        de formatage. */
+  function activerRepli(input, raison) {
     if (input.dataset.editeurDraftailRepli) return;
     input.dataset.editeurDraftailRepli = "1";
-    const zone = document.createElement("textarea");
-    zone.name = input.name;
-    zone.id = `${input.id}-repli`;
-    zone.className = "form-input";
-    zone.rows = 12;
-    zone.setAttribute("aria-label", "Zone d'édition simplifiée");
-    try {
-      const contenu = JSON.parse(input.value || "{}");
-      zone.value = (contenu.blocks || []).map((bloc) => bloc.text || "").join("\n\n");
-    } catch (_erreur) {
-      zone.value = input.value || "";
+
+    const champ = input.closest(".editeur-riche-portail");
+    // La barre d'outils d'un éditeur qui n'a pas démarré ne commande rien :
+    // la laisser visible est la source même du « les boutons ne font rien ».
+    if (champ) {
+      champ.querySelectorAll(".Draftail-Toolbar").forEach((barre) => barre.remove());
+      champ.classList.add("editeur-riche-portail--degrade");
     }
-    input.disabled = true;
-    input.insertAdjacentElement("afterend", zone);
-    const libelle = document.querySelector(`label[for="${input.id}"]`);
-    if (libelle) libelle.setAttribute("for", zone.id);
+
+    const avis = document.createElement("p");
+    avis.className = "form-erreur";
+    avis.setAttribute("role", "alert");
+    avis.textContent =
+      "L'éditeur de texte n'a pas pu se charger" +
+      (raison ? ` (${raison})` : "") +
+      ". Le contenu déjà enregistré est conservé ; la mise en forme n'est pas modifiable pour l'instant.";
+    input.insertAdjacentElement("beforebegin", avis);
+
+    // Le champ d'origine reste actif et reste celui qui part au serveur : sa
+    // valeur est le contenu réel, formatage compris.
+    input.type = "hidden";
   }
 
   function chargerSprite(input) {
@@ -98,22 +117,43 @@
         "data-editeur-draftail-erreur",
         JSON.stringify(window.iteagDraftailErrors || []),
       );
-      activerRepli(input);
+      activerRepli(input, "script absent");
       return;
     }
 
-    requestAnimationFrame(() => {
-      const champ = input.closest(".editeur-riche-portail");
-      const hauteur = input.getAttribute("data-iteag-min-height");
-      if (champ && hauteur) {
-        champ.style.setProperty("--iteag-editor-min-height", hauteur);
-        traduireCommandes(champ);
-      }
+    const champ = input.closest(".editeur-riche-portail");
+    if (!champ) return;
+
+    const hauteur = input.getAttribute("data-iteag-min-height");
+    if (hauteur) champ.style.setProperty("--iteag-editor-min-height", hauteur);
+
+    /* On **observe** l'apparition de l'éditeur au lieu de parier sur un délai.
+
+       Un « setTimeout » de 750 ms était une course : Draftail a 739 Ko de
+       script à analyser avant de peindre, et sur une machine chargée il arrive
+       après. Le repli se déclenchait alors sur un éditeur parfaitement
+       fonctionnel, qui finissait par apparaître par-dessus — d'où des boutons
+       présents et sans effet.
+
+       Le délai qui subsiste n'est plus une limite de patience mais un filet :
+       dix secondes, au-delà desquelles le script est réellement en panne. */
+    if (champ.querySelector(".Draftail-Editor")) {
+      traduireCommandes(champ);
+      return;
+    }
+
+    const observateur = new MutationObserver(() => {
+      if (!champ.querySelector(".Draftail-Editor")) return;
+      observateur.disconnect();
+      window.clearTimeout(filet);
+      traduireCommandes(champ);
     });
-    window.setTimeout(() => {
-      const champ = input.closest(".editeur-riche-portail");
-      if (champ && !champ.querySelector(".Draftail-Editor")) activerRepli(input);
-    }, 750);
+    observateur.observe(champ, { childList: true, subtree: true });
+
+    const filet = window.setTimeout(() => {
+      observateur.disconnect();
+      if (!champ.querySelector(".Draftail-Editor")) activerRepli(input, "délai dépassé");
+    }, 10000);
   }
 
   function demarrer(racine) {

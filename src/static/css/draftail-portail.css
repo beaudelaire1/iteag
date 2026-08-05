@@ -237,3 +237,18 @@
     background: #355952;
     cursor: pointer;
 }
+
+/* État dégradé : l'éditeur n'a pas pu se charger.
+
+   Il se voit, et c'est le but. Un éditeur muet qui garde l'apparence d'un
+   éditeur fonctionnel fait conclure à une panne de formatage — c'était
+   précisément le symptôme rapporté : « les boutons sont là, le formatage ne
+   marche pas ». Ici le champ dit ce qu'il est. */
+.editeur-riche-portail--degrade {
+    border-left: 3px solid #b45309;
+    padding-left: 0.75rem;
+}
+
+.editeur-riche-portail--degrade .form-erreur {
+    margin-bottom: 0.5rem;
+}
