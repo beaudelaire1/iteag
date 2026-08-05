@@ -85,9 +85,7 @@ def etudiante(db, enseignant):
     ProfilEtudiant.objects.create(
         utilisateur=compte,
         parcours=parcours,
-        promotion=Promotion.objects.create(
-            nom="Promotion 2026", parcours=parcours, annee_debut=2026, annee_fin=2032
-        ),
+        promotion=Promotion.objects.create(nom="Promotion 2026", parcours=parcours, annee_debut=2026, annee_fin=2032),
         numero_etudiant="ETU-PARCOURS-1",
         statut_inscription=ProfilEtudiant.StatutInscription.ACTIF,
     )
@@ -135,8 +133,7 @@ class TestParcoursSecretariat:
 
         for route in ("administration:tableurs", "accounts:profil", "administration:utilisateurs"):
             assert page.count(_lien(route)) == 2, (
-                f"{route} paraît {page.count(_lien(route))} fois : "
-                "la barre latérale et le menu mobile, pas davantage."
+                f"{route} paraît {page.count(_lien(route))} fois : la barre latérale et le menu mobile, pas davantage."
             )
 
     def test_la_barre_ne_mene_pas_a_la_relecture_des_articles(self, client, secretaire):
@@ -144,9 +141,7 @@ class TestParcoursSecretariat:
         page = client.get(reverse("secretariat:dashboard")).content.decode()
         assert _lien("website:articles_relecture") not in page
 
-    def test_ecrire_et_publier_une_actualite_depuis_sa_barre(
-        self, client, secretaire, index_actualites
-    ):
+    def test_ecrire_et_publier_une_actualite_depuis_sa_barre(self, client, secretaire, index_actualites):
         """Le parcours entier : la barre y mène, l'écran s'ouvre, l'annonce
         s'écrit, se publie, et paraît sur le site public."""
         client.force_login(secretaire)
@@ -257,19 +252,10 @@ class TestParcoursEnseignant:
             assert _lien("website:article_supprimer", articles[etat].pk).replace("href", "action") in liste
         # Pas supprimable : une décision est en cours, ou la page est en ligne.
         for etat in ("soumis", "publié"):
-            assert (
-                _lien("website:article_supprimer", articles[etat].pk).replace("href", "action")
-                not in liste
-            )
+            assert _lien("website:article_supprimer", articles[etat].pk).replace("href", "action") not in liste
         # Le retrait ne se demande que pour ce qui est en ligne.
-        assert (
-            _lien("website:article_demande_retrait", articles["publié"].pk).replace("href", "action")
-            in liste
-        )
-        assert (
-            _lien("website:article_demande_retrait", articles["brouillon"].pk).replace("href", "action")
-            not in liste
-        )
+        assert _lien("website:article_demande_retrait", articles["publié"].pk).replace("href", "action") in liste
+        assert _lien("website:article_demande_retrait", articles["brouillon"].pk).replace("href", "action") not in liste
 
     def test_soumettre_un_article_retire_depuis_sa_liste(self, client, enseignant, directrice):
         articles = self._articles_dans_tous_les_etats(enseignant, directrice)
@@ -282,9 +268,7 @@ class TestParcoursEnseignant:
         articles["retiré"].refresh_from_db()
         assert articles["retiré"].statut == Article.Statut.RELECTURE
 
-    def test_demander_le_retrait_puis_supprimer_une_fois_accorde(
-        self, client, enseignant, directrice
-    ):
+    def test_demander_le_retrait_puis_supprimer_une_fois_accorde(self, client, enseignant, directrice):
         """Le parcours complet d'un article qu'on veut faire disparaître :
         il ne se supprime qu'après être redescendu, et l'auteur ne le fait pas
         redescendre lui-même."""
