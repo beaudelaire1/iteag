@@ -552,6 +552,12 @@ CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
         "script-src": ["'self'", *_turnstile_origins, *_stripe_script_origins],
+        # Le nonce est ajouté à « script-src » pour chaque réponse. Il permet
+        # d'autoriser un bloc en ligne précis — la configuration JSON que les
+        # bundles Wagtail lisent au démarrage — sans ouvrir « unsafe-inline » à
+        # toute la page. Un attaquant qui parvient à injecter du script ne
+        # connaît pas le nonce du jour.
+        "include-nonce-in": ["script-src"],
         "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:", "https://*.stripe.com"],
         "media-src": ["'self'", "blob:"],

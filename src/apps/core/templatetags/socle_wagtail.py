@@ -13,6 +13,7 @@ unique, et le widget d'éditeur riche pourra s'y brancher à son tour.
 
 from django import template
 from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from wagtail.admin.staticfiles import versioned_static
 
 register = template.Library()
@@ -40,9 +41,25 @@ def wagtail_socle_portail(context):
     a rendu ce défaut long à cerner. Le gabarit « admin_base.html » de Wagtail
     l'émet juste avant ses scripts ; un portail doit faire de même.
     """
-    from django.template.defaultfilters import json_script
+    import json
+
+    from django.core.serializers.json import DjangoJSONEncoder
     from wagtail.admin.templatetags.wagtailadmin_tags import wagtail_config
 
-    configuration = json_script(wagtail_config(context), "wagtail-config")
+    # Le bloc porte le nonce de la réponse. « script-src 'self' » vaut aussi
+    # pour les blocs en ligne, y compris de type « application/json » : sans
+    # nonce, le navigateur le bloque, « vendor.js » lit une chaîne vide et lève
+    # « Unexpected end of JSON input ». L'élément est bien dans le HTML servi —
+    # c'est ce qui rend le défaut si difficile à voir depuis le serveur.
+    charge = json.dumps(wagtail_config(context), cls=DjangoJSONEncoder).translate(
+        {ord("<"): "\u003c", ord(">"): "\u003e", ord("&"): "\u0026"}
+    )
+    requete = context.get("request")
+    nonce = getattr(requete, "csp_nonce", "") if requete is not None else ""
+    configuration = format_html(
+        '<script id="wagtail-config" type="application/json" nonce="{}">{}</script>',
+        nonce,
+        mark_safe(charge),  # noqa: S308 — échappé ci-dessus comme le fait « json_script »
+    )
     scripts = format_html_join("\n", '<script src="{}"></script>', ((versioned_static(c),) for c in SOCLE))
     return format_html("{}\n{}", configuration, scripts)

@@ -8,6 +8,7 @@ sa conservation.
 """
 
 import json
+import re
 from unittest.mock import patch
 
 import pytest
@@ -695,4 +696,36 @@ class TestSocleWagtail:
         assert 'id="wagtail-config"' in contenu, "« vendor.js » ne démarre pas sans elle."
         assert contenu.index("wagtail-config") < contenu.index("wagtailadmin/js/vendor.js"), (
             "La configuration doit précéder le bundle qui la lit."
+        )
+
+    def test_le_bloc_de_configuration_porte_un_nonce(self, client, secretaire, document):
+        """« script-src 'self' » bloque aussi les blocs en ligne.
+
+        Y compris de type « application/json ». Sans nonce, le navigateur
+        écarte le bloc, « vendor.js » lit une chaîne vide et lève « Unexpected
+        end of JSON input » — puis « window.telepath » n'est jamais créé et
+        tous les bundles échouent sur « undefined (reading 'register') ».
+
+        Le piège : l'élément **est** dans le HTML servi. Aucune inspection
+        côté serveur ne peut voir le blocage ; seule la console du navigateur
+        le montre.
+        """
+        client.force_login(secretaire)
+        reponse = client.get(reverse("redaction:document_edition", args=[document.pk]))
+        contenu = reponse.content.decode()
+
+        bloc = re.search(r'<script id="wagtail-config"[^>]*>', contenu)
+        assert bloc, "La configuration doit être servie."
+        assert "nonce=" in bloc.group(0), "Sans nonce, la CSP écarte le bloc et vendor.js abandonne."
+
+        # La CSP est désactivée dans les réglages de test — il n'y a donc aucun
+        # en-tête à lire. On vérifie l'autre moitié du contrat là où elle vit :
+        # la politique de base doit demander l'insertion du nonce dans
+        # « script-src », faute de quoi l'attribut posé sur le bloc n'autorise
+        # rien.
+        from config.settings import base
+
+        directives = base.CONTENT_SECURITY_POLICY["DIRECTIVES"]
+        assert "script-src" in directives.get("include-nonce-in", []), (
+            "Sans « include-nonce-in », le nonce du bloc n'est pas repris dans la politique."
         )
