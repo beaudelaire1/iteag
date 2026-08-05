@@ -98,5 +98,19 @@ AXES_ENABLED = False
 # CSP — report only in dev
 # ──────────────────────────────────────────────
 
+# L'intention était juste, la mise en œuvre non : les deux politiques valant
+# « None », la CSP était **entièrement absente** en développement, et non
+# rapportée. Une violation ne se voyait donc qu'en production.
+#
+# C'est ce qui a caché pendant des heures un bloc « application/json » écarté
+# par « script-src 'self' » : localement le champ se construisait, le harnais
+# montrait seize adaptateurs enregistrés, et tout allait bien — dans un
+# environnement où rien n'était appliqué.
+#
+# La politique de production est donc reprise telle quelle, en mode rapport :
+# rien n'est bloqué, le travail n'est pas gêné, mais chaque violation paraît
+# dans la console au moment où on l'introduit.
+from .base import CONTENT_SECURITY_POLICY as _POLITIQUE_PRODUCTION  # noqa: E402
+
 CONTENT_SECURITY_POLICY = None
-CONTENT_SECURITY_POLICY_REPORT_ONLY = None
+CONTENT_SECURITY_POLICY_REPORT_ONLY = _POLITIQUE_PRODUCTION
