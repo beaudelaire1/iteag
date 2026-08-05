@@ -155,9 +155,7 @@ class TestGenerationEtTelechargement:
         "apps.documents.tasks.generer_document_administratif.apply_async",
         side_effect=ConnectionError("Redis indisponible"),
     )
-    def test_un_broker_indisponible_met_immediatement_le_document_en_echec(
-        self, publier, client, etudiant
-    ):
+    def test_un_broker_indisponible_met_immediatement_le_document_en_echec(self, publier, client, etudiant):
         client.force_login(etudiant.utilisateur)
 
         reponse = client.post(

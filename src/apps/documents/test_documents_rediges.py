@@ -403,9 +403,7 @@ class TestChainePdf:
     @override_settings(DOCUMENTS_PDF_LOCAL_FALLBACK=True)
     @patch("apps.documents.tasks.generer_document_redige.apply_async")
     @patch("apps.documents.tasks.Thread")
-    def test_le_telechargement_local_ne_contacte_pas_redis(
-        self, thread, publier, client, secretaire, document
-    ):
+    def test_le_telechargement_local_ne_contacte_pas_redis(self, thread, publier, client, secretaire, document):
         client.force_login(secretaire)
 
         reponse = client.get(reverse("redaction:document_pdf", args=[document.pk]))
