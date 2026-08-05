@@ -365,11 +365,15 @@ def univers(db, settings, tmp_path):
     )
     index_actualites.add_child(instance=monde["actualite"])
 
+    monde["document_administratif"] = DocumentAdministratif.objects.create(
+        etudiant=monde[ETUDIANT],
+        type_document=DocumentAdministratif.TypeDocument.ATTESTATION,
+    )
     monde["document_redige"] = DocumentRedige.objects.create(
         titre="Convocation du conseil",
         genre=DocumentRedige.Genre.CONVOCATION,
         objet="Séance du conseil pédagogique",
-        corps="<p>Vous êtes convoqué.</p>",
+        corps=[("paragraphe", "<p>Vous êtes convoqué.</p>")],
         redige_par=monde[SECRETARIAT],
     )
 
@@ -589,6 +593,8 @@ FABRIQUES = {
     "redaction:document_edition": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
     "redaction:document_decision": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
     "redaction:document_pdf": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
+    "redaction:document_etat_pdf": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
+    "documents:status": (ETUDIANT, lambda m: {"pk": m["document_administratif"].pk}),
 }
 
 # Routes dont la propriété n'est pas contrôlable par un tiers du même rôle, et
