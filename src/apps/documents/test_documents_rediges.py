@@ -657,3 +657,25 @@ class TestFormulaireSansCorps:
 
         script = (Path(settings.BASE_DIR) / "static" / "js" / "streamfield-portail.js").read_text(encoding="utf-8")
         assert "emplacement.id" in script, "Le script doit passer l'identifiant comme préfixe."
+
+
+class TestSocleWagtail:
+    """Le socle JavaScript conditionne l'existence même du champ.
+
+    Les bundles de Wagtail supposent « vendor.js » déjà chargé. Servis seuls,
+    ils s'exécutent sans rien enregistrer : telepath reste vide, le champ ne se
+    construit pas, et l'envoi part sans « corps-count ». Mesuré en navigateur —
+    zéro adaptateur sans le socle, seize avec.
+
+    Le symptôme est trompeur : un intitulé sans zone de saisie, puis une erreur
+    500 côté serveur. Rien ne désigne le socle manquant.
+    """
+
+    def test_la_page_sert_le_socle_avant_les_bundles(self, client, secretaire, document):
+        client.force_login(secretaire)
+        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
+
+        assert "wagtailadmin/js/vendor.js" in contenu, "Sans « vendor.js », aucun adaptateur ne s'enregistre."
+        assert contenu.index("wagtailadmin/js/vendor.js") < contenu.index("telepath/blocks.js"), (
+            "Le socle doit précéder les bundles qui en dépendent."
+        )

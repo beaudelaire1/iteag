@@ -1,5 +1,5 @@
 {% extends "partials/portal_base.html" %}
-{% load static %}
+{% load static socle_wagtail %}
 
 {% block title %}{% if document %}{{ document.titre }}{% else %}Nouveau document{% endif %} — {{ SITE_NAME }}{% endblock %}
 
@@ -8,6 +8,19 @@
 {% endblock %}
 
 {% block extra_js %}
+{% comment %}
+Le socle avant tout le reste. Les bundles de Wagtail — draftail.js,
+blocs telepath, sélecteurs — supposent « vendor.js » et ses dépendances déjà
+présentes : dans l'administration elles le sont toujours. Servis seuls, ils
+s'exécutent sans rien enregistrer, et telepath reste vide. Le symptôme est
+trompeur : le champ ne s'affiche pas, l'envoi part sans « corps-count », et
+c'est le serveur qui semble fautif.
+
+Mesuré : sans ce socle, zéro adaptateur enregistré ; avec lui, seize, et le
+champ se construit. Même liste que « DraftailPortail.media », dans le même
+ordre.
+{% endcomment %}
+{% wagtail_socle_portail %}
 {{ form.media.js }}
 {% comment %}
 Après les médias du widget, et jamais avant : le script y cherche « telepath »,
