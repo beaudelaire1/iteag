@@ -4,8 +4,8 @@
     {
       "name": "iteag-dev",
       "runtimeExecutable": ".venv/Scripts/python.exe",
-      "runtimeArgs": ["src/manage.py", "runserver", "8000"],
-      "port": 8000
+      "runtimeArgs": ["src/manage.py", "runserver", "8010"],
+      "port": 8010
     }
   ]
 }
