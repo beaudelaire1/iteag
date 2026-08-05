@@ -37,11 +37,10 @@
             }
         }
 
-        /* Le courrier doit garder assez de souffle pour la signature sans
-           pousser celle-ci seule sur une seconde feuille. */
-        .iteag-letterhead { min-height: 32mm; padding-top: 6mm; padding-bottom: 6mm; }
-        .iteag-letterhead__logo { height: 16mm; }
-        .iteag-contactline { padding-top: 2mm; padding-bottom: 2mm; }
+        /* Ces surcharges compensaient la hauteur du bandeau vert. Sans lui,
+           elles ne compensent plus rien : l'en-tête tient sa mesure de la
+           charte commune. */
+        .iteag-letterhead__logo { height: 15mm; }
 
         .document-meta {
             display: flex;
@@ -69,12 +68,16 @@
             font-size: 8pt;
         }
 
+        /* Trois panneaux remplis sur une page — destinataire, fiche,
+           signature — donnaient à un courrier l'allure d'un tableau de bord
+           imprimé. Sur du papier à en-tête, c'est la typographie qui hiérarchise,
+           pas les fonds colorés. Il n'en reste aucun : des filets, des blancs,
+           et des graisses. */
         .recipient {
             flex: 1 1 auto;
             min-height: 22mm;
-            padding: 3.5mm 4.5mm;
-            border-left: 1.4mm solid var(--iteag-gold);
-            background: var(--iteag-cream);
+            padding: 0.5mm 0 0.5mm 4.5mm;
+            border-left: 0.9mm solid var(--iteag-gold);
         }
 
         .recipient__label {
@@ -110,15 +113,14 @@
 
         .genre-card {
             break-inside: avoid;
-            margin: 0 0 5mm;
-            padding: 3mm 4.5mm;
-            border: 0.3mm solid var(--iteag-line);
-            border-radius: 2mm;
-            background: #fbfcfb;
+            margin: 0 0 6mm;
+            padding: 2.5mm 0;
+            border-top: 0.4mm solid var(--iteag-forest);
+            border-bottom: 0.25mm solid var(--iteag-line);
         }
 
         .genre-card dl { margin: 0; }
-        .genre-card__row { display: flex; gap: 4mm; padding: 1.2mm 0; }
+        .genre-card__row { display: flex; gap: 4mm; padding: 1.1mm 0; }
         .genre-card dt { flex: 0 0 38mm; color: var(--iteag-muted); font-size: 8pt; }
         .genre-card dd { margin: 0; color: var(--iteag-forest-deep); font-size: 8.8pt; font-weight: 700; }
 
@@ -152,18 +154,26 @@
         .body-copy .iteag-align-justify, .body-copy .text-justify { text-align: justify; }
         .body-copy hr { margin: 6mm 0; border: 0; border-top: 0.35mm solid var(--iteag-line); }
 
+        /* Une signature manuscrite se pose dans du blanc, sous une mention
+           de qualité et au-dessus d'un nom. L'encadré doré faisait de ce geste
+           un composant d'interface. */
         .signature {
             break-inside: avoid;
-            width: 68mm;
-            margin: 6mm 0 0 auto;
-            padding: 3mm 4.5mm 3.5mm;
-            border-top: 1.2mm solid var(--iteag-gold);
-            background: var(--iteag-cream);
-            text-align: left;
+            width: 62mm;
+            margin: 10mm 0 0 auto;
+            text-align: center;
         }
-        .signature__role { margin: 0; color: var(--iteag-muted); font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; }
-        .signature__space { height: 10mm; }
-        .signature__name { margin: 0; color: var(--iteag-forest-deep); font-family: "Playfair Display", serif; font-size: 11pt; font-weight: 700; }
+        .signature__role { margin: 0; color: var(--iteag-muted); font-size: 7.2pt; letter-spacing: 0.14em; text-transform: uppercase; }
+        .signature__space { height: 16mm; }
+        .signature__name {
+            margin: 0;
+            padding-top: 1.8mm;
+            border-top: 0.3mm solid var(--iteag-forest);
+            color: var(--iteag-forest-deep);
+            font-family: "Playfair Display", serif;
+            font-size: 11.5pt;
+            font-weight: 700;
+        }
 
         .draft-watermark {
             position: fixed;

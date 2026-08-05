@@ -40,6 +40,11 @@ INSTITUT = {
     "email": "secretariat@iteag.org",
     "site": "iteag.org",
     "statut": "Association loi 1905",
+    # La devise de l'institut. Elle vit aussi dans « SITE_TAGLINE » (contexte
+    # des gabarits et des courriels) : la même phrase est donc écrite à
+    # plusieurs endroits, et le PDF s'en était inventé une autre faute de la
+    # trouver ici. À centraliser — voir la note du même nom dans le README.
+    "devise": "Une formation de qualité pour un service efficace",
 }
 
 # Fichier du dépôt → nom de famille et graisse déclarés dans « @font-face ».
@@ -108,10 +113,14 @@ def polices_embarquees(profil: str = "complet") -> list[dict]:
     return declarations
 
 
-# Bleu de la charte. Le logo livré est blanc sur fond transparent — pensé pour
+# Encre de la charte. Le logo livré est blanc sur fond transparent — pensé pour
 # un bandeau sombre. Posé tel quel sur le crème d'un document imprimé, il
 # disparaît : on ne voyait qu'un halo. Il est donc recoloré pour le papier.
-ENCRE_LOGO = (20, 36, 61)
+#
+# Le bleu marine d'origine (20, 36, 61) est resté quand la charte imprimée est
+# passée au vert : le logo jurait avec tout ce qui l'entourait. C'est le vert
+# profond « --iteag-forest-deep » de « _charte_institutionnelle.css ».
+ENCRE_LOGO = (23, 55, 47)
 
 
 @lru_cache(maxsize=1)

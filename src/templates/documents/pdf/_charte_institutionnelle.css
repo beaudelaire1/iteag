@@ -20,97 +20,107 @@ body {
     line-height: 1.62;
 }
 
+/* ── En-tête ──────────────────────────────────────────────────────────────
+   Un papier à en-tête, et non un bandeau de site.
+
+   L'aplat vert pleine largeur de 37 mm posait trois problèmes. Il mange une
+   cartouche d'encre par rame — un document officiel se tire en nombre. Il
+   photocopie en gris sale, et ces pièces se photocopient. Et surtout il donne
+   à un courrier d'institut l'allure d'une page d'accueil : la couleur y fait
+   le travail que devrait faire la typographie.
+
+   Le vert redevient donc une encre et un filet, pas une surface. Ce qui tient
+   la page : la hiérarchie du texte, un filet d'or court, et une réglure fine
+   qui ferme l'en-tête. C'est la grammaire de la papeterie gravée — elle coûte
+   trois traits et paraît chère. */
+
 .iteag-letterhead {
-    position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    min-height: 37mm;
-    margin: -17mm -18mm 0;
-    padding: 8mm 18mm;
-    overflow: hidden;
-    color: #fff;
-    background: var(--iteag-forest);
-}
-
-.iteag-letterhead::before,
-.iteag-letterhead::after {
-    position: absolute;
-    content: "";
-    transform: rotate(-24deg);
-}
-
-.iteag-letterhead::before {
-    right: 17mm;
-    top: -31mm;
-    width: 8mm;
-    height: 92mm;
-    background: rgb(255 255 255 / 10%);
-}
-
-.iteag-letterhead::after {
-    right: 6mm;
-    top: -22mm;
-    width: 3mm;
-    height: 78mm;
-    background: var(--iteag-gold);
+    gap: 12mm;
+    padding-bottom: 4.5mm;
+    border-bottom: 0.5mm solid var(--iteag-forest);
 }
 
 .iteag-letterhead__logo {
-    position: relative;
-    z-index: 2;
     display: block;
     width: auto;
-    height: 19mm;
+    height: 17mm;
+    margin-bottom: 2.5mm;
 }
 
 .iteag-letterhead__fallback {
-    position: relative;
-    z-index: 2;
+    display: block;
+    margin-bottom: 1.5mm;
+    color: var(--iteag-forest-deep);
     font-family: "Playfair Display", "Liberation Serif", serif;
-    font-size: 24pt;
+    font-size: 23pt;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.18em;
+    line-height: 1;
 }
 
-.iteag-letterhead__mission {
-    position: relative;
-    z-index: 2;
-    padding-right: 20mm;
+/* Le filet d'or ne souligne pas le titre : il le sépare de la devise. Court,
+   il se lit comme une signature ; pleine largeur, il redeviendrait une barre. */
+.iteag-letterhead__filet {
+    width: 17mm;
+    height: 0.9mm;
+    margin: 0 0 2mm;
+    background: var(--iteag-gold);
+}
+
+/* La devise tient sur une seule ligne. À 62 mm elle se brisait sur « pour un
+   service / efficace » — une coupure qui laisse un mot orphelin et donne
+   l'impression que la phrase a été tronquée. */
+.iteag-letterhead__devise {
+    margin: 0;
+    color: var(--iteag-forest);
+    font-family: "Playfair Display", "Liberation Serif", serif;
+    font-size: 8.6pt;
+    font-style: italic;
+    letter-spacing: 0.005em;
+    white-space: nowrap;
+}
+
+.iteag-letterhead__identite {
+    max-width: 66mm;
     text-align: right;
 }
 
-.iteag-letterhead__mission strong {
-    display: block;
-    font-size: 7.2pt;
-    letter-spacing: 0.2em;
+.iteag-letterhead__raison {
+    margin: 0 0 1.6mm;
+    color: var(--iteag-forest-deep);
+    font-size: 7.6pt;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+}
+
+.iteag-letterhead__coordonnees {
+    margin: 0;
+    color: var(--iteag-muted);
+    font-size: 7pt;
+    line-height: 1.62;
+}
+
+/* Seconde réglure, très fine et rapprochée : le doublet de filets est ce qui
+   distingue un en-tête gravé d'un simple trait de séparation. */
+.iteag-contactline {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 0.9mm;
+    padding-top: 1.6mm;
+    border-top: 0.25mm solid var(--iteag-gold);
+    color: var(--iteag-muted);
+    font-size: 6.6pt;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
 }
 
-.iteag-letterhead__mission span {
-    display: block;
-    margin-top: 1mm;
-    color: rgb(255 255 255 / 72%);
-    font-family: "Playfair Display", "Liberation Serif", serif;
-    font-size: 8.5pt;
-    font-style: italic;
-}
-
-.iteag-contactline {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0 -18mm;
-    padding: 2.8mm 18mm;
-    color: var(--iteag-forest-deep);
-    background: var(--iteag-cream);
-    border-bottom: 0.35mm solid var(--iteag-gold-soft);
-    font-size: 7pt;
-    letter-spacing: 0.025em;
-}
-
-.iteag-contactline__place { font-weight: 700; }
-.iteag-contactline__digital { color: var(--iteag-muted); }
+.iteag-contactline__place { color: var(--iteag-forest-deep); font-weight: 700; }
+.iteag-contactline__digital { letter-spacing: 0.06em; text-transform: none; }
 
 .iteag-kicker {
     margin: 0;
@@ -129,15 +139,18 @@ body {
     line-height: 1.12;
 }
 
+/* La pastille arrondie était le dernier réflexe d'interface sur une page qui
+   n'est faite que de filets droits : elle y détonnait comme une étiquette
+   collée. Le genre se dit en capitales espacées, sous un filet d'or — c'est
+   ainsi qu'un imprimé nomme sa nature. */
 .iteag-chip {
     display: inline-block;
-    padding: 1.3mm 2.6mm;
-    border-radius: 10mm;
-    color: var(--iteag-forest-deep);
-    background: var(--iteag-gold-soft);
-    font-size: 6.8pt;
+    padding-bottom: 1.2mm;
+    border-bottom: 0.5mm solid var(--iteag-gold);
+    color: var(--iteag-forest);
+    font-size: 7pt;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
 }
 

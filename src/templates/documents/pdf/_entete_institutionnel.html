@@ -1,17 +1,35 @@
+{% comment %}
+En-tête commun aux documents imprimés.
+
+La devise affichée ici était inventée — « Former · Servir · Transmettre / Au
+service de l'Église et de la société ». Celle de l'institut est « Une formation
+de qualité pour un service efficace », et elle vit déjà dans le code sous
+« SITE_TAGLINE ». Une marque qu'on réécrit à chaque support finit par en avoir
+quatre.
+
+Le logo est celui encré pour le papier — « logo_pdf » — et non la version
+blanche : il n'y a plus de fond sombre sur lequel la poser.
+{% endcomment %}
 <header class="iteag-letterhead">
     <div>
-        {% if logo_blanc_pdf %}
-        <img src="{{ logo_blanc_pdf }}" alt="ITEAG" class="iteag-letterhead__logo">
+        {% if logo_pdf %}
+        <img src="{{ logo_pdf }}" alt="{{ institut.sigle }}" class="iteag-letterhead__logo">
         {% else %}
-        <span class="iteag-letterhead__fallback">ITEAG</span>
+        <span class="iteag-letterhead__fallback">{{ institut.sigle }}</span>
         {% endif %}
+        <div class="iteag-letterhead__filet"></div>
+        <p class="iteag-letterhead__devise">{{ institut.devise }}</p>
     </div>
-    <div class="iteag-letterhead__mission">
-        <strong>Former · Servir · Transmettre</strong>
-        <span>Au service de l'Église et de la société</span>
+    <div class="iteag-letterhead__identite">
+        <p class="iteag-letterhead__raison">{{ institut.nom }}</p>
+        <p class="iteag-letterhead__coordonnees">
+            {{ institut.adresse }}<br>
+            {{ institut.telephone }}<br>
+            {{ institut.email }}
+        </p>
     </div>
 </header>
 <div class="iteag-contactline">
-    <span class="iteag-contactline__place">Les Abymes · Guadeloupe</span>
-    <span class="iteag-contactline__digital">{{ institut.telephone }} &nbsp;·&nbsp; {{ institut.email }} &nbsp;·&nbsp; {{ institut.site }}</span>
+    <span class="iteag-contactline__place">{{ institut.statut }}</span>
+    <span class="iteag-contactline__digital">{{ institut.site }}</span>
 </div>
