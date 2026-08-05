@@ -27,6 +27,26 @@ from apps.documents.models import DocumentRedige
 from apps.documents.tasks import planifier_document_redige
 
 
+def _saisie_avec_corps(donnees):
+    """Garantit que le corps est déclaré, fût-ce comme vide.
+
+    Un StreamBlock lit « corps-count » sans filet : la clé absente lève une
+    « MultiValueDictKeyError » avant toute validation, et la vue rend un 500 là
+    où elle devrait afficher un formulaire. Or la clé manque dès que le widget
+    ne s'est pas amorcé — script absent, page envoyée avant la fin du
+    chargement, requête forgée.
+
+    Un envoi sans corps signifie « rien à écrire », ce qu'un brouillon a le
+    droit d'être. C'est « finaliser() » qui exige un corps, au moment où le
+    document devient un acte.
+    """
+    if "corps-count" in donnees:
+        return donnees
+    complete = donnees.copy()
+    complete["corps-count"] = "0"
+    return complete
+
+
 class DocumentsRedigesView(StaffRoleRequiredMixin, ListView):
     template_name = "documents/redaction/liste.html"
     context_object_name = "documents"
@@ -116,7 +136,7 @@ class DocumentRedigeEditionView(StaffRoleRequiredMixin, TemplateView):
 
         genre = self._genre(document)
         fiche_du_genre = fiche(genre)
-        formulaire = DocumentRedigeForm(request.POST, instance=document, fiche=fiche_du_genre)
+        formulaire = DocumentRedigeForm(_saisie_avec_corps(request.POST), instance=document, fiche=fiche_du_genre)
         formulaire_fiche = fiche_du_genre.formulaire(request.POST)
 
         # La fiche est validée mais n'arrête pas l'enregistrement : un brouillon

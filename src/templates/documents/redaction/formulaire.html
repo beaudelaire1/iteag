@@ -1,4 +1,5 @@
 {% extends "partials/portal_base.html" %}
+{% load static %}
 
 {% block title %}{% if document %}{{ document.titre }}{% else %}Nouveau document{% endif %} — {{ SITE_NAME }}{% endblock %}
 
@@ -8,6 +9,12 @@
 
 {% block extra_js %}
 {{ form.media.js }}
+{% comment %}
+Après les médias du widget, et jamais avant : le script y cherche « telepath »,
+que « telepath/blocks.js » vient d'installer. Placé au-dessus, il ne trouverait
+rien et laisserait le champ inerte.
+{% endcomment %}
+<script src="{% static 'js/streamfield-portail.js' %}"></script>
 {% endblock %}
 
 {% block portal_nav %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}

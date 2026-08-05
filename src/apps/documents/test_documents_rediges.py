@@ -588,3 +588,40 @@ class TestFicheDuGenre:
             contexte_marque(profil_polices="document_administratif", document=document),
         )
         assert "Salle du conseil" in html
+
+
+class TestFormulaireSansCorps:
+    """Un envoi sans corps ne doit pas faire tomber le serveur.
+
+    « MultiValueDictKeyError: 'corps-count' » : un StreamBlock lit cette clé
+    sans filet, et la vue rendait un 500 là où elle devait afficher un
+    formulaire. La clé manque dès que le widget ne s'est pas amorcé — script
+    absent, page envoyée trop tôt, requête forgée.
+    """
+
+    def test_un_envoi_sans_le_champ_corps_ne_tombe_pas(self, client, secretaire):
+        client.force_login(secretaire)
+        donnees = {cle: valeur for cle, valeur in _saisie().items() if not cle.startswith("corps-")}
+
+        reponse = client.post(reverse("redaction:document_creation"), donnees)
+
+        assert reponse.status_code < 500, "Un formulaire incomplet s'affiche, il ne plante pas."
+        assert DocumentRedige.objects.filter(titre="Courrier de rentrée").exists()
+
+    def test_le_document_ainsi_créé_reste_un_brouillon_sans_corps(self, client, secretaire):
+        client.force_login(secretaire)
+        donnees = {cle: valeur for cle, valeur in _saisie().items() if not cle.startswith("corps-")}
+        client.post(reverse("redaction:document_creation"), donnees)
+
+        cree = DocumentRedige.objects.get(titre="Courrier de rentrée")
+        assert cree.est_modifiable
+        with pytest.raises(ValidationError):
+            cree.finaliser(par=secretaire)
+
+    def test_la_page_charge_le_script_d_amorcage(self, client, secretaire, document):
+        """Sans lui, le champ reste un div et l'envoi repart sans corps."""
+        client.force_login(secretaire)
+        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
+
+        assert "streamfield-portail.js" in contenu
+        assert 'data-controller="w-block"' in contenu
