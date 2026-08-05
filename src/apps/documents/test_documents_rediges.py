@@ -679,3 +679,20 @@ class TestSocleWagtail:
         assert contenu.index("wagtailadmin/js/vendor.js") < contenu.index("telepath/blocks.js"), (
             "Le socle doit précéder les bundles qui en dépendent."
         )
+
+    def test_la_page_sert_la_configuration_wagtail(self, client, secretaire, document):
+        """« vendor.js » la lit au démarrage et abandonne si elle manque.
+
+        Sans elle : « Unexpected end of JSON input », puis « window.telepath »
+        jamais créé, puis une cascade de « Cannot read properties of undefined
+        (reading 'register') » sur tous les bundles. Rien dans ces messages ne
+        désigne la configuration absente — d'où trois correctifs à côté avant
+        de trouver.
+        """
+        client.force_login(secretaire)
+        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
+
+        assert 'id="wagtail-config"' in contenu, "« vendor.js » ne démarre pas sans elle."
+        assert contenu.index("wagtail-config") < contenu.index("wagtailadmin/js/vendor.js"), (
+            "La configuration doit précéder le bundle qui la lit."
+        )
