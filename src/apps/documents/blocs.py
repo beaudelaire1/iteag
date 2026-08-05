@@ -22,6 +22,7 @@ un contenu qui devient vérifiable.
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.contrib.typed_table_block.blocks import TypedTableBlock
+from wagtail.images.blocks import ImageChooserBlock
 
 # Les mêmes fonctionnalités que le corps des articles et des actualités : un
 # document n'a pas besoin d'un autre jeu de mise en forme, et deux profils
@@ -156,6 +157,36 @@ class IconeBlock(blocks.StructBlock):
         template = "documents/pdf/blocs/icone.html"
 
 
+class ImageBlock(blocks.StructBlock):
+    """Une image de la médiathèque, dimensionnée pour le papier.
+
+    La largeur est donnée en fraction de la justification et non en pixels : un
+    document est composé en millimètres, et « 600 px » n'y veut rien dire.
+
+    Le sélecteur officiel de Wagtail est employé tel quel. Il exige que la
+    personne ait le droit d'ouvrir la médiathèque — voir
+    « apps/accounts/services/droits_editoriaux.py » : ce droit suit le rôle, et
+    ne se demande donc jamais.
+    """
+
+    image = ImageChooserBlock(label=_("Image"))
+    legende = blocks.CharBlock(required=False, max_length=250, label=_("Légende"))
+    largeur = blocks.ChoiceBlock(
+        choices=[
+            ("pleine", _("Toute la justification")),
+            ("deux_tiers", _("Deux tiers")),
+            ("moitie", _("La moitié")),
+        ],
+        default="deux_tiers",
+        label=_("Largeur"),
+    )
+
+    class Meta:
+        icon = "image"
+        label = _("Image")
+        template = "documents/pdf/blocs/image.html"
+
+
 class SautDePageBlock(blocks.StaticBlock):
     """Force la suite sur une nouvelle page.
 
@@ -178,16 +209,8 @@ class CorpsDocument(blocks.StreamBlock):
     tableau = TableauBlock(required=False)
     encadre = EncadreBlock()
     icone = IconeBlock()
+    image = ImageBlock()
     saut_de_page = SautDePageBlock()
-
-    # L'image manque, et c'est délibéré. « ImageChooserBlock » fonctionnerait —
-    # il ne coûte que trois scripts — mais son dialogue est servi par
-    # « /admin/images/chooser/ », que les portails n'atteignent pas. Le poser
-    # ici donnerait un bouton qui ouvre une fenêtre vide.
-    #
-    # Le chemin est connu et déjà emprunté : « core:editeur_lien_externe »
-    # sert le dialogue officiel de lien depuis une route de portail. La même
-    # passerelle rendra l'image disponible, et ce bloc sera ajouté alors.
 
     class Meta:
         block_counts = {"saut_de_page": {"max_num": 20}}

@@ -1,0 +1,11 @@
+{% comment %}
+« width-1200 » plutôt que la taille d'origine : une photo de téléphone pèse
+plusieurs méga-octets, et vingt documents archivés saturent le stockage sans
+qu'aucun œil ne voie la différence à 300 points par pouce sur 12 cm.
+{% endcomment %}
+{% load wagtailimages_tags %}
+<figure class="bloc-image bloc-image--{{ value.largeur }}">
+    {% image value.image width-1200 as rendu %}
+    <img src="{{ rendu.url }}" alt="{{ value.legende|default:'' }}">
+    {% if value.legende %}<figcaption>{{ value.legende }}</figcaption>{% endif %}
+</figure>

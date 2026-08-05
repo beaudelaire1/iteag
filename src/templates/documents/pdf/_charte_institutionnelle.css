@@ -258,3 +258,23 @@ body {
 }
 
 .bloc-saut-de-page { break-after: page; }
+
+/* Une image de document se mesure en fraction de justification : « 600 px »
+   n'a pas de sens sur du papier. Elle ne se coupe jamais entre deux pages —
+   une photographie tranchée en deux passe pour un défaut d'impression. */
+.bloc-image {
+    break-inside: avoid;
+    margin: 5mm 0;
+}
+
+.bloc-image img { display: block; width: 100%; height: auto; }
+.bloc-image--pleine { width: 100%; }
+.bloc-image--deux_tiers { width: 66%; }
+.bloc-image--moitie { width: 50%; }
+
+.bloc-image figcaption {
+    margin-top: 1.5mm;
+    color: var(--iteag-muted);
+    font-size: 7.6pt;
+    font-style: italic;
+}
