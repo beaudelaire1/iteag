@@ -1,0 +1,16 @@
+{% comment %}Rendu commun de Draftail dans les formulaires des portails.{% endcomment %}
+<div class="champ editeur-riche-portail{% if field.errors %} champ--invalide{% endif %}"
+     style="--iteag-editor-min-height: {{ min_height|default:'18rem' }};">
+    <label class="form-label" for="{{ field.id_for_label }}">
+        {{ field.label }}{% if field.field.required %}<span class="obligatoire" aria-hidden="true">*</span>{% endif %}
+    </label>
+    {% if field.help_text %}
+    <p class="form-aide" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>
+    {% endif %}
+    {{ field }}
+    <noscript><p class="form-erreur">JavaScript est nécessaire pour utiliser l'éditeur de texte.</p></noscript>
+
+    {% for erreur in field.errors %}
+    <p class="form-erreur" role="alert">{{ erreur }}</p>
+    {% endfor %}
+</div>

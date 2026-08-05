@@ -4,18 +4,11 @@
 {% block title %}{% if article %}{{ article.titre }}{% else %}Nouvel article{% endif %} — {{ SITE_NAME }}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/vendor/quill.snow.css' %}">
+{{ form.media.css }}
 {% endblock %}
 
 {% block extra_js %}
-{% comment %}
-Sans « defer », volontairement : « iteag.js » est différé, donc exécuté après
-l'analyse du document. Un script classique placé ici s'exécute pendant cette
-analyse, c'est-à-dire avant — et « window.Quill » est défini quand l'éditeur
-cherche à s'en servir. L'ordre inverse laisserait la zone en simple champ
-éditable, sans barre d'outils.
-{% endcomment %}
-<script src="{% static 'js/vendor/quill.js' %}"></script>
+{{ form.media.js }}
 {% endblock %}
 
 {% block portal_nav %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
@@ -74,28 +67,8 @@ cherche à s'en servir. L'ordre inverse laisserait la zone en simple champ
         {% include "partials/champ.html" with field=form.chapeau %}
     </div>
 
-    {# ── L'éditeur ── #}
     <div class="card">
-        <label class="form-label" for="editeur-corps">Corps de l'article</label>
-
-        {% comment %}
-        Quill construit lui-même sa barre d'outils dans cet emplacement. Il est
-        servi depuis notre origine, jamais depuis un CDN (ADR-003), et sa
-        licence BSD-3-Clause convient à un dépôt propriétaire — contrairement à
-        TinyMCE et CKEditor, passés au GPL.
-        {% endcomment %}
-        <div id="editeur-corps" data-editeur
-             data-editeur-champ="#{{ form.corps.auto_id }}"
-             style="min-height: 24rem;"></div>
-        {{ form.corps }}
-
-        <p class="mt-2 text-xs" style="color: var(--color-warm-500);">
-            La mise en forme conservée à l'enregistrement est celle de la barre d'outils :
-            titres, gras, italique, listes, citations et liens. Ce qu'un collage depuis Word
-            apporterait en plus serait retiré, et le voir disparaître après coup serait pire
-            que de ne pas l'avoir eu.
-        </p>
-        {% for erreur in form.corps.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+        {% include "partials/champ_editeur_riche.html" with field=form.corps min_height="24rem" only %}
     </div>
 
     <div class="card space-y-4">
@@ -116,7 +89,8 @@ cherche à s'en servir. L'ordre inverse laisserait la zone en simple champ
 <div class="card mt-6">
     <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Illustrations</h2>
     <p class="mt-1 text-sm text-warm-500">
-        Déposez vos figures ici, puis insérez-les à l'endroit voulu du texte.
+        Déposez ici les figures et leurs légendes. Elles restent attachées à
+        l'article et pourront être disposées dans sa maquette éditoriale.
     </p>
 
     {% if article.illustrations.all %}
@@ -127,9 +101,6 @@ cherche à s'en servir. L'ordre inverse laisserait la zone en simple champ
                  class="w-full rounded object-cover" style="max-height: 8rem;">
             <figcaption class="mt-2 text-xs text-warm-500">{{ illustration.legende|default:"Sans légende" }}</figcaption>
             <div class="mt-2 flex gap-2">
-                <button type="button" class="btn-ghost" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;"
-                        data-inserer-image="{{ illustration.fichier.url }}"
-                        data-legende="{{ illustration.legende }}">Insérer</button>
                 <form method="post" action="{% url 'website:illustration_supprimer' illustration.pk %}">
                     {% csrf_token %}
                     <button type="submit" class="text-xs text-danger">Retirer</button>

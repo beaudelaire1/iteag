@@ -5,6 +5,7 @@ from modelcluster.fields import ParentalKey
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel
 from wagtail.contrib.forms.models import AbstractForm, AbstractFormField
+from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.fields import RichTextField, StreamField
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Page
@@ -14,6 +15,105 @@ from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 # ──────────────────────────────────────────────
 # StreamField Blocks
 # ──────────────────────────────────────────────
+
+# Dans StreamField, Draftail sert au texte et non à reproduire une page entière
+# dans un unique champ HTML. Les images et documents restent des blocs Wagtail :
+# ils conservent ainsi leurs métadonnées, permissions et références en base.
+FONCTIONNALITES_TEXTE = [
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "bold",
+    "italic",
+    "underline",
+    "strikethrough",
+    "superscript",
+    "subscript",
+    "code",
+    "ol",
+    "ul",
+    "blockquote",
+    "align-left",
+    "align-center",
+    "align-right",
+    "align-justify",
+    "hr",
+    "link",
+]
+
+
+class TexteEditorialBlock(blocks.RichTextBlock):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("features", FONCTIONNALITES_TEXTE)
+        kwargs.setdefault("template", "website/blocks/texte_editorial.html")
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        icon = "pilcrow"
+        label = "Texte riche"
+
+
+class ImageEditorialeBlock(blocks.StructBlock):
+    image = ImageChooserBlock()
+    legende = blocks.CharBlock(required=False, max_length=250, label="Légende")
+    credit = blocks.CharBlock(required=False, max_length=160, label="Crédit")
+    largeur = blocks.ChoiceBlock(
+        choices=[
+            ("contenu", "Largeur du texte"),
+            ("large", "Large"),
+            ("pleine", "Pleine largeur"),
+        ],
+        default="contenu",
+        label="Largeur",
+    )
+
+    class Meta:
+        icon = "image"
+        label = "Image légendée"
+        template = "website/blocks/image_editoriale.html"
+
+
+class CitationEditorialeBlock(blocks.StructBlock):
+    citation = blocks.TextBlock(label="Citation")
+    auteur = blocks.CharBlock(required=False, max_length=160, label="Auteur")
+    source = blocks.CharBlock(required=False, max_length=200, label="Source")
+
+    class Meta:
+        icon = "openquote"
+        label = "Citation mise en avant"
+        template = "website/blocks/citation_editoriale.html"
+
+
+class EncadreEditorialBlock(blocks.StructBlock):
+    titre = blocks.CharBlock(required=False, max_length=140, label="Titre")
+    contenu = TexteEditorialBlock(features=["bold", "italic", "underline", "ol", "ul", "link"])
+    tonalite = blocks.ChoiceBlock(
+        choices=[
+            ("information", "Information"),
+            ("important", "Important"),
+            ("conseil", "Conseil"),
+        ],
+        default="information",
+        label="Présentation",
+    )
+
+    class Meta:
+        icon = "info-circle"
+        label = "Encadré"
+        template = "website/blocks/encadre_editorial.html"
+
+
+class DocumentEditorialBlock(blocks.StructBlock):
+    document = DocumentChooserBlock()
+    titre = blocks.CharBlock(required=False, max_length=180, label="Libellé du lien")
+    description = blocks.CharBlock(required=False, max_length=280, label="Description")
+
+    class Meta:
+        icon = "doc-full-inverse"
+        label = "Document à télécharger"
+        template = "website/blocks/document_editorial.html"
 
 
 class HeroBlock(blocks.StructBlock):
@@ -30,7 +130,7 @@ class HeroBlock(blocks.StructBlock):
 
 class SectionTexteBlock(blocks.StructBlock):
     titre = blocks.CharBlock(max_length=120)
-    contenu = blocks.RichTextBlock()
+    contenu = TexteEditorialBlock()
     image = ImageChooserBlock(required=False)
 
     class Meta:
@@ -62,7 +162,7 @@ class CTABlock(blocks.StructBlock):
 
 class FAQBlock(blocks.StructBlock):
     question = blocks.CharBlock(max_length=250)
-    reponse = blocks.RichTextBlock()
+    reponse = TexteEditorialBlock(features=["bold", "italic", "underline", "ol", "ul", "link"])
 
     class Meta:
         icon = "help"
@@ -83,6 +183,11 @@ class HomePage(Page):
         [
             ("hero", HeroBlock()),
             ("section_texte", SectionTexteBlock()),
+            ("texte", TexteEditorialBlock()),
+            ("image", ImageEditorialeBlock()),
+            ("citation", CitationEditorialeBlock()),
+            ("encadre", EncadreEditorialBlock()),
+            ("document", DocumentEditorialBlock()),
             ("temoignages", blocks.ListBlock(TemoignageBlock(), label="Témoignages")),
             ("cta", CTABlock()),
             ("faq", blocks.ListBlock(FAQBlock(), label="FAQ")),
@@ -158,6 +263,11 @@ class ContentPage(Page):
     body = StreamField(
         [
             ("section_texte", SectionTexteBlock()),
+            ("texte", TexteEditorialBlock()),
+            ("image", ImageEditorialeBlock()),
+            ("citation", CitationEditorialeBlock()),
+            ("encadre", EncadreEditorialBlock()),
+            ("document", DocumentEditorialBlock()),
             ("hero", HeroBlock()),
             ("cta", CTABlock()),
         ],

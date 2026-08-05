@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('website', '0006_renommer_article'),
+        ("website", "0006_renommer_article"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='article',
-            name='motif_retrait',
-            field=models.TextField(blank=True, verbose_name='Motif de la demande de retrait'),
+            model_name="article",
+            name="motif_retrait",
+            field=models.TextField(blank=True, verbose_name="Motif de la demande de retrait"),
         ),
         migrations.AddField(
-            model_name='article',
-            name='retrait_demande_le',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Retrait demandé le'),
+            model_name="article",
+            name="retrait_demande_le",
+            field=models.DateTimeField(blank=True, null=True, verbose_name="Retrait demandé le"),
         ),
     ]

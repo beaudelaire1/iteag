@@ -339,10 +339,9 @@
   }
 
   /* ── Navigation sticky premium ── */
-  /* Corps d'un article de recherche. Le balisage vient de l'éditeur des
-     enseignants, qui n'écrivent aucune classe : la mise en forme doit donc
-     porter sur les balises elles-mêmes, faute de quoi un article s'affiche en
-     texte brut sans titre ni liste. */
+  /* Corps d'un article de recherche. La typographie porte d'abord sur les
+     balises ; les classes Draftail pilotent les alignements. Les anciennes
+     classes Quill restent rendues pour les contenus déjà enregistrés. */
   .prose-article {
     line-height: 1.8;
     color: var(--color-warm-800);
@@ -362,6 +361,19 @@
     font-weight: 600;
     color: var(--color-navy-800);
     margin-top: 1.6em;
+  }
+  .prose-article h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-navy-800);
+    margin-top: 1.4em;
+  }
+  .prose-article h5,
+  .prose-article h6 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-navy-800);
+    margin-top: 1.25em;
   }
   .prose-article ul,
   .prose-article ol {
@@ -406,12 +418,108 @@
     padding: 0.5rem 0.75rem;
     text-align: left;
   }
-  /* Le « div » éditable ne doit pas paraître vide : sans repère, l'enseignant
-     ne sait pas qu'il peut y écrire. */
-  .prose-article[contenteditable]:empty::before {
-    content: "Rédigez votre article ici…";
-    color: var(--color-warm-400);
+  /* Contrat de rendu du composant partagé. Les mêmes classes valent dans un
+     article, une actualité, un aperçu et, demain, un document généré. */
+  .contenu-riche > * + * { margin-top: 0.75em; }
+  .contenu-riche h2,
+  .contenu-riche h3,
+  .contenu-riche h4,
+  .contenu-riche h5,
+  .contenu-riche h6 { font-weight: 700; color: var(--color-navy-900); }
+  .contenu-riche ul { list-style: disc; padding-left: 1.5rem; }
+  .contenu-riche ol { list-style: decimal; padding-left: 1.5rem; }
+  .contenu-riche blockquote {
+    border-left: 3px solid var(--color-gold-400, #d4b483);
+    padding-left: 1rem;
+    font-style: italic;
   }
+  .contenu-riche a { color: var(--color-navy-700); text-decoration: underline; }
+  .contenu-riche .ql-align-center { text-align: center; }
+  .contenu-riche .ql-align-right { text-align: right; }
+  .contenu-riche .ql-align-justify { text-align: justify; }
+  .iteag-align-left { text-align: left; }
+  .iteag-align-center { text-align: center; }
+  .iteag-align-right { text-align: right; }
+  .iteag-align-justify { text-align: justify; }
+
+  /* Blocs structurels StreamField : Draftail reste cantonné au texte. */
+  .bloc-editorial-image {
+    margin: 2rem auto;
+  }
+  .bloc-editorial-image--contenu { max-width: 48rem; }
+  .bloc-editorial-image--large { max-width: 64rem; }
+  .bloc-editorial-image--pleine { max-width: none; }
+  .bloc-editorial-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.25rem;
+  }
+  .bloc-editorial-image figcaption,
+  .bloc-editorial-citation figcaption {
+    margin-top: 0.65rem;
+    color: var(--color-warm-500);
+    font-size: 0.85rem;
+  }
+  .bloc-editorial-citation {
+    border-left: 3px solid var(--color-gold-500, #b08d3f);
+    margin: 2rem 0;
+    padding: 0.5rem 0 0.5rem 1.5rem;
+  }
+  .bloc-editorial-citation blockquote {
+    color: var(--color-navy-800);
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    line-height: 1.6;
+  }
+  .bloc-editorial-encadre {
+    border: 1px solid var(--color-warm-200);
+    border-left-width: 4px;
+    border-radius: 0.25rem;
+    margin: 2rem 0;
+    padding: 1.25rem 1.5rem;
+  }
+  .bloc-editorial-encadre--information { border-left-color: var(--color-navy-500); }
+  .bloc-editorial-encadre--important { border-left-color: var(--color-gold-600, #9a742f); }
+  .bloc-editorial-encadre--conseil { border-left-color: var(--color-green-600, #355952); }
+  .bloc-editorial-encadre h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+  }
+  .bloc-editorial-document {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1.5rem;
+    align-items: center;
+    border: 1px solid var(--color-warm-200);
+    border-radius: 0.25rem;
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    text-decoration: none;
+  }
+  .bloc-editorial-document__titre {
+    color: var(--color-navy-900);
+    font-weight: 700;
+  }
+  .bloc-editorial-document__description {
+    color: var(--color-warm-600);
+    font-size: 0.9rem;
+  }
+  .bloc-editorial-document__action {
+    color: var(--color-navy-700);
+    font-size: 0.85rem;
+    font-weight: 700;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .contenu-riche .ql-indent-1 { margin-left: 3em; }
+  .contenu-riche .ql-indent-2 { margin-left: 6em; }
+  .contenu-riche .ql-indent-3 { margin-left: 9em; }
+  .contenu-riche .ql-indent-4 { margin-left: 12em; }
+  .contenu-riche .ql-indent-5 { margin-left: 15em; }
+  .contenu-riche .ql-indent-6 { margin-left: 18em; }
+  .contenu-riche .ql-indent-7 { margin-left: 21em; }
+  .contenu-riche .ql-indent-8 { margin-left: 24em; }
 
   .nav-premium {
     position: sticky;

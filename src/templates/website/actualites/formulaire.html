@@ -4,17 +4,11 @@
 {% block title %}{% if actualite %}{{ actualite.title }}{% else %}Nouvelle actualité{% endif %} — {{ SITE_NAME }}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/vendor/quill.snow.css' %}">
+{{ form.media.css }}
 {% endblock %}
 
 {% block extra_js %}
-{% comment %}
-Sans « defer », comme sur l'écran des articles : « iteag.js » est différé, donc
-exécuté après l'analyse du document. Un script classique placé ici s'exécute
-pendant cette analyse — « window.Quill » est donc défini quand l'éditeur le
-cherche. L'ordre inverse laisserait une simple zone éditable, sans barre d'outils.
-{% endcomment %}
-<script src="{% static 'js/vendor/quill.js' %}"></script>
+{{ form.media.js }}
 {% endblock %}
 
 {% block portal_nav %}{% with nav='actualites' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
@@ -50,21 +44,7 @@ cherche. L'ordre inverse laisserait une simple zone éditable, sans barre d'outi
     </div>
 
     <div class="card">
-        <label class="form-label" for="editeur-corps">Contenu de l'actualité</label>
-
-        {% comment %}
-        Le même éditeur que pour les articles de recherche : servi depuis notre
-        origine (ADR-003), jamais depuis un CDN. Ce qui est envoyé repasse par
-        la liste blanche côté serveur — la barre d'outils est un confort de
-        rédaction, jamais un garde-fou.
-        {% endcomment %}
-        <div id="editeur-corps" data-editeur
-             data-editeur-champ="#{{ form.corps.auto_id }}"
-             data-editeur-invite="Rédigez l'actualité ici…"
-             style="min-height: 20rem;"></div>
-        {{ form.corps }}
-
-        {% for erreur in form.corps.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+        {% include "partials/champ_editeur_riche.html" with field=form.corps min_height="20rem" only %}
     </div>
 
     <div class="card space-y-4">

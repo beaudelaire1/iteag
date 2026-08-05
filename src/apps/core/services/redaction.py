@@ -40,6 +40,8 @@ BALISES = {
     "h2",
     "h3",
     "h4",
+    "h5",
+    "h6",
     "ul",
     "ol",
     "li",
@@ -68,6 +70,21 @@ ATTRIBUTS = {
     "td": {"colspan", "rowspan"},
 }
 
+# Les anciens contenus Quill expriment l'alignement et le retrait par des
+# classes. Elles restent filtrées nom par nom pendant la transition vers
+# Draftail : autoriser ``class`` sans limite ouvrirait le design public.
+CLASSES_ALIGNEMENT = {"ql-align-center", "ql-align-right", "ql-align-justify"}
+CLASSES_ALIGNEMENT_DRAFTAIL = {
+    "iteag-align-left",
+    "iteag-align-center",
+    "iteag-align-right",
+    "iteag-align-justify",
+}
+CLASSES_RETRAIT = {f"ql-indent-{niveau}" for niveau in range(1, 9)}
+CLASSES_QUILL = CLASSES_ALIGNEMENT | CLASSES_RETRAIT
+CLASSES_TEXTE_RICHE = CLASSES_QUILL | CLASSES_ALIGNEMENT_DRAFTAIL
+CLASSES_AUTORISEES = {balise: CLASSES_TEXTE_RICHE for balise in ("p", "h2", "h3", "h4", "h5", "h6", "li", "blockquote")}
+
 # « javascript: » et « data: » sont exclus : le premier exécute, le second
 # permet d'embarquer un document entier dans un attribut.
 SCHEMAS_URL = {"http", "https", "mailto"}
@@ -82,14 +99,24 @@ SCHEMAS_URL = {"http", "https", "mailto"}
 _DECORATION_QUILL = re.compile(r'<span class="ql-ui"[^>]*>\s*</span>')
 _LISTE = re.compile(r"<ol>(.*?)</ol>", re.S)
 _ITEM = re.compile(r"<li(?P<attributs>[^>]*)>(?P<contenu>.*?)</li>", re.S)
+_ATTRIBUT_CLASSES = re.compile(r"""\bclass\s*=\s*(?:"(?P<double>[^"]*)"|'(?P<simple>[^']*)')""", re.I)
+
+
+def _classes_quill(attributs: str) -> str:
+    """Ne conserve que les classes de mise en forme produites par Quill."""
+    correspondance = _ATTRIBUT_CLASSES.search(attributs)
+    if not correspondance:
+        return ""
+    valeur = correspondance.group("double") or correspondance.group("simple") or ""
+    return " ".join(classe for classe in valeur.split() if classe in CLASSES_QUILL)
 
 
 def _normaliser_listes(html: str) -> str:
     """Rend aux listes à puces leur « <ul> », que Quill n'écrit jamais.
 
-    Les listes produites ici sont plates : la barre d'outils n'offre pas
-    d'indentation. Une liste imbriquée arriverait inchangée, ce qui la
-    dégraderait sans la casser.
+    Quill encode aussi les niveaux de retrait dans une classe sur le ``li``.
+    Cette information est conservée pendant la conversion ``ol``/``ul`` puis
+    filtrée une seconde fois par la liste blanche de ``nh3``.
     """
 
     def refaire(correspondance: re.Match) -> str:
@@ -104,7 +131,9 @@ def _normaliser_listes(html: str) -> str:
                 morceaux.append(f"<{balise_courante}>{''.join(groupe_courant)}</{balise_courante}>")
                 groupe_courant = []
             balise_courante = balise
-            groupe_courant.append(f"<li>{item.group('contenu')}</li>")
+            classes = _classes_quill(item.group("attributs"))
+            attribut_classes = f' class="{classes}"' if classes else ""
+            groupe_courant.append(f"<li{attribut_classes}>{item.group('contenu')}</li>")
         if groupe_courant:
             morceaux.append(f"<{balise_courante}>{''.join(groupe_courant)}</{balise_courante}>")
         return "".join(morceaux)
@@ -120,6 +149,7 @@ def assainir(html: str | None) -> str:
         _normaliser_listes(html),
         tags=BALISES,
         attributes=ATTRIBUTS,
+        allowed_classes=CLASSES_AUTORISEES,
         url_schemes=SCHEMAS_URL,
         link_rel="noopener noreferrer",
     )

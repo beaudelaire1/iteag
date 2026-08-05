@@ -1,0 +1,5 @@
+{% load wagtailcore_tags %}
+<aside class="bloc-editorial-encadre bloc-editorial-encadre--{{ value.tonalite }}">
+    {% if value.titre %}<h2>{{ value.titre }}</h2>{% endif %}
+    <div class="contenu-riche">{{ value.contenu|richtext }}</div>
+</aside>

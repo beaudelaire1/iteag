@@ -47,7 +47,7 @@
             {% for annonce in insc.cours_session.annonces.all %}
             <div class="{% if not forloop.first %}mt-3 pt-3 border-t{% endif %}" style="border-color: var(--color-gold-100);">
                 <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
-                <p class="text-sm mt-0.5" style="color: var(--color-warm-600);">{{ annonce.contenu|truncatewords:40 }}</p>
+                <div class="contenu-riche text-sm mt-0.5" style="color: var(--color-warm-600);">{{ annonce.contenu|safe }}</div>
                 <p class="text-xs mt-1" style="color: var(--color-warm-400);">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
             </div>
             {% endfor %}

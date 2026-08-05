@@ -1,0 +1,5 @@
+<a class="bloc-editorial-document" href="{{ value.document.url }}">
+    <span class="bloc-editorial-document__titre">{{ value.titre|default:value.document.title }}</span>
+    {% if value.description %}<span class="bloc-editorial-document__description">{{ value.description }}</span>{% endif %}
+    <span class="bloc-editorial-document__action">Télécharger</span>
+</a>

@@ -1,10 +1,16 @@
 from django.urls import path
 
 from . import views
+from .vues_editeur_riche import LienExterneEditeurView
 
 app_name = "core"
 
 urlpatterns = [
+    path(
+        "editeur-riche/lien/",
+        LienExterneEditeurView.as_view(),
+        name="editeur_lien_externe",
+    ),
     # Notifications
     path("notifications/", views.NotificationListView.as_view(), name="notifications"),
     path(

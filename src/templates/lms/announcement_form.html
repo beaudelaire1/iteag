@@ -1,5 +1,8 @@
 {% extends "partials/portal_base.html" %}
 
+{% block extra_head %}{{ form.media.css }}{% endblock %}
+{% block extra_js %}{{ form.media.js }}{% endblock %}
+
 {% block title %}{% if annonce %}Modifier l'annonce{% else %}Publier une annonce{% endif %} — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}
@@ -29,7 +32,8 @@
     <form method="post" class="space-y-5">
         {% csrf_token %}
         {% include "partials/erreurs_formulaire.html" %}
-        {% for field in form %}{% include "partials/champ.html" %}{% endfor %}
+        {% include "partials/champ.html" with field=form.titre %}
+        {% include "partials/champ_editeur_riche.html" with field=form.contenu min_height="14rem" only %}
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">{% if annonce %}Enregistrer{% else %}Publier l'annonce{% endif %}</button>
             {% if cours_session %}

@@ -214,6 +214,20 @@ class TestMiseEnPage:
         assert "1 / 1" in texte
         assert "Toute rature" in texte, "La mention légale du pied de page doit être imprimée"
 
+    def test_le_pdf_est_balise_et_porte_ses_metadonnees(self, client, etudiant, tmp_path, settings):
+        """Le document reste identifiable et navigable hors de la plateforme."""
+        import fitz
+
+        settings.MEDIA_ROOT = tmp_path
+        document = generer(client, etudiant, DocumentAdministratif.TypeDocument.ATTESTATION)
+        document.fichier_pdf.seek(0)
+        with fitz.open(stream=document.fichier_pdf.read(), filetype="pdf") as pdf:
+            assert "Attestation" in pdf.metadata["title"]
+            assert "Institut de Théologie" in pdf.metadata["author"]
+            type_objet, _ = pdf.xref_get_key(pdf.pdf_catalog(), "StructTreeRoot")
+
+        assert type_objet == "xref", "Un PDF/UA doit contenir un arbre de structure"
+
     def test_la_signature_n_est_pas_scindee(self, client, etudiant, tmp_path, settings):
         """Une signature séparée de sa date sur une autre page n'a aucune valeur."""
         settings.MEDIA_ROOT = tmp_path

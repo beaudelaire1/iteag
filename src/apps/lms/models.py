@@ -611,3 +611,11 @@ class Annonce(TimeStampedModel):
 
     def __str__(self):
         return self.titre
+
+    def save(self, *args, **kwargs):
+        # Une annonce est rendue dans l'espace étudiant : elle reçoit le même
+        # traitement défensif qu'un article ou qu'une actualité publique.
+        from apps.core.services.redaction import assainir
+
+        self.contenu = assainir(self.contenu)
+        super().save(*args, **kwargs)

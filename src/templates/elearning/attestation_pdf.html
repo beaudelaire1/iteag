@@ -12,7 +12,10 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>{{ attestation.numero }}</title>
+    <title>Attestation {{ attestation.numero }}</title>
+    <meta name="author" content="{{ institut.nom }}">
+    <meta name="description" content="Attestation de suivi délivrée par l'{{ institut.sigle }}">
+    <meta name="generator" content="Plateforme ITEAG — WeasyPrint">
     <style>
         {% include "partials/pdf_polices.html" %}
 
@@ -225,7 +228,7 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
                     {% endif %}
                 </td>
                 <td class="colonne-qr">
-                    {% if qr_verification %}<img class="qr" src="{{ qr_verification }}" alt="">{% endif %}
+                    {% if qr_verification %}<img class="qr" src="{{ qr_verification }}" alt="Code QR de vérification de l'attestation">{% endif %}
                     <span class="etiquette">Vérifier en ligne</span>
                     <span class="code">{{ attestation.code_verification }}</span>
                 </td>

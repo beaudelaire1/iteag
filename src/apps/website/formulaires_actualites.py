@@ -13,6 +13,7 @@ image déjà téléversée depuis Wagtail — auquel, précisément, elle n'a pa
 
 from django import forms
 
+from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireITEAG
 
 INPUT = "form-input"
@@ -36,9 +37,16 @@ class ActualiteForm(FormulaireITEAG):
         help_text="Deux ou trois phrases, affichées dans la liste des actualités et par les moteurs.",
         widget=forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Deux ou trois phrases…"}),
     )
-    # Alimenté par l'éditeur visuel, jamais saisi directement — même mécanique
-    # que pour les articles de recherche.
-    corps = forms.CharField(widget=forms.HiddenInput(), required=False)
+    corps = ChampTexteRiche(
+        required=False,
+        label="Contenu de l'actualité",
+        placeholder="Rédigez l'actualité ici…",
+        min_height="20rem",
+        help_text=(
+            "Le même éditeur Wagtail est utilisé dans toute la plateforme ; "
+            "le HTML est assaini côté serveur avant publication."
+        ),
+    )
     image = forms.ImageField(
         required=False,
         label="Image à la une",
@@ -56,8 +64,8 @@ class ActualiteForm(FormulaireITEAG):
         """Le corps est le seul contenu de l'annonce : une actualité vide n'annonce rien.
 
         La vérification porte sur le texte, pas sur le balisage : l'éditeur
-        laisse « <p><br></p> » derrière lui quand on efface tout, et ce n'est
-        pas du contenu.
+        peut laisser un paragraphe vide quand on efface tout, et ce n'est pas
+        du contenu.
         """
         from apps.core.services.redaction import en_texte
 

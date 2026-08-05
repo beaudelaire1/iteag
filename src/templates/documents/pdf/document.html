@@ -10,6 +10,11 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
+    <title>{{ document_label }} — {{ user.get_full_name|default:user.username }}</title>
+    <meta name="author" content="{{ institut.nom }}">
+    <meta name="description" content="{{ document_label }} officiel délivré par l'{{ institut.sigle }}">
+    <meta name="generator" content="Plateforme ITEAG — WeasyPrint">
+    <meta name="dcterms.created" content="{{ generated_at|date:'c' }}">
     <style>
         {% include "partials/pdf_polices.html" %}
 

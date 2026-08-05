@@ -1,0 +1,9 @@
+<figure class="bloc-editorial-citation">
+    <blockquote>{{ value.citation|linebreaksbr }}</blockquote>
+    {% if value.auteur or value.source %}
+    <figcaption>
+        {% if value.auteur %}<strong>{{ value.auteur }}</strong>{% endif %}
+        {% if value.auteur and value.source %}, {% endif %}{{ value.source }}
+    </figcaption>
+    {% endif %}
+</figure>

@@ -25,7 +25,7 @@
             <div>
                 <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
                 <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y H:i" }}</p>
-                <p class="text-sm mt-2" style="color: var(--color-warm-600);">{{ annonce.contenu|truncatewords:30 }}</p>
+                <p class="text-sm mt-2" style="color: var(--color-warm-600);">{{ annonce.contenu|striptags|truncatewords:30 }}</p>
             </div>
             <div class="flex shrink-0 gap-3">
                 <a href="{% url 'lms:announcement_update' annonce.pk %}" class="text-xs font-medium hover:underline" style="color: var(--color-navy-600);">Modifier</a>

@@ -484,87 +484,6 @@
     });
   }
 
-  /* ── Éditeur d'article — Quill ──
-     Quill plutôt que TinyMCE ou CKEditor : ceux-ci sont passés sous licence
-     GPL, et ce dépôt est propriétaire. Une bibliothèque copyleft au cœur de
-     l'application est un risque juridique, pas un détail de dépendance.
-     Quill est en BSD-3-Clause, servi depuis notre origine comme le reste
-     (ADR-003) — jamais depuis un CDN.
-
-     Il convient aussi à la politique de sécurité : ni « eval », ni « iframe ».
-     Le seul « new Function » de son paquet est le repli « globalThis » de
-     webpack, protégé par un try/catch et jamais atteint sur un navigateur
-     moderne. « script-src 'self' » suffit donc, sans dérogation.
-
-     Le serveur ne fait jamais confiance à ce qui arrive : le corps repasse par
-     une liste blanche avant l'enregistrement. Ce qui suit sert au confort de
-     rédaction, jamais de garde-fou. */
-  function initEditeurArticle() {
-    const zone = document.querySelector("[data-editeur]");
-    if (!zone) return;
-
-    const champ = document.querySelector(zone.getAttribute("data-editeur-champ"));
-    const formulaire = zone.closest("form");
-    if (!champ || !formulaire) return;
-
-    // Sans Quill — script non chargé, construction incomplète — la zone reste
-    // un « div » éditable ordinaire : on perd la barre d'outils, jamais la
-    // possibilité d'écrire ni le texte déjà saisi.
-    if (typeof window.Quill === "undefined") {
-      zone.setAttribute("contenteditable", "true");
-      zone.innerHTML = champ.value || "";
-      const recopierBrut = () => (champ.value = zone.innerHTML.trim());
-      zone.addEventListener("input", recopierBrut);
-      formulaire.addEventListener("submit", recopierBrut);
-      return;
-    }
-
-    const editeur = new window.Quill(zone, {
-      theme: "snow",
-      // L'écran dit ce qu'on y écrit : un article de recherche et une
-      // actualité partagent l'éditeur, pas la même invite.
-      placeholder: zone.getAttribute("data-editeur-invite") || "Rédigez votre article ici…",
-      modules: {
-        toolbar: [
-          [{ header: [2, 3, false] }],
-          ["bold", "italic", "underline"],
-          [{ list: "ordered" }, { list: "bullet" }],
-          ["blockquote", "link"],
-          ["clean"],
-        ],
-        // Le collage est ramené à ce que la liste blanche du serveur accepte.
-        // Coller depuis Word entraîne sinon des dizaines d'attributs de style
-        // qui seraient retirés à l'enregistrement : les voir disparaître après
-        // coup est pire que de ne pas les avoir eus.
-        clipboard: { matchVisual: false },
-      },
-    });
-
-    editeur.clipboard.dangerouslyPasteHTML(champ.value || "");
-
-    // Le champ caché est tenu à jour en continu, et pas seulement à l'envoi :
-    // « form.submit() » appelé depuis un script ne déclenche pas l'événement
-    // « submit », et s'y fier seul ferait perdre le corps en silence.
-    function recopier() {
-      const html = editeur.root.innerHTML;
-      champ.value = html === "<p><br></p>" ? "" : html;
-    }
-
-    editeur.on("text-change", recopier);
-    formulaire.addEventListener("submit", recopier);
-    recopier();
-
-    // Insertion d'une illustration déjà déposée, à la position du curseur.
-    document.querySelectorAll("[data-inserer-image]").forEach((bouton) => {
-      bouton.addEventListener("click", () => {
-        const source = bouton.getAttribute("data-inserer-image");
-        const position = editeur.getSelection(true);
-        editeur.insertEmbed(position ? position.index : editeur.getLength(), "image", source);
-        recopier();
-      });
-    });
-  }
-
   /* ── Confirmations avant un envoi irréversible ──
      Écrit ici, et non dans un « onsubmit » posé sur la balise : la politique
      de sécurité n'accorde que « script-src 'self' », donc un gestionnaire
@@ -603,7 +522,6 @@
     initRevelationMotDePasse();
     initOnglets();
     initAlertesEffacables();
-    initEditeurArticle();
   }
 
   if (document.readyState === "loading") {

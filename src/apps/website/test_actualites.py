@@ -160,7 +160,7 @@ class TestRedaction:
         assert not NewsPage.objects.filter(title="Journée portes ouvertes").exists()
 
     def test_le_corps_vide_de_l_editeur_ne_compte_pas_pour_du_contenu(self, client, secretaire, index):
-        """Quill laisse « <p><br></p> » derrière lui quand on efface tout."""
+        """Un éditeur visuel peut laisser un paragraphe vide après effacement."""
         client.force_login(secretaire)
         client.post(reverse("website:actualite_creation"), _saisie(corps="<p><br></p>"))
 

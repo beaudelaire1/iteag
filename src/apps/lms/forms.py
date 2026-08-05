@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.academics.models import CoursDeSession
+from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 
 from .models import Annonce, Choix, Devoir, Evaluation, GroupeEtudiants, Question, RessourcePedagogique
@@ -63,12 +64,18 @@ class GradeForm(FormulaireModeleITEAG):
 class AnnonceForm(FormulaireModeleITEAG):
     """ENS-006 — Publication d'annonce."""
 
+    contenu = ChampTexteRiche(
+        label="Contenu",
+        placeholder="Rédigez l'annonce destinée aux étudiants…",
+        min_height="14rem",
+        help_text="La mise en forme sera visible dans l'espace étudiant.",
+    )
+
     class Meta:
         model = Annonce
         fields = ["titre", "contenu"]
         widgets = {
             "titre": forms.TextInput(attrs={"class": INPUT, "placeholder": "Titre de l'annonce"}),
-            "contenu": forms.Textarea(attrs={"rows": 5, "class": INPUT, "placeholder": "Contenu de l'annonce…"}),
         }
 
 

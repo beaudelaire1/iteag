@@ -22,6 +22,12 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
+from django.template.loader import render_to_string
+
+
+class MoteurPDFIndisponible(RuntimeError):
+    """Le moteur WeasyPrint ou l'une de ses bibliothèques natives manque."""
+
 
 # Identité de l'établissement, en un seul endroit. Ces valeurs figurent sur des
 # documents officiels : les dupliquer dans chaque gabarit, c'est se garantir
@@ -165,3 +171,40 @@ def contexte_marque(*, profil_polices: str = "complet", **extra) -> dict:
         "logo_pdf": logo_uri(),
         **extra,
     }
+
+
+def rendre_pdf(
+    gabarit: str,
+    contexte: dict,
+    *,
+    request=None,
+    options: dict | None = None,
+) -> bytes:
+    """Rend un gabarit Django en PDF premium, hors de toute vue HTTP.
+
+    Le point d'entrée unique évite que chaque application choisisse ses propres
+    options WeasyPrint. Les documents sont balisés PDF/UA, portent le profil
+    colorimétrique sRGB et conservent les métadonnées déclarées dans le HTML.
+    Les ressources restent locales : aucune dépendance à un CDN n'est ajoutée.
+    """
+    try:
+        from weasyprint import HTML
+    except (ImportError, OSError) as exc:
+        raise MoteurPDFIndisponible("WeasyPrint n'est pas disponible dans cet environnement.") from exc
+
+    html = render_to_string(gabarit, contexte, request=request)
+    if request is not None:
+        base_url = request.build_absolute_uri("/")
+    else:
+        base_url = Path(settings.BASE_DIR).resolve().as_uri() + "/"
+
+    options_finales = {
+        "pdf_variant": "pdf/ua-1",
+        "custom_metadata": True,
+        "srgb": True,
+        "optimize_images": True,
+    }
+    if options:
+        options_finales.update(options)
+
+    return HTML(string=html, base_url=base_url).write_pdf(**options_finales)

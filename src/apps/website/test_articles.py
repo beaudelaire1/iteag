@@ -125,6 +125,16 @@ class TestAssainissement:
         article.refresh_from_db()
         assert "noopener" in article.corps
 
+    def test_l_alignement_draftail_survit_a_l_assainissement(self, enseignant):
+        article = Article.objects.create(
+            titre="Aligné",
+            auteur=enseignant,
+            corps='<p class="iteag-align-justify">Un texte composé.</p>',
+        )
+        article.refresh_from_db()
+
+        assert 'class="iteag-align-justify"' in article.corps
+
     def test_l_assainissement_vaut_pour_tout_chemin_d_ecriture(self, article):
         """Il vit dans « save », donc un import ou un shell y passent aussi."""
         article.corps = "<p>ok</p><script>alert(1)</script>"
@@ -360,13 +370,9 @@ class TestEcransEnseignant:
         client.force_login(enseignant.user)
         client.post(reverse("website:article_supprimer", args=[article.pk]))
 
-        assert JournalAudit.objects.filter(
-            action=JournalAudit.Action.SUPPRESSION, objet_type="Article"
-        ).exists()
+        assert JournalAudit.objects.filter(action=JournalAudit.Action.SUPPRESSION, objet_type="Article").exists()
 
-    def test_l_auteur_demande_le_retrait_de_son_article_publie(
-        self, client, enseignant, article, relecteur
-    ):
+    def test_l_auteur_demande_le_retrait_de_son_article_publie(self, client, enseignant, article, relecteur):
         article.soumettre()
         article.publier(par=relecteur)
         client.force_login(enseignant.user)
@@ -594,3 +600,34 @@ class TestMarquageDeQuill:
         article = Article.objects.create(titre="Sans liste", auteur=enseignant, corps="<h2>A</h2><p>Du texte.</p>")
         article.refresh_from_db()
         assert article.corps == "<h2>A</h2><p>Du texte.</p>"
+
+    def test_les_alignements_proposes_par_la_barre_sont_conserves(self, enseignant):
+        article = Article.objects.create(
+            titre="Alignements",
+            auteur=enseignant,
+            corps=(
+                '<p class="ql-align-center classe-parasite">Centre</p>'
+                '<p class="ql-align-right">Droite</p>'
+                '<p class="ql-align-justify">Justifié</p>'
+            ),
+        )
+        article.refresh_from_db()
+
+        assert 'class="ql-align-center"' in article.corps
+        assert 'class="ql-align-right"' in article.corps
+        assert 'class="ql-align-justify"' in article.corps
+        assert "classe-parasite" not in article.corps
+
+    def test_le_retrait_d_une_liste_survit_a_sa_normalisation(self, enseignant):
+        article = Article.objects.create(
+            titre="Retraits",
+            auteur=enseignant,
+            corps=(
+                '<ol><li class="ql-indent-2 classe-parasite" data-list="bullet">'
+                '<span class="ql-ui" contenteditable="false"></span>Sous-puce</li></ol>'
+            ),
+        )
+        article.refresh_from_db()
+
+        assert '<ul><li class="ql-indent-2">Sous-puce</li></ul>' in article.corps
+        assert "classe-parasite" not in article.corps

@@ -559,6 +559,8 @@ class TeacherAnnouncementCreateView(TeacherRoleRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        from apps.core.services.redaction import en_texte
+
         annonce = form.save(commit=False)
         annonce.cours_session = self.cours_session
         annonce.auteur = self.request.user
@@ -566,7 +568,7 @@ class TeacherAnnouncementCreateView(TeacherRoleRequiredMixin, CreateView):
         notifier_etudiants(
             self.cours_session,
             f"Nouvelle annonce — {annonce.titre}",
-            message=annonce.contenu,
+            message=en_texte(annonce.contenu),
             url_cible=reverse("etudiant:courses"),
             type_notification=Notification.Type.ANNONCE,
         )
@@ -592,11 +594,13 @@ class TeacherAnnouncementUpdateView(TeacherRoleRequiredMixin, UpdateView):
         return Annonce.objects.filter(cours_session__enseignant=prof).select_related("cours_session__cours")
 
     def form_valid(self, form):
+        from apps.core.services.redaction import en_texte
+
         annonce = form.save()
         notifier_etudiants(
             annonce.cours_session,
             f"Annonce mise à jour — {annonce.titre}",
-            message=annonce.contenu,
+            message=en_texte(annonce.contenu),
             url_cible=reverse("etudiant:courses"),
             type_notification=Notification.Type.ANNONCE,
         )

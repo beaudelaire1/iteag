@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.core.files.base import ContentFile
 from django.http import FileResponse, Http404, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
-from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views import View
@@ -12,6 +11,7 @@ from django.views.generic import TemplateView
 
 from apps.academics.models import Paiement, ProfilEtudiant
 from apps.core.mixins import StudentRoleRequiredMixin
+from apps.core.services.pdf import MoteurPDFIndisponible, contexte_marque, rendre_pdf
 
 from .models import DocumentAdministratif
 
@@ -91,12 +91,6 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
         if document_type not in allowed_types:
             raise Http404("Type de document inconnu.")
 
-        try:
-            from weasyprint import HTML
-        except ImportError:
-            messages.error(request, "WeasyPrint n'est pas disponible dans cet environnement.")
-            return redirect("documents:list")
-
         profil = request.user.profil_etudiant
         option = next((item for item in _document_options(profil) if item["value"] == document_type), None)
         if option is None or not option["available"]:
@@ -120,24 +114,25 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
             # même agrégation pendant le rendu PDF.
             profil.ects_acquis_annotes = profil.total_ects_acquis
 
-        from apps.core.services.pdf import contexte_marque
-
-        html = render_to_string(
-            "documents/pdf/document.html",
-            contexte_marque(
-                profil_polices="document_administratif",
-                user=request.user,
-                profil=profil,
-                document_type=document_type,
-                document_label=dict(DocumentAdministratif.TypeDocument.choices)[document_type],
-                generated_at=timezone.now(),
-                evaluations=evaluations,
-                paiements=paiements,
-                credits=credits,
-            ),
-            request=request,
-        )
-        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+        try:
+            pdf_bytes = rendre_pdf(
+                "documents/pdf/document.html",
+                contexte_marque(
+                    profil_polices="document_administratif",
+                    user=request.user,
+                    profil=profil,
+                    document_type=document_type,
+                    document_label=dict(DocumentAdministratif.TypeDocument.choices)[document_type],
+                    generated_at=timezone.now(),
+                    evaluations=evaluations,
+                    paiements=paiements,
+                    credits=credits,
+                ),
+                request=request,
+            )
+        except MoteurPDFIndisponible:
+            messages.error(request, "WeasyPrint n'est pas disponible dans cet environnement.")
+            return redirect("documents:list")
 
         identite = slugify(request.user.get_full_name() or request.user.username)
         filename = f"{document_type}-{identite}-{timezone.now():%Y%m%d%H%M%S}.pdf"

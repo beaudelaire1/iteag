@@ -43,7 +43,7 @@
         est déjà propre, et une page qui oublierait un filtre ne deviendrait
         pas pour autant vulnérable.
         {% endcomment %}
-        <div class="prose-article">{{ article.corps|safe }}</div>
+        <div class="prose-article contenu-riche">{{ article.corps|safe }}</div>
 
         {% if article.mots_cles %}
         <footer class="mt-10 border-t pt-6" style="border-color: var(--color-warm-200);">

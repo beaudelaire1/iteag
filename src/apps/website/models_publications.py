@@ -231,9 +231,7 @@ class Article(TimeStampedModel):
         # ouverte la ferait reparaître au prochain passage en ligne.
         self.retrait_demande_le = None
         self.motif_retrait = ""
-        self.save(
-            update_fields=["statut", "relu_par", "retrait_demande_le", "motif_retrait", "updated_at"]
-        )
+        self.save(update_fields=["statut", "relu_par", "retrait_demande_le", "motif_retrait", "updated_at"])
         return self
 
 

@@ -320,6 +320,44 @@ WAGTAIL_ENABLE_UPDATE_CHECK = False
 WAGTAILIMAGES_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 Mo
 WAGTAILDOCS_EXTENSIONS = ["pdf", "docx", "doc", "pptx", "xlsx", "csv", "txt"]
 
+# Draftail reste l'éditeur natif de Wagtail. La liste est explicite pour que
+# tous les champs RichTextField / RichTextBlock partagent le même profil et
+# pour éviter qu'une mise à jour modifie silencieusement leur barre d'outils.
+# « h1 » reste réservé au titre de page. Les embeds arbitraires sont exclus :
+# la CSP stricte n'autorise pas les iframes éditoriales non contrôlées.
+WAGTAILADMIN_RICH_TEXT_EDITORS = {
+    "default": {
+        "WIDGET": "wagtail.admin.rich_text.DraftailRichTextArea",
+        "OPTIONS": {
+            "features": [
+                "h2",
+                "h3",
+                "h4",
+                "h5",
+                "h6",
+                "bold",
+                "italic",
+                "underline",
+                "strikethrough",
+                "superscript",
+                "subscript",
+                "code",
+                "ol",
+                "ul",
+                "blockquote",
+                "align-left",
+                "align-center",
+                "align-right",
+                "align-justify",
+                "hr",
+                "link",
+                "document-link",
+                "image",
+            ]
+        },
+    }
+}
+
 # ──────────────────────────────────────────────
 # Security defaults (overridden per env)
 # ──────────────────────────────────────────────

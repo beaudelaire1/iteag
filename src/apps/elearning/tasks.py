@@ -125,7 +125,6 @@ def expirer_acces() -> int:
 def generer_attestation_pdf(attestation_id: str) -> str:
     """Rend l'attestation en PDF et l'attache à l'enregistrement."""
     from django.core.files.base import ContentFile
-    from django.template.loader import render_to_string
 
     from apps.elearning.models import AttestationModule
 
@@ -139,21 +138,18 @@ def generer_attestation_pdf(attestation_id: str) -> str:
     if attestation.fichier_pdf:
         return "deja_generee"
 
-    try:
-        from weasyprint import HTML
-    except (ImportError, OSError):
-        logger.warning("WeasyPrint indisponible : attestation %s sans PDF", attestation_id)
-        return "sans_pdf"
-
     from django.conf import settings
 
-    from apps.core.services.pdf import contexte_marque, qr_data_uri
+    from apps.core.services.pdf import MoteurPDFIndisponible, contexte_marque, qr_data_uri, rendre_pdf
 
     adresse = f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{attestation.url_verification()}"
-    html = render_to_string(
-        "elearning/attestation_pdf.html",
-        contexte_marque(attestation=attestation, qr_verification=qr_data_uri(adresse)),
-    )
-    pdf = HTML(string=html).write_pdf()
+    try:
+        pdf = rendre_pdf(
+            "elearning/attestation_pdf.html",
+            contexte_marque(attestation=attestation, qr_verification=qr_data_uri(adresse)),
+        )
+    except MoteurPDFIndisponible:
+        logger.warning("WeasyPrint indisponible : attestation %s sans PDF", attestation_id)
+        return "sans_pdf"
     attestation.fichier_pdf.save(f"{attestation.numero}.pdf", ContentFile(pdf), save=True)
     return "generee"

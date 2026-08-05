@@ -1,0 +1,239 @@
+/* Draftail hors du back-office Wagtail — variables et finition ITEAG. */
+:root {
+    --w-color-text-context: #24342f;
+    --w-color-text-meta: #6b756f;
+    --w-color-text-placeholder: #777f7b;
+    --w-color-text-button: #ffffff;
+    --w-color-text-button-outline-default: #254f47;
+    --w-color-text-button-outline-hover: #173b35;
+    --w-color-surface-page: #fffdf8;
+    --w-color-surface-header: #f5f1e8;
+    --w-color-surface-menus: #ffffff;
+    --w-color-surface-tooltip: #173b35;
+    --w-color-surface-field: #ffffff;
+    --w-color-surface-field-inactive: #f1eee7;
+    --w-color-surface-button-default: #355952;
+    --w-color-border-field-default: #d7d0c4;
+    --w-color-border-field-hover: #9e917c;
+    --w-color-border-field-inactive: #ddd8cf;
+    --w-color-border-furniture: #d7d0c4;
+    --w-color-border-interactive-more-contrast: #355952;
+    --w-color-border-interactive-more-contrast-hover: #173b35;
+    --w-color-border-button-small-outline-default: #355952;
+    --w-color-focus: #b58a32;
+    --w-color-critical-100: #b42318;
+    --w-color-critical-200: #912018;
+    --w-color-black-35: rgb(0 0 0 / 35%);
+    --w-direction-factor: 1;
+    --w-font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.editeur-riche-portail {
+    --iteag-editor-ink: #263a34;
+    --iteag-editor-muted: #697872;
+    --iteag-editor-line: #dbe2df;
+    --iteag-editor-surface: #f6f8f7;
+    --iteag-editor-accent: #315f55;
+}
+
+.editeur-riche-portail > .form-label {
+    margin-bottom: 0.35rem;
+}
+
+.editeur-riche-portail > .form-aide {
+    max-width: 78ch;
+    margin: 0 0 0.75rem;
+    color: #77827e;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+}
+
+.editeur-riche-portail .Draftail-Editor {
+    overflow: visible;
+    border: 1px solid var(--iteag-editor-line);
+    border-radius: 0.75rem;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(23 59 53 / 4%), 0 8px 24px rgb(23 59 53 / 3%);
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.editeur-riche-portail .Draftail-Editor:hover {
+    border-color: #b9c7c2;
+}
+
+.editeur-riche-portail .Draftail-Editor--focus {
+    border-color: var(--iteag-editor-accent);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgb(49 95 85 / 12%), 0 10px 28px rgb(23 59 53 / 6%);
+}
+
+.editeur-riche-portail .Draftail-Editor .DraftEditor-root {
+    min-height: var(--iteag-editor-min-height, 18rem);
+    overflow: visible;
+    color: var(--iteag-editor-ink);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.75;
+}
+
+.editeur-riche-portail .Draftail-Editor .public-DraftEditor-content,
+.editeur-riche-portail .Draftail-Editor .public-DraftEditorPlaceholder-root {
+    padding: 1.25rem 1.5rem 2rem;
+}
+
+.editeur-riche-portail .Draftail-Editor .public-DraftEditorPlaceholder-inner {
+    color: #89948f;
+    font-size: 0.9375rem;
+}
+
+.editeur-riche-portail .Draftail-Toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0;
+    max-width: 100%;
+    padding: 0.55rem 0.625rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-bottom: 1px solid var(--iteag-editor-line);
+    border-radius: 0.75rem 0.75rem 0 0;
+    color: var(--iteag-editor-ink);
+    background: var(--iteag-editor-surface);
+    scrollbar-color: #bdc9c5 transparent;
+    scrollbar-width: thin;
+}
+
+.editeur-riche-portail .Draftail-Editor--focus .Draftail-Toolbar {
+    top: 0;
+}
+
+.editeur-riche-portail .Draftail-ToolbarGroup {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0 0.5rem;
+    border-inline-start: 1px solid var(--iteag-editor-line);
+}
+
+.editeur-riche-portail .Draftail-ToolbarGroup:first-child {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+}
+
+.editeur-riche-portail .Draftail-ToolbarGroup--entities {
+    padding-inline-end: 0;
+}
+
+.editeur-riche-portail .Draftail-ToolbarButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.125rem;
+    min-width: 2.125rem;
+    height: 2.125rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 0.45rem;
+    color: var(--iteag-editor-ink);
+    background: transparent;
+    font-size: 0.9375rem;
+    transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease,
+        transform 120ms ease;
+}
+
+.editeur-riche-portail .Draftail-ToolbarButton:hover,
+.editeur-riche-portail .Draftail-ToolbarButton:focus-visible {
+    border-color: #c7d2ce;
+    color: #173f36;
+    background: #fff;
+    outline: 2px solid transparent;
+}
+
+.editeur-riche-portail .Draftail-ToolbarButton:active {
+    transform: translateY(1px);
+}
+
+.editeur-riche-portail .Draftail-ToolbarButton--active,
+.editeur-riche-portail .Draftail-ToolbarButton--active:hover {
+    border-color: var(--iteag-editor-accent);
+    color: #fff;
+    background: var(--iteag-editor-accent);
+}
+
+.editeur-riche-portail .Draftail-ToolbarButton .icon {
+    width: 1.0625rem;
+    height: 1.0625rem;
+}
+
+/* La barre fixe rend le bouton de blocs flottant et la commande de détachement
+   redondants. Les retirer évite le « + » isolé hors du champ. */
+.editeur-riche-portail .Draftail-BlockToolbar,
+.editeur-riche-portail .Draftail-ToolbarGroup--controls,
+.editeur-riche-portail .Draftail-ToolbarButton--pin {
+    display: none;
+}
+
+.editeur-riche-portail .Draftail-BlockToolbar ~ .DraftEditor-root,
+.editeur-riche-portail .Draftail-BlockToolbar ~ .Draftail-Toolbar {
+    margin-inline-start: 0;
+}
+
+.editeur-riche-portail [data-draftail-balloon]::after {
+    border-radius: 0.4rem;
+    background: #173b35;
+    font-size: 0.75rem;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
+}
+
+@media (max-width: 48rem) {
+    .editeur-riche-portail .Draftail-Toolbar {
+        padding: 0.45rem 0.5rem;
+    }
+
+    .editeur-riche-portail .Draftail-ToolbarButton {
+        width: 2.25rem;
+        min-width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    .editeur-riche-portail .Draftail-Editor .public-DraftEditor-content,
+    .editeur-riche-portail .Draftail-Editor .public-DraftEditorPlaceholder-root {
+        padding-inline: 1rem;
+    }
+}
+
+/* Le dialogue de lien est rendu par Wagtail mais vit dans la page portail. */
+.modal-workflow .editeur-lien-portail {
+    padding: 1.5rem;
+}
+
+.modal-workflow .editeur-lien-portail .fields,
+.modal-workflow .editeur-lien-portail .fields > li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.modal-workflow .editeur-lien-portail .fields > li + li {
+    margin-top: 1rem;
+}
+
+.modal-workflow .editeur-lien-portail input[type="url"],
+.modal-workflow .editeur-lien-portail input[type="text"] {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--w-color-border-field-default);
+    border-radius: 0.35rem;
+}
+
+.modal-workflow .editeur-lien-portail .button {
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-radius: 0.35rem;
+    color: #fff;
+    background: #355952;
+    cursor: pointer;
+}

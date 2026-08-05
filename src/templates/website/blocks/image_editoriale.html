@@ -1,0 +1,11 @@
+{% load wagtailimages_tags %}
+<figure class="bloc-editorial-image bloc-editorial-image--{{ value.largeur }}">
+    {% image value.image width-1400 as illustration %}
+    <img src="{{ illustration.url }}" alt="{{ value.legende|default:value.image.default_alt_text }}"
+         width="{{ illustration.width }}" height="{{ illustration.height }}" loading="lazy">
+    {% if value.legende or value.credit %}
+    <figcaption>
+        {{ value.legende }}{% if value.legende and value.credit %} — {% endif %}{% if value.credit %}{{ value.credit }}{% endif %}
+    </figcaption>
+    {% endif %}
+</figure>

@@ -1,17 +1,16 @@
 """
 Les bibliothèques tierces doivent arriver jusqu'à l'image de production.
 
-Le défaut que ce fichier rend impossible à répéter : l'ajout de Quill a mis à
-jour le script de copie et le `.gitignore`, mais pas le `Dockerfile.prod`, qui
-ne recopiait que `static/js/vendor/`. `static/css/vendor/quill.snow.css`
-n'entrait donc jamais dans l'image.
+Le défaut que ce fichier rend impossible à répéter : une bibliothèque locale
+avait mis à jour le script de copie et le `.gitignore`, mais pas l'image de
+production. La ressource n'entrait donc jamais dans l'image.
 
 Rien ne le signalait. `collectstatic` ne se plaint pas d'un fichier absent — il
 se contente de ne pas l'inscrire au manifeste. La construction passait, l'image
 se déployait, et la page de rédaction d'article tombait en 500 au rendu, chez
 l'utilisateur :
 
-    ValueError: Missing staticfiles manifest entry for 'css/vendor/quill.snow.css'
+    ValueError: Missing staticfiles manifest entry for '<ressource locale>'
 
 Le développement n'en voyait rien : il ne consulte aucun manifeste, et les
 fichiers sont présents sur le poste qui vient de lancer « npm run build ».
@@ -59,7 +58,7 @@ def dockerfile() -> str:
 def test_le_script_de_copie_declare_bien_des_cibles():
     """Un test dont la liste se viderait passerait sans rien vérifier."""
     cibles = cibles_du_script()
-    assert len(cibles) >= 3, f"Seulement {len(cibles)} cible(s) lues dans {SCRIPT_COPIE.name}"
+    assert cibles, f"Aucune cible lue dans {SCRIPT_COPIE.name}"
 
 
 def test_chaque_bibliotheque_reclamee_par_un_gabarit_est_produite():
@@ -98,8 +97,7 @@ def test_chaque_bibliotheque_produite_est_verifiee_a_la_construction(dockerfile)
     """
     Une copie silencieusement vide vaut une copie absente.
 
-    Le contrôle ne portait que sur « hls.min.js » : c'est ce qui a laissé
-    passer l'ajout de Quill sans que la construction ne dise rien.
+    Chaque ajout doit posséder son propre contrôle de construction.
     """
     non_verifiees = [cible for cible in sorted(cibles_du_script()) if f"test -s {cible}" not in dockerfile]
     assert not non_verifiees, "Fichiers produits sans contrôle « test -s » à la construction :\n  " + "\n  ".join(

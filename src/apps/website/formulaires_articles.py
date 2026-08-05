@@ -2,6 +2,7 @@
 
 from django import forms
 
+from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireModeleITEAG
 from apps.website.models_publications import Article, ImageArticle
 
@@ -10,13 +11,18 @@ FICHIER = "form-file"
 
 
 class ArticleForm(FormulaireModeleITEAG):
-    """Titre, sous-titre, chapeau, corps et image à la une.
+    """Titre, sous-titre, corps Draftail et image à la une."""
 
-    Le corps est saisi dans un « div » éditable et recopié dans ce champ caché
-    au moment de l'envoi : un `textarea` classique n'offre aucune mise en
-    forme, et la politique de sécurité interdit tout éditeur tiers, qui
-    évaluerait des chaînes.
-    """
+    corps = ChampTexteRiche(
+        required=False,
+        label="Corps de l'article",
+        placeholder="Rédigez votre article ici…",
+        min_height="24rem",
+        help_text=(
+            "Titres, emphases, listes, citations, liens et alignements sont conservés. "
+            "Les styles parasites issus d'un collage sont retirés à l'enregistrement."
+        ),
+    )
 
     class Meta:
         model = Article
@@ -31,8 +37,6 @@ class ArticleForm(FormulaireModeleITEAG):
             "chapeau": forms.Textarea(
                 attrs={"rows": 3, "class": INPUT, "placeholder": "Deux ou trois phrases d'accroche…"}
             ),
-            # Alimenté par l'éditeur visuel ; jamais saisi directement.
-            "corps": forms.HiddenInput(),
             "image_principale": forms.ClearableFileInput(attrs={"class": FICHIER, "accept": "image/*"}),
             "credit_image": forms.TextInput(attrs={"class": INPUT, "placeholder": "© Nom du photographe"}),
             "mots_cles": forms.TextInput(attrs={"class": INPUT, "placeholder": "ecclésiologie, épîtres, Paul"}),

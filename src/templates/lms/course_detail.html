@@ -244,7 +244,7 @@
                             <a href="{% url 'lms:announcement_delete' annonce.pk %}" class="text-xs font-semibold text-rose-700">Supprimer</a>
                         </div>
                     </div>
-                    <p class="text-sm text-warm-600 mt-1">{{ annonce.contenu }}</p>
+                    <div class="contenu-riche text-sm text-warm-600 mt-1">{{ annonce.contenu|safe }}</div>
                     <p class="text-xs text-warm-400 mt-2">{{ annonce.created_at|date:"d/m/Y H:i" }}</p>
                 </div>
                 {% empty %}
