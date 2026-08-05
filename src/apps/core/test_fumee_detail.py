@@ -50,7 +50,7 @@ from apps.admissions.models import DossierCandidature, PieceDemandee
 from apps.commerce.models import Commande, DestinationLivraison, ProduitLivre, TarifLivraison, TypeLivraison
 from apps.core.models import AbonneNewsletter
 from apps.core.services.notifications import notifier
-from apps.documents.models import DocumentAdministratif
+from apps.documents.models import DocumentAdministratif, DocumentRedige
 from apps.elearning.models import (
     AttestationModule,
     Chapitre,
@@ -80,7 +80,7 @@ ENSEIGNANT, ETUDIANT = User.Role.ENSEIGNANT, User.Role.ETUDIANT
 PUBLIC = ""
 
 # Préfixes de routes appartenant à un espace réservé au personnel.
-PREFIXES_PERSONNEL = ("administration:", "secretariat:")
+PREFIXES_PERSONNEL = ("administration:", "secretariat:", "redaction:")
 
 # Routes internes, hors périmètre applicatif.
 PREFIXES_INTERNES = ("wagtail", "admin:", "django")
@@ -365,6 +365,14 @@ def univers(db, settings, tmp_path):
     )
     index_actualites.add_child(instance=monde["actualite"])
 
+    monde["document_redige"] = DocumentRedige.objects.create(
+        titre="Convocation du conseil",
+        genre=DocumentRedige.Genre.CONVOCATION,
+        objet="Séance du conseil pédagogique",
+        corps="<p>Vous êtes convoqué.</p>",
+        redige_par=monde[SECRETARIAT],
+    )
+
     # ── Divers ──
     monde["notification"] = notifier(monde[ETUDIANT], "Une nouvelle note", envoyer_par_email=False)
     monde["abonne"] = AbonneNewsletter.objects.create(email="abonne.detail@example.org")
@@ -577,6 +585,10 @@ FABRIQUES = {
     # ── Actualités ──
     "website:actualite_edition": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
     "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
+    # ── Documents rédigés ──
+    "redaction:document_edition": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
+    "redaction:document_decision": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
+    "redaction:document_pdf": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
 }
 
 # Routes dont la propriété n'est pas contrôlable par un tiers du même rôle, et

@@ -1,0 +1,111 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Documents rédigés — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Secrétariat</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Documents rédigés</h1>
+        <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+            Courriers, convocations, comptes rendus — écrits ici, signés, et archivés en PDF.
+        </p>
+    </div>
+    <a href="{% url 'redaction:document_creation' %}" class="btn-primary">Rédiger un document</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% comment %}
+Le filtre par genre est un lien, pas un formulaire : l'adresse obtenue se
+partage et se met en favori, ce qu'un POST ne permettrait pas.
+{% endcomment %}
+<nav class="mb-8 flex flex-wrap gap-2" aria-label="Filtrer par genre">
+    <a href="{% url 'redaction:documents' %}"
+       class="badge{% if not genre_actif %} badge-gold{% endif %}">Tous</a>
+    {% for valeur, libelle in genres %}
+    <a href="{% url 'redaction:documents' %}?genre={{ valeur }}"
+       class="badge{% if genre_actif == valeur %} badge-gold{% endif %}">{{ libelle }}</a>
+    {% endfor %}
+</nav>
+
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    Brouillons ({{ brouillons|length }})
+</h2>
+{% if brouillons %}
+<ul class="mb-10 space-y-3" role="list">
+    {% for document in brouillons %}
+    <li class="card flex flex-wrap items-center justify-between gap-3">
+        <span class="min-w-0">
+            <span class="badge">{{ document.get_genre_display }}</span>
+            <a href="{% url 'redaction:document_edition' document.pk %}"
+               class="ml-2 font-semibold text-navy-900">{{ document.titre }}</a>
+            <span class="block text-xs text-warm-500">
+                {{ document.date_document|date:"d/m/Y" }}
+                {% if document.destinataire_nom %} · {{ document.destinataire_nom }}{% endif %}
+                {% if document.reference %} · {{ document.reference }} (rouvert){% endif %}
+            </span>
+        </span>
+        <span class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'redaction:document_edition' document.pk %}" class="btn-ghost">Modifier</a>
+            <form method="post" action="{% url 'redaction:document_decision' document.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="finaliser">
+                <button type="submit" class="btn-primary whitespace-nowrap">Finaliser</button>
+            </form>
+            <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
+                  data-confirmer="Supprimer « {{ document.titre }} » ? Le texte sera perdu.">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="supprimer">
+                <button type="submit" class="text-sm text-danger">Supprimer</button>
+            </form>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card mb-10 py-10 text-center">
+    <p class="text-warm-600">Aucun document en cours de rédaction.</p>
+</div>
+{% endif %}
+
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    Finalisés ({{ finalises|length }})
+</h2>
+{% if finalises %}
+<ul class="space-y-3" role="list">
+    {% for document in finalises %}
+    <li class="card flex flex-wrap items-center justify-between gap-3">
+        <span class="min-w-0">
+            <span class="badge badge-gold">{{ document.reference }}</span>
+            <span class="ml-2 font-semibold text-navy-900">{{ document.titre }}</span>
+            <span class="block text-xs text-warm-500">
+                {{ document.get_genre_display }} · {{ document.date_document|date:"d/m/Y" }}
+                {% if document.destinataire_nom %} · {{ document.destinataire_nom }}{% endif %}
+                {% if document.redige_par %} · {{ document.redige_par.get_full_name|default:document.redige_par.username }}{% endif %}
+                {% if not document.fichier_pdf %} · <strong>PDF à refaire</strong>{% endif %}
+            </span>
+        </span>
+        <span class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-ghost">PDF</a>
+            <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
+                  data-confirmer="Rouvrir « {{ document.titre }} » ? Son PDF sera retiré, sa référence conservée.">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="rouvrir">
+                <button type="submit" class="text-sm text-danger">Rouvrir</button>
+            </form>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm text-warm-500">Aucun document finalisé pour le moment.</p>
+{% endif %}
+
+{% include "partials/pagination.html" %}
+
+{% endblock %}

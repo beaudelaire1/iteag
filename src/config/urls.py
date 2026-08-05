@@ -65,6 +65,12 @@ urlpatterns = [
     path("espace-enseignant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
     path("espace-enseignant/", include("apps.lms.urls", namespace="lms")),
     path("mes-documents/", include("apps.documents.urls", namespace="documents")),
+    # Même application, second public : l'étudiant génère ses pièces sous
+    # « mes-documents/ », le personnel rédige les courriers de l'institut ici.
+    path(
+        "espace-admin/documents/",
+        include("apps.documents.redaction_urls", namespace="redaction"),
+    ),
     path("e-learning/", include("apps.elearning.urls", namespace="elearning")),
     re_path(
         r"^formations-video/(?P<chemin>.*)$",

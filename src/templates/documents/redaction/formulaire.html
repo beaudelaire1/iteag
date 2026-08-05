@@ -1,0 +1,118 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if document %}{{ document.titre }}{% else %}Nouveau document{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_head %}
+{{ form.media.css }}
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }}
+{% endblock %}
+
+{% block portal_nav %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2"><a href="{% url 'redaction:documents' %}">Documents rédigés</a></p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+        {% if document %}Modifier le document{% else %}Nouveau document{% endif %}
+    </h1>
+    {% if document %}
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        <span class="badge{% if document.est_finalise %} badge-gold{% endif %}">{{ document.get_statut_display }}</span>
+        {% if document.reference %}· {{ document.reference }}{% endif %}
+        {% if document.date_finalisation %}· finalisé le {{ document.date_finalisation|date:"d/m/Y" }}{% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% if verrouille %}
+<div class="card mb-6">
+    <p class="font-semibold text-navy-900">Ce document est finalisé.</p>
+    <p class="mt-1 text-sm text-warm-600">
+        Il porte la référence <strong>{{ document.reference }}</strong>, inscrite au registre et
+        peut-être déjà citée. Le modifier en place ferait dire autre chose à un numéro déjà délivré.
+        Rouvrez-le depuis <a href="{% url 'redaction:documents' %}" class="link-reveal">la liste</a>
+        si le texte doit changer : la référence sera conservée, le PDF sera refait.
+    </p>
+    <div class="mt-4 flex flex-wrap gap-3">
+        <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-primary">Télécharger le PDF</a>
+        <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
+              data-confirmer="Rouvrir « {{ document.titre }} » ? Son PDF actuel sera retiré.">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="rouvrir">
+            <button type="submit" class="btn-ghost">Rouvrir pour corriger</button>
+        </form>
+    </div>
+</div>
+{% else %}
+
+<form method="post" class="space-y-6"
+      action="{% if document %}{% url 'redaction:document_edition' document.pk %}{% else %}{% url 'redaction:document_creation' %}{% endif %}">
+    {% csrf_token %}
+
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Identification</h2>
+        {% include "partials/champ.html" with field=form.titre %}
+        {% include "partials/champ.html" with field=form.genre %}
+        {% include "partials/champ.html" with field=form.date_document %}
+        {% include "partials/champ.html" with field=form.objet %}
+    </div>
+
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Destinataire</h2>
+        <p class="text-sm text-warm-500">
+            Facultatif : une note de service ou un compte rendu n'en a pas.
+        </p>
+        {% include "partials/champ.html" with field=form.destinataire_nom %}
+        {% include "partials/champ.html" with field=form.destinataire_adresse %}
+    </div>
+
+    <div class="card">
+        {% include "partials/champ_editeur_riche.html" with field=form.corps min_height="24rem" only %}
+    </div>
+
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Signature</h2>
+        {% include "partials/champ.html" with field=form.signataire_nom %}
+        {% include "partials/champ.html" with field=form.signataire_qualite %}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn-primary">Enregistrer le brouillon</button>
+        <a href="{% url 'redaction:documents' %}" class="btn-ghost">Retour</a>
+    </div>
+</form>
+
+{% if document %}
+<div class="card mt-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Finalisation</h2>
+    <p class="mt-1 mb-4 text-sm text-warm-500">
+        Finaliser attribue la référence — elle n'existe pas avant, pour qu'un brouillon abandonné
+        ne consomme pas un numéro du registre — puis archive le PDF. Le texte n'est alors plus
+        modifiable sans rouvrir le document.
+    </p>
+    <div class="flex flex-wrap gap-3">
+        <form method="post" action="{% url 'redaction:document_decision' document.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="finaliser">
+            <button type="submit" class="btn-primary">Finaliser et archiver</button>
+        </form>
+        <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-ghost">Aperçu PDF</a>
+        <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
+              data-confirmer="Supprimer « {{ document.titre }} » ? Le texte sera perdu.">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="supprimer">
+            <button type="submit" class="btn-ghost" style="color: var(--color-danger, #b91c1c);">Supprimer</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

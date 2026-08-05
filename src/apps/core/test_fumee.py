@@ -69,7 +69,7 @@ ROUTES = routes_sans_argument()
 
 # Préfixes réservés au personnel. Un étudiant ou un enseignant qui obtient 200
 # sur l'un d'eux est une fuite de droits, pas une commodité.
-PREFIXES_PERSONNEL = ("administration:", "secretariat:")
+PREFIXES_PERSONNEL = ("administration:", "secretariat:", "redaction:")
 
 
 @pytest.fixture

@@ -1,0 +1,250 @@
+{% comment %}
+    Document officiel rédigé — courrier, convocation, compte rendu.
+
+    Même charte que « documents/pdf/document.html », et mêmes polices
+    embarquées : deux pièces sorties du même institut le même jour ne doivent
+    pas se ressembler de loin seulement.
+
+    Un brouillon porte un filigrane. Sans lui, un aperçu imprimé et posé sur un
+    bureau devient indiscernable d'une pièce arrêtée — et il n'a ni référence
+    ni signature pour le démentir.
+{% endcomment %}
+{% load wagtailcore_tags %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ document.objet }} — {{ institut.sigle }}</title>
+    <meta name="author" content="{{ institut.nom }}">
+    <meta name="description" content="{{ document.get_genre_display }} — {{ document.objet }}">
+    <meta name="generator" content="Plateforme ITEAG — WeasyPrint">
+    <meta name="dcterms.created" content="{{ edite_le|date:'c' }}">
+    <style>
+        {% include "partials/pdf_polices.html" %}
+
+        @page {
+            size: A4;
+            margin: 24mm 22mm 24mm;
+
+            @bottom-left {
+                content: "{{ institut.sigle }} · {{ institut.statut }}";
+                color: #9a9489;
+                font-family: "Inter", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                letter-spacing: 0.04em;
+            }
+            @bottom-center {
+                content: "{% if document.reference %}{{ document.reference }}{% else %}Brouillon — sans valeur{% endif %}";
+                color: #9a9489;
+                font-family: "Inter", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+            }
+            @bottom-right {
+                content: counter(page) " / " counter(pages);
+                color: #8a857c;
+                font-family: "Inter", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            color: #1a2b47;
+            font-family: "Inter", "Liberation Sans", sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* ── En-tête ── */
+
+        .lettre-tete {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            border-bottom: 0.6pt solid #c9c2b6;
+            padding-bottom: 7mm;
+        }
+        .marque-logo { display: block; height: 16mm; margin-bottom: 3mm; }
+        .marque {
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 22pt;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            line-height: 1;
+            color: #14243d;
+        }
+        .marque-filet { width: 22mm; height: 1.6pt; background: #b08d3f; margin-top: 3mm; }
+        .coordonnees {
+            color: #6f6a61;
+            font-size: 7.5pt;
+            line-height: 1.7;
+            text-align: right;
+            max-width: 62mm;
+        }
+
+        /* ── Bloc destinataire ── */
+
+        .bandeau {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14mm;
+            margin-top: 10mm;
+        }
+        .reference-bloc { font-size: 8.5pt; color: #6f6a61; line-height: 1.8; }
+        .reference-bloc strong { color: #1a2b47; }
+        .destinataire {
+            max-width: 78mm;
+            font-size: 10pt;
+            line-height: 1.6;
+            text-align: left;
+        }
+        .destinataire .nom { font-weight: 600; }
+        .destinataire .adresse { white-space: pre-line; color: #4a4a44; }
+
+        /* ── Objet ── */
+
+        .objet {
+            margin: 10mm 0 7mm;
+            padding-bottom: 2mm;
+            border-bottom: 0.6pt solid #e0dbd2;
+        }
+        .objet .etiquette {
+            color: #b08d3f;
+            font-size: 7.5pt;
+            font-weight: bold;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+        .objet h1 {
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 15pt;
+            font-weight: 600;
+            margin: 2mm 0 0;
+            line-height: 1.35;
+        }
+
+        /* ── Corps ── */
+
+        .corps { text-align: justify; }
+        .corps p { margin: 0 0 3.5mm; }
+        .corps h2, .corps h3, .corps h4 {
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-weight: 600;
+            margin: 6mm 0 2mm;
+        }
+        .corps h2 { font-size: 13pt; }
+        .corps h3 { font-size: 11.5pt; }
+        .corps h4 { font-size: 10.5pt; }
+        .corps ul, .corps ol { margin: 0 0 3.5mm; padding-left: 6mm; }
+        .corps li { margin-bottom: 1.5mm; }
+        .corps blockquote {
+            border-left: 1.6pt solid #b08d3f;
+            margin: 4mm 0;
+            padding-left: 4mm;
+            color: #4a4a44;
+            font-style: italic;
+        }
+        .corps a { color: #14243d; }
+        /* Draftail écrit l'alignement en classes : sans ces règles, un texte
+           centré dans l'éditeur ressortirait à gauche sur le papier. */
+        .corps .text-center { text-align: center; }
+        .corps .text-right { text-align: right; }
+        .corps .text-left { text-align: left; }
+        .corps .text-justify { text-align: justify; }
+        .corps hr { border: none; border-top: 0.6pt solid #e0dbd2; margin: 5mm 0; }
+
+        /* ── Signature ── */
+
+        .signature {
+            margin-top: 12mm;
+            width: 70mm;
+            margin-left: auto;
+            text-align: center;
+            /* Le bloc ne se coupe pas entre deux pages : une signature seule en
+               tête de page suivante fait douter de la page précédente. */
+            break-inside: avoid;
+        }
+        .signature .qualite { font-size: 9pt; color: #6f6a61; }
+        .signature .espace { height: 18mm; }
+        .signature .nom {
+            font-weight: 600;
+            border-top: 0.6pt solid #c9c2b6;
+            padding-top: 2mm;
+        }
+
+        /* ── Filigrane de brouillon ── */
+
+        .filigrane {
+            position: fixed;
+            top: 40%;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: "Playfair Display", "Liberation Serif", serif;
+            font-size: 68pt;
+            letter-spacing: 0.2em;
+            color: rgba(176, 141, 63, 0.16);
+            transform: rotate(-24deg);
+        }
+    </style>
+</head>
+<body>
+
+{% if not document.est_finalise %}
+<div class="filigrane">BROUILLON</div>
+{% endif %}
+
+<header class="lettre-tete">
+    <div>
+        {% if logo_pdf %}<img src="{{ logo_pdf }}" alt="" class="marque-logo">{% endif %}
+        <div class="marque">{{ institut.sigle }}</div>
+        <div class="marque-filet"></div>
+    </div>
+    <div class="coordonnees">
+        {{ institut.nom }}<br>
+        {{ institut.adresse }}<br>
+        {{ institut.telephone }} · {{ institut.email }}<br>
+        {{ institut.site }}
+    </div>
+</header>
+
+<div class="bandeau">
+    <div class="reference-bloc">
+        {% if document.reference %}
+        <strong>Réf. {{ document.reference }}</strong><br>
+        {% else %}
+        <strong>Sans référence</strong> — document non finalisé<br>
+        {% endif %}
+        {{ document.get_genre_display }}<br>
+        Le {{ document.date_document|date:"d F Y" }}
+    </div>
+    {% if document.destinataire_nom or document.destinataire_adresse %}
+    <div class="destinataire">
+        {% if document.destinataire_nom %}<div class="nom">{{ document.destinataire_nom }}</div>{% endif %}
+        {% if document.destinataire_adresse %}<div class="adresse">{{ document.destinataire_adresse }}</div>{% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<section class="objet">
+    <p class="etiquette">Objet</p>
+    <h1>{{ document.objet }}</h1>
+</section>
+
+<section class="corps">
+    {{ document.corps|richtext }}
+</section>
+
+{% if document.signataire_nom or document.signataire_qualite %}
+<section class="signature">
+    {% if document.signataire_qualite %}<p class="qualite">{{ document.signataire_qualite }}</p>{% endif %}
+    <div class="espace"></div>
+    {% if document.signataire_nom %}<p class="nom">{{ document.signataire_nom }}</p>{% endif %}
+</section>
+{% endif %}
+
+</body>
+</html>
