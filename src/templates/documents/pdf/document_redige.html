@@ -1,14 +1,3 @@
-{% comment %}
-    Document officiel rédigé — courrier, convocation, compte rendu.
-
-    Même charte que « documents/pdf/document.html », et mêmes polices
-    embarquées : deux pièces sorties du même institut le même jour ne doivent
-    pas se ressembler de loin seulement.
-
-    Un brouillon porte un filigrane. Sans lui, un aperçu imprimé et posé sur un
-    bureau devient indiscernable d'une pièce arrêtée — et il n'a ni référence
-    ni signature pour le démentir.
-{% endcomment %}
 {% load wagtailcore_tags %}
 <!doctype html>
 <html lang="fr">
@@ -21,228 +10,222 @@
     <meta name="dcterms.created" content="{{ edite_le|date:'c' }}">
     <style>
         {% include "partials/pdf_polices.html" %}
+        {% include "documents/pdf/_charte_institutionnelle.css" %}
 
         @page {
             size: A4;
-            margin: 24mm 22mm 24mm;
-
+            margin: 17mm 18mm 21mm;
             @bottom-left {
-                content: "{{ institut.sigle }} · {{ institut.statut }}";
-                color: #9a9489;
-                font-family: "Inter", "Liberation Sans", sans-serif;
-                font-size: 7pt;
-                letter-spacing: 0.04em;
+                content: "{{ institut.site }} · {{ institut.statut }}";
+                color: #73807a;
+                font-family: "Inter", sans-serif;
+                font-size: 6.8pt;
             }
             @bottom-center {
-                content: "{% if document.reference %}{{ document.reference }}{% else %}Brouillon — sans valeur{% endif %}";
-                color: #9a9489;
-                font-family: "Inter", "Liberation Sans", sans-serif;
-                font-size: 7pt;
+                content: "{% if document.reference %}{{ document.reference }}{% else %}APERÇU · SANS VALEUR OFFICIELLE{% endif %}";
+                color: #234e45;
+                font-family: "Inter", sans-serif;
+                font-size: 6.8pt;
+                font-weight: 700;
+                letter-spacing: 0.06em;
             }
             @bottom-right {
                 content: counter(page) " / " counter(pages);
-                color: #8a857c;
-                font-family: "Inter", "Liberation Sans", sans-serif;
-                font-size: 7pt;
+                color: #73807a;
+                font-family: "Inter", sans-serif;
+                font-size: 6.8pt;
             }
         }
 
-        * { box-sizing: border-box; }
+        /* Le courrier doit garder assez de souffle pour la signature sans
+           pousser celle-ci seule sur une seconde feuille. */
+        .iteag-letterhead { min-height: 32mm; padding-top: 6mm; padding-bottom: 6mm; }
+        .iteag-letterhead__logo { height: 16mm; }
+        .iteag-contactline { padding-top: 2mm; padding-bottom: 2mm; }
 
-        body {
-            color: #1a2b47;
-            font-family: "Inter", "Liberation Sans", sans-serif;
-            font-size: 10.5pt;
-            line-height: 1.6;
-            margin: 0;
-        }
-
-        /* ── En-tête ── */
-
-        .lettre-tete {
+        .document-meta {
             display: flex;
-            align-items: flex-start;
+            align-items: stretch;
             justify-content: space-between;
-            border-bottom: 0.6pt solid #c9c2b6;
-            padding-bottom: 7mm;
-        }
-        .marque-logo { display: block; height: 16mm; margin-bottom: 3mm; }
-        .marque {
-            font-family: "Playfair Display", "Liberation Serif", serif;
-            font-size: 22pt;
-            font-weight: 600;
-            letter-spacing: 0.16em;
-            line-height: 1;
-            color: #14243d;
-        }
-        .marque-filet { width: 22mm; height: 1.6pt; background: #b08d3f; margin-top: 3mm; }
-        .coordonnees {
-            color: #6f6a61;
-            font-size: 7.5pt;
-            line-height: 1.7;
-            text-align: right;
-            max-width: 62mm;
+            gap: 9mm;
+            margin: 6mm 0 6mm;
         }
 
-        /* ── Bloc destinataire ── */
-
-        .bandeau {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 14mm;
-            margin-top: 10mm;
+        .document-meta__registry {
+            flex: 0 0 54mm;
+            padding-top: 1mm;
         }
-        .reference-bloc { font-size: 8.5pt; color: #6f6a61; line-height: 1.8; }
-        .reference-bloc strong { color: #1a2b47; }
-        .destinataire {
-            max-width: 78mm;
-            font-size: 10pt;
-            line-height: 1.6;
-            text-align: left;
-        }
-        .destinataire .nom { font-weight: 600; }
-        .destinataire .adresse { white-space: pre-line; color: #4a4a44; }
 
-        /* ── Objet ── */
-
-        .objet {
-            margin: 10mm 0 7mm;
-            padding-bottom: 2mm;
-            border-bottom: 0.6pt solid #e0dbd2;
+        .document-meta__reference {
+            margin: 2mm 0 0;
+            color: var(--iteag-forest-deep);
+            font-size: 9pt;
+            font-weight: 700;
         }
-        .objet .etiquette {
-            color: #b08d3f;
-            font-size: 7.5pt;
-            font-weight: bold;
-            letter-spacing: 0.22em;
+
+        .document-meta__date {
+            margin: 1.5mm 0 0;
+            color: var(--iteag-muted);
+            font-size: 8pt;
+        }
+
+        .recipient {
+            flex: 1 1 auto;
+            min-height: 22mm;
+            padding: 3.5mm 4.5mm;
+            border-left: 1.4mm solid var(--iteag-gold);
+            background: var(--iteag-cream);
+        }
+
+        .recipient__label {
+            margin: 0 0 2mm;
+            color: var(--iteag-muted);
+            font-size: 6.5pt;
+            font-weight: 700;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
         }
-        .objet h1 {
-            font-family: "Playfair Display", "Liberation Serif", serif;
-            font-size: 15pt;
-            font-weight: 600;
-            margin: 2mm 0 0;
-            line-height: 1.35;
+
+        .recipient__name { margin: 0; font-size: 9.5pt; font-weight: 700; }
+        .recipient__address { margin: 1mm 0 0; color: var(--iteag-muted); font-size: 8.5pt; white-space: pre-line; }
+
+        .subject {
+            position: relative;
+            margin: 0 0 5mm;
+            padding: 0 0 3.5mm 5mm;
+            border-bottom: 0.4mm solid var(--iteag-line);
         }
 
-        /* ── Corps ── */
-
-        .corps { text-align: justify; }
-        .corps p { margin: 0 0 3.5mm; }
-        .corps h2, .corps h3, .corps h4 {
-            font-family: "Playfair Display", "Liberation Serif", serif;
-            font-weight: 600;
-            margin: 6mm 0 2mm;
+        .subject::before {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 3.5mm;
+            width: 1.2mm;
+            content: "";
+            background: var(--iteag-forest);
         }
-        .corps h2 { font-size: 13pt; }
-        .corps h3 { font-size: 11.5pt; }
-        .corps h4 { font-size: 10.5pt; }
-        .corps ul, .corps ol { margin: 0 0 3.5mm; padding-left: 6mm; }
-        .corps li { margin-bottom: 1.5mm; }
-        .corps blockquote {
-            border-left: 1.6pt solid #b08d3f;
-            margin: 4mm 0;
-            padding-left: 4mm;
-            color: #4a4a44;
+
+        .subject .iteag-title { max-width: 145mm; font-size: 17pt; }
+
+        .genre-card {
+            break-inside: avoid;
+            margin: 0 0 5mm;
+            padding: 3mm 4.5mm;
+            border: 0.3mm solid var(--iteag-line);
+            border-radius: 2mm;
+            background: #fbfcfb;
+        }
+
+        .genre-card dl { margin: 0; }
+        .genre-card__row { display: flex; gap: 4mm; padding: 1.2mm 0; }
+        .genre-card dt { flex: 0 0 38mm; color: var(--iteag-muted); font-size: 8pt; }
+        .genre-card dd { margin: 0; color: var(--iteag-forest-deep); font-size: 8.8pt; font-weight: 700; }
+
+        .body-copy { color: #2b3c37; font-size: 9.7pt; line-height: 1.55; text-align: justify; }
+        .body-copy p { margin: 0 0 3mm; }
+        .body-copy h2, .body-copy h3, .body-copy h4, .body-copy h5, .body-copy h6 {
+            color: var(--iteag-forest-deep);
+            font-family: "Playfair Display", serif;
+            font-weight: 700;
+            line-height: 1.2;
+            break-after: avoid;
+        }
+        .body-copy h2 { margin: 5mm 0 2mm; font-size: 13pt; }
+        .body-copy h3 { margin: 6mm 0 2mm; font-size: 12pt; }
+        .body-copy h4, .body-copy h5, .body-copy h6 { margin: 5mm 0 2mm; font-size: 10.5pt; }
+        .body-copy ul, .body-copy ol { margin: 0 0 3mm; padding-left: 7mm; }
+        .body-copy li { margin-bottom: 1mm; }
+        .body-copy blockquote {
+            margin: 5mm 0;
+            padding: 4mm 5mm;
+            border-left: 1.2mm solid var(--iteag-gold);
+            color: var(--iteag-forest-deep);
+            background: var(--iteag-cream);
+            font-family: "Playfair Display", serif;
             font-style: italic;
         }
-        .corps a { color: #14243d; }
-        /* Draftail écrit l'alignement en classes : sans ces règles, un texte
-           centré dans l'éditeur ressortirait à gauche sur le papier. */
-        .corps .text-center { text-align: center; }
-        .corps .text-right { text-align: right; }
-        .corps .text-left { text-align: left; }
-        .corps .text-justify { text-align: justify; }
-        .corps hr { border: none; border-top: 0.6pt solid #e0dbd2; margin: 5mm 0; }
-
-        /* ── Signature ── */
+        .body-copy a { color: var(--iteag-forest); }
+        .body-copy .iteag-align-left, .body-copy .text-left { text-align: left; }
+        .body-copy .iteag-align-center, .body-copy .text-center { text-align: center; }
+        .body-copy .iteag-align-right, .body-copy .text-right { text-align: right; }
+        .body-copy .iteag-align-justify, .body-copy .text-justify { text-align: justify; }
+        .body-copy hr { margin: 6mm 0; border: 0; border-top: 0.35mm solid var(--iteag-line); }
 
         .signature {
-            margin-top: 12mm;
-            width: 70mm;
-            margin-left: auto;
-            text-align: center;
-            /* Le bloc ne se coupe pas entre deux pages : une signature seule en
-               tête de page suivante fait douter de la page précédente. */
             break-inside: avoid;
+            width: 68mm;
+            margin: 6mm 0 0 auto;
+            padding: 3mm 4.5mm 3.5mm;
+            border-top: 1.2mm solid var(--iteag-gold);
+            background: var(--iteag-cream);
+            text-align: left;
         }
-        .signature .qualite { font-size: 9pt; color: #6f6a61; }
-        .signature .espace { height: 18mm; }
-        .signature .nom {
-            font-weight: 600;
-            border-top: 0.6pt solid #c9c2b6;
-            padding-top: 2mm;
-        }
+        .signature__role { margin: 0; color: var(--iteag-muted); font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; }
+        .signature__space { height: 10mm; }
+        .signature__name { margin: 0; color: var(--iteag-forest-deep); font-family: "Playfair Display", serif; font-size: 11pt; font-weight: 700; }
 
-        /* ── Filigrane de brouillon ── */
-
-        .filigrane {
+        .draft-watermark {
             position: fixed;
-            top: 40%;
+            z-index: -1;
+            top: 43%;
             left: 0;
             right: 0;
+            color: rgb(35 78 69 / 9%);
+            font-family: "Inter", sans-serif;
+            font-size: 62pt;
+            font-weight: 700;
+            letter-spacing: 0.18em;
             text-align: center;
-            font-family: "Playfair Display", "Liberation Serif", serif;
-            font-size: 68pt;
-            letter-spacing: 0.2em;
-            color: rgba(176, 141, 63, 0.16);
             transform: rotate(-24deg);
         }
+
     </style>
 </head>
 <body>
+{% if not document.est_finalise %}<div class="draft-watermark">BROUILLON</div>{% endif %}
 
-{% if not document.est_finalise %}
-<div class="filigrane">BROUILLON</div>
-{% endif %}
+{% include "documents/pdf/_entete_institutionnel.html" %}
 
-<header class="lettre-tete">
-    <div>
-        {% if logo_pdf %}<img src="{{ logo_pdf }}" alt="" class="marque-logo">{% endif %}
-        <div class="marque">{{ institut.sigle }}</div>
-        <div class="marque-filet"></div>
-    </div>
-    <div class="coordonnees">
-        {{ institut.nom }}<br>
-        {{ institut.adresse }}<br>
-        {{ institut.telephone }} · {{ institut.email }}<br>
-        {{ institut.site }}
-    </div>
-</header>
-
-<div class="bandeau">
-    <div class="reference-bloc">
-        {% if document.reference %}
-        <strong>Réf. {{ document.reference }}</strong><br>
-        {% else %}
-        <strong>Sans référence</strong> — document non finalisé<br>
-        {% endif %}
-        {{ document.get_genre_display }}<br>
-        Le {{ document.date_document|date:"d F Y" }}
+<section class="document-meta">
+    <div class="document-meta__registry">
+        <span class="iteag-chip">{{ document.get_genre_display }}</span>
+        <p class="document-meta__reference">{% if document.reference %}{{ document.reference }}{% else %}Sans référence{% endif %}</p>
+        <p class="document-meta__date">Émis le {{ document.date_document|date:"d F Y" }}</p>
     </div>
     {% if document.destinataire_nom or document.destinataire_adresse %}
-    <div class="destinataire">
-        {% if document.destinataire_nom %}<div class="nom">{{ document.destinataire_nom }}</div>{% endif %}
-        {% if document.destinataire_adresse %}<div class="adresse">{{ document.destinataire_adresse }}</div>{% endif %}
+    <div class="recipient">
+        <p class="recipient__label">À l'attention de</p>
+        {% if document.destinataire_nom %}<p class="recipient__name">{{ document.destinataire_nom }}</p>{% endif %}
+        {% if document.destinataire_adresse %}<p class="recipient__address">{{ document.destinataire_adresse }}</p>{% endif %}
     </div>
     {% endif %}
-</div>
-
-<section class="objet">
-    <p class="etiquette">Objet</p>
-    <h1>{{ document.objet }}</h1>
 </section>
 
-<section class="corps">
-    {{ document.corps|richtext }}
+<section class="subject">
+    <p class="iteag-kicker">Objet du courrier</p>
+    <h1 class="iteag-title">{{ document.objet }}</h1>
 </section>
+
+{% with champs=document.champs_du_genre %}
+{% if champs %}
+<section class="genre-card">
+    <dl>
+        {% for libelle, valeur in champs %}{% if valeur %}
+        <div class="genre-card__row"><dt>{{ libelle }}</dt><dd>{{ valeur|linebreaksbr }}</dd></div>
+        {% endif %}{% endfor %}
+    </dl>
+</section>
+{% endif %}
+{% endwith %}
+
+<section class="body-copy">{{ document.corps|richtext }}</section>
 
 {% if document.signataire_nom or document.signataire_qualite %}
 <section class="signature">
-    {% if document.signataire_qualite %}<p class="qualite">{{ document.signataire_qualite }}</p>{% endif %}
-    <div class="espace"></div>
-    {% if document.signataire_nom %}<p class="nom">{{ document.signataire_nom }}</p>{% endif %}
+    {% if document.signataire_qualite %}<p class="signature__role">{{ document.signataire_qualite }}</p>{% endif %}
+    <div class="signature__space"></div>
+    {% if document.signataire_nom %}<p class="signature__name">{{ document.signataire_nom }}</p>{% endif %}
 </section>
 {% endif %}
 

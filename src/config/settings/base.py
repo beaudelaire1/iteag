@@ -414,6 +414,9 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
+# Repli volontairement désactivé par défaut : en production, perdre le broker
+# doit rester visible et ne doit pas créer des tâches dans le processus web.
+DOCUMENTS_PDF_LOCAL_FALLBACK = False
 CELERY_BROKER_CONNECTION_TIMEOUT = env.float("CELERY_BROKER_CONNECTION_TIMEOUT", default=0.5)
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     "socket_connect_timeout": CELERY_BROKER_CONNECTION_TIMEOUT,

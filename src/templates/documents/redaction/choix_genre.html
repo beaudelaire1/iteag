@@ -1,0 +1,41 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Quel document ? — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2"><a href="{% url 'redaction:documents' %}">Documents rédigés</a></p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Quel document écrivez-vous ?</h1>
+    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+        Le genre décide des champs à remplir — et il ne se change plus ensuite.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% comment %}
+Le choix vient avant le formulaire, et non dedans. Une liste déroulante au
+milieu des champs supposerait de redessiner l'écran à chaque changement, ou
+d'afficher les champs de tous les genres — et l'on demanderait ses participants
+à un courrier.
+{% endcomment %}
+<ul class="grid gap-4 sm:grid-cols-2" role="list">
+    {% for cle, fiche in fiches %}
+    <li class="card">
+        <a href="{% url 'redaction:document_creation' %}?genre={{ cle }}" class="block">
+            <p class="font-semibold text-navy-900">{{ fiche.libelle }}</p>
+            <p class="mt-1 text-sm text-warm-600">{{ fiche.description }}</p>
+            <p class="mt-3 text-xs text-warm-500">
+                Référence en <strong>ITEAG/{{ fiche.prefixe }}/…</strong>
+                {% if fiche.a_des_champs_propres %} · champs spécifiques à remplir{% endif %}
+            </p>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

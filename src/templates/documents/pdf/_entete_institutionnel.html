@@ -1,0 +1,17 @@
+<header class="iteag-letterhead">
+    <div>
+        {% if logo_blanc_pdf %}
+        <img src="{{ logo_blanc_pdf }}" alt="ITEAG" class="iteag-letterhead__logo">
+        {% else %}
+        <span class="iteag-letterhead__fallback">ITEAG</span>
+        {% endif %}
+    </div>
+    <div class="iteag-letterhead__mission">
+        <strong>Former · Servir · Transmettre</strong>
+        <span>Au service de l'Église et de la société</span>
+    </div>
+</header>
+<div class="iteag-contactline">
+    <span class="iteag-contactline__place">Les Abymes · Guadeloupe</span>
+    <span class="iteag-contactline__digital">{{ institut.telephone }} &nbsp;·&nbsp; {{ institut.email }} &nbsp;·&nbsp; {{ institut.site }}</span>
+</div>

@@ -1,0 +1,26 @@
+<span id="etat-pdf-{{ document.pk }}"
+      class="inline-flex flex-wrap items-center gap-2"
+      {% if document.generation_active %}
+      hx-get="{% url 'redaction:document_etat_pdf' document.pk %}"
+      hx-trigger="load delay:2s"
+      hx-swap="outerHTML"
+      {% endif %}>
+    {% if document.fichier_pdf %}
+    <span class="badge badge-success">PDF prêt</span>
+    <a href="{% url 'redaction:document_pdf' document.pk %}" class="{% if document.est_finalise %}btn-primary{% else %}btn-ghost{% endif %}">
+        {% if document.est_finalise %}Télécharger le PDF{% else %}Télécharger l'aperçu{% endif %}
+    </a>
+    {% elif document.statut_generation == "echec" %}
+    <span class="badge badge-warning">Échec PDF</span>
+    <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-ghost">Réessayer</a>
+    {% elif document.generation_active %}
+    <span class="badge badge-warning inline-flex items-center gap-2">
+        <span class="inline-block h-2 w-2 rounded-full bg-current animate-pulse" aria-hidden="true"></span>
+        {{ document.get_statut_generation_display }}
+    </span>
+    {% else %}
+    <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-ghost">
+        {% if document.est_finalise %}Préparer le PDF{% else %}Préparer l'aperçu PDF{% endif %}
+    </a>
+    {% endif %}
+</span>

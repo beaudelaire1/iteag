@@ -16,5 +16,6 @@ urlpatterns = [
     path("nouveau/", vues_redaction.DocumentRedigeEditionView.as_view(), name="document_creation"),
     path("<int:pk>/", vues_redaction.DocumentRedigeEditionView.as_view(), name="document_edition"),
     path("<int:pk>/decision/", vues_redaction.DocumentRedigeDecisionView.as_view(), name="document_decision"),
+    path("<int:pk>/etat-pdf/", vues_redaction.DocumentRedigeEtatView.as_view(), name="document_etat_pdf"),
     path("<int:pk>/pdf/", vues_redaction.DocumentRedigePdfView.as_view(), name="document_pdf"),
 ]

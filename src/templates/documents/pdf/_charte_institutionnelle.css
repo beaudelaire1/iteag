@@ -1,0 +1,163 @@
+:root {
+    --iteag-forest: #234e45;
+    --iteag-forest-deep: #17372f;
+    --iteag-forest-soft: #dfe9e5;
+    --iteag-gold: #c69a45;
+    --iteag-gold-soft: #f2e7cf;
+    --iteag-cream: #f7f3e9;
+    --iteag-ink: #19312b;
+    --iteag-muted: #68756f;
+    --iteag-line: #d9e1de;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    color: var(--iteag-ink);
+    font-family: "Inter", "Liberation Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.62;
+}
+
+.iteag-letterhead {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 37mm;
+    margin: -17mm -18mm 0;
+    padding: 8mm 18mm;
+    overflow: hidden;
+    color: #fff;
+    background: var(--iteag-forest);
+}
+
+.iteag-letterhead::before,
+.iteag-letterhead::after {
+    position: absolute;
+    content: "";
+    transform: rotate(-24deg);
+}
+
+.iteag-letterhead::before {
+    right: 17mm;
+    top: -31mm;
+    width: 8mm;
+    height: 92mm;
+    background: rgb(255 255 255 / 10%);
+}
+
+.iteag-letterhead::after {
+    right: 6mm;
+    top: -22mm;
+    width: 3mm;
+    height: 78mm;
+    background: var(--iteag-gold);
+}
+
+.iteag-letterhead__logo {
+    position: relative;
+    z-index: 2;
+    display: block;
+    width: auto;
+    height: 19mm;
+}
+
+.iteag-letterhead__fallback {
+    position: relative;
+    z-index: 2;
+    font-family: "Playfair Display", "Liberation Serif", serif;
+    font-size: 24pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+.iteag-letterhead__mission {
+    position: relative;
+    z-index: 2;
+    padding-right: 20mm;
+    text-align: right;
+}
+
+.iteag-letterhead__mission strong {
+    display: block;
+    font-size: 7.2pt;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.iteag-letterhead__mission span {
+    display: block;
+    margin-top: 1mm;
+    color: rgb(255 255 255 / 72%);
+    font-family: "Playfair Display", "Liberation Serif", serif;
+    font-size: 8.5pt;
+    font-style: italic;
+}
+
+.iteag-contactline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -18mm;
+    padding: 2.8mm 18mm;
+    color: var(--iteag-forest-deep);
+    background: var(--iteag-cream);
+    border-bottom: 0.35mm solid var(--iteag-gold-soft);
+    font-size: 7pt;
+    letter-spacing: 0.025em;
+}
+
+.iteag-contactline__place { font-weight: 700; }
+.iteag-contactline__digital { color: var(--iteag-muted); }
+
+.iteag-kicker {
+    margin: 0;
+    color: var(--iteag-gold);
+    font-size: 7.2pt;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.iteag-title {
+    margin: 2.2mm 0 0;
+    color: var(--iteag-forest-deep);
+    font-family: "Playfair Display", "Liberation Serif", serif;
+    font-weight: 700;
+    line-height: 1.12;
+}
+
+.iteag-chip {
+    display: inline-block;
+    padding: 1.3mm 2.6mm;
+    border-radius: 10mm;
+    color: var(--iteag-forest-deep);
+    background: var(--iteag-gold-soft);
+    font-size: 6.8pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.iteag-security {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin-top: 8mm;
+    padding-top: 3mm;
+    border-top: 0.35mm solid var(--iteag-line);
+    color: var(--iteag-muted);
+    font-size: 7pt;
+}
+
+.iteag-security::before {
+    display: block;
+    flex: 0 0 3mm;
+    width: 3mm;
+    height: 3mm;
+    border-radius: 50%;
+    content: "";
+    background: var(--iteag-gold);
+}

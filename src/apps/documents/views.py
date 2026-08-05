@@ -1,19 +1,16 @@
 from pathlib import Path
 
 from django.contrib import messages
-from django.core.files.base import ContentFile
 from django.http import FileResponse, Http404, HttpResponseNotAllowed
-from django.shortcuts import get_object_or_404, redirect
-from django.utils import timezone
-from django.utils.text import slugify
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import TemplateView
 
 from apps.academics.models import Paiement, ProfilEtudiant
 from apps.core.mixins import StudentRoleRequiredMixin
-from apps.core.services.pdf import MoteurPDFIndisponible, contexte_marque, rendre_pdf
 
 from .models import DocumentAdministratif
+from .tasks import planifier_document_administratif
 
 
 def _document_options(profil):
@@ -97,49 +94,21 @@ class GenerateStudentDocumentView(StudentRoleRequiredMixin, View):
             messages.error(request, option["reason"] if option else "Ce document n'est pas disponible.")
             return redirect("documents:list")
 
-        evaluations = profil.evaluations.filter(statut="publie").select_related(
-            "cours_session__cours",
-            "cours_session__session",
-        )
-        paiements = profil.paiements.filter(statut=Paiement.StatutPaiement.CONFIRME).select_related("session")
-        # Le relevé est porté par les crédits, pas par les évaluations : c'est
-        # le dossier académique qui fait foi, et lui seul contient les acquis
-        # hors cours — stage validé, VAE accordée, équivalences FLTE. Totaliser
-        # les crédits en ne listant que les évaluations ferait diverger le
-        # total de ses lignes.
-        credits = profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by("date_validation")
-        if document_type == DocumentAdministratif.TypeDocument.RELEVE_NOTES:
-            # Le gabarit affiche le total puis les ECTS restants. Sans cette
-            # valeur mémorisée, les deux propriétés relancent exactement la
-            # même agrégation pendant le rendu PDF.
-            profil.ects_acquis_annotes = profil.total_ects_acquis
-
-        try:
-            pdf_bytes = rendre_pdf(
-                "documents/pdf/document.html",
-                contexte_marque(
-                    profil_polices="document_administratif",
-                    user=request.user,
-                    profil=profil,
-                    document_type=document_type,
-                    document_label=dict(DocumentAdministratif.TypeDocument.choices)[document_type],
-                    generated_at=timezone.now(),
-                    evaluations=evaluations,
-                    paiements=paiements,
-                    credits=credits,
-                ),
-                request=request,
+        document = DocumentAdministratif.objects.create(etudiant=request.user, type_document=document_type)
+        if planifier_document_administratif(document):
+            messages.success(
+                request,
+                "La génération a démarré en arrière-plan. Le téléchargement apparaîtra automatiquement ici.",
             )
-        except MoteurPDFIndisponible:
-            messages.error(request, "WeasyPrint n'est pas disponible dans cet environnement.")
-            return redirect("documents:list")
+        else:
+            messages.error(request, "Le service de génération est momentanément indisponible. Réessayez plus tard.")
+        return redirect("documents:list")
 
-        identite = slugify(request.user.get_full_name() or request.user.username)
-        filename = f"{document_type}-{identite}-{timezone.now():%Y%m%d%H%M%S}.pdf"
-        document = DocumentAdministratif(etudiant=request.user, type_document=document_type)
-        document.fichier_pdf.save(filename, ContentFile(pdf_bytes), save=False)
-        document.save()
-        return FileResponse(document.fichier_pdf.open("rb"), as_attachment=True, filename=Path(filename).name)
+
+class StudentDocumentStatusView(StudentRoleRequiredMixin, View):
+    def get(self, request, pk):
+        document = get_object_or_404(DocumentAdministratif, pk=pk, etudiant=request.user)
+        return render(request, "documents/partials/document_ligne.html", {"doc": document})
 
 
 class DownloadStudentDocumentView(StudentRoleRequiredMixin, View):

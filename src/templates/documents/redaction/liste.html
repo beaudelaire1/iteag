@@ -87,11 +87,11 @@ partage et se met en favori, ce qu'un POST ne permettrait pas.
                 {{ document.get_genre_display }} · {{ document.date_document|date:"d/m/Y" }}
                 {% if document.destinataire_nom %} · {{ document.destinataire_nom }}{% endif %}
                 {% if document.redige_par %} · {{ document.redige_par.get_full_name|default:document.redige_par.username }}{% endif %}
-                {% if not document.fichier_pdf %} · <strong>PDF à refaire</strong>{% endif %}
+                {% if not document.fichier_pdf %} · <strong>{{ document.get_statut_generation_display }}</strong>{% endif %}
             </span>
         </span>
         <span class="flex flex-wrap items-center gap-2">
-            <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-ghost">PDF</a>
+            {% include "documents/redaction/_etat_pdf.html" with document=document only %}
             <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
                   data-confirmer="Rouvrir « {{ document.titre }} » ? Son PDF sera retiré, sa référence conservée.">
                 {% csrf_token %}

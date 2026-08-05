@@ -5,7 +5,10 @@ Un relevé de notes ou une attestation porte des données personnelles : le poin
 sensible est qu'un étudiant ne puisse récupérer que les siens.
 """
 
+from unittest.mock import patch
+
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.academics.models import (
@@ -107,6 +110,73 @@ class TestListeDesDocuments:
 
 @pytest.mark.django_db
 class TestGenerationEtTelechargement:
+    @override_settings(DOCUMENTS_PDF_LOCAL_FALLBACK=True)
+    @patch("apps.documents.tasks.generer_document_administratif.apply_async")
+    @patch("apps.documents.tasks.Thread")
+    def test_en_developpement_redis_n_est_pas_contacte(self, thread, publier, client, etudiant):
+        client.force_login(etudiant.utilisateur)
+
+        reponse = client.post(
+            reverse(
+                "documents:generate",
+                kwargs={"document_type": DocumentAdministratif.TypeDocument.ATTESTATION},
+            )
+        )
+
+        assert reponse.status_code == 302
+        publier.assert_not_called()
+        thread.assert_called_once()
+        thread.return_value.start.assert_called_once_with()
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    @patch("apps.documents.tasks.generer_document_administratif.apply_async")
+    def test_la_generation_est_planifiee_sans_bloquer_la_requete(self, publier, client, etudiant):
+        client.force_login(etudiant.utilisateur)
+
+        reponse = client.post(
+            reverse(
+                "documents:generate",
+                kwargs={"document_type": DocumentAdministratif.TypeDocument.ATTESTATION},
+            )
+        )
+
+        document = DocumentAdministratif.objects.get(etudiant=etudiant.utilisateur)
+        assert reponse.status_code == 302
+        assert document.statut_generation == document.StatutGeneration.EN_ATTENTE
+        assert not document.fichier_pdf
+        publier.assert_called_once_with(
+            args=(document.pk, str(document.jeton_generation)),
+            ignore_result=True,
+            retry=False,
+        )
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    @patch(
+        "apps.documents.tasks.generer_document_administratif.apply_async",
+        side_effect=ConnectionError("Redis indisponible"),
+    )
+    def test_un_broker_indisponible_met_immediatement_le_document_en_echec(
+        self, publier, client, etudiant
+    ):
+        client.force_login(etudiant.utilisateur)
+
+        reponse = client.post(
+            reverse(
+                "documents:generate",
+                kwargs={"document_type": DocumentAdministratif.TypeDocument.ATTESTATION},
+            )
+        )
+
+        document = DocumentAdministratif.objects.get(etudiant=etudiant.utilisateur)
+        assert reponse.status_code == 302
+        assert document.statut_generation == document.StatutGeneration.ECHEC
+        assert document.erreur_generation
+        publier.assert_called_once_with(
+            args=(document.pk, str(document.jeton_generation)),
+            ignore_result=True,
+            retry=False,
+        )
+
     def test_un_type_de_document_inconnu_est_refuse(self, client, etudiant):
         client.force_login(etudiant.utilisateur)
         reponse = client.post(reverse("documents:generate", kwargs={"document_type": "type-invente"}))

@@ -41,7 +41,7 @@
         si le texte doit changer : la référence sera conservée, le PDF sera refait.
     </p>
     <div class="mt-4 flex flex-wrap gap-3">
-        <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-primary">Télécharger le PDF</a>
+        {% include "documents/redaction/_etat_pdf.html" with document=document only %}
         <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
               data-confirmer="Rouvrir « {{ document.titre }} » ? Son PDF actuel sera retiré.">
             {% csrf_token %}
@@ -56,13 +56,38 @@
       action="{% if document %}{% url 'redaction:document_edition' document.pk %}{% else %}{% url 'redaction:document_creation' %}{% endif %}">
     {% csrf_token %}
 
+    {% comment %}
+    Le genre voyage en champ caché : il a été choisi à l'écran précédent et ne
+    se change plus. Le remettre en liste déroulante ici laisserait croire qu'on
+    peut basculer une convocation en compte rendu — sa fiche déjà remplie
+    n'aurait alors plus de sens.
+    {% endcomment %}
+    <input type="hidden" name="genre" value="{{ genre }}">
+
     <div class="card space-y-4">
         <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Identification</h2>
+        <p class="text-sm text-warm-500">
+            Genre : <strong>{{ fiche.libelle }}</strong> — référence en ITEAG/{{ fiche.prefixe }}/…
+        </p>
         {% include "partials/champ.html" with field=form.titre %}
-        {% include "partials/champ.html" with field=form.genre %}
         {% include "partials/champ.html" with field=form.date_document %}
         {% include "partials/champ.html" with field=form.objet %}
     </div>
+
+    {% if fiche.a_des_champs_propres %}
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">
+            Ce qu'exige {{ fiche.libelle|lower }}
+        </h2>
+        <p class="text-sm text-warm-500">
+            Ces champs peuvent rester vides tant que le document est en brouillon.
+            Ils deviennent obligatoires à la finalisation.
+        </p>
+        {% for champ in form_fiche %}
+        {% include "partials/champ.html" with field=champ %}
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div class="card space-y-4">
         <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Destinataire</h2>
@@ -94,7 +119,7 @@
     <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Finalisation</h2>
     <p class="mt-1 mb-4 text-sm text-warm-500">
         Finaliser attribue la référence — elle n'existe pas avant, pour qu'un brouillon abandonné
-        ne consomme pas un numéro du registre — puis archive le PDF. Le texte n'est alors plus
+        ne consomme pas un numéro du registre — puis lance l'archivage PDF en arrière-plan. Le texte n'est alors plus
         modifiable sans rouvrir le document.
     </p>
     <div class="flex flex-wrap gap-3">
@@ -103,7 +128,7 @@
             <input type="hidden" name="action" value="finaliser">
             <button type="submit" class="btn-primary">Finaliser et archiver</button>
         </form>
-        <a href="{% url 'redaction:document_pdf' document.pk %}" class="btn-ghost">Aperçu PDF</a>
+        {% include "documents/redaction/_etat_pdf.html" with document=document only %}
         <form method="post" action="{% url 'redaction:document_decision' document.pk %}"
               data-confirmer="Supprimer « {{ document.titre }} » ? Le texte sera perdu.">
             {% csrf_token %}

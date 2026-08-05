@@ -10,16 +10,92 @@ Deux objets voisins mais distincts, et les confondre serait une erreur :
   l'écrive, et il engage l'institut sous une référence et une signature.
 """
 
+import uuid
+from datetime import date, datetime, time
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
 from django.utils import timezone
+from django.utils.formats import date_format, time_format
 
 from apps.core.models import TimeStampedModel
 from apps.core.services.redaction import en_texte
 
 
-class DocumentAdministratif(TimeStampedModel):
+class SuiviGenerationPDF(models.Model):
+    """État persistant d'un rendu PDF exécuté hors de la requête HTTP."""
+
+    class StatutGeneration(models.TextChoices):
+        AUCUN = "aucun", "Non demandé"
+        EN_ATTENTE = "en_attente", "En attente"
+        EN_COURS = "en_cours", "En cours"
+        PRET = "pret", "Prêt"
+        ECHEC = "echec", "Échec"
+
+    statut_generation = models.CharField(
+        max_length=16,
+        choices=StatutGeneration.choices,
+        default=StatutGeneration.AUCUN,
+        verbose_name="État de la génération PDF",
+    )
+    erreur_generation = models.CharField(max_length=300, blank=True, verbose_name="Erreur de génération")
+    jeton_generation = models.UUIDField(default=uuid.uuid4, editable=False)
+
+    class Meta:
+        abstract = True
+
+    @property
+    def generation_active(self) -> bool:
+        return self.statut_generation in {
+            self.StatutGeneration.EN_ATTENTE,
+            self.StatutGeneration.EN_COURS,
+        }
+
+    @property
+    def pdf_pret(self) -> bool:
+        # Les fichiers antérieurs à l'ajout du suivi restent immédiatement
+        # téléchargeables, même si leur état migré vaut « aucun ».
+        return bool(self.fichier_pdf)
+
+    def preparer_generation(self):
+        """Invalide l'ancien artefact et crée un jeton contre les courses."""
+        if self.fichier_pdf:
+            self.fichier_pdf.delete(save=False)
+        self.jeton_generation = uuid.uuid4()
+        self.statut_generation = self.StatutGeneration.EN_ATTENTE
+        self.erreur_generation = ""
+        self.save(
+            update_fields=[
+                "fichier_pdf",
+                "jeton_generation",
+                "statut_generation",
+                "erreur_generation",
+                "updated_at",
+            ]
+        )
+        return self.jeton_generation
+
+    def invalider_generation(self):
+        """Rend obsolète une tâche encore en vol après modification du texte."""
+        if self.fichier_pdf:
+            self.fichier_pdf.delete(save=False)
+        self.jeton_generation = uuid.uuid4()
+        self.statut_generation = self.StatutGeneration.AUCUN
+        self.erreur_generation = ""
+        self.save(
+            update_fields=[
+                "fichier_pdf",
+                "jeton_generation",
+                "statut_generation",
+                "erreur_generation",
+                "updated_at",
+            ]
+        )
+
+
+class DocumentAdministratif(SuiviGenerationPDF, TimeStampedModel):
     """Document PDF généré — CDC ETU-008 / ADM-009."""
 
     class TypeDocument(models.TextChoices):
@@ -57,8 +133,12 @@ class DocumentAdministratif(TimeStampedModel):
     def __str__(self):
         return f"{self.get_type_document_display()} — {self.etudiant}"
 
+    @property
+    def reference_document(self) -> str:
+        return f"ITEAG-DOC-{self.date_generation:%Y}-{self.pk:06d}" if self.pk else "ITEAG-DOC"
 
-class DocumentRedige(TimeStampedModel):
+
+class DocumentRedige(SuiviGenerationPDF, TimeStampedModel):
     """Un document officiel composé par le secrétariat ou la direction.
 
     Le cycle reprend celui des articles de recherche, que la maison connaît
@@ -80,19 +160,6 @@ class DocumentRedige(TimeStampedModel):
         RAPPORT = "rapport", "Rapport"
         ATTESTATION = "attestation", "Attestation"
         AUTRE = "autre", "Autre document"
-
-    # Le préfixe entre dans la référence. Il est court parce qu'il se recopie à
-    # la main sur un registre papier et se dicte au téléphone.
-    PREFIXES = {
-        Genre.COURRIER: "COU",
-        Genre.CONVOCATION: "CVN",
-        Genre.INVITATION: "INV",
-        Genre.COMPTE_RENDU: "CR",
-        Genre.NOTE_SERVICE: "NS",
-        Genre.RAPPORT: "RAP",
-        Genre.ATTESTATION: "ATT",
-        Genre.AUTRE: "DOC",
-    }
 
     class Statut(models.TextChoices):
         BROUILLON = "brouillon", "Brouillon"
@@ -118,6 +185,22 @@ class DocumentRedige(TimeStampedModel):
     destinataire_adresse = models.TextField(blank=True, verbose_name="Adresse du destinataire")
     objet = models.CharField(max_length=250, verbose_name="Objet")
     corps = models.TextField(blank=True, verbose_name="Corps du document")
+
+    # Les champs propres au genre — heure et lieu d'une convocation,
+    # participants d'un compte rendu. Leur schéma est la fiche du genre
+    # (« apps/documents/fiches.py »), qui valide à la saisie et reste le seul
+    # chemin d'écriture. Ce qu'on interroge en masse — référence, date, genre,
+    # objet — demeure en colonnes.
+    donnees = models.JSONField(
+        default=dict,
+        blank=True,
+        # Sans cet encodeur, la date et l'heure d'une convocation lèvent
+        # une « TypeError » à l'enregistrement : le module « json » ne sait
+        # pas sérialiser un « date ». Elles reviennent en chaînes ISO, que
+        # la fiche revalide en objets à la lecture.
+        encoder=DjangoJSONEncoder,
+        verbose_name="Champs propres au genre",
+    )
 
     signataire_nom = models.CharField(max_length=150, blank=True, verbose_name="Signataire")
     signataire_qualite = models.CharField(
@@ -170,13 +253,40 @@ class DocumentRedige(TimeStampedModel):
     def est_finalise(self) -> bool:
         return self.statut == self.Statut.FINALISE
 
+    @property
+    def fiche(self):
+        """La fiche du genre : ses champs propres et sa mise en page."""
+        from apps.documents.fiches import fiche
+
+        return fiche(self.genre)
+
+    def champs_du_genre(self) -> list[tuple[str, object]]:
+        """(libellé, valeur) des champs propres, dans l'ordre de la fiche.
+
+        Lu par le gabarit PDF et par l'écran : l'ordre déclaré est celui qui a
+        été pensé, pas celui du dictionnaire JSON.
+        """
+        formulaire = self.fiche.formulaire(data=self.donnees or {})
+        formulaire.is_valid()
+        lignes = []
+        for nom, champ in formulaire.fields.items():
+            valeur = formulaire.cleaned_data.get(nom) or self.donnees.get(nom)
+            if isinstance(valeur, datetime):
+                valeur = date_format(valeur, "d F Y à H:i")
+            elif isinstance(valeur, date):
+                valeur = date_format(valeur, "d F Y")
+            elif isinstance(valeur, time):
+                valeur = time_format(valeur, "H:i")
+            lignes.append((champ.label, valeur))
+        return lignes
+
     def _reference_libre(self) -> str:
         """« ITEAG/COU/2026/007 » — séquentiel par genre et par année.
 
         Le compteur repart à 1 chaque année : c'est ainsi que se tient un
         registre de courrier, et cela rend la référence lisible à l'oral.
         """
-        prefixe = self.PREFIXES.get(self.genre, "DOC")
+        prefixe = self.fiche.prefixe
         annee = self.date_document.year
         racine = f"ITEAG/{prefixe}/{annee}/"
         derniere = (
@@ -202,15 +312,52 @@ class DocumentRedige(TimeStampedModel):
         if not en_texte(self.corps).strip():
             raise ValidationError("Un document finalisé doit avoir un corps.")
 
+        # La fiche du genre est vérifiée ici, et non à l'enregistrement : un
+        # brouillon a le droit d'être incomplet, un document qui part n'a pas
+        # ce droit. Une convocation sans heure ni lieu n'a convoqué personne.
+        fiche_saisie = self.fiche.formulaire(data=self.donnees or {})
+        if not fiche_saisie.is_valid():
+            manquants = ", ".join(
+                fiche_saisie.fields[nom].label.lower() for nom in fiche_saisie.errors if nom in fiche_saisie.fields
+            )
+            # Tourné sans article devant le genre : « ce convocation » et
+            # « cette rapport » sont l'un et l'autre faux, et accorder à partir
+            # d'un libellé libre reviendrait à tenir une table de genres
+            # grammaticaux pour un message d'erreur.
+            raise ValidationError(
+                f"Ce document ne peut pas être finalisé — il manque : {manquants}."
+                if manquants
+                else "Les champs propres à ce genre de document sont incomplets."
+            )
+
         with transaction.atomic():
             # Conservée si elle existe déjà : un numéro délivré reste délivré,
             # même si le document est repassé par le brouillon entre-temps.
             self.reference = self.reference or self._reference_libre()
             self.statut = self.Statut.FINALISE
             self.date_finalisation = timezone.now()
+            # Un éventuel aperçu de brouillon ne doit jamais devenir le PDF
+            # officiel par simple changement de statut.
+            if self.fichier_pdf:
+                self.fichier_pdf.delete(save=False)
+            self.statut_generation = self.StatutGeneration.AUCUN
+            self.erreur_generation = ""
+            self.jeton_generation = uuid.uuid4()
             if par is not None and self.redige_par_id is None:
                 self.redige_par = par
-            self.save(update_fields=["reference", "statut", "date_finalisation", "redige_par", "updated_at"])
+            self.save(
+                update_fields=[
+                    "reference",
+                    "statut",
+                    "date_finalisation",
+                    "redige_par",
+                    "fichier_pdf",
+                    "statut_generation",
+                    "erreur_generation",
+                    "jeton_generation",
+                    "updated_at",
+                ]
+            )
         return self
 
     def revenir_en_brouillon(self):
@@ -226,5 +373,18 @@ class DocumentRedige(TimeStampedModel):
         self.date_finalisation = None
         if self.fichier_pdf:
             self.fichier_pdf.delete(save=False)
-        self.save(update_fields=["statut", "date_finalisation", "fichier_pdf", "updated_at"])
+        self.statut_generation = self.StatutGeneration.AUCUN
+        self.erreur_generation = ""
+        self.jeton_generation = uuid.uuid4()
+        self.save(
+            update_fields=[
+                "statut",
+                "date_finalisation",
+                "fichier_pdf",
+                "statut_generation",
+                "erreur_generation",
+                "jeton_generation",
+                "updated_at",
+            ]
+        )
         return self

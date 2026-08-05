@@ -13,46 +13,18 @@ from pathlib import Path
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
 from django.http import FileResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.utils import timezone
-from django.utils.text import slugify
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.models import JournalAudit
 from apps.core.services.audit import journaliser
-from apps.core.services.pdf import MoteurPDFIndisponible, contexte_marque, rendre_pdf
+from apps.documents.fiches import FICHES, fiche
 from apps.documents.formulaires import DocumentRedigeForm
 from apps.documents.models import DocumentRedige
-
-GABARIT_PDF = "documents/pdf/document_redige.html"
-
-
-def _fabriquer_pdf(document: DocumentRedige, request=None) -> bytes:
-    return rendre_pdf(
-        GABARIT_PDF,
-        contexte_marque(profil_polices="document_administratif", document=document, edite_le=timezone.now()),
-        request=request,
-    )
-
-
-def _archiver_le_pdf(document: DocumentRedige, request=None) -> bool:
-    """Fabrique le PDF et l'attache. Retourne False si le moteur manque.
-
-    L'échec n'est pas silencieux mais il n'est pas fatal : le document reste
-    finalisé, et le PDF se refabrique depuis la liste quand le moteur revient.
-    """
-    try:
-        contenu = _fabriquer_pdf(document, request=request)
-    except MoteurPDFIndisponible:
-        return False
-
-    nom = f"{slugify(document.reference or document.titre)}-{timezone.now():%Y%m%d%H%M%S}.pdf"
-    document.fichier_pdf.save(nom, ContentFile(contenu), save=True)
-    return True
+from apps.documents.tasks import planifier_document_redige
 
 
 class DocumentsRedigesView(StaffRoleRequiredMixin, ListView):
@@ -83,6 +55,12 @@ class DocumentRedigeEditionView(StaffRoleRequiredMixin, TemplateView):
     Un document finalisé n'est pas modifiable : il faut le rouvrir d'abord. Le
     changer en place ferait dire autre chose à une référence déjà inscrite au
     registre, et peut-être déjà citée dans un courrier reçu.
+
+    **Deux formulaires, pas un.** Le premier porte ce que tout document a — un
+    objet, une date, un corps, une signature. Le second est la fiche du genre :
+    la date, l'heure et le lieu d'une convocation, les participants d'un compte
+    rendu. Les fondre en un seul afficherait tous les champs de tous les genres,
+    et l'on demanderait ses participants à un courrier.
     """
 
     template_name = "documents/redaction/formulaire.html"
@@ -92,13 +70,41 @@ class DocumentRedigeEditionView(StaffRoleRequiredMixin, TemplateView):
             return None
         return get_object_or_404(DocumentRedige, pk=self.kwargs["pk"])
 
+    def _genre(self, document):
+        """Le genre vient du document, ou du choix fait à la création.
+
+        Il ne se change plus ensuite : la fiche déjà remplie n'aurait plus de
+        sens sous un autre genre.
+        """
+        if document is not None:
+            return document.genre
+        demande = self.request.POST.get("genre") or self.request.GET.get("genre") or ""
+        return demande if demande in FICHES else ""
+
+    def get(self, request, *args, **kwargs):
+        # Créer sans avoir dit quoi n'a pas de sens : la fiche à remplir dépend
+        # du genre. L'écran de choix vient donc avant le formulaire.
+        if "pk" not in kwargs and not self._genre(None):
+            return render(
+                request,
+                "documents/redaction/choix_genre.html",
+                {"nav": "documents_rediges", "fiches": FICHES.items()},
+            )
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         document = self._document()
+        genre = self._genre(document)
+        fiche_du_genre = fiche(genre)
         return {
             **super().get_context_data(**kwargs),
             "nav": "documents_rediges",
             "document": document,
-            "form": kwargs.get("form") or DocumentRedigeForm(instance=document),
+            "genre": genre,
+            "fiche": fiche_du_genre,
+            "form": kwargs.get("form") or DocumentRedigeForm(instance=document, fiche=fiche_du_genre),
+            "form_fiche": kwargs.get("form_fiche")
+            or fiche_du_genre.formulaire(initial=(document.donnees if document else None) or {}),
             "verrouille": document is not None and not document.est_modifiable,
         }
 
@@ -108,15 +114,31 @@ class DocumentRedigeEditionView(StaffRoleRequiredMixin, TemplateView):
             messages.error(request, "Rouvrez le document avant de le modifier.")
             return redirect("redaction:documents")
 
-        formulaire = DocumentRedigeForm(request.POST, instance=document)
+        genre = self._genre(document)
+        fiche_du_genre = fiche(genre)
+        formulaire = DocumentRedigeForm(request.POST, instance=document, fiche=fiche_du_genre)
+        formulaire_fiche = fiche_du_genre.formulaire(request.POST)
+
+        # La fiche est validée mais n'arrête pas l'enregistrement : un brouillon
+        # a le droit d'être incomplet. C'est « finaliser() » qui exige qu'elle
+        # soit entière, au moment où le document devient un acte.
+        formulaire_fiche.is_valid()
         if not formulaire.is_valid():
-            return self.render_to_response(self.get_context_data(form=formulaire))
+            return self.render_to_response(self.get_context_data(form=formulaire, form_fiche=formulaire_fiche))
 
         creation = document is None
         document = formulaire.save(commit=False)
+        document.genre = genre or DocumentRedige.Genre.COURRIER
+        document.donnees = {
+            nom: valeur for nom, valeur in formulaire_fiche.cleaned_data.items() if valeur not in (None, "")
+        }
         if document.redige_par_id is None:
             document.redige_par = request.user
         document.save()
+        if not creation:
+            # Un aperçu déjà prêt ou encore en vol décrit désormais une
+            # ancienne version du texte.
+            document.invalider_generation()
 
         journaliser(
             JournalAudit.Action.CREATION if creation else JournalAudit.Action.MODIFICATION,
@@ -145,13 +167,10 @@ class DocumentRedigeDecisionView(StaffRoleRequiredMixin, View):
         try:
             if action == "finaliser":
                 document.finaliser(par=request.user)
-                if _archiver_le_pdf(document, request=request):
-                    avis = f"« {document.reference} » est finalisé et son PDF est archivé."
+                if planifier_document_redige(document):
+                    avis = f"« {document.reference} » est finalisé. Son PDF est généré en arrière-plan."
                 else:
-                    avis = (
-                        f"« {document.reference} » est finalisé. Le PDF n'a pas pu être fabriqué "
-                        "— WeasyPrint est absent de cet environnement — et se regénérera depuis la liste."
-                    )
+                    avis = f"« {document.reference} » est finalisé, mais le service PDF est indisponible."
                 trace = JournalAudit.Action.CHANGEMENT_STATUT
             elif action == "rouvrir":
                 document.revenir_en_brouillon()
@@ -197,46 +216,37 @@ class DocumentRedigeDecisionView(StaffRoleRequiredMixin, View):
 
 
 class DocumentRedigePdfView(StaffRoleRequiredMixin, View):
-    """Sert le PDF archivé, ou le refabrique s'il manque.
-
-    Un brouillon a droit à son aperçu, mais celui-ci n'est pas archivé : ce
-    serait faire croire à une pièce arrêtée alors que le texte peut encore
-    changer. Le filigrane du gabarit le dit à l'impression.
-    """
+    """Télécharge un PDF prêt ou planifie son rendu sans bloquer la page."""
 
     def get(self, request, pk):
         document = get_object_or_404(DocumentRedige, pk=pk)
 
-        if document.est_finalise and document.fichier_pdf:
+        if document.fichier_pdf:
+            journaliser(
+                JournalAudit.Action.CONSULTATION_SENSIBLE,
+                utilisateur=request.user,
+                request=request,
+                objet=document,
+                objet_libelle=f"PDF du document « {document.titre} »",
+            )
             return FileResponse(
                 document.fichier_pdf.open("rb"),
                 as_attachment=True,
                 filename=Path(document.fichier_pdf.name).name,
             )
 
-        try:
-            contenu = _fabriquer_pdf(document, request=request)
-        except MoteurPDFIndisponible:
-            messages.error(request, "WeasyPrint n'est pas disponible dans cet environnement.")
-            return redirect("redaction:documents")
+        if document.generation_active:
+            messages.info(request, "Le PDF est déjà en cours de préparation.")
+        elif planifier_document_redige(document):
+            messages.success(request, "Le PDF est préparé en arrière-plan. Cette page se mettra à jour.")
+        else:
+            messages.error(request, "Le service de génération PDF est momentanément indisponible.")
+        if document.est_modifiable:
+            return redirect("redaction:document_edition", pk=document.pk)
+        return redirect("redaction:documents")
 
-        if document.est_finalise:
-            # Finalisé sans PDF : le moteur manquait au moment de l'acte. On
-            # rattrape l'archivage maintenant plutôt qu'à chaque téléchargement.
-            _archiver_le_pdf(document, request=request)
-            if document.fichier_pdf:
-                return FileResponse(
-                    document.fichier_pdf.open("rb"),
-                    as_attachment=True,
-                    filename=Path(document.fichier_pdf.name).name,
-                )
 
-        journaliser(
-            JournalAudit.Action.CONSULTATION_SENSIBLE,
-            utilisateur=request.user,
-            request=request,
-            objet=document,
-            objet_libelle=f"Aperçu du document « {document.titre} »",
-        )
-        nom = f"apercu-{slugify(document.titre) or 'document'}.pdf"
-        return FileResponse(ContentFile(contenu), as_attachment=True, filename=nom)
+class DocumentRedigeEtatView(StaffRoleRequiredMixin, View):
+    def get(self, request, pk):
+        document = get_object_or_404(DocumentRedige, pk=pk)
+        return render(request, "documents/redaction/_etat_pdf.html", {"document": document})

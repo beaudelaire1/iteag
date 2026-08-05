@@ -150,6 +150,32 @@ def _encrer(chemin: Path) -> str:
     return "data:image/png;base64," + base64.b64encode(tampon.getvalue()).decode()
 
 
+@lru_cache(maxsize=1)
+def configuration_polices():
+    """Configuration Fontconfig partagée par les rendus d'un même worker.
+
+    WeasyPrint en recrée autrement une pour chaque PDF. La conserver permet
+    surtout de réutiliser les polices déjà analysées, sans changer leur
+    incorporation dans chaque fichier final.
+    """
+    try:
+        from weasyprint.text.fonts import FontConfiguration
+    except (ImportError, OSError) as exc:
+        raise MoteurPDFIndisponible("WeasyPrint n'est pas disponible dans cet environnement.") from exc
+    return FontConfiguration()
+
+
+def precharger_moteur_pdf(*, profil_polices: str = "complet") -> None:
+    """Prépare les dépendances coûteuses au démarrage du worker Celery."""
+    try:
+        from weasyprint import HTML  # noqa: F401
+    except (ImportError, OSError) as exc:
+        raise MoteurPDFIndisponible("WeasyPrint n'est pas disponible dans cet environnement.") from exc
+    configuration_polices()
+    polices_embarquees(profil_polices)
+    logo_uri()
+
+
 def qr_data_uri(contenu: str, taille: int = 5) -> str:
     """QR encodé en base64. Aucun appel réseau : un document s'imprime hors ligne."""
     import base64
@@ -169,6 +195,10 @@ def contexte_marque(*, profil_polices: str = "complet", **extra) -> dict:
         "institut": INSTITUT,
         "polices_pdf": polices_embarquees(profil_polices),
         "logo_pdf": logo_uri(),
+        # Le fichier source est blanc sur transparence : il appartient au
+        # bandeau vert des nouvelles compositions, tandis que ``logo_pdf``
+        # reste sa version encrée pour les fonds clairs.
+        "logo_blanc_pdf": _uri(LOGO),
         **extra,
     }
 
@@ -207,4 +237,7 @@ def rendre_pdf(
     if options:
         options_finales.update(options)
 
-    return HTML(string=html, base_url=base_url).write_pdf(**options_finales)
+    return HTML(string=html, base_url=base_url).write_pdf(
+        font_config=configuration_polices(),
+        **options_finales,
+    )

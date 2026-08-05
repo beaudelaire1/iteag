@@ -8,6 +8,10 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = True
 ELEARNING_AUTORISER_VIDEO_PUBLIQUE_EN_DEV = True
+# Le poste local n'a pas besoin de Redis ni d'un worker séparé pour essayer
+# l'app Documents. Les PDF restent produits hors de la requête HTTP, dans un
+# thread de développement ; la production continue d'utiliser Celery.
+DOCUMENTS_PDF_LOCAL_FALLBACK = True
 # "0.0.0.0" est nécessaire pour joindre le conteneur de développement depuis l'hôte.
 # Ce réglage est propre à l'environnement de développement ; la production lit
 # DJANGO_ALLOWED_HOSTS depuis l'environnement.

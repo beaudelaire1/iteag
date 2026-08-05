@@ -7,8 +7,11 @@ plus rien. Les tests portent donc d'abord sur son attribution, son unicité et
 sa conservation.
 """
 
+from unittest.mock import patch
+
 import pytest
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.accounts.models import User
@@ -34,6 +37,13 @@ def directrice(db):
     )
 
 
+FICHE_CONVOCATION = {
+    "date_seance": "2026-09-12",
+    "heure_seance": "18:00",
+    "lieu": "Salle du conseil, campus des Abymes",
+}
+
+
 @pytest.fixture
 def document(secretaire):
     return DocumentRedige.objects.create(
@@ -44,6 +54,7 @@ def document(secretaire):
         destinataire_nom="Monsieur le Pasteur Jean Dupont",
         signataire_nom="Alain Nisus",
         signataire_qualite="Directeur",
+        donnees=dict(FICHE_CONVOCATION),
         redige_par=secretaire,
     )
 
@@ -101,6 +112,7 @@ class TestReference:
             objet="Objet",
             corps="<p>Texte.</p>",
             date_document=document.date_document,
+            donnees=dict(FICHE_CONVOCATION),
         )
         suivante.finaliser(par=secretaire)
 
@@ -250,6 +262,27 @@ class TestDecisions:
         assert document.est_finalise
         assert document.reference
 
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    @patch("apps.documents.tasks.generer_document_redige.apply_async")
+    def test_finaliser_lance_le_pdf_en_arriere_plan(self, publier, client, secretaire, document):
+        client.force_login(secretaire)
+
+        reponse = client.post(
+            reverse("redaction:document_decision", args=[document.pk]),
+            {"action": "finaliser"},
+        )
+
+        document.refresh_from_db()
+        assert reponse.status_code == 302
+        assert document.est_finalise
+        assert document.statut_generation == document.StatutGeneration.EN_ATTENTE
+        assert not document.fichier_pdf
+        publier.assert_called_once_with(
+            args=(document.pk, str(document.jeton_generation)),
+            ignore_result=True,
+            retry=False,
+        )
+
     def test_un_document_finalise_ne_se_supprime_pas(self, client, secretaire, document):
         """Le détruire laisserait un trou dans le registre."""
         document.finaliser(par=secretaire)
@@ -344,6 +377,12 @@ class TestGabaritPdf:
         assert "Monsieur le Pasteur Jean Dupont" in html
         assert "Alain Nisus" in html
 
+    def test_le_logo_ne_repete_pas_iteag_en_toutes_lettres(self, document):
+        html = self._html(document)
+
+        assert html.count('class="iteag-letterhead__logo"') == 1
+        assert 'class="iteag-letterhead__fallback"' not in html
+
     def test_le_brouillon_porte_un_filigrane(self, document):
         """Une impression posée sur un bureau ne doit pas passer pour une pièce arrêtée."""
         html = self._html(document)
@@ -361,6 +400,21 @@ class TestGabaritPdf:
 
 
 class TestChainePdf:
+    @override_settings(DOCUMENTS_PDF_LOCAL_FALLBACK=True)
+    @patch("apps.documents.tasks.generer_document_redige.apply_async")
+    @patch("apps.documents.tasks.Thread")
+    def test_le_telechargement_local_ne_contacte_pas_redis(
+        self, thread, publier, client, secretaire, document
+    ):
+        client.force_login(secretaire)
+
+        reponse = client.get(reverse("redaction:document_pdf", args=[document.pk]))
+
+        assert reponse.status_code == 302
+        publier.assert_not_called()
+        thread.assert_called_once()
+        thread.return_value.start.assert_called_once_with()
+
     def test_la_finalisation_archive_un_vrai_pdf(self, client, secretaire, document, settings, tmp_path):
         settings.MEDIA_ROOT = tmp_path
         client.force_login(secretaire)
@@ -380,3 +434,106 @@ class TestChainePdf:
 
         document.refresh_from_db()
         assert not document.fichier_pdf
+
+
+# ══════════════════════════════════════════════
+# Les fiches propres au genre
+# ══════════════════════════════════════════════
+
+
+class TestFicheDuGenre:
+    """Le défaut que ces fiches corrigent : un corps libre pour tous les genres.
+
+    Une convocation porte une date, une heure et un lieu. Dans un modèle plat,
+    rien ne le rappelle et rien ne le vérifie : on écrit « venez mardi », le
+    document part, et personne ne sait où se rendre. La fiche fait de ces
+    champs une exigence, pas un souvenir à avoir.
+    """
+
+    def test_une_convocation_sans_lieu_ne_se_finalise_pas(self, document, secretaire):
+        document.donnees = {"date_seance": "2026-09-12", "heure_seance": "18:00"}
+        document.save()
+
+        with pytest.raises(ValidationError) as echec:
+            document.finaliser(par=secretaire)
+        assert "lieu" in str(echec.value).lower()
+
+    def test_le_message_nomme_ce_qui_manque(self, document, secretaire):
+        """« Document incomplet » n'aide personne à le compléter."""
+        document.donnees = {}
+        document.save()
+
+        with pytest.raises(ValidationError) as echec:
+            document.finaliser(par=secretaire)
+        message = str(echec.value).lower()
+        for attendu in ("date de la séance", "heure", "lieu"):
+            assert attendu in message
+
+    def test_un_courrier_n_exige_aucun_champ_propre(self, secretaire):
+        """Tous les genres n'ont pas de fiche : le courrier se suffit de l'objet."""
+        courrier = DocumentRedige.objects.create(
+            titre="Un courrier", genre=DocumentRedige.Genre.COURRIER, objet="Objet", corps="<p>Texte.</p>"
+        )
+        courrier.finaliser(par=secretaire)
+        assert courrier.est_finalise
+
+    def test_le_brouillon_accepte_une_fiche_vide(self, client, secretaire):
+        """On écrit rarement une convocation d'un seul jet."""
+        client.force_login(secretaire)
+        client.post(
+            f"{reverse('redaction:document_creation')}?genre=convocation",
+            _saisie(genre="convocation"),
+        )
+
+        cree = DocumentRedige.objects.get(titre="Courrier de rentrée")
+        assert cree.genre == "convocation"
+        assert cree.est_modifiable
+
+    def test_la_fiche_saisie_est_conservee(self, client, secretaire):
+        client.force_login(secretaire)
+        client.post(
+            f"{reverse('redaction:document_creation')}?genre=convocation",
+            _saisie(genre="convocation", **FICHE_CONVOCATION),
+        )
+
+        cree = DocumentRedige.objects.get(titre="Courrier de rentrée")
+        assert cree.donnees["lieu"] == FICHE_CONVOCATION["lieu"]
+        assert str(cree.donnees["date_seance"]) == "2026-09-12"
+
+    def test_le_genre_ne_change_plus_apres_creation(self, client, secretaire, document):
+        """Sa fiche déjà remplie n'aurait plus de sens sous un autre genre."""
+        client.force_login(secretaire)
+        client.post(
+            reverse("redaction:document_edition", args=[document.pk]),
+            _saisie(genre=DocumentRedige.Genre.RAPPORT),
+        )
+
+        document.refresh_from_db()
+        assert document.genre == DocumentRedige.Genre.CONVOCATION
+
+    def test_creer_sans_genre_propose_de_choisir(self, client, secretaire):
+        """La fiche à remplir dépend du genre : le demander vient donc avant."""
+        client.force_login(secretaire)
+        contenu = client.get(reverse("redaction:document_creation")).content.decode()
+
+        assert "Quel document" in contenu
+        assert "genre=convocation" in contenu
+
+    def test_l_ecran_montre_les_champs_du_genre(self, client, secretaire, document):
+        client.force_login(secretaire)
+        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
+
+        assert "Salle du conseil" in contenu
+        assert "Heure" in contenu
+
+    def test_le_pdf_porte_les_champs_du_genre(self, document, secretaire):
+        from django.template.loader import render_to_string
+
+        from apps.core.services.pdf import contexte_marque
+
+        document.finaliser(par=secretaire)
+        html = render_to_string(
+            "documents/pdf/document_redige.html",
+            contexte_marque(profil_polices="document_administratif", document=document),
+        )
+        assert "Salle du conseil" in html
