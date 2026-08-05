@@ -7,6 +7,7 @@ plus rien. Les tests portent donc d'abord sur son attribution, son unicité et
 sa conservation.
 """
 
+import json
 from unittest.mock import patch
 
 import pytest
@@ -50,7 +51,7 @@ def document(secretaire):
         titre="Convocation du conseil",
         genre=DocumentRedige.Genre.CONVOCATION,
         objet="Séance du conseil pédagogique du 12 septembre",
-        corps="<p>Vous êtes convoqué à la séance du conseil.</p>",
+        corps=[("paragraphe", "<p>Vous êtes convoqué à la séance du conseil.</p>")],
         destinataire_nom="Monsieur le Pasteur Jean Dupont",
         signataire_nom="Alain Nisus",
         signataire_qualite="Directeur",
@@ -59,7 +60,54 @@ def document(secretaire):
     )
 
 
-def _saisie(**surcharges):
+def _corps_poste(texte="La rentrée est fixée au 14 septembre.", champ="corps"):
+    """Le corps tel que le widget StreamField l'envoie.
+
+    Deux encodages s'emboîtent, et c'est ce qui rend la construction pénible
+    mais nécessaire :
+
+    1. le **StreamBlock** poste une série indexée à la manière d'un formset —
+       un compteur, puis un type, un ordre et une valeur par bloc ;
+    2. la valeur d'un bloc « paragraphe » est un **ContentState** Draftail,
+       c'est-à-dire du JSON, et non du HTML.
+
+    Poster « <p>…</p> » échoue donc deux fois : d'abord sur « corps-count »
+    manquant, ensuite sur du JSON illisible. Un test qui tombe pour l'une de
+    ces raisons n'apprend rien sur ce qu'il prétend vérifier.
+
+    Un texte vide produit un corps sans aucun bloc — la façon correcte de dire
+    « brouillon encore vide ».
+    """
+    if not texte:
+        return {f"{champ}-count": "0"}
+
+    contenu = json.dumps(
+        {
+            "blocks": [
+                {
+                    "key": "bloc1",
+                    "text": texte,
+                    "type": "unstyled",
+                    "depth": 0,
+                    "inlineStyleRanges": [],
+                    "entityRanges": [],
+                    "data": {},
+                }
+            ],
+            "entityMap": {},
+        }
+    )
+    return {
+        f"{champ}-count": "1",
+        f"{champ}-0-deleted": "",
+        f"{champ}-0-order": "0",
+        f"{champ}-0-type": "paragraphe",
+        f"{champ}-0-id": "",
+        f"{champ}-0-value": contenu,
+    }
+
+
+def _saisie(corps="La rentrée est fixée au 14 septembre.", **surcharges):
     donnees = {
         "titre": "Courrier de rentrée",
         "genre": DocumentRedige.Genre.COURRIER,
@@ -67,10 +115,10 @@ def _saisie(**surcharges):
         "objet": "Ouverture de l'année académique",
         "destinataire_nom": "",
         "destinataire_adresse": "",
-        "corps": "<p>La rentrée est fixée au 14 septembre.</p>",
         "signataire_nom": "",
         "signataire_qualite": "",
     }
+    donnees.update(_corps_poste(corps))
     donnees.update(surcharges)
     return donnees
 
@@ -96,7 +144,7 @@ class TestReference:
             titre="Un courrier",
             genre=DocumentRedige.Genre.COURRIER,
             objet="Objet",
-            corps="<p>Texte.</p>",
+            corps=[("paragraphe", "<p>Texte.</p>")],
             date_document=document.date_document,
         )
         courrier.finaliser(par=secretaire)
@@ -110,7 +158,7 @@ class TestReference:
             titre="Seconde convocation",
             genre=DocumentRedige.Genre.CONVOCATION,
             objet="Objet",
-            corps="<p>Texte.</p>",
+            corps=[("paragraphe", "<p>Texte.</p>")],
             date_document=document.date_document,
             donnees=dict(FICHE_CONVOCATION),
         )
@@ -146,7 +194,7 @@ class TestCycle:
             vide.finaliser(par=secretaire)
 
     def test_finaliser_sans_objet_est_refuse(self, secretaire):
-        vide = DocumentRedige.objects.create(titre="Sans objet", objet="   ", corps="<p>Texte.</p>")
+        vide = DocumentRedige.objects.create(titre="Sans objet", objet="   ", corps=[("paragraphe", "<p>Texte.</p>")])
         with pytest.raises(ValidationError):
             vide.finaliser(par=secretaire)
 
@@ -318,7 +366,9 @@ class TestDecisions:
 
 class TestListe:
     def test_les_brouillons_et_les_finalises_sont_separes(self, client, secretaire, document):
-        finalise = DocumentRedige.objects.create(titre="Note déjà partie", objet="Un objet", corps="<p>Texte.</p>")
+        finalise = DocumentRedige.objects.create(
+            titre="Note déjà partie", objet="Un objet", corps=[("paragraphe", "<p>Texte.</p>")]
+        )
         finalise.finaliser(par=secretaire)
         client.force_login(secretaire)
 
@@ -328,7 +378,7 @@ class TestListe:
 
     def test_le_filtre_par_genre_restreint_la_liste(self, client, secretaire, document):
         DocumentRedige.objects.create(
-            titre="Un rapport", genre=DocumentRedige.Genre.RAPPORT, objet="Objet", corps="<p>x</p>"
+            titre="Un rapport", genre=DocumentRedige.Genre.RAPPORT, objet="Objet", corps=[("paragraphe", "<p>x</p>")]
         )
         client.force_login(secretaire)
 
@@ -470,7 +520,10 @@ class TestFicheDuGenre:
     def test_un_courrier_n_exige_aucun_champ_propre(self, secretaire):
         """Tous les genres n'ont pas de fiche : le courrier se suffit de l'objet."""
         courrier = DocumentRedige.objects.create(
-            titre="Un courrier", genre=DocumentRedige.Genre.COURRIER, objet="Objet", corps="<p>Texte.</p>"
+            titre="Un courrier",
+            genre=DocumentRedige.Genre.COURRIER,
+            objet="Objet",
+            corps=[("paragraphe", "<p>Texte.</p>")],
         )
         courrier.finaliser(par=secretaire)
         assert courrier.est_finalise

@@ -111,8 +111,25 @@ class IconeBlock(blocks.StructBlock):
 
     Le choix est fermé, et c'est délibéré : laisser téléverser un picto par
     document produirait dix variantes de la même flèche, à dix résolutions.
-    Le jeu vit dans « templates/documents/pdf/icones/ ».
     """
+
+    # Le tracé vit ici, et non en huit fichiers SVG : ce sont des glyphes de
+    # quelques dizaines d'octets, toujours utilisés ensemble, et les éparpiller
+    # obligerait à ouvrir huit fichiers pour vérifier qu'ils s'accordent.
+    #
+    # Les lignes dépassent la mesure, et l'exception est posée sur chacune
+    # plutôt qu'en tête de fichier : un « ruff: noqa » global vaudrait pour tout
+    # le module et couvrirait les lignes trop longues qu'on y écrira ensuite.
+    TRACES = {
+        "calendrier": "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5",  # noqa: E501
+        "horloge": "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z",
+        "lieu": "M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z",  # noqa: E501
+        "telephone": "M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z",  # noqa: E501
+        "courriel": "M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75",  # noqa: E501
+        "piece_jointe": "M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13",  # noqa: E501
+        "attention": "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z",  # noqa: E501
+        "valide": "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    }
 
     ICONES = [
         ("calendrier", _("Calendrier")),
@@ -127,6 +144,11 @@ class IconeBlock(blocks.StructBlock):
 
     icone = blocks.ChoiceBlock(choices=ICONES, label=_("Pictogramme"))
     texte = blocks.CharBlock(max_length=250, label=_("Texte"))
+
+    def get_context(self, value, parent_context=None):
+        contexte = super().get_context(value, parent_context=parent_context)
+        contexte["trace"] = self.TRACES.get(value.get("icone"), "")
+        return contexte
 
     class Meta:
         icon = "tag"

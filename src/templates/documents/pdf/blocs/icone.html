@@ -1,0 +1,12 @@
+{% comment %}
+Le pictogramme est tracé en SVG plutôt qu'en caractère de police : une police
+d'icônes absente de l'image d'impression ne laisse qu'un rectangle vide, et
+c'est le genre de défaut qu'on découvre sur le papier.
+{% endcomment %}
+<p class="bloc-icone">
+    <svg class="bloc-icone__glyphe" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="{{ trace }}"/>
+    </svg>
+    <span>{{ value.texte }}</span>
+</p>

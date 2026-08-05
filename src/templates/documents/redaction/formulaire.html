@@ -98,8 +98,15 @@
         {% include "partials/champ.html" with field=form.destinataire_adresse %}
     </div>
 
+    {% comment %}
+    Le corps est un StreamField : son widget se rend lui-même, avec sa propre
+    interface d'ajout de blocs. Le gabarit d'éditeur riche ne s'y applique plus.
+    {% endcomment %}
     <div class="card">
-        {% include "partials/champ_editeur_riche.html" with field=form.corps min_height="24rem" only %}
+        <label class="form-label" for="{{ form.corps.id_for_label }}">{{ form.corps.label }}</label>
+        {% if form.corps.help_text %}<p class="form-aide">{{ form.corps.help_text }}</p>{% endif %}
+        {{ form.corps }}
+        {% for erreur in form.corps.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
     </div>
 
     <div class="card space-y-4">

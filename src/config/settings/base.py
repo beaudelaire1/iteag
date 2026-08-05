@@ -44,6 +44,11 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     "wagtail.contrib.forms",
+    # Tableaux à colonnes typées dans les documents rédigés.
+    # « typed_table_block » et non « table_block » : le second embarque
+    # Handsontable, un tableur de plusieurs centaines de kilo-octets, pour
+    # un usage où l'on saisit six lignes.
+    "wagtail.contrib.typed_table_block",
     "wagtail.contrib.redirects",
     "wagtail.contrib.sitemaps",
     "wagtail.embeds",

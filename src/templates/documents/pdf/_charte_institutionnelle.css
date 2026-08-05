@@ -174,3 +174,87 @@ body {
     content: "";
     background: var(--iteag-gold);
 }
+
+/* ── Blocs du corps ───────────────────────────────────────────────────────
+   Rendus pour le papier, et non pour un écran : les largeurs sont en
+   millimètres, rien ne survole, et tout ce qui forme un ensemble refuse d'être
+   coupé entre deux pages. */
+
+.bloc-paragraphe { margin: 0 0 3mm; }
+
+.bloc-tableau {
+    width: 100%;
+    margin: 4mm 0 5mm;
+    border-collapse: collapse;
+    font-size: 9pt;
+}
+
+.bloc-tableau thead th {
+    padding: 1.8mm 2.5mm;
+    border-bottom: 0.4mm solid var(--iteag-forest);
+    color: var(--iteag-forest-deep);
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.bloc-tableau tbody td {
+    padding: 1.6mm 2.5mm;
+    border-bottom: 0.2mm solid var(--iteag-line);
+    vertical-align: top;
+}
+
+/* Les nombres se lisent alignés sur leur unité ; une colonne de montants
+   ferrée à gauche oblige à comparer chiffre par chiffre. */
+.bloc-tableau .col--nombre { text-align: right; font-variant-numeric: tabular-nums; }
+.bloc-tableau .col--date { white-space: nowrap; }
+.bloc-tableau tbody tr { break-inside: avoid; }
+
+.bloc-encadre {
+    break-inside: avoid;
+    margin: 4mm 0 5mm;
+    padding: 3mm 4mm;
+    border-left: 1mm solid var(--iteag-gold);
+    background: var(--iteag-cream);
+    font-size: 9.2pt;
+}
+
+.bloc-encadre__titre {
+    margin: 0 0 1.5mm;
+    color: var(--iteag-forest-deep);
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.bloc-encadre__texte p:last-child { margin-bottom: 0; }
+
+/* La tonalité tient au filet et non au fond : un document officiel se
+   photocopie, et trois crèmes différents y deviennent un seul gris. */
+.bloc-encadre--avertissement { border-left-color: #b45309; }
+.bloc-encadre--mention_legale { border-left-color: var(--iteag-muted); background: none; font-size: 8.4pt; }
+
+/* La marge plutôt que « gap » : WeasyPrint ne l'honore pas ici, et le
+   pictogramme se collait au texte. Un espace qui dépend du moteur n'est pas un
+   espace — mieux vaut le poser sur le glyphe lui-même. */
+.bloc-icone {
+    display: flex;
+    align-items: flex-start;
+    margin: 0 0 2.2mm;
+    break-inside: avoid;
+}
+
+.bloc-icone__glyphe {
+    flex: 0 0 4.2mm;
+    width: 4.2mm;
+    height: 4.2mm;
+    /* Descendu d'un demi-millimètre : un glyphe calé sur le haut de la ligne
+       flotte au-dessus des minuscules qu'il accompagne. */
+    margin: 0.5mm 2.8mm 0 0;
+    color: var(--iteag-gold);
+}
+
+.bloc-saut-de-page { break-after: page; }

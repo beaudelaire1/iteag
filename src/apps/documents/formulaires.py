@@ -4,30 +4,19 @@ Un « ModelForm », contrairement aux actualités : « DocumentRedige » est un
 modèle Django ordinaire, qui s'enregistre en s'enregistrant. Rien n'oblige ici
 à passer par une vue pour placer l'objet.
 
-Le corps emprunte l'éditeur partagé — « apps/core/editeur_riche.py » — plutôt
-qu'un « textarea » : un courrier officiel porte des paragraphes, des listes et
-des alignements, et la personne qui l'écrit ne connaît pas le HTML.
+Le corps est un StreamField : le widget vient du modèle, avec son interface
+d'ajout de blocs. Le formulaire n'a plus qu'à lui donner l'intitulé du genre.
 """
 
 from django import forms
 
-from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireModeleITEAG
-from apps.core.services.redaction import en_texte
 from apps.documents.models import DocumentRedige
 
 INPUT = "form-input"
 
 
 class DocumentRedigeForm(FormulaireModeleITEAG):
-    corps = ChampTexteRiche(
-        required=False,
-        label="Corps du document",
-        placeholder="Rédigez le document ici…",
-        min_height="24rem",
-        help_text="Le même éditeur que les actualités et les articles. La signature s'ajoute plus bas.",
-    )
-
     class Meta:
         model = DocumentRedige
         # « genre » n'y figure pas : il est choisi à la création et n'en bouge
@@ -65,12 +54,10 @@ class DocumentRedigeForm(FormulaireModeleITEAG):
         self.fields["date_document"].input_formats = ["%Y-%m-%d"]
 
         # Le corps ne s'appelle pas pareil selon le genre : « corps de la
-        # lettre » pour un courrier, « compte rendu des débats » pour un
-        # compte rendu. Un intitulé juste vaut mieux qu'une aide à lire.
+        # lettre » pour un courrier, « compte rendu des débats » pour un compte
+        # rendu. Un intitulé juste vaut mieux qu'une aide à lire.
         if fiche is not None:
             self.fields["corps"].label = fiche.intitule_corps
-            self.fields["corps"].widget.options["placeholder"] = fiche.invite_corps
-            self.fields["corps"].widget.options["ariaLabel"] = fiche.intitule_corps
 
     def clean_titre(self):
         titre = (self.cleaned_data.get("titre") or "").strip()
@@ -83,13 +70,3 @@ class DocumentRedigeForm(FormulaireModeleITEAG):
         if not objet:
             raise forms.ValidationError("Un document officiel porte un objet.")
         return objet
-
-    def clean_corps(self):
-        """Le brouillon accepte un corps vide ; la finalisation, non.
-
-        On écrit rarement un courrier d'un seul jet : enregistrer un début de
-        texte doit rester possible. C'est « finaliser() » qui exige un corps,
-        au moment où le document devient un acte.
-        """
-        corps = self.cleaned_data.get("corps") or ""
-        return corps if en_texte(corps).strip() else ""

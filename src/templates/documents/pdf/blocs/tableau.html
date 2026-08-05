@@ -1,0 +1,23 @@
+{% comment %}
+Un tableau imprimé, et non un tableau d'écran : pas de zébrures, une réglure
+sous l'en-tête, et des nombres alignés à droite. Le « thead » se répète en tête
+de chaque page — un tableau qui déborde sans rappeler ses colonnes devient
+illisible dès la seconde feuille.
+{% endcomment %}
+{% load wagtailcore_tags %}
+<table class="bloc-tableau">
+    {% if value.columns %}
+    <thead>
+        <tr>{% for colonne in value.columns %}<th class="col--{{ colonne.block.name }}">{{ colonne.heading }}</th>{% endfor %}</tr>
+    </thead>
+    {% endif %}
+    <tbody>
+        {% for ligne in value.rows %}
+        <tr>
+            {% for cellule in ligne %}
+            <td class="col--{{ cellule.block.name }}">{% include_block cellule %}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
