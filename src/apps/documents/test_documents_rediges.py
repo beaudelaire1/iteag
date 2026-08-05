@@ -625,3 +625,35 @@ class TestFormulaireSansCorps:
 
         assert "streamfield-portail.js" in contenu
         assert 'data-controller="w-block"' in contenu
+
+    def test_le_prefixe_des_champs_vient_de_l_identifiant(self):
+        """Le contrat entre le gabarit et le script d'amorçage.
+
+        « data-w-block-arguments-value » ne porte que l'état initial et les
+        erreurs — il vaut « [[], null] ». Le préfixe, lui, est l'identifiant de
+        l'élément : c'est lui qui donnera « corps-count » et « corps-0-type ».
+
+        L'oublier ne lève aucune erreur : les champs naissent sous des noms
+        absurdes et la zone reste visuellement vide. Ce test fige donc les deux
+        moitiés du contrat, faute de pouvoir exécuter le script ici.
+        """
+        import json
+        import re
+        from html import unescape
+        from pathlib import Path
+
+        from django.conf import settings
+
+        from apps.documents.formulaires import DocumentRedigeForm
+
+        rendu = str(DocumentRedigeForm()["corps"])
+        assert 'id="corps"' in rendu, "Le préfixe des champs est lu sur l'identifiant."
+
+        arguments = re.search(r'data-w-block-arguments-value="([^"]*)"', rendu)
+        assert arguments, "Le widget doit publier ses arguments d'initialisation."
+        assert len(json.loads(unescape(arguments.group(1)))) == 2, (
+            "Deux arguments seulement : le préfixe doit donc être fourni à part."
+        )
+
+        script = (Path(settings.BASE_DIR) / "static" / "js" / "streamfield-portail.js").read_text(encoding="utf-8")
+        assert "emplacement.id" in script, "Le script doit passer l'identifiant comme préfixe."

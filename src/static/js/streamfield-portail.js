@@ -36,9 +36,16 @@
     }
 
     emplacement.dataset.blocPortailAmorce = "1";
-    // (emplacement, préfixe, état initial, erreurs initiales) — la signature
-    // qu'attend « render » côté Wagtail.
-    definition.render(emplacement, ...arguments_);
+
+    /* « render » attend (emplacement, préfixe, état initial, erreurs), mais
+       « data-w-block-arguments-value » ne porte que les deux derniers — il vaut
+       « [[], null] ». Le préfixe vient de l'identifiant de l'élément : c'est le
+       nom du champ, celui qui donnera « corps-count », « corps-0-type », etc.
+
+       L'oublier ne lève rien : le préfixe devenait le tableau vide, les champs
+       naissaient sous des noms absurdes, et la zone restait visuellement vide —
+       un intitulé « Compte rendu des débats » sans rien dessous. */
+    definition.render(emplacement, emplacement.id, ...arguments_);
   }
 
   function demarrer(racine) {
