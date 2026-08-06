@@ -3,7 +3,8 @@
 <a href="{% url 'etudiant:courses' %}" class="portal-nav-pill {% if nav == 'courses' %}active{% endif %}">Mes formations</a>
 <a href="{% url 'etudiant:grades' %}" class="portal-nav-pill {% if nav == 'grades' %}active{% endif %}">Devoirs et notes</a>
 <a href="{% url 'etudiant:progress' %}" class="portal-nav-pill {% if nav == 'progress' %}active{% endif %}">Parcours ECTS</a>
-<a href="{% url 'etudiant:course_catalogue' %}" class="portal-nav-pill {% if nav == 'catalogue' %}active{% endif %}">Catalogue</a>
+<a href="{% url 'etudiant:course_catalogue' %}" class="portal-nav-pill {% if nav == 'catalogue' %}active{% endif %}">Catalogue cours</a>
+<a href="{% url 'library:catalogue' %}" class="portal-nav-pill {% if nav == 'bibliotheque' %}active{% endif %}">Bibliothèque</a>
 <a href="{% url 'etudiant:enrollment_requests' %}" class="portal-nav-pill {% if nav == 'enrollments' %}active{% endif %}">Demandes</a>
 <a href="{% url 'documents:list' %}" class="portal-nav-pill {% if nav == 'documents' %}active{% endif %}">Documents</a>
 <a href="{% url 'etudiant:payments' %}" class="portal-nav-pill {% if nav == 'payments' %}active{% endif %}">Paiements</a>
