@@ -430,7 +430,7 @@ class EmpruntDeleteView(StaffRoleRequiredMixin, DeleteView):
 
 class MesEmpruntsView(LoginRequiredMixin, ListView):
     """Espace personnel de l'emprunteur (étudiant ou enseignant).
-    
+
     Affiche la liste des livres actuellement en sa possession (prêts en cours et en retard),
     les réservations en attente de retrait (avec possibilité d'annuler), ainsi que l'historique.
     """
@@ -452,11 +452,6 @@ class MesEmpruntsView(LoginRequiredMixin, ListView):
         contexte["emprunts_en_cours"] = [
             e for e in tous if e.statut in (Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD)
         ]
-        contexte["reservations"] = [
-            e for e in tous if e.statut == Emprunt.Statut.RESERVE
-        ]
-        contexte["historique"] = [
-            e for e in tous if e.statut == Emprunt.Statut.RENDU
-        ]
+        contexte["reservations"] = [e for e in tous if e.statut == Emprunt.Statut.RESERVE]
+        contexte["historique"] = [e for e in tous if e.statut == Emprunt.Statut.RENDU]
         return contexte
-
