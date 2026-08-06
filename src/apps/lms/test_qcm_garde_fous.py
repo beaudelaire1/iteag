@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils import timezone
 
@@ -13,6 +14,7 @@ from apps.academics.models import (
 )
 from apps.accounts.models import User
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
+from apps.lms import services
 from apps.lms.models import Devoir
 
 pytestmark = pytest.mark.django_db
@@ -69,15 +71,31 @@ def contexte_qcm():
     return cours_session, compte_enseignant
 
 
-def test_publication_refuse_un_questionnaire_incomplet(client, contexte_qcm):
-    cours_session, enseignant = contexte_qcm
-    devoir = Devoir.objects.create(
+def creer_qcm_incomplet(cours_session):
+    return Devoir.objects.create(
         cours_session=cours_session,
         titre="Questionnaire sans question",
         modalite=Devoir.Modalite.QCM,
         date_ouverture=timezone.now(),
         date_fermeture=timezone.now() + timedelta(days=1),
     )
+
+
+def test_service_refuse_un_questionnaire_incomplet(contexte_qcm):
+    cours_session, _ = contexte_qcm
+    devoir = creer_qcm_incomplet(cours_session)
+
+    with pytest.raises(ValidationError, match="Questionnaire incomplet"):
+        services.publier_devoir(devoir)
+
+    devoir.refresh_from_db()
+    assert devoir.statut == Devoir.Statut.BROUILLON
+    assert not devoir.copies.exists()
+
+
+def test_publication_refuse_un_questionnaire_incomplet(client, contexte_qcm):
+    cours_session, enseignant = contexte_qcm
+    devoir = creer_qcm_incomplet(cours_session)
     client.force_login(enseignant)
 
     reponse = client.post(reverse("lms:devoir_action", args=[devoir.pk]), {"action": "publier"})
