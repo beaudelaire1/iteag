@@ -134,8 +134,14 @@ class SignatureForm(FormulaireModeleITEAG):
             "signature": "Image de la signature numérique",
         }
         help_texts = {
-            "titre_qualite_signature": "Mention apparaissant sous/au-dessus de la signature (ex: Le secrétariat, Le Directeur).",
-            "nom_autorite_signature": "Nom complet imprimé sur les documents officiels (ex: Jean DUPONT, Secrétariat ITEAG).",
+            "titre_qualite_signature": (
+                "Mention apparaissant sous/au-dessus de la signature "
+                "(ex: Le secrétariat, Le Directeur)."
+            ),
+            "nom_autorite_signature": (
+                "Nom complet imprimé sur les documents officiels "
+                "(ex: Jean DUPONT, Secrétariat ITEAG)."
+            ),
             "signature": "PNG transparent recommandé. JPEG ou WebP acceptés, 2 Mo au plus.",
         }
 
