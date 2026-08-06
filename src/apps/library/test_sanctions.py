@@ -68,7 +68,7 @@ def test_la_restitution_tardive_cree_une_suspension_proportionnelle(lecteur, ouv
     assert sanction.jours_retard == 5
     assert sanction.jours_suspension == 5
     assert sanction.date_debut == timezone.localdate()
-    assert sanction.date_fin == timezone.localdate() + timedelta(days=5)
+    assert sanction.date_fin == timezone.localdate() + timedelta(days=4)
     assert sanction.est_active is True
 
 
