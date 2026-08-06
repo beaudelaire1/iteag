@@ -21,6 +21,7 @@ class DestinationLivraison(models.TextChoices):
 class TypeLivraison(models.TextChoices):
     STANDARD = "standard", "Standard"
     EXPRESS = "express", "Express"
+    RETRAIT_SUR_PLACE = "retrait_sur_place", "Retrait à l'institut"
 
 
 class ProduitLivre(UUIDModel, TimeStampedModel):
@@ -198,6 +199,13 @@ class Commande(UUIDModel, TimeStampedModel):
     poids_total_grammes = models.PositiveIntegerField(default=0, editable=False, verbose_name="Poids total (g)")
     total_produits = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     frais_livraison = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    remise = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Remise accordée",
+        help_text="Montant déduit du total produits (remise étudiant, code promo…).",
+    )
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     transporteur = models.CharField(max_length=120, blank=True)

@@ -68,6 +68,11 @@ class CoursDetailView(DetailView):
     context_object_name = "cours"
     queryset = Cours.objects.filter(actif=True).select_related("discipline")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["bibliographie"] = self.object.bibliographie.all().select_related("produit_boutique")
+        return context
+
 
 class ProfesseurListView(ListView):
     model = Professeur

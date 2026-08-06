@@ -255,6 +255,50 @@ class TestCommande:
             assert contenu["total_commande"] == str(Decimal("19.90") + prix)
             assert contenu["poids_grammes"] == 400
 
+    def test_retrait_sur_place_devis_et_commande(self, client, livre):
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+        reponse = client.get(
+            reverse("commerce:devis_livraison"),
+            {"destination": "Guadeloupe", "type_livraison": TypeLivraison.RETRAIT_SUR_PLACE},
+        )
+        assert reponse.status_code == 200
+        donnees = reponse.json()
+        assert donnees["disponible"] is True
+        assert donnees["frais_livraison"] == "0.00"
+        assert donnees["total_commande"] == "19.90"
+
+        lignes, _ = panier.details(reponse.wsgi_request)
+        donnees_cmd = donnees_commande() | {"type_livraison": TypeLivraison.RETRAIT_SUR_PLACE}
+        cmd = services.creer_commande(donnees=donnees_cmd, lignes_panier=lignes)
+        assert cmd.frais_livraison == Decimal("0.00")
+        assert cmd.total == Decimal("19.90")
+        assert cmd.type_livraison == TypeLivraison.RETRAIT_SUR_PLACE
+
+    def test_remise_etudiant_inscrit(self, client, livre, db):
+        from apps.academics.models import ProfilEtudiant, Promotion
+        from apps.formations.models import Parcours
+
+        user_etudiant = User.objects.create_user(
+            username="etu_remise",
+            email="etudiant@iteag.org",
+            password="password123!",
+            role=User.Role.ETUDIANT,
+        )
+        parcours = Parcours.objects.create(nom="Bachelor", slug="bachelor-test", type_parcours="bachelor_flte")
+        promotion = Promotion.objects.create(nom="Promo 2026", parcours=parcours, annee_debut=2026, annee_fin=2027)
+        ProfilEtudiant.objects.create(utilisateur=user_etudiant, parcours=parcours, promotion=promotion)
+
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 2})  # 39.80 total
+        lignes, _ = panier.details(client.get(reverse("commerce:panier")).wsgi_request)
+
+        # Utilisateur connecté en tant qu'étudiant
+        cmd = services.creer_commande(donnees=donnees_commande(), lignes_panier=lignes, utilisateur=user_etudiant)
+        # 39.80 * 10% = 3.98 remise, frais = 10.00 -> total = 39.80 - 3.98 + 10.00 = 45.82
+        assert cmd.total_produits == Decimal("39.80")
+        assert cmd.remise == Decimal("3.98")
+        assert cmd.frais_livraison == Decimal("10.00")
+        assert cmd.total == Decimal("45.82")
+
     def test_devis_choisit_le_palier_de_poids_le_plus_precis(self, client, livre):
         TarifLivraison.objects.create(
             destination=DestinationLivraison.GUADELOUPE,

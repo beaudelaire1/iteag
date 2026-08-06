@@ -67,6 +67,12 @@
                 <hr class="my-5 border-warm-200">
                 <div class="space-y-2 text-sm">
                     <p class="flex justify-between"><span>Livres</span><strong>{{ total_produits }} €</strong></p>
+                    {% if remise %}
+                    <p class="flex justify-between text-green-700">
+                        <span>Remise étudiant ({{ taux_remise|floatformat:0 }}{{ "%" }})</span>
+                        <strong>−{{ remise }} €</strong>
+                    </p>
+                    {% endif %}
                     <p class="flex justify-between">
                         <span>Livraison</span>
                         <strong id="frais-livraison">

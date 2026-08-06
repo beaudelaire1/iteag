@@ -460,6 +460,7 @@ CELERY_BEAT_SCHEDULE = {
 # Boutique de livres
 COMMERCE_SEUIL_LIVRAISON_OFFERTE = env("COMMERCE_SEUIL_LIVRAISON_OFFERTE", default="150.00")
 COMMERCE_ALERTE_EMAIL = env("COMMERCE_ALERTE_EMAIL", default="")
+COMMERCE_REMISE_ETUDIANT = env("COMMERCE_REMISE_ETUDIANT", default="0.10")  # 10 %
 
 # ──────────────────────────────────────────────
 # Paiement en ligne — Stripe

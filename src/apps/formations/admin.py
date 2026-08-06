@@ -22,6 +22,7 @@ class CoursAdmin(admin.ModelAdmin):
     list_filter = ("discipline", "actif")
     search_fields = ("titre",)
     prepopulated_fields = {"slug": ("titre",)}
+    filter_horizontal = ("parcours", "bibliographie")
 
 
 @admin.register(Professeur)

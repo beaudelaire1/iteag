@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Feuille d'émargement — {{ cours_session.cours.titre }}</title>
+    <meta name="author" content="{{ institut.nom }}">
+    <meta name="description" content="Feuille d'émargement officielle ITEAG">
+    <meta name="generator" content="Plateforme ITEAG — WeasyPrint">
+    <meta name="dcterms.created" content="{{ generated_at|date:'c' }}">
+    <style>
+        {% include "partials/pdf_polices.html" %}
+        {% include "documents/pdf/_charte_institutionnelle.css" %}
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 18mm;
+            @bottom-left {
+                content: "{{ institut.site }} · Document officiel de présence";
+                color: #73807a;
+                font-family: "Inter", sans-serif;
+                font-size: 7pt;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " / " counter(pages);
+                color: #73807a;
+                font-family: "Inter", sans-serif;
+                font-size: 7pt;
+            }
+        }
+
+        .header-emargement {
+            border-bottom: 0.5mm solid #234e45;
+            padding-bottom: 4mm;
+            margin-bottom: 6mm;
+        }
+        .header-emargement h1 {
+            font-family: "Playfair Display", serif;
+            font-size: 18pt;
+            color: #17372f;
+            margin: 0 0 2mm 0;
+        }
+        .header-emargement p {
+            font-family: "Inter", sans-serif;
+            font-size: 9pt;
+            color: #4a5550;
+            margin: 1mm 0;
+        }
+
+        .meta-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 6mm;
+            background: #f7f9f8;
+            border: 0.2mm solid #d0d7d4;
+            border-radius: 2mm;
+            padding: 3mm 4mm;
+        }
+        .meta-row {
+            display: table-row;
+        }
+        .meta-cell {
+            display: table-cell;
+            font-family: "Inter", sans-serif;
+            font-size: 8.5pt;
+            padding: 1.5mm 3mm;
+        }
+        .meta-label {
+            font-weight: 700;
+            color: #17372f;
+        }
+
+        .table-emargement {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: "Inter", sans-serif;
+            font-size: 8.5pt;
+            margin-top: 4mm;
+        }
+        .table-emargement th {
+            background-color: #17372f;
+            color: #ffffff;
+            font-weight: 600;
+            text-align: left;
+            padding: 2.5mm 3mm;
+            border: 0.2mm solid #17372f;
+        }
+        .table-emargement td {
+            padding: 3.5mm 3mm;
+            border: 0.2mm solid #cfd6d3;
+            vertical-align: middle;
+        }
+        .table-emargement tr:nth-child(even) {
+            background-color: #fbfcfb;
+        }
+        .signature-box {
+            height: 9mm;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-emargement">
+        <h1>Feuille d'émargement — {{ cours_session.cours.titre }}</h1>
+        <p><strong>{{ institut.nom }}</strong> — {{ cours_session.session.nom }}</p>
+    </div>
+
+    <div class="meta-grid">
+        <div class="meta-row">
+            <div class="meta-cell"><span class="meta-label">Cours :</span> {{ cours_session.cours.titre }} ({{ cours_session.cours.code }})</div>
+            <div class="meta-cell"><span class="meta-label">Enseignant :</span> {{ cours_session.enseignant.nom_complet }}</div>
+        </div>
+        <div class="meta-row">
+            <div class="meta-cell"><span class="meta-label">Modalité :</span> {{ cours_session.get_modalite_display }}{% if cours_session.salle %} — Salle : {{ cours_session.salle }}{% endif %}</div>
+            <div class="meta-cell"><span class="meta-label">Édité le :</span> {{ generated_at|date:"d/m/Y H:i" }}</div>
+        </div>
+    </div>
+
+    <table class="table-emargement">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 35%;">Nom & Prénom de l'étudiant</th>
+                <th style="width: 25%;">Émargement (Matin)</th>
+                <th style="width: 25%;">Émargement (Après-midi)</th>
+                <th style="width: 10%;">Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for profil in etudiants %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    <strong>{{ profil.utilisateur.last_name|upper }}</strong> {{ profil.utilisateur.first_name }}
+                    {% if profil.utilisateur.email %}<br><span style="font-size: 7.5pt; color: #666;">{{ profil.utilisateur.email }}</span>{% endif %}
+                </td>
+                <td class="signature-box"></td>
+                <td class="signature-box"></td>
+                <td style="font-size: 7.5pt; text-align: center;">Présent / Absent</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 10mm; color: #777;">
+                    Aucun étudiant inscrit validé pour ce cours de session.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 10mm; page-break-inside: avoid;">
+        <table style="width: 100%; font-family: 'Inter', sans-serif; font-size: 8.5pt;">
+            <tr>
+                <td style="width: 50%; vertical-align: top;">
+                    <strong>Visa de l'enseignant :</strong>
+                    <div style="height: 18mm; border: 0.2mm dashed #aaa; margin-top: 2mm; border-radius: 1mm;"></div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding-left: 5mm;">
+                    <strong>Visa du secrétariat :</strong>
+                    <div style="height: 18mm; border: 0.2mm dashed #aaa; margin-top: 2mm; border-radius: 1mm;"></div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>

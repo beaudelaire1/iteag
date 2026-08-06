@@ -68,6 +68,16 @@ def calculer_devis_livraison(
     """Sélectionne le premier palier contractuel couvrant le poids du colis."""
     destinations = {valeur for valeur, _ in DestinationLivraison.choices}
     types = {valeur for valeur, _ in TypeLivraison.choices}
+
+    if type_livraison == TypeLivraison.RETRAIT_SUR_PLACE:
+        return DevisLivraison(
+            destination=destination or "",
+            type_livraison=type_livraison,
+            poids_grammes=poids_grammes,
+            frais=Decimal("0.00"),
+            livraison_offerte=False,
+        )
+
     if destination not in destinations:
         raise ValidationError("Cette destination n'est pas desservie.")
     if type_livraison not in types:
@@ -124,6 +134,30 @@ def devis_pour_lignes(lignes, *, destination: str, type_livraison: str) -> Devis
         destination=destination,
         type_livraison=type_livraison,
     )
+
+
+def taux_remise_etudiant() -> Decimal:
+    """Taux de remise accordé aux étudiants inscrits sur la boutique."""
+    return Decimal(str(getattr(settings, "COMMERCE_REMISE_ETUDIANT", "0.10")))
+
+
+def calculer_remise_etudiant(utilisateur, total_produits: Decimal) -> Decimal:
+    """Remise accordée aux étudiants inscrits avec un profil actif.
+
+    Un visiteur anonyme, un enseignant ou un étudiant sans profil de
+    scolarité ne reçoit rien : la remise est un avantage lié à l'inscription.
+    """
+    if not getattr(utilisateur, "is_authenticated", False):
+        return Decimal("0.00")
+    if utilisateur.role != User.Role.ETUDIANT:
+        return Decimal("0.00")
+    profil = getattr(utilisateur, "profil_etudiant", None)
+    if profil is None:
+        return Decimal("0.00")
+    taux = taux_remise_etudiant()
+    if taux <= 0:
+        return Decimal("0.00")
+    return (Decimal(total_produits) * taux).quantize(Decimal("0.01"))
 
 
 def _personnel():
@@ -345,9 +379,10 @@ def creer_commande(*, donnees: dict, lignes_panier, utilisateur=None) -> Command
         synchroniser_alerte_stock(produit)
 
     commande.total_produits = total_produits
+    commande.remise = calculer_remise_etudiant(utilisateur, total_produits)
     commande.frais_livraison = devis.frais
-    commande.total = devis.total_avec(total_produits)
-    commande.save(update_fields=["total_produits", "frais_livraison", "total", "updated_at"])
+    commande.total = total_produits - commande.remise + devis.frais
+    commande.save(update_fields=["total_produits", "remise", "frais_livraison", "total", "updated_at"])
     transaction.on_commit(lambda: _notification_commande(commande))
     return commande
 

@@ -53,11 +53,8 @@ urlpatterns = [
     path("formations/", views.AdminFormationsView.as_view(), name="formations"),
     path("formations/cours/", views_academics.CourseListView.as_view(), name="courses"),
     path("formations/cours/ajouter/", views_academics.CourseCreateView.as_view(), name="course_create"),
-    path(
-        "formations/cours/<int:pk>/modifier/",
-        views_academics.CourseUpdateView.as_view(),
-        name="course_update",
-    ),
+    path("formations/cours/<int:pk>/modifier/", views_academics.CourseUpdateView.as_view(), name="course_update"),
+    path("cours-session/<int:pk>/emargement.pdf", views.EmargementPDFView.as_view(), name="emargement_pdf"),
     path(
         "formations/cours/<int:pk>/supprimer/",
         views_academics.CourseDeleteView.as_view(),

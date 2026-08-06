@@ -78,6 +78,23 @@
                             {% endif %}
                         </dd>
                     </div>
+
+                    {% if notice.disponible %}
+                    <div class="pt-2">
+                        {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'library:notice_reserver' notice.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full btn btn-primary text-xs py-2">
+                                Réserver pour retrait à l'institut
+                            </button>
+                        </form>
+                        {% else %}
+                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="w-full block text-center btn btn-outline text-xs py-2">
+                            Se connecter pour réserver
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </aside>
             </div>
 

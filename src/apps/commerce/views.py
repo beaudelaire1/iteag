@@ -172,11 +172,14 @@ class CommanderView(FormView):
         return {**super().get_form_kwargs(), "utilisateur": self.request.user}
 
     def get_context_data(self, **kwargs):
+        remise = services.calculer_remise_etudiant(self.request.user, self.total_produits)
         contexte = {
             **super().get_context_data(**kwargs),
             "lignes": self.lignes,
             "total_produits": self.total_produits,
             "seuil_livraison_offerte": services.seuil_livraison_offerte(),
+            "remise": remise,
+            "taux_remise": services.taux_remise_etudiant() if remise else None,
         }
         formulaire = contexte["form"]
         try:
@@ -193,13 +196,14 @@ class CommanderView(FormView):
                 }
             )
         else:
+            total_apres_remise = self.total_produits - remise
             contexte.update(
                 {
                     "livraison_disponible": True,
                     "frais_livraison": devis.frais,
                     "livraison_offerte": devis.livraison_offerte,
                     "poids_total_grammes": devis.poids_grammes,
-                    "total_commande": devis.total_avec(self.total_produits),
+                    "total_commande": total_apres_remise + devis.frais,
                     "transporteur_livraison": devis.transporteur,
                     "offre_livraison": devis.offre,
                     "source_tarif_url": devis.source_url,

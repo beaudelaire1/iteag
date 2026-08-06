@@ -39,3 +39,22 @@ class TestFormationsModels:
         )
         assert str(p) == "Parcours diplômant ITEAG"
         assert p.type_parcours == "diplomant_iteag"
+
+    def test_cours_bibliographie(self, client: Client):
+        from apps.formations.models import Cours, Discipline
+        from apps.library.models import NoticeBibliographique
+
+        d = Discipline.objects.create(nom="Nouveau Testament", slug="nouveau-testament")
+        c = Cours.objects.create(titre="Épîtres pauliennes", slug="epitres-pauliennes", discipline=d)
+        notice = NoticeBibliographique.objects.create(
+            titre="Commentaire aux Romains", auteur="F.F. Bruce", cote="NT-101"
+        )
+        c.bibliographie.add(notice)
+
+        assert c.bibliographie.count() == 1
+        assert notice.cours_recommandant.first() == c
+
+        url = reverse("formations:cours_detail", kwargs={"slug": c.slug})
+        resp = client.get(url)
+        assert resp.status_code == 200
+        assert "Commentaire aux Romains" in resp.content.decode()

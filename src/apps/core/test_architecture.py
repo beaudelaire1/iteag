@@ -43,7 +43,7 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
         "commerce",
         "paiements",
     },
-    "formations": {"core"},
+    "formations": {"core", "library"},
     "admissions": {"core", "formations", "accounts"},
     "academics": {"core", "formations", "accounts"},
     "lms": {"core", "academics", "formations"},

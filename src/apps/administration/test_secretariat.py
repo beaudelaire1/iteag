@@ -190,3 +190,22 @@ def test_la_boutique_est_atteignable_depuis_la_barre_du_secretariat(client, secr
     corps = client.get(reverse("secretariat:dashboard")).content.decode()
     assert reverse("commerce:gestion_commandes") in corps
     assert reverse("commerce:gestion_stock") in corps
+
+
+def test_le_secretariat_genere_une_feuille_d_emargement_pdf(client, secretaire, db):
+    discipline = Discipline.objects.create(nom="AT Test", slug="at-test")
+    cours = Cours.objects.create(titre="Cours Emargement", slug="cours-emargement", discipline=discipline, code="AT101")
+    session = SessionAcademique.objects.create(nom="Session Auto 2026", date_debut="2026-09-01", date_fin="2027-06-30")
+    prof = Professeur.objects.create(nom="Prof", prenom="Test", slug="prof-test")
+    cours_session = CoursDeSession.objects.create(
+        session=session,
+        cours=cours,
+        enseignant=prof,
+        modalite=CoursDeSession.Modalite.PRESENTIEL,
+    )
+
+    client.force_login(secretaire)
+    reponse = client.get(reverse("administration:emargement_pdf", args=[cours_session.pk]))
+    assert reponse.status_code == 200
+    assert reponse["Content-Type"] == "application/pdf"
+    assert "emargement-" in reponse["Content-Disposition"]

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.db import models
@@ -72,3 +73,50 @@ class NoticeBibliographique(TimeStampedModel):
             + SearchVector("mots_cles", weight="B", config="french")
             + SearchVector("description", weight="C", config="french")
         )
+
+
+class Emprunt(TimeStampedModel):
+    """
+    Suivi d'un prêt ou d'une réservation d'ouvrage physique de la bibliothèque.
+    """
+
+    class Statut(models.TextChoices):
+        RESERVE = "reserve", "Réservé"
+        EN_COURS = "en_cours", "En cours"
+        RENDU = "rendu", "Rendu"
+        EN_RETARD = "en_retard", "En retard"
+
+    notice = models.ForeignKey(
+        NoticeBibliographique,
+        on_delete=models.CASCADE,
+        related_name="emprunts",
+        verbose_name="Ouvrage",
+    )
+    emprunteur = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="emprunts_bibliotheque",
+        verbose_name="Emprunteur",
+    )
+    statut = models.CharField(
+        max_length=20,
+        choices=Statut.choices,
+        default=Statut.RESERVE,
+        verbose_name="Statut du prêt",
+    )
+    date_retrait = models.DateTimeField(null=True, blank=True, verbose_name="Date de retrait effectif")
+    date_retour_prevue = models.DateField(verbose_name="Date de retour prévue")
+    date_retour_effectif = models.DateField(null=True, blank=True, verbose_name="Date de retour effectif")
+    commentaire = models.TextField(blank=True, verbose_name="Remarques / état de l'ouvrage")
+
+    class Meta:
+        verbose_name = "Emprunt de bibliothèque"
+        verbose_name_plural = "Emprunts de bibliothèque"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["statut", "-created_at"]),
+            models.Index(fields=["emprunteur", "statut"]),
+        ]
+
+    def __str__(self):
+        return f"{self.notice.titre} — {self.emprunteur} ({self.get_statut_display()})"

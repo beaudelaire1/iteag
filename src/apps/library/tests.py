@@ -118,3 +118,74 @@ class TestCatalogueView:
         url = reverse("library:catalogue")
         response = client.get(url, HTTP_HX_REQUEST="true")
         assert response.status_code == 200
+
+
+@pytest.mark.django_db
+class TestEmprunts:
+    def test_reserver_ouvrage(self, notice):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        user = User.objects.create_user(username="lecteur1", email="l1@iteag.org", password="password123")
+        emprunt = services.reserver_ouvrage(notice, user)
+
+        assert emprunt.statut == Emprunt.Statut.RESERVE
+        assert emprunt.date_retour_prevue == timezone.localdate() + timedelta(days=21)
+        notice.refresh_from_db()
+        assert notice.disponible is False
+
+    def test_reserver_ouvrage_deja_indisponible_refuse(self, notice):
+        from django.core.exceptions import ValidationError
+
+        from apps.accounts.models import User
+        from apps.library import services
+
+        user = User.objects.create_user(username="lecteur2", email="l2@iteag.org", password="password123")
+        notice.disponible = False
+        notice.save()
+
+        with pytest.raises(ValidationError, match="déjà emprunté ou indisponible"):
+            services.reserver_ouvrage(notice, user)
+
+    def test_valider_retrait_et_restitution(self, notice):
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        user = User.objects.create_user(username="lecteur3", email="l3@iteag.org", password="password123")
+        emprunt = services.reserver_ouvrage(notice, user)
+
+        emprunt = services.valider_retrait(emprunt)
+        assert emprunt.statut == Emprunt.Statut.EN_COURS
+        assert emprunt.date_retrait is not None
+
+        emprunt = services.restituer_ouvrage(emprunt, commentaire="Bon état")
+        assert emprunt.statut == Emprunt.Statut.RENDU
+        assert emprunt.commentaire == "Bon état"
+        notice.refresh_from_db()
+        assert notice.disponible is True
+
+    def test_verifier_retards(self, notice):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        user = User.objects.create_user(username="lecteur4", email="l4@iteag.org", password="password123")
+        emprunt = services.reserver_ouvrage(notice, user)
+        services.valider_retrait(emprunt)
+        emprunt.date_retour_prevue = timezone.localdate() - timedelta(days=5)
+        emprunt.save(update_fields=["date_retour_prevue"])
+
+        retards = services.verifier_retards()
+        assert retards == 1
+        emprunt.refresh_from_db()
+        assert emprunt.statut == Emprunt.Statut.EN_RETARD

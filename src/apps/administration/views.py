@@ -7,9 +7,10 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
@@ -29,6 +30,7 @@ from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
 from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
 from apps.core.services.audit import journaliser
+from apps.core.services.pdf import contexte_marque, rendre_pdf
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 from apps.library.models import NoticeBibliographique
 
@@ -1069,6 +1071,41 @@ class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
         if ignores:
             messages.warning(request, "Dossier(s) ignoré(s) : " + " ; ".join(ignores))
         return redirect("administration:candidatures")
+
+
+class EmargementPDFView(StaffRoleRequiredMixin, View):
+    """Génère la feuille d'émargement officielle au format PDF pour un cours de session."""
+
+    def get(self, request, pk):
+        cours_session = get_object_or_404(
+            CoursDeSession.objects.select_related("cours", "session", "enseignant"),
+            pk=pk,
+        )
+        demandes_validees = (
+            cours_session.demandes_inscription.filter(statut=DemandeInscriptionCours.Statut.CONFIRMEE)
+            .select_related("etudiant__utilisateur")
+            .order_by("etudiant__utilisateur__last_name", "etudiant__utilisateur__first_name")
+        )
+        etudiants = [d.etudiant for d in demandes_validees]
+
+        try:
+            pdf_bytes = rendre_pdf(
+                "administration/pdf/emargement.html",
+                contexte_marque(
+                    cours_session=cours_session,
+                    etudiants=etudiants,
+                    generated_at=timezone.now(),
+                ),
+            )
+        except Exception as erreur:
+            logger.exception("Échec de la génération du PDF d'émargement pour le cours_session %s", pk)
+            messages.error(request, f"La génération du PDF a échoué : {erreur}")
+            return redirect(request.META.get("HTTP_REFERER") or reverse_lazy("administration:dashboard"))
+
+        filename = f"emargement-{slugify(cours_session.cours.titre)}-{cours_session.pk}.pdf"
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
 
 
 # Les pièces réclamées à un candidat sont traitées par « views_pieces.py » :

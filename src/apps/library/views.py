@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -9,7 +11,8 @@ from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
 from apps.formations.models import Discipline
 from apps.library.formulaires import NoticeForm
 
-from .models import NoticeBibliographique
+from . import services
+from .models import Emprunt, NoticeBibliographique
 
 
 class CatalogueView(ListView):
@@ -234,3 +237,77 @@ class NoticeDeleteView(AdminRoleRequiredMixin, DeleteView):
     def get_success_url(self):
         messages.success(self.request, "Notice retirée du fonds.")
         return reverse("library:gestion")
+
+
+class ReserverOuvrageView(LoginRequiredMixin, View):
+    """Permet à un utilisateur connecté de réserver un ouvrage disponible."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        notice = get_object_or_404(NoticeBibliographique, pk=pk)
+        try:
+            emprunt = services.reserver_ouvrage(notice, request.user)
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+        else:
+            dt_fmt = emprunt.date_retour_prevue.strftime("%d/%m/%Y")
+            messages.success(
+                request,
+                (
+                    f"« {notice.titre} » a été réservé. "
+                    f"Présentez-vous au secrétariat pour le retrait (retour prévu le {dt_fmt})."
+                ),
+            )
+        return redirect("library:notice_detail", pk=notice.pk)
+
+
+class GestionEmpruntsView(StaffRoleRequiredMixin, ListView):
+    """Tableau de bord de gestion des emprunts pour le secrétariat."""
+
+    model = Emprunt
+    template_name = "library/gestion_emprunts.html"
+    context_object_name = "emprunts"
+    paginate_by = 30
+
+    def get_queryset(self):
+        qs = Emprunt.objects.select_related("notice", "emprunteur")
+        statut = self.request.GET.get("statut", "").strip()
+        if statut:
+            qs = qs.filter(statut=statut)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.update(
+            {
+                "statuts": Emprunt.Statut.choices,
+                "statut_courant": self.request.GET.get("statut", ""),
+                "nb_retards": Emprunt.objects.filter(statut=Emprunt.Statut.EN_RETARD).count(),
+                "nb_reservations": Emprunt.objects.filter(statut=Emprunt.Statut.RESERVE).count(),
+            }
+        )
+        return contexte
+
+
+class EmpruntActionView(StaffRoleRequiredMixin, View):
+    """Actions de secrétariat : valider le retrait ou enregistrer la restitution."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        emprunt = get_object_or_404(Emprunt, pk=pk)
+        action = request.POST.get("action", "").strip()
+        try:
+            if action == "valider_retrait":
+                services.valider_retrait(emprunt)
+                messages.success(request, f"Retrait validé pour « {emprunt.notice.titre} ».")
+            elif action == "restituer":
+                commentaire = request.POST.get("commentaire", "")
+                services.restituer_ouvrage(emprunt, commentaire=commentaire)
+                messages.success(request, f"Ouvrage « {emprunt.notice.titre} » restitué et remis en rayon.")
+            else:
+                raise ValidationError("Action invalide.")
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+        return redirect("library:gestion_emprunts")

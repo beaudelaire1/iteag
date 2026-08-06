@@ -75,6 +75,12 @@ class Cours(TimeStampedModel):
         verbose_name="Discipline",
     )
     parcours = models.ManyToManyField(Parcours, blank=True, related_name="cours")
+    bibliographie = models.ManyToManyField(
+        "library.NoticeBibliographique",
+        blank=True,
+        related_name="cours_recommandant",
+        verbose_name="Bibliographie recommandée",
+    )
     description = models.TextField(blank=True)
     objectifs = models.TextField(blank=True, verbose_name="Objectifs pédagogiques")
     ects = models.DecimalField(max_digits=4, decimal_places=1, default=2.5, verbose_name="ECTS")

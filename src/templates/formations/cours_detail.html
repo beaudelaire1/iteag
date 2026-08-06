@@ -57,6 +57,46 @@
         </div>
         {% endif %}
 
+        {% if bibliographie %}
+        <div class="mb-14 reveal">
+            <hr class="divider-gold mb-6">
+            <p class="overline mb-2">Lectures</p>
+            <h2 class="mb-5">Bibliographie recommandée</h2>
+            <div class="space-y-4">
+                {% for notice in bibliographie %}
+                <div class="card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5">
+                    <div>
+                        <a href="{% url 'library:notice_detail' notice.pk %}" class="font-semibold hover:underline" style="color: var(--color-navy-800);">
+                            {{ notice.titre }}
+                        </a>
+                        {% if notice.auteur %}
+                        <p class="text-sm" style="color: var(--color-warm-600);">Par {{ notice.auteur }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-2 mt-1 text-xs" style="color: var(--color-warm-500);">
+                            {% if notice.cote %}<span>Cote : {{ notice.cote }}</span>{% endif %}
+                            {% if notice.disponible %}
+                            <span class="badge badge-success text-xs">Disponible en bibliothèque</span>
+                            {% else %}
+                            <span class="badge badge-warning text-xs">Emprunté</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="{% url 'library:notice_detail' notice.pk %}" class="btn btn-sm btn-outline">
+                            Fiche bibliothèque
+                        </a>
+                        {% if notice.produit_boutique and notice.produit_boutique.actif %}
+                        <a href="{{ notice.produit_boutique.get_absolute_url }}" class="btn btn-sm btn-primary">
+                            Acheter en boutique ({{ notice.produit_boutique.prix_ttc }} €)
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         {% if cours.parcours.all %}
         <div class="mb-14 reveal">
             <hr class="divider-gold mb-6">
