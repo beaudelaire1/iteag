@@ -1,8 +1,13 @@
-"""Contrôles de configuration Stripe au démarrage."""
+"""Contrôles du paiement au démarrage."""
 
 import pytest
 
-from apps.paiements.checks import configuration_stripe
+from apps.paiements.checks import configuration_stripe, structure_paiements
+
+
+def test_relation_inscription_chargee_avant_les_requetes():
+    """Le checkout doit pouvoir utiliser select_related('inscription_associee')."""
+    assert structure_paiements(None) == []
 
 
 @pytest.mark.parametrize(
