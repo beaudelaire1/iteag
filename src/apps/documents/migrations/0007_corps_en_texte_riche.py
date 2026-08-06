@@ -24,13 +24,16 @@ def blocs_vers_html(apps, schema_editor):
     """Recolle les paragraphes ; les autres blocs n'ont pas d'équivalent."""
     Document = apps.get_model("documents", "DocumentRedige")
     for identifiant, corps in Document.objects.values_list("pk", "corps"):
-        texte = (corps or "").strip()
-        if not texte.startswith("["):
-            continue  # deja du HTML : une migration doit pouvoir etre rejouee
-        try:
-            blocs = json.loads(texte)
-        except (TypeError, ValueError):
-            continue
+        if hasattr(corps, "raw_data"):
+            blocs = corps.raw_data
+        else:
+            texte = (corps or "").strip()
+            if not texte.startswith("["):
+                continue  # deja du HTML : une migration doit pouvoir etre rejouee
+            try:
+                blocs = json.loads(texte)
+            except (TypeError, ValueError):
+                continue
         Document.objects.filter(pk=identifiant).update(
             corps="".join(b.get("value", "") for b in blocs if b.get("type") == "paragraphe")
         )
