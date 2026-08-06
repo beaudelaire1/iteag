@@ -1,10 +1,8 @@
 """
 Ce que montrent les pages de retour de paiement, et à qui.
 
-Elles ne décident de rien, mais elles nomment le payeur, son courriel et ce
-qu'il a réglé. Un tiers muni de l'identifiant du règlement y lisait tout : la
-clé est un UUID, donc non énumérable, mais un lien recopié dans une
-conversation ou repris d'un journal suffisait.
+Le retour Stripe reste privé et peut réconcilier immédiatement une session
+payée lorsque le webhook n'est pas encore arrivé.
 """
 
 from decimal import Decimal
@@ -65,3 +63,30 @@ def test_un_visiteur_anonyme_ne_lit_pas_le_reglement_d_un_compte(client, regleme
 def test_un_achat_sans_compte_reste_consultable_sans_compte(client, reglement_anonyme, nom_route):
     """Le cookie de session se perd, l'onglet change : le retour doit aboutir."""
     assert client.get(reverse(nom_route, kwargs={"pk": reglement_anonyme.pk})).status_code == 200
+
+
+def test_le_retour_confirme_un_paiement_avant_le_webhook(client, reglement, monkeypatch):
+    """Une carte immédiatement payée ne doit jamais rester en attente du webhook."""
+    client.force_login(reglement.utilisateur)
+
+    monkeypatch.setattr(
+        "apps.paiements.views.recuperer_session_checkout",
+        lambda session_id: {
+            "id": session_id,
+            "client_reference_id": str(reglement.pk),
+            "payment_status": "paid",
+            "amount_total": reglement.montant_en_centimes,
+            "payment_intent": "pi_test_retour",
+        },
+    )
+
+    reponse = client.get(
+        reverse("paiements:succes", kwargs={"pk": reglement.pk}),
+        {"session_id": reglement.session_stripe},
+    )
+
+    reglement.refresh_from_db()
+    assert reponse.status_code == 200
+    assert reglement.statut == Reglement.Statut.PAYE
+    assert reglement.contrepartie_delivree is True
+    assert "Paiement confirmé" in reponse.content.decode()
