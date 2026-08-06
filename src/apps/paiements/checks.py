@@ -1,17 +1,34 @@
-"""Contrôles de configuration du paiement en ligne."""
+"""Contrôles de configuration et de structure du paiement en ligne."""
 
+from django.apps import apps
 from django.conf import settings
 from django.core.checks import Error, Warning, register
+from django.core.exceptions import FieldDoesNotExist
+
+
+@register()
+def structure_paiements(app_configs, **kwargs):
+    """Refuse de démarrer si la liaison inscription-règlement n'est pas chargée."""
+    reglement = apps.get_model("paiements", "Reglement")
+    try:
+        reglement._meta.get_field("inscription_associee")
+    except FieldDoesNotExist:
+        return [
+            Error(
+                "La relation entre un règlement et sa demande d'inscription n'est pas chargée.",
+                hint=(
+                    "ReglementInscription doit être importé pendant le chargement de "
+                    "apps.paiements.models, avant la construction des requêtes select_related."
+                ),
+                id="paiements.E004",
+            )
+        ]
+    return []
 
 
 @register()
 def configuration_stripe(app_configs, **kwargs):
-    """Une configuration Stripe à moitié faite encaisse sans délivrer.
-
-    C'est le scénario à empêcher : la clé secrète suffit à ouvrir une session de
-    paiement, mais sans secret de signature aucune notification n'est acceptée.
-    L'étudiant paie, et rien ne s'ouvre. Mieux vaut refuser de démarrer.
-    """
+    """Une configuration Stripe à moitié faite encaisse sans délivrer."""
     secrete = getattr(settings, "STRIPE_CLE_SECRETE", "")
     webhook = getattr(settings, "STRIPE_SECRET_WEBHOOK", "")
     publiable = getattr(settings, "STRIPE_CLE_PUBLIABLE", "")
@@ -46,9 +63,6 @@ def configuration_stripe(app_configs, **kwargs):
             )
         )
     if secrete and not settings.DEBUG and secrete.startswith("sk_test_"):
-        # Une instance de recette doit pouvoir dérouler un paiement de bout en
-        # bout avec les cartes de test ; l'erreur reste la règle par défaut pour
-        # qu'une production ne puisse pas démarrer en mode test par oubli.
         if getattr(settings, "PAIEMENTS_AUTORISER_CLES_TEST", False):
             anomalies.append(
                 Warning(
