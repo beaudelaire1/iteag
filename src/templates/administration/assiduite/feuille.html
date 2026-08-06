@@ -1,0 +1,101 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Feuille de présence — {{ seance.cours_session.cours.titre }}{% endblock %}
+
+{% block portal_nav %}
+{% if user.is_enseignant %}
+{% with nav='assiduite' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% else %}
+{% with nav='assiduite' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endif %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% if user.is_enseignant %}
+{% with nav='assiduite' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% else %}
+{% with nav='assiduite' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endif %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <a href="{% url 'administration:assiduite_cours' seance.cours_session.pk %}" class="mb-3 inline-block text-sm font-medium text-navy-700">← Retour aux séances</a>
+        <p class="overline mb-2">{{ seance.cours_session.session.nom }}</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ seance.cours_session.cours.titre }}</h1>
+        <p class="mt-1 text-sm text-warm-500">{{ seance.date|date:"l d F Y" }} · {{ seance.heure_debut|time:"H:i" }}–{{ seance.heure_fin|time:"H:i" }}{% if seance.libelle %} · {{ seance.libelle }}{% endif %}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+        {% if seance.cloturee %}
+        <span class="badge badge-success">Feuille clôturée</span>
+        <form method="post">{% csrf_token %}<button class="btn-outline text-sm" name="action" value="rouvrir" type="submit">Rouvrir</button></form>
+        {% else %}
+        <form method="post">{% csrf_token %}<button class="btn-outline text-sm" name="action" value="cloturer" type="submit">Clôturer</button></form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="card-elevated"><p class="stat-label">Saisies</p><p class="stat-number mt-2">{{ total_saisies }}/{{ rows|length }}</p></div>
+    <div class="card-elevated"><p class="stat-label">Présents</p><p class="stat-number mt-2">{{ compteurs.present|default:0 }}</p></div>
+    <div class="card-elevated"><p class="stat-label">Absents</p><p class="stat-number mt-2">{{ compteurs.absent|default:0 }}</p></div>
+    <div class="card-elevated"><p class="stat-label">Retards</p><p class="stat-number mt-2">{{ compteurs.retard|default:0 }}</p></div>
+    <div class="card-elevated"><p class="stat-label">Excusés</p><p class="stat-number mt-2">{{ compteurs.excuse|default:0 }}</p></div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="enregistrer">
+    <div class="card-elevated overflow-hidden" style="padding: 0;">
+        <div class="overflow-x-auto">
+            <table class="table-premium">
+                <thead>
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Étudiant</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Parcours</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Statut</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Précision</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Trace</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-warm-100">
+                    {% for row in rows %}
+                    <tr>
+                        <td class="px-5 py-4">
+                            <p class="font-semibold text-navy-900">{{ row.etudiant.utilisateur.get_full_name }}</p>
+                            <p class="text-xs text-warm-500">{{ row.etudiant.numero_etudiant }}</p>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-warm-600">{{ row.etudiant.parcours }}</td>
+                        <td class="px-5 py-4">
+                            <select class="form-input min-w-40" name="statut_{{ row.etudiant.pk }}"{% if seance.cloturee %} disabled{% endif %}>
+                                {% for value, label in statuts %}
+                                <option value="{{ value }}"{% if row.statut == value %} selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="px-5 py-4">
+                            <input class="form-input min-w-64" name="commentaire_{{ row.etudiant.pk }}" value="{{ row.commentaire }}" maxlength="300" placeholder="Motif ou durée du retard"{% if seance.cloturee %} disabled{% endif %}>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-warm-500">
+                            {% if row.presence %}
+                            {{ row.presence.updated_at|date:"d/m/Y H:i" }}
+                            {% if row.presence.modifie_par %}<br><span class="text-xs">par {{ row.presence.modifie_par }}</span>{% endif %}
+                            {% else %}
+                            Non saisie
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-5 py-10 text-center text-warm-400">Aucun étudiant inscrit à ce cours.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if not seance.cloturee and rows %}
+    <div class="mt-5 flex justify-end"><button class="btn-primary" type="submit">Enregistrer la feuille</button></div>
+    {% endif %}
+</form>
+{% endblock %}

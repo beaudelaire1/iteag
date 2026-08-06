@@ -1,0 +1,74 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Assiduité — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% if user.is_enseignant %}
+{% with nav='assiduite' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% else %}
+{% with nav='assiduite' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endif %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% if user.is_enseignant %}
+{% with nav='assiduite' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% else %}
+{% with nav='assiduite' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endif %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Vie académique</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Assiduité</h1>
+        <p class="mt-1 text-sm text-warm-500">Créez une séance, saisissez les présences et conservez la trace des corrections.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[2fr_1fr_auto]">
+    <div>
+        <label class="form-label" for="assiduite-q">Cours ou enseignant</label>
+        <input id="assiduite-q" class="form-input" name="q" value="{{ query }}" type="search">
+    </div>
+    <div>
+        <label class="form-label" for="assiduite-session">Session</label>
+        <select id="assiduite-session" class="form-input" name="session">
+            <option value="">Toutes</option>
+            {% for session in sessions %}
+            <option value="{{ session.pk }}"{% if current_session == session.pk|stringformat:"s" %} selected{% endif %}>{{ session.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="flex items-end"><button class="btn-primary" type="submit">Filtrer</button></div>
+</form>
+
+<div class="space-y-4">
+    {% for offre in offres %}
+    <article class="card-elevated flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="min-w-0">
+            <p class="overline mb-2">{{ offre.session.nom }}</p>
+            <h2 class="truncate text-lg font-semibold text-navy-900">{{ offre.cours.titre }}</h2>
+            <p class="mt-1 text-sm text-warm-500">{{ offre.enseignant }} · {{ offre.get_modalite_display }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-6 text-center text-sm">
+            <div>
+                <p class="text-xl font-bold text-navy-900">{{ offre.nombre_inscrits }}</p>
+                <p class="text-xs text-warm-500">inscrits</p>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-navy-900">{{ offre.nombre_seances }}</p>
+                <p class="text-xs text-warm-500">séances</p>
+            </div>
+        </div>
+        <a href="{% url 'administration:assiduite_cours' offre.pk %}" class="btn-primary text-sm">Ouvrir le suivi</a>
+    </article>
+    {% empty %}
+    <div class="card-elevated py-12 text-center text-warm-400">Aucun cours accessible.</div>
+    {% endfor %}
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

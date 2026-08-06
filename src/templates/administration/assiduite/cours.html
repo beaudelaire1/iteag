@@ -1,0 +1,83 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Assiduité — {{ cours_session.cours.titre }}{% endblock %}
+
+{% block portal_nav %}
+{% if user.is_enseignant %}
+{% with nav='assiduite' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}
+{% else %}
+{% with nav='assiduite' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endif %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% if user.is_enseignant %}
+{% with nav='assiduite' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}
+{% else %}
+{% with nav='assiduite' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
+{% endif %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <a href="{% url 'administration:assiduite' %}" class="mb-3 inline-block text-sm font-medium text-navy-700">← Tous les cours</a>
+        <p class="overline mb-2">{{ cours_session.session.nom }}</p>
+        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ cours_session.cours.titre }}</h1>
+        <p class="mt-1 text-sm text-warm-500">{{ cours_session.enseignant }} · {{ nombre_inscrits }} inscrit{{ nombre_inscrits|pluralize }}</p>
+    </div>
+    <a href="{% url 'administration:emargement_pdf' cours_session.pk %}" class="btn-outline text-sm" target="_blank">Émargement PDF</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <section>
+        <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+                <p class="overline mb-1">Historique</p>
+                <h2 class="text-xl font-semibold text-navy-900">Séances enregistrées</h2>
+            </div>
+        </div>
+        <div class="space-y-4">
+            {% for seance in seances %}
+            <article class="card-elevated flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                        {% if seance.cloturee %}<span class="badge badge-success">Clôturée</span>{% else %}<span class="badge badge-gold">À compléter</span>{% endif %}
+                        {% if seance.libelle %}<span class="text-xs text-warm-500">{{ seance.libelle }}</span>{% endif %}
+                    </div>
+                    <h3 class="font-semibold text-navy-900">{{ seance.date|date:"l d F Y" }}</h3>
+                    <p class="mt-1 text-sm text-warm-500">{{ seance.heure_debut|time:"H:i" }}–{{ seance.heure_fin|time:"H:i" }}</p>
+                </div>
+                <div class="grid grid-cols-3 gap-5 text-center text-sm">
+                    <div><p class="text-lg font-bold text-navy-900">{{ seance.nombre_saisies }}/{{ nombre_inscrits }}</p><p class="text-xs text-warm-500">saisies</p></div>
+                    <div><p class="text-lg font-bold text-rose-700">{{ seance.nombre_absences }}</p><p class="text-xs text-warm-500">absences</p></div>
+                    <div><p class="text-lg font-bold text-gold-700">{{ seance.nombre_retards }}</p><p class="text-xs text-warm-500">retards</p></div>
+                </div>
+                <a href="{% url 'administration:assiduite_feuille' seance.pk %}" class="btn-secondary text-sm">Ouvrir la feuille</a>
+            </article>
+            {% empty %}
+            <div class="card-elevated py-12 text-center text-warm-400">Aucune séance enregistrée pour ce cours.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <aside class="card-elevated h-fit">
+        <p class="overline mb-2">Nouvelle séance</p>
+        <h2 class="text-lg font-semibold text-navy-900">Préparer la feuille</h2>
+        <p class="mt-1 mb-5 text-sm text-warm-500">La date doit rester comprise dans la session {{ cours_session.session.date_debut|date:"d/m/Y" }}–{{ cours_session.session.date_fin|date:"d/m/Y" }}.</p>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            {% for field in form %}
+            <div>
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<p class="mt-1 text-xs text-rose-700">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+            {% for error in form.non_field_errors %}<p class="text-sm text-rose-700">{{ error }}</p>{% endfor %}
+            <button class="btn-primary w-full" type="submit">Créer et saisir les présences</button>
+        </form>
+    </aside>
+</div>
+{% endblock %}

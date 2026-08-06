@@ -1,6 +1,14 @@
 from django.urls import path
 
-from . import views, views_academics, views_elearning, views_enseignants, views_pieces, views_tableurs
+from . import (
+    views,
+    views_academics,
+    views_assiduite,
+    views_elearning,
+    views_enseignants,
+    views_pieces,
+    views_tableurs,
+)
 
 app_name = "administration"
 
@@ -103,6 +111,18 @@ urlpatterns = [
         "offre-cours/<int:pk>/supprimer/",
         views_academics.CourseOfferingDeleteView.as_view(),
         name="course_offering_delete",
+    ),
+    # Assiduité
+    path("assiduite/", views_assiduite.AssiduiteListView.as_view(), name="assiduite"),
+    path(
+        "assiduite/cours/<int:pk>/",
+        views_assiduite.CoursAssiduiteView.as_view(),
+        name="assiduite_cours",
+    ),
+    path(
+        "assiduite/seances/<int:pk>/",
+        views_assiduite.FeuilleAssiduiteView.as_view(),
+        name="assiduite_feuille",
     ),
     # Demandes d'inscription aux cours
     path("inscriptions-cours/", views_academics.EnrollmentRequestListView.as_view(), name="enrollment_requests"),
