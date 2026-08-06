@@ -1,59 +1,72 @@
 {% extends "partials/portal_base.html" %}
+{% load static %}
 
 {% block title %}{% if object %}Modifier{% else %}Nouveau{% endif %} module — {{ SITE_NAME }}{% endblock %}
-
 {% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
 {% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
+{% block extra_js %}<script src="{% static 'js/elearning-formulaires.js' %}?v={{ ASSET_VERSION }}" defer></script>{% endblock %}
 
 {% block portal_header %}
-<div class="mb-8">
+<div class="mb-8 max-w-3xl">
     <p class="overline mb-2">E-Learning</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
-        {% if object %}Modifier « {{ object.titre }} »{% else %}Nouveau module{% endif %}
-    </h1>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{% if object %}Modifier « {{ object.titre }} »{% else %}Créer un module E-Learning{% endif %}</h1>
+    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">
+        Définissez d’abord le cadre du module. Les chapitres et les leçons seront ajoutés après l’enregistrement.
+    </p>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-8">
+<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-8" data-module-form>
     {% csrf_token %}
-
-    {% if form.non_field_errors %}
-    <div class="note alert" style="max-width: none;">
-        <span class="lbl">Corrections nécessaires</span>
-        {{ form.non_field_errors }}
-    </div>
-    {% endif %}
+    {% if form.non_field_errors %}<div class="note alert" style="max-width:none;" role="alert">{{ form.non_field_errors }}</div>{% endif %}
 
     <section class="card-elevated space-y-5">
-        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Présentation</h2>
-        {% for champ in form %}
-            {% if champ.name in "titre,code,description,objectifs,image_couverture" %}
-            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
-            {% endif %}
-        {% endfor %}
+        <div><p class="overline mb-1">Étape 1</p><h2 class="text-lg font-semibold">Identifier le module</h2>
+        <p class="mt-1 text-sm text-warm-500">Nommez le module et rattachez-le à l’offre de formation.</p></div>
+        {% include "partials/champ.html" with field=form.titre %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {% include "partials/champ.html" with field=form.code %}
+            {% include "partials/champ.html" with field=form.niveau %}
+            {% include "partials/champ.html" with field=form.discipline %}
+            {% include "partials/champ.html" with field=form.cours %}
+        </div>
     </section>
 
     <section class="card-elevated space-y-5">
-        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Rattachement</h2>
-        {% for champ in form %}
-            {% if champ.name in "discipline,cours,niveau,ects" %}
-            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
-            {% endif %}
-        {% endfor %}
+        <div><p class="overline mb-1">Étape 2</p><h2 class="text-lg font-semibold">Présenter le contenu</h2>
+        <p class="mt-1 text-sm text-warm-500">Expliquez clairement ce que l’étudiant va apprendre.</p></div>
+        {% include "partials/champ.html" with field=form.description %}
+        {% include "partials/champ.html" with field=form.objectifs %}
+        {% include "partials/champ.html" with field=form.image_couverture %}
     </section>
 
     <section class="card-elevated space-y-5">
-        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Validation</h2>
-        {% for champ in form %}
-            {% if champ.name in "seuil_completion,certifiant,autorise_revision" %}
-            {% with field=champ %}{% include "partials/champ.html" %}{% endwith %}
-            {% endif %}
-        {% endfor %}
+        <div><p class="overline mb-1">Étape 3</p><h2 class="text-lg font-semibold">Définir la validation</h2>
+        <p class="mt-1 text-sm text-warm-500">Précisez les crédits, le seuil de complétion et l’attestation.</p></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {% include "partials/champ.html" with field=form.ects %}
+            {% include "partials/champ.html" with field=form.seuil_completion %}
+        </div>
+        {% include "partials/champ.html" with field=form.certifiant %}
+        {% include "partials/champ.html" with field=form.autorise_revision %}
+    </section>
+
+    <section class="card-elevated space-y-5">
+        <div><p class="overline mb-1">Étape 4</p><h2 class="text-lg font-semibold">Choisir les conditions d’accès</h2>
+        <p class="mt-1 text-sm text-warm-500">Indiquez qui pourra consulter le module. Les aperçus se règlent leçon par leçon.</p></div>
+        {% include "partials/champ.html" with field=form.politique_acces %}
+        <div class="space-y-5 border-t border-warm-100 pt-5" data-prix-module>
+            <p class="text-sm font-semibold text-navy-800">Tarification — uniquement pour un module vendu à l’unité</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {% include "partials/champ.html" with field=form.prix_ttc %}
+                {% include "partials/champ.html" with field=form.taux_tva %}
+            </div>
+        </div>
     </section>
 
     <div class="flex flex-wrap gap-4">
-        <button type="submit" class="btn-primary">Enregistrer</button>
+        <button type="submit" class="btn-primary">{% if object %}Enregistrer les modifications{% else %}Créer le module et continuer{% endif %}</button>
         <a href="{% url 'elearning:enseignant_modules' %}" class="btn-ghost">Annuler</a>
     </div>
 </form>

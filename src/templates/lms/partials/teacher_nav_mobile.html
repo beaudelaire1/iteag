@@ -1,16 +1,16 @@
-{% comment %}Mêmes entrées que la barre latérale, dans le même ordre.{% endcomment %}
+{% comment %}Même parcours que la barre latérale, dans le même ordre.{% endcomment %}
 <a href="{% url 'enseignant:accueil' %}" class="portal-nav-pill {% if nav == 'dashboard' %}active{% endif %}">Accueil</a>
 <a href="{% url 'enseignant:propositions' %}" class="portal-nav-pill {% if nav == 'propositions' %}active{% endif %}">Propositions</a>
-<a href="{% url 'lms:courses_list' %}" class="portal-nav-pill {% if nav == 'courses' or nav == 'course' %}active{% endif %}">Cours en session</a>
-<a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-pill {% if nav == 'modules' %}active{% endif %}">Modules vidéo</a>
+<a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-pill {% if nav == 'modules' %}active{% endif %}">Modules E-Learning</a>
+<a href="{% url 'elearning:enseignant_videos' %}" class="portal-nav-pill {% if nav == 'videos' %}active{% endif %}">Bibliothèque vidéo</a>
 <a href="{% url 'website:mes_articles' %}" class="portal-nav-pill {% if nav == 'articles' %}active{% endif %}">Mes articles</a>
-<a href="{% url 'elearning:enseignant_videos' %}" class="portal-nav-pill {% if nav == 'videos' %}active{% endif %}">Bibliothèque</a>
-<a href="{% url 'lms:evaluations_list' %}" class="portal-nav-pill {% if nav == 'evaluations' %}active{% endif %}">Évaluations</a>
-<a href="{% url 'lms:documents' %}" class="portal-nav-pill {% if nav == 'documents' %}active{% endif %}">Copies</a>
-<a href="{% url 'library:catalogue' %}" class="portal-nav-pill {% if nav == 'bibliotheque' %}active{% endif %}">Fonds documentaire</a>
-<a href="{% url 'library:mes_emprunts' %}" class="portal-nav-pill {% if nav == 'mes_emprunts' %}active{% endif %}">Mes emprunts</a>
+<a href="{% url 'lms:courses_list' %}" class="portal-nav-pill {% if nav == 'courses' or nav == 'course' %}active{% endif %}">Cours en session</a>
 <a href="{% url 'lms:annonces_list' %}" class="portal-nav-pill {% if nav == 'annonces' %}active{% endif %}">Annonces</a>
-<a href="{% url 'lms:devoirs_list' %}" class="portal-nav-pill {% if nav == 'devoirs' %}active{% endif %}">Devoirs</a>
 <a href="{% url 'lms:groupes_list' %}" class="portal-nav-pill {% if nav == 'groupes' %}active{% endif %}">Groupes</a>
+<a href="{% url 'lms:devoirs_list' %}" class="portal-nav-pill {% if nav == 'devoirs' %}active{% endif %}">Devoirs</a>
+<a href="{% url 'lms:evaluations_list' %}" class="portal-nav-pill {% if nav == 'evaluations' %}active{% endif %}">Évaluations</a>
 <a href="{% url 'lms:etudiants_list' %}" class="portal-nav-pill {% if nav == 'etudiants' %}active{% endif %}">Étudiants</a>
+<a href="{% url 'lms:documents' %}" class="portal-nav-pill {% if nav == 'documents' %}active{% endif %}">Copies et documents</a>
+<a href="{% url 'library:catalogue' %}" class="portal-nav-pill {% if nav == 'bibliotheque' %}active{% endif %}">Bibliothèque</a>
+<a href="{% url 'library:mes_emprunts' %}" class="portal-nav-pill {% if nav == 'mes_emprunts' %}active{% endif %}">Mes emprunts</a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-pill {% if nav == 'profil' %}active{% endif %}">Mon profil</a>

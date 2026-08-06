@@ -1,34 +1,35 @@
-{% comment %}Mêmes entrées que la barre latérale, dans le même ordre.{% endcomment %}
+{% comment %}Même parcours que la barre latérale, dans le même ordre.{% endcomment %}
 {% if user.is_secretariat and not user.is_superuser %}
 {% include "administration/partials/secretariat_nav_mobile.html" %}
 {% else %}
 <a href="{% url 'administration:dashboard' %}" class="portal-nav-pill {% if nav == 'dashboard' %}active{% endif %}">Tableau de bord</a>
+<a href="{% url 'administration:statistiques' %}" class="portal-nav-pill {% if nav == 'statistiques' %}active{% endif %}">Statistiques</a>
 <a href="{% url 'administration:candidatures' %}" class="portal-nav-pill {% if nav == 'candidatures' %}active{% endif %}">Candidatures</a>
+<a href="{% url 'administration:enrollment_requests' %}" class="portal-nav-pill {% if nav == 'enrollment_requests' %}active{% endif %}">Inscriptions</a>
+<a href="{% url 'administration:acces' %}" class="portal-nav-pill {% if nav == 'acces' %}active{% endif %}">Accès aux modules</a>
 <a href="{% url 'administration:etudiants' %}" class="portal-nav-pill {% if nav == 'etudiants' %}active{% endif %}">Étudiants</a>
 <a href="{% url 'administration:promotions' %}" class="portal-nav-pill {% if nav == 'promotions' %}active{% endif %}">Promotions</a>
-<a href="{% url 'administration:formations' %}" class="portal-nav-pill {% if nav == 'formations' %}active{% endif %}">Formations</a>
-<a href="{% url 'administration:sessions' %}" class="portal-nav-pill {% if nav == 'sessions' %}active{% endif %}">Sessions</a>
-<a href="{% url 'administration:course_offerings' %}" class="portal-nav-pill {% if nav == 'course_offerings' %}active{% endif %}">Programmation</a>
-<a href="{% url 'administration:professeurs' %}" class="portal-nav-pill {% if nav == 'professeurs' %}active{% endif %}">Professeurs</a>
-<a href="{% url 'administration:enrollment_requests' %}" class="portal-nav-pill {% if nav == 'enrollment_requests' %}active{% endif %}">Inscriptions</a>
 <a href="{% url 'administration:credits_ects' %}" class="portal-nav-pill {% if nav == 'credits_ects' %}active{% endif %}">ECTS</a>
 <a href="{% url 'administration:stages' %}" class="portal-nav-pill {% if nav == 'stages' %}active{% endif %}">Stages</a>
 <a href="{% url 'administration:vae' %}" class="portal-nav-pill {% if nav == 'vae' %}active{% endif %}">VAE</a>
-<a href="{% url 'administration:acces' %}" class="portal-nav-pill {% if nav == 'acces' %}active{% endif %}">Accès vidéo</a>
-<a href="{% url 'administration:statistiques' %}" class="portal-nav-pill {% if nav == 'statistiques' %}active{% endif %}">Statistiques</a>
+<a href="{% url 'administration:formations' %}" class="portal-nav-pill {% if nav == 'formations' %}active{% endif %}">Parcours et cours</a>
+<a href="{% url 'administration:sessions' %}" class="portal-nav-pill {% if nav == 'sessions' %}active{% endif %}">Sessions</a>
+<a href="{% url 'administration:course_offerings' %}" class="portal-nav-pill {% if nav == 'course_offerings' %}active{% endif %}">Programmation</a>
+<a href="{% url 'administration:professeurs' %}" class="portal-nav-pill {% if nav == 'professeurs' %}active{% endif %}">Corps professoral</a>
 <a href="{% url 'administration:video_statistiques' %}" class="portal-nav-pill {% if nav == 'video_statistiques' %}active{% endif %}">Visionnage</a>
-<a href="{% url 'administration:video_journal' %}" class="portal-nav-pill {% if nav == 'video_journal' %}active{% endif %}">Journal</a>
+<a href="{% url 'administration:video_journal' %}" class="portal-nav-pill {% if nav == 'video_journal' %}active{% endif %}">Journal des accès</a>
 <a href="{% url 'library:gestion' %}" class="portal-nav-pill {% if nav == 'bibliotheque' %}active{% endif %}">Bibliothèque</a>
 <a href="{% url 'library:gestion_emprunts' %}" class="portal-nav-pill {% if nav == 'emprunts' %}active{% endif %}">Emprunts</a>
 <a href="{% url 'commerce:gestion_commandes' %}" class="portal-nav-pill {% if nav == 'commandes' %}active{% endif %}">Commandes</a>
 <a href="{% url 'commerce:gestion_stock' %}" class="portal-nav-pill {% if nav == 'stock' %}active{% endif %}">Stocks</a>
 <a href="{% url 'administration:payments' %}" class="portal-nav-pill {% if nav == 'payments' %}active{% endif %}">Paiements</a>
 <a href="{% url 'administration:tarifs' %}" class="portal-nav-pill {% if nav == 'tarifs' %}active{% endif %}">Tarifs</a>
-<a href="{% url 'administration:utilisateurs' %}" class="portal-nav-pill {% if nav == 'utilisateurs' %}active{% endif %}">Utilisateurs</a>
 <a href="{% url 'website:actualites_gestion' %}" class="portal-nav-pill {% if nav == 'actualites' %}active{% endif %}">Actualités</a>
 <a href="{% url 'website:articles_relecture' %}" class="portal-nav-pill {% if nav == 'articles' %}active{% endif %}">Articles</a>
 <a href="{% url 'redaction:documents' %}" class="portal-nav-pill {% if nav == 'documents_rediges' %}active{% endif %}">Documents</a>
 <a href="{% url 'accounts:signature' %}" class="portal-nav-pill {% if nav == 'signature' %}active{% endif %}">Signature</a>
-<a href="{% url 'administration:tableurs' %}" class="portal-nav-pill {% if nav == 'tableurs' %}active{% endif %}">Imports</a>
+<a href="{% url 'administration:utilisateurs' %}" class="portal-nav-pill {% if nav == 'utilisateurs' %}active{% endif %}">Utilisateurs</a>
+<a href="{% url 'administration:tableurs' %}" class="portal-nav-pill {% if nav == 'tableurs' %}active{% endif %}">Imports et exports</a>
+<a href="/django-admin/" class="portal-nav-pill">Admin avancé</a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-pill {% if nav == 'profil' %}active{% endif %}">Mon profil</a>
 {% endif %}
