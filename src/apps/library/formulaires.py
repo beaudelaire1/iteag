@@ -1,6 +1,7 @@
-"""Formulaire de saisie d'une notice de bibliothèque."""
+"""Formulaires de gestion de la bibliothèque."""
 
 from django import forms
+from django.core.exceptions import ValidationError
 
 from apps.core.formulaires import FormulaireModeleITEAG
 from apps.library.models import Emprunt, NoticeBibliographique
@@ -36,7 +37,6 @@ class NoticeForm(FormulaireModeleITEAG):
         }
 
     def clean_cote(self):
-        """La cote désigne un emplacement : deux notices ne peuvent la partager."""
         cote = (self.cleaned_data.get("cote") or "").strip()
         if not cote:
             return cote
@@ -46,7 +46,6 @@ class NoticeForm(FormulaireModeleITEAG):
         return cote
 
     def clean_isbn(self):
-        """Un ISBN se saisit avec des tirets ou sans : on n'en garde que les chiffres."""
         isbn = (self.cleaned_data.get("isbn") or "").replace("-", "").replace(" ", "").strip()
         if isbn and not (isbn.replace("X", "").replace("x", "").isdigit() and len(isbn) in (10, 13)):
             raise forms.ValidationError("Un ISBN compte 10 ou 13 chiffres.")
@@ -82,3 +81,20 @@ class EmpruntForm(FormulaireModeleITEAG):
             if obj.get_full_name()
             else f"{obj.username} ({obj.email})"
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.instance.pk:
+            return cleaned_data
+
+        emprunteur = cleaned_data.get("emprunteur")
+        if emprunteur is None:
+            return cleaned_data
+
+        from apps.library import services
+
+        try:
+            services.verifier_droit_emprunt(emprunteur)
+        except ValidationError as erreur:
+            self.add_error("emprunteur", erreur.messages[0])
+        return cleaned_data
