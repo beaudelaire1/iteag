@@ -37,12 +37,24 @@
             <div class="min-w-48 rounded bg-warm-50 p-4 text-sm">
                 <p class="text-xs text-warm-500">Montant associé</p>
                 <p class="mt-1 text-xl font-bold text-navy-900">{% if demande.montant_du %}{{ demande.montant_du }} €{% else %}Sans frais{% endif %}</p>
-                {% if demande.paiement %}<p class="mt-1 text-xs text-emerald-700">Paiement {{ demande.paiement.reference|default:demande.paiement.pk }} confirmé</p>{% endif %}
+                {% if demande.paiement and demande.paiement.statut == 'confirme' %}
+                <p class="mt-2 text-xs font-semibold text-emerald-700">Paiement reçu — validation du secrétariat en cours</p>
+                {% endif %}
             </div>
         </div>
         <div class="mt-5 flex flex-wrap items-center gap-3 border-t border-warm-100 pt-4">
             <a href="{% url 'etudiant:course_offering_detail' demande.cours_session.pk %}" class="btn-secondary text-sm">Voir le cours</a>
-            {% if demande.statut == 'paiement_attente' %}<a href="{% url 'etudiant:payments' %}" class="btn-primary text-sm">Consulter les instructions de paiement</a>{% endif %}
+            {% if demande.statut == 'paiement_attente' %}
+                {% if demande.paiement and demande.paiement.statut == 'confirme' %}
+                <span class="inline-flex items-center rounded bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">Règlement confirmé</span>
+                {% else %}
+                <form method="post" action="{% url 'paiements:payer_inscription' demande.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary text-sm">Payer maintenant · {{ demande.montant_du }} €</button>
+                </form>
+                <a href="{% url 'etudiant:payments' %}" class="btn-secondary text-sm">Autres moyens de paiement</a>
+                {% endif %}
+            {% endif %}
             {% if demande.peut_etre_annulee %}
             <form method="post" action="{% url 'etudiant:enrollment_request_cancel' demande.pk %}" data-confirmer="Annuler cette demande d’inscription ?">
                 {% csrf_token %}
