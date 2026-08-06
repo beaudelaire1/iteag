@@ -23,7 +23,6 @@ from .views import (
 )
 from .views_devoirs import (
     TeacherDelaiView,
-    TeacherDevoirActionView,
     TeacherDevoirCreateView,
     TeacherDevoirDetailView,
     TeacherDevoirsListView,
@@ -32,51 +31,53 @@ from .views_devoirs import (
     TeacherReviseGradeView,
 )
 from .views_qcm import (
-    TeacherChoixCreateView,
-    TeacherChoixDeleteView,
     TeacherGroupeCreateView,
     TeacherGroupeDeleteView,
     TeacherGroupeMessageView,
     TeacherGroupesListView,
     TeacherGroupeUpdateView,
-    TeacherQuestionCreateView,
-    TeacherQuestionDeleteView,
-    TeacherQuestionDetailView,
-    TeacherQuestionnaireView,
-    TeacherQuestionUpdateView,
-    TeacherRecorrigerView,
+)
+from .views_qcm_securisees import (
+    TeacherChoixCreateQCMView,
+    TeacherChoixDeleteQCMView,
+    TeacherDevoirActionQCMView,
+    TeacherQuestionCreateQCMView,
+    TeacherQuestionDeleteQCMView,
+    TeacherQuestionDetailQCMView,
+    TeacherQuestionnaireQCMView,
+    TeacherQuestionUpdateQCMView,
+    TeacherRecorrigerQCMView,
 )
 
 app_name = "lms"
 
 urlpatterns = [
     path("", TeacherDashboardView.as_view(), name="dashboard"),
-    # ── Devoirs ──
     path("devoirs/", TeacherDevoirsListView.as_view(), name="devoirs_list"),
     path("devoirs/nouveau/", TeacherDevoirCreateView.as_view(), name="devoir_create"),
     path("cours/<int:cours_pk>/devoir/", TeacherDevoirCreateView.as_view(), name="devoir_create_pour_cours"),
     path("devoirs/<int:pk>/", TeacherDevoirDetailView.as_view(), name="devoir_detail"),
     path("devoirs/<int:pk>/modifier/", TeacherDevoirUpdateView.as_view(), name="devoir_update"),
-    path("devoirs/<int:pk>/action/", TeacherDevoirActionView.as_view(), name="devoir_action"),
+    path("devoirs/<int:pk>/action/", TeacherDevoirActionQCMView.as_view(), name="devoir_action"),
     path("copies/<int:pk>/delai/", TeacherDelaiView.as_view(), name="accorder_delai"),
-    # ── Recours ──
     path("evaluations/<int:pk>/reviser/", TeacherReviseGradeView.as_view(), name="revise_grade"),
-    # ── Questionnaires ──
-    path("questionnaires/<int:pk>/", TeacherQuestionnaireView.as_view(), name="questionnaire"),
-    path("questionnaires/<int:pk>/question/", TeacherQuestionCreateView.as_view(), name="question_create"),
-    path("questionnaires/<int:pk>/recorriger/", TeacherRecorrigerView.as_view(), name="questionnaire_recorriger"),
-    path("questions/<int:pk>/", TeacherQuestionDetailView.as_view(), name="question_detail"),
-    path("questions/<int:pk>/modifier/", TeacherQuestionUpdateView.as_view(), name="question_update"),
-    path("questions/<int:pk>/supprimer/", TeacherQuestionDeleteView.as_view(), name="question_delete"),
-    path("questions/<int:pk>/proposition/", TeacherChoixCreateView.as_view(), name="choix_create"),
-    path("propositions/<int:pk>/supprimer/", TeacherChoixDeleteView.as_view(), name="choix_delete"),
-    # ── Groupes de travail ──
+    path("questionnaires/<int:pk>/", TeacherQuestionnaireQCMView.as_view(), name="questionnaire"),
+    path("questionnaires/<int:pk>/question/", TeacherQuestionCreateQCMView.as_view(), name="question_create"),
+    path(
+        "questionnaires/<int:pk>/recorriger/",
+        TeacherRecorrigerQCMView.as_view(),
+        name="questionnaire_recorriger",
+    ),
+    path("questions/<int:pk>/", TeacherQuestionDetailQCMView.as_view(), name="question_detail"),
+    path("questions/<int:pk>/modifier/", TeacherQuestionUpdateQCMView.as_view(), name="question_update"),
+    path("questions/<int:pk>/supprimer/", TeacherQuestionDeleteQCMView.as_view(), name="question_delete"),
+    path("questions/<int:pk>/proposition/", TeacherChoixCreateQCMView.as_view(), name="choix_create"),
+    path("propositions/<int:pk>/supprimer/", TeacherChoixDeleteQCMView.as_view(), name="choix_delete"),
     path("groupes/", TeacherGroupesListView.as_view(), name="groupes_list"),
     path("groupes/nouveau/", TeacherGroupeCreateView.as_view(), name="groupe_create"),
     path("groupes/<int:pk>/modifier/", TeacherGroupeUpdateView.as_view(), name="groupe_update"),
     path("groupes/<int:pk>/supprimer/", TeacherGroupeDeleteView.as_view(), name="groupe_delete"),
     path("groupes/<int:pk>/message/", TeacherGroupeMessageView.as_view(), name="groupe_message"),
-    # ── Mes étudiants ──
     path("etudiants/", TeacherEtudiantsListView.as_view(), name="etudiants_list"),
     path("cours/", TeacherCoursesListView.as_view(), name="courses_list"),
     path("cours/<int:pk>/", TeacherCourseDetailView.as_view(), name="course_detail"),
