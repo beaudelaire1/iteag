@@ -8,6 +8,7 @@ transiterait par le navigateur serait un montant négociable par l'acheteur.
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
@@ -72,7 +73,7 @@ def pour_frais_inscription(
     utilisateur=None,
     email: str = "",
 ) -> Reglement:
-    """Règlement de frais administratifs, dont le montant est fixé par le secrétariat."""
+    """Règlement de frais administratifs fixé hors d'une demande de cours."""
     if etudiant is None:
         raise ValidationError("Un dossier étudiant est nécessaire.")
     if Decimal(montant_ttc) <= 0:
@@ -88,6 +89,83 @@ def pour_frais_inscription(
         montant_ttc=Decimal(montant_ttc),
         taux_tva=Decimal(taux_tva),
     )
+
+
+@transaction.atomic
+def pour_demande_inscription(demande, *, utilisateur=None) -> Reglement:
+    """Ouvre ou reprend le règlement de la demande d'inscription donnée.
+
+    Une demande ne possède qu'un règlement durable. En cas d'échec ou de
+    remboursement, une nouvelle session Stripe est ouverte sur ce même
+    règlement afin de garder une référence financière unique.
+    """
+    from apps.academics.models import DemandeInscriptionCours, Paiement
+    from apps.paiements.models_inscriptions import ReglementInscription
+
+    demande = (
+        DemandeInscriptionCours.objects.select_for_update()
+        .select_related(
+            "etudiant__utilisateur",
+            "cours_session__cours",
+            "cours_session__session",
+            "paiement",
+        )
+        .get(pk=demande.pk)
+    )
+
+    if demande.statut != DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE:
+        raise ValidationError("Cette demande n'est pas en attente de paiement.")
+    if demande.montant_du <= 0:
+        raise ValidationError("Aucun paiement n'est requis pour cette demande.")
+    if demande.paiement_id and demande.paiement.statut == Paiement.StatutPaiement.CONFIRME:
+        raise ValidationError("Le paiement de cette demande a déjà été reçu.")
+
+    association = ReglementInscription.objects.select_related("reglement").filter(demande=demande).first()
+    if association is not None:
+        reglement = association.reglement
+        if reglement.est_paye or reglement.statut == Reglement.Statut.EN_ATTENTE:
+            return reglement
+
+        reglement.statut = Reglement.Statut.EN_ATTENTE
+        reglement.session_stripe = ""
+        reglement.intention_stripe = ""
+        reglement.date_paiement = None
+        reglement.date_remboursement = None
+        reglement.motif_echec = ""
+        reglement.contrepartie_delivree = False
+        reglement.save(
+            update_fields=[
+                "statut",
+                "session_stripe",
+                "intention_stripe",
+                "date_paiement",
+                "date_remboursement",
+                "motif_echec",
+                "contrepartie_delivree",
+                "updated_at",
+            ]
+        )
+        return reglement
+
+    porteur, adresse = _payeur(
+        utilisateur or demande.etudiant.utilisateur,
+        demande.etudiant.utilisateur.email,
+    )
+    taux_tva = Decimal(str(getattr(settings, "PAIEMENTS_TAUX_TVA_DEFAUT", "0.00")))
+    reglement = Reglement.objects.create(
+        nature=Reglement.Nature.FRAIS_INSCRIPTION,
+        etudiant=demande.etudiant,
+        utilisateur=porteur,
+        email=adresse,
+        libelle=(
+            f"Inscription — {demande.cours_session.cours.titre} "
+            f"({demande.cours_session.session.nom})"
+        ),
+        montant_ttc=demande.montant_du,
+        taux_tva=taux_tva,
+    )
+    ReglementInscription.objects.create(reglement=reglement, demande=demande)
+    return reglement
 
 
 @transaction.atomic
