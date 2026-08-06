@@ -84,11 +84,25 @@ class EmpruntForm(FormulaireModeleITEAG):
 
     def clean(self):
         cleaned_data = super().clean()
-        if self.instance.pk:
+        emprunteur = cleaned_data.get("emprunteur")
+        statut = cleaned_data.get("statut")
+        if emprunteur is None:
             return cleaned_data
 
-        emprunteur = cleaned_data.get("emprunteur")
-        if emprunteur is None:
+        verifier = not self.instance.pk
+        if self.instance.pk:
+            original = Emprunt.objects.only("emprunteur_id", "statut").get(pk=self.instance.pk)
+            statuts_actifs = {
+                Emprunt.Statut.RESERVE,
+                Emprunt.Statut.EN_COURS,
+                Emprunt.Statut.EN_RETARD,
+            }
+            verifier = (
+                original.emprunteur_id != emprunteur.pk
+                or (original.statut not in statuts_actifs and statut in statuts_actifs)
+            )
+
+        if not verifier:
             return cleaned_data
 
         from apps.library import services
