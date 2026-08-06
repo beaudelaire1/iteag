@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Emprunt, NoticeBibliographique
+from .models import Emprunt, NoticeBibliographique, SuspensionBibliotheque
 
 
 @admin.register(NoticeBibliographique)
@@ -15,3 +15,22 @@ class EmpruntAdmin(admin.ModelAdmin):
     list_display = ["notice", "emprunteur", "statut", "date_retour_prevue", "date_retrait"]
     list_filter = ["statut", "date_retour_prevue"]
     search_fields = ["notice__titre", "emprunteur__username", "emprunteur__email"]
+
+
+@admin.register(SuspensionBibliotheque)
+class SuspensionBibliothequeAdmin(admin.ModelAdmin):
+    list_display = [
+        "emprunteur",
+        "jours_retard",
+        "jours_suspension",
+        "date_debut",
+        "date_fin",
+        "levee_le",
+    ]
+    list_filter = ["date_fin", "levee_le"]
+    search_fields = [
+        "emprunteur__username",
+        "emprunteur__email",
+        "emprunt__notice__titre",
+    ]
+    readonly_fields = ["jours_retard", "jours_suspension", "date_debut", "date_fin"]
