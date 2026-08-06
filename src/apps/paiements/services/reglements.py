@@ -102,8 +102,11 @@ def pour_demande_inscription(demande, *, utilisateur=None) -> Reglement:
     from apps.academics.models import DemandeInscriptionCours, Paiement
     from apps.paiements.models_inscriptions import ReglementInscription
 
+    # « paiement » est nullable : PostgreSQL refuse un FOR UPDATE appliqué au
+    # côté nullable de la jointure externe produite par select_related(). Seule
+    # la demande doit être verrouillée pour sérialiser la création du règlement.
     demande = (
-        DemandeInscriptionCours.objects.select_for_update()
+        DemandeInscriptionCours.objects.select_for_update(of=("self",))
         .select_related(
             "etudiant__utilisateur",
             "cours_session__cours",
