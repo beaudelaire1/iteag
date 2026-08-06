@@ -4,7 +4,13 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.academics.models import CoursDeSession, InscriptionSession, ProfilEtudiant, Promotion, SessionAcademique
+from apps.academics.models import (
+    CoursDeSession,
+    InscriptionSession,
+    ProfilEtudiant,
+    Promotion,
+    SessionAcademique,
+)
 from apps.accounts.models import User
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.lms.models import Devoir
