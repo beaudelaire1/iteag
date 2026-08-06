@@ -1,5 +1,4 @@
 {% extends "partials/portal_base.html" %}
-{% load static socle_wagtail %}
 
 {% block title %}{% if document %}{{ document.titre }}{% else %}Nouveau document{% endif %} — {{ SITE_NAME }}{% endblock %}
 
@@ -8,26 +7,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{% comment %}
-Le socle avant tout le reste. Les bundles de Wagtail — draftail.js,
-blocs telepath, sélecteurs — supposent « vendor.js » et ses dépendances déjà
-présentes : dans l'administration elles le sont toujours. Servis seuls, ils
-s'exécutent sans rien enregistrer, et telepath reste vide. Le symptôme est
-trompeur : le champ ne s'affiche pas, l'envoi part sans « corps-count », et
-c'est le serveur qui semble fautif.
-
-Mesuré : sans ce socle, zéro adaptateur enregistré ; avec lui, seize, et le
-champ se construit. Même liste que « DraftailPortail.media », dans le même
-ordre.
-{% endcomment %}
-{% wagtail_socle_portail %}
 {{ form.media.js }}
-{% comment %}
-Après les médias du widget, et jamais avant : le script y cherche « telepath »,
-que « telepath/blocks.js » vient d'installer. Placé au-dessus, il ne trouverait
-rien et laisserait le champ inerte.
-{% endcomment %}
-<script src="{% static 'js/streamfield-portail.js' %}"></script>
 {% endblock %}
 
 {% block portal_nav %}{% with nav='documents_rediges' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
@@ -118,15 +98,8 @@ rien et laisserait le champ inerte.
         {% include "partials/champ.html" with field=form.destinataire_adresse %}
     </div>
 
-    {% comment %}
-    Le corps est un StreamField : son widget se rend lui-même, avec sa propre
-    interface d'ajout de blocs. Le gabarit d'éditeur riche ne s'y applique plus.
-    {% endcomment %}
     <div class="card">
-        <label class="form-label" for="{{ form.corps.id_for_label }}">{{ form.corps.label }}</label>
-        {% if form.corps.help_text %}<p class="form-aide">{{ form.corps.help_text }}</p>{% endif %}
-        {{ form.corps }}
-        {% for erreur in form.corps.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+        {% include "partials/champ_editeur_riche.html" with field=form.corps min_height="24rem" only %}
     </div>
 
     <div class="card space-y-4">

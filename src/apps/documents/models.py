@@ -19,11 +19,9 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.formats import date_format, time_format
-from wagtail.fields import StreamField
 
 from apps.core.models import TimeStampedModel
 from apps.core.services.redaction import en_texte
-from apps.documents.blocs import CorpsDocument
 
 
 class SuiviGenerationPDF(models.Model):
@@ -186,15 +184,12 @@ class DocumentRedige(SuiviGenerationPDF, TimeStampedModel):
     destinataire_nom = models.CharField(max_length=200, blank=True, verbose_name="Destinataire")
     destinataire_adresse = models.TextField(blank=True, verbose_name="Adresse du destinataire")
     objet = models.CharField(max_length=250, verbose_name="Objet")
-    # Un StreamField, et non un bloc de HTML libre. Un corps de texte ne sait
-    # pas porter un tableau : on peut y coller du balisage, mais plus rien ne
-    # vérifie le nombre de colonnes, les en-têtes, ni ce qui arrive quand il
-    # dépasse la page. Le contenu structuré se déclare — voir « blocs.py ».
-    corps = StreamField(
-        CorpsDocument(),
-        blank=True,
-        verbose_name="Corps du document",
-    )
+    # Le même éditeur que les articles et les actualités, qui fonctionne dans
+    # les portails. Le StreamField apportait tableaux, encadrés et images, mais
+    # son widget ne s'amorçait pas ici : le champ restait vide. Entre un éditeur
+    # qui marche et des blocs qu'on ne peut pas remplir, le choix est vite fait.
+    # Le vocabulaire reste dans « blocs.py » pour le jour où il démarrera.
+    corps = models.TextField(blank=True, verbose_name="Corps du document")
 
     # Les champs propres au genre — heure et lieu d'une convocation,
     # participants d'un compte rendu. Leur schéma est la fiche du genre
@@ -298,7 +293,7 @@ class DocumentRedige(SuiviGenerationPDF, TimeStampedModel):
         tableau vide reste un document sans corps, et la finalisation doit le
         refuser — d'où le passage par le rendu plutôt que par « bool(corps) ».
         """
-        return en_texte(str(self.corps)) if self.corps else ""
+        return en_texte(self.corps)
 
     def _reference_libre(self) -> str:
         """« ITEAG/COU/2026/007 » — séquentiel par genre et par année.

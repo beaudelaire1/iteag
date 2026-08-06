@@ -229,7 +229,7 @@
 {% endif %}
 {% endwith %}
 
-<section class="body-copy">{{ document.corps }}</section>
+<section class="body-copy">{{ document.corps|richtext }}</section>
 
 {% if document.signataire_nom or document.signataire_qualite %}
 <section class="signature">

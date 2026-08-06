@@ -4,12 +4,14 @@ Un « ModelForm », contrairement aux actualités : « DocumentRedige » est un
 modèle Django ordinaire, qui s'enregistre en s'enregistrant. Rien n'oblige ici
 à passer par une vue pour placer l'objet.
 
-Le corps est un StreamField : le widget vient du modèle, avec son interface
-d'ajout de blocs. Le formulaire n'a plus qu'à lui donner l'intitulé du genre.
+Le corps emprunte l'éditeur partagé — celui des articles et des actualités.
+Le StreamField, qui apportait tableaux et encadrés, ne s'amorçait pas dans les
+portails ; l'éditeur riche, lui, y fonctionne.
 """
 
 from django import forms
 
+from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireModeleITEAG
 from apps.documents.models import DocumentRedige
 
@@ -17,6 +19,13 @@ INPUT = "form-input"
 
 
 class DocumentRedigeForm(FormulaireModeleITEAG):
+    corps = ChampTexteRiche(
+        required=False,
+        label="Corps du document",
+        placeholder="Rédigez le document ici…",
+        min_height="24rem",
+    )
+
     class Meta:
         model = DocumentRedige
         # « genre » n'y figure pas : il est choisi à la création et n'en bouge
@@ -58,6 +67,7 @@ class DocumentRedigeForm(FormulaireModeleITEAG):
         # rendu. Un intitulé juste vaut mieux qu'une aide à lire.
         if fiche is not None:
             self.fields["corps"].label = fiche.intitule_corps
+            self.fields["corps"].widget.options["placeholder"] = fiche.invite_corps
 
     def clean_titre(self):
         titre = (self.cleaned_data.get("titre") or "").strip()

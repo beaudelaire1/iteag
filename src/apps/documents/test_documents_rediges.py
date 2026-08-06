@@ -7,8 +7,6 @@ plus rien. Les tests portent donc d'abord sur son attribution, son unicité et
 sa conservation.
 """
 
-import json
-import re
 from unittest.mock import patch
 
 import pytest
@@ -52,7 +50,7 @@ def document(secretaire):
         titre="Convocation du conseil",
         genre=DocumentRedige.Genre.CONVOCATION,
         objet="Séance du conseil pédagogique du 12 septembre",
-        corps=[("paragraphe", "<p>Vous êtes convoqué à la séance du conseil.</p>")],
+        corps="<p>Vous êtes convoqué à la séance du conseil.</p>",
         destinataire_nom="Monsieur le Pasteur Jean Dupont",
         signataire_nom="Alain Nisus",
         signataire_qualite="Directeur",
@@ -61,54 +59,7 @@ def document(secretaire):
     )
 
 
-def _corps_poste(texte="La rentrée est fixée au 14 septembre.", champ="corps"):
-    """Le corps tel que le widget StreamField l'envoie.
-
-    Deux encodages s'emboîtent, et c'est ce qui rend la construction pénible
-    mais nécessaire :
-
-    1. le **StreamBlock** poste une série indexée à la manière d'un formset —
-       un compteur, puis un type, un ordre et une valeur par bloc ;
-    2. la valeur d'un bloc « paragraphe » est un **ContentState** Draftail,
-       c'est-à-dire du JSON, et non du HTML.
-
-    Poster « <p>…</p> » échoue donc deux fois : d'abord sur « corps-count »
-    manquant, ensuite sur du JSON illisible. Un test qui tombe pour l'une de
-    ces raisons n'apprend rien sur ce qu'il prétend vérifier.
-
-    Un texte vide produit un corps sans aucun bloc — la façon correcte de dire
-    « brouillon encore vide ».
-    """
-    if not texte:
-        return {f"{champ}-count": "0"}
-
-    contenu = json.dumps(
-        {
-            "blocks": [
-                {
-                    "key": "bloc1",
-                    "text": texte,
-                    "type": "unstyled",
-                    "depth": 0,
-                    "inlineStyleRanges": [],
-                    "entityRanges": [],
-                    "data": {},
-                }
-            ],
-            "entityMap": {},
-        }
-    )
-    return {
-        f"{champ}-count": "1",
-        f"{champ}-0-deleted": "",
-        f"{champ}-0-order": "0",
-        f"{champ}-0-type": "paragraphe",
-        f"{champ}-0-id": "",
-        f"{champ}-0-value": contenu,
-    }
-
-
-def _saisie(corps="La rentrée est fixée au 14 septembre.", **surcharges):
+def _saisie(corps="<p>La rentrée est fixée au 14 septembre.</p>", **surcharges):
     donnees = {
         "titre": "Courrier de rentrée",
         "genre": DocumentRedige.Genre.COURRIER,
@@ -119,7 +70,7 @@ def _saisie(corps="La rentrée est fixée au 14 septembre.", **surcharges):
         "signataire_nom": "",
         "signataire_qualite": "",
     }
-    donnees.update(_corps_poste(corps))
+    donnees["corps"] = corps
     donnees.update(surcharges)
     return donnees
 
@@ -145,7 +96,7 @@ class TestReference:
             titre="Un courrier",
             genre=DocumentRedige.Genre.COURRIER,
             objet="Objet",
-            corps=[("paragraphe", "<p>Texte.</p>")],
+            corps="<p>Texte.</p>",
             date_document=document.date_document,
         )
         courrier.finaliser(par=secretaire)
@@ -159,7 +110,7 @@ class TestReference:
             titre="Seconde convocation",
             genre=DocumentRedige.Genre.CONVOCATION,
             objet="Objet",
-            corps=[("paragraphe", "<p>Texte.</p>")],
+            corps="<p>Texte.</p>",
             date_document=document.date_document,
             donnees=dict(FICHE_CONVOCATION),
         )
@@ -195,7 +146,7 @@ class TestCycle:
             vide.finaliser(par=secretaire)
 
     def test_finaliser_sans_objet_est_refuse(self, secretaire):
-        vide = DocumentRedige.objects.create(titre="Sans objet", objet="   ", corps=[("paragraphe", "<p>Texte.</p>")])
+        vide = DocumentRedige.objects.create(titre="Sans objet", objet="   ", corps="<p>Texte.</p>")
         with pytest.raises(ValidationError):
             vide.finaliser(par=secretaire)
 
@@ -367,9 +318,7 @@ class TestDecisions:
 
 class TestListe:
     def test_les_brouillons_et_les_finalises_sont_separes(self, client, secretaire, document):
-        finalise = DocumentRedige.objects.create(
-            titre="Note déjà partie", objet="Un objet", corps=[("paragraphe", "<p>Texte.</p>")]
-        )
+        finalise = DocumentRedige.objects.create(titre="Note déjà partie", objet="Un objet", corps="<p>Texte.</p>")
         finalise.finaliser(par=secretaire)
         client.force_login(secretaire)
 
@@ -379,7 +328,7 @@ class TestListe:
 
     def test_le_filtre_par_genre_restreint_la_liste(self, client, secretaire, document):
         DocumentRedige.objects.create(
-            titre="Un rapport", genre=DocumentRedige.Genre.RAPPORT, objet="Objet", corps=[("paragraphe", "<p>x</p>")]
+            titre="Un rapport", genre=DocumentRedige.Genre.RAPPORT, objet="Objet", corps="<p>x</p>"
         )
         client.force_login(secretaire)
 
@@ -524,7 +473,7 @@ class TestFicheDuGenre:
             titre="Un courrier",
             genre=DocumentRedige.Genre.COURRIER,
             objet="Objet",
-            corps=[("paragraphe", "<p>Texte.</p>")],
+            corps="<p>Texte.</p>",
         )
         courrier.finaliser(par=secretaire)
         assert courrier.est_finalise
@@ -589,147 +538,3 @@ class TestFicheDuGenre:
             contexte_marque(profil_polices="document_administratif", document=document),
         )
         assert "Salle du conseil" in html
-
-
-class TestFormulaireSansCorps:
-    """Un envoi sans corps ne doit pas faire tomber le serveur.
-
-    « MultiValueDictKeyError: 'corps-count' » : un StreamBlock lit cette clé
-    sans filet, et la vue rendait un 500 là où elle devait afficher un
-    formulaire. La clé manque dès que le widget ne s'est pas amorcé — script
-    absent, page envoyée trop tôt, requête forgée.
-    """
-
-    def test_un_envoi_sans_le_champ_corps_ne_tombe_pas(self, client, secretaire):
-        client.force_login(secretaire)
-        donnees = {cle: valeur for cle, valeur in _saisie().items() if not cle.startswith("corps-")}
-
-        reponse = client.post(reverse("redaction:document_creation"), donnees)
-
-        assert reponse.status_code < 500, "Un formulaire incomplet s'affiche, il ne plante pas."
-        assert DocumentRedige.objects.filter(titre="Courrier de rentrée").exists()
-
-    def test_le_document_ainsi_créé_reste_un_brouillon_sans_corps(self, client, secretaire):
-        client.force_login(secretaire)
-        donnees = {cle: valeur for cle, valeur in _saisie().items() if not cle.startswith("corps-")}
-        client.post(reverse("redaction:document_creation"), donnees)
-
-        cree = DocumentRedige.objects.get(titre="Courrier de rentrée")
-        assert cree.est_modifiable
-        with pytest.raises(ValidationError):
-            cree.finaliser(par=secretaire)
-
-    def test_la_page_charge_le_script_d_amorcage(self, client, secretaire, document):
-        """Sans lui, le champ reste un div et l'envoi repart sans corps."""
-        client.force_login(secretaire)
-        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
-
-        assert "streamfield-portail.js" in contenu
-        assert 'data-controller="w-block"' in contenu
-
-    def test_le_prefixe_des_champs_vient_de_l_identifiant(self):
-        """Le contrat entre le gabarit et le script d'amorçage.
-
-        « data-w-block-arguments-value » ne porte que l'état initial et les
-        erreurs — il vaut « [[], null] ». Le préfixe, lui, est l'identifiant de
-        l'élément : c'est lui qui donnera « corps-count » et « corps-0-type ».
-
-        L'oublier ne lève aucune erreur : les champs naissent sous des noms
-        absurdes et la zone reste visuellement vide. Ce test fige donc les deux
-        moitiés du contrat, faute de pouvoir exécuter le script ici.
-        """
-        import json
-        import re
-        from html import unescape
-        from pathlib import Path
-
-        from django.conf import settings
-
-        from apps.documents.formulaires import DocumentRedigeForm
-
-        rendu = str(DocumentRedigeForm()["corps"])
-        assert 'id="corps"' in rendu, "Le préfixe des champs est lu sur l'identifiant."
-
-        arguments = re.search(r'data-w-block-arguments-value="([^"]*)"', rendu)
-        assert arguments, "Le widget doit publier ses arguments d'initialisation."
-        assert len(json.loads(unescape(arguments.group(1)))) == 2, (
-            "Deux arguments seulement : le préfixe doit donc être fourni à part."
-        )
-
-        script = (Path(settings.BASE_DIR) / "static" / "js" / "streamfield-portail.js").read_text(encoding="utf-8")
-        assert "emplacement.id" in script, "Le script doit passer l'identifiant comme préfixe."
-
-
-class TestSocleWagtail:
-    """Le socle JavaScript conditionne l'existence même du champ.
-
-    Les bundles de Wagtail supposent « vendor.js » déjà chargé. Servis seuls,
-    ils s'exécutent sans rien enregistrer : telepath reste vide, le champ ne se
-    construit pas, et l'envoi part sans « corps-count ». Mesuré en navigateur —
-    zéro adaptateur sans le socle, seize avec.
-
-    Le symptôme est trompeur : un intitulé sans zone de saisie, puis une erreur
-    500 côté serveur. Rien ne désigne le socle manquant.
-    """
-
-    def test_la_page_sert_le_socle_avant_les_bundles(self, client, secretaire, document):
-        client.force_login(secretaire)
-        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
-
-        assert "wagtailadmin/js/vendor.js" in contenu, "Sans « vendor.js », aucun adaptateur ne s'enregistre."
-        assert contenu.index("wagtailadmin/js/vendor.js") < contenu.index("telepath/blocks.js"), (
-            "Le socle doit précéder les bundles qui en dépendent."
-        )
-
-    def test_la_page_sert_la_configuration_wagtail(self, client, secretaire, document):
-        """« vendor.js » la lit au démarrage et abandonne si elle manque.
-
-        Sans elle : « Unexpected end of JSON input », puis « window.telepath »
-        jamais créé, puis une cascade de « Cannot read properties of undefined
-        (reading 'register') » sur tous les bundles. Rien dans ces messages ne
-        désigne la configuration absente — d'où trois correctifs à côté avant
-        de trouver.
-        """
-        client.force_login(secretaire)
-        contenu = client.get(reverse("redaction:document_edition", args=[document.pk])).content.decode()
-
-        assert 'id="wagtail-config"' in contenu, "« vendor.js » ne démarre pas sans elle."
-        assert contenu.index("wagtail-config") < contenu.index("wagtailadmin/js/vendor.js"), (
-            "La configuration doit précéder le bundle qui la lit."
-        )
-
-    def test_le_bloc_de_configuration_porte_un_nonce(self, client, secretaire, document):
-        """« script-src 'self' » bloque aussi les blocs en ligne.
-
-        Y compris de type « application/json ». Sans nonce, le navigateur
-        écarte le bloc, « vendor.js » lit une chaîne vide et lève « Unexpected
-        end of JSON input » — puis « window.telepath » n'est jamais créé et
-        tous les bundles échouent sur « undefined (reading 'register') ».
-
-        Le piège : l'élément **est** dans le HTML servi. Aucune inspection
-        côté serveur ne peut voir le blocage ; seule la console du navigateur
-        le montre.
-        """
-        client.force_login(secretaire)
-        reponse = client.get(reverse("redaction:document_edition", args=[document.pk]))
-        contenu = reponse.content.decode()
-
-        bloc = re.search(r'<script id="wagtail-config"[^>]*>', contenu)
-        assert bloc, "La configuration doit être servie."
-        assert "nonce=" in bloc.group(0), "Sans nonce, la CSP écarte le bloc et vendor.js abandonne."
-
-        # La CSP est désactivée dans les réglages de test — il n'y a donc aucun
-        # en-tête à lire. On vérifie l'autre moitié du contrat là où elle vit :
-        # la politique de base doit demander l'insertion du nonce dans
-        # « script-src », faute de quoi l'attribut posé sur le bloc n'autorise
-        # rien.
-        from csp.constants import NONCE
-
-        from config.settings import base
-
-        directives = base.CONTENT_SECURITY_POLICY["DIRECTIVES"]
-        assert NONCE in directives["script-src"], (
-            "Sans la sentinelle NONCE dans « script-src », l'en-tête ne reprend pas le nonce "
-            "du bloc, et le navigateur l'écarte. « include-nonce-in » est la forme de "
-            "django-csp 3 : la version 4 l'ignore en silence."
-        )
