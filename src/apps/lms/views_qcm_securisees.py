@@ -126,7 +126,10 @@ class TeacherDevoirActionQCMView(TeacherDevoirActionView):
                     if probleme:
                         raise ValidationError(f"Questionnaire incomplet : {probleme}")
                 services.publier_devoir(devoir, par=request.user)
-                messages.success(request, f"« {devoir.titre} » est ouvert : les étudiants en sont avertis.")
+                messages.success(
+                    request,
+                    f"« {devoir.titre} » est ouvert : les étudiants en sont avertis.",
+                )
             elif action == "clore":
                 services.clore_devoir(devoir, par=request.user)
                 messages.success(request, f"« {devoir.titre} » est clos.")
