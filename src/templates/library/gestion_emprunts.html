@@ -30,6 +30,10 @@
 
 {# KPI summary #}
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-5 border-l-4 border-l-navy-600">
+        <p class="text-xs text-warm-500 font-semibold uppercase">Prêts en cours</p>
+        <p class="text-2xl font-bold mt-1 text-navy-950">{{ nb_en_cours }}</p>
+    </div>
     <div class="card p-5 border-l-4 border-l-gold-500">
         <p class="text-xs text-warm-500 font-semibold uppercase">Réservations en attente</p>
         <p class="text-2xl font-bold mt-1 text-navy-950">{{ nb_reservations }}</p>
@@ -37,6 +41,10 @@
     <div class="card p-5 border-l-4 border-l-red-500">
         <p class="text-xs text-warm-500 font-semibold uppercase">Emprunts en retard</p>
         <p class="text-2xl font-bold mt-1 text-red-600">{{ nb_retards }}</p>
+    </div>
+    <div class="card p-5 border-l-4 border-l-warm-400">
+        <p class="text-xs text-warm-500 font-semibold uppercase">Ouvrages restitués</p>
+        <p class="text-2xl font-bold mt-1 text-warm-700">{{ nb_rendus }}</p>
     </div>
 </div>
 

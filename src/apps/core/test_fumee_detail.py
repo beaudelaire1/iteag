@@ -475,6 +475,7 @@ FABRIQUES = {
     "core:notification_lue": (ETUDIANT, lambda m: {"pk": m["notification"].pk}),
     "core:notification_supprimer": (ETUDIANT, lambda m: {"pk": m["notification"].pk}),
     # ── Documents ──
+    "documents:delete": (ETUDIANT, lambda m: {"pk": m["document"].pk}),
     "documents:download": (ETUDIANT, lambda m: {"pk": m["document"].pk}),
     "documents:generate": (
         ETUDIANT,
@@ -538,8 +539,10 @@ FABRIQUES = {
     "formations:professeur_detail": (PUBLIC, lambda m: {"slug": m["professeur"].slug}),
     # ── Bibliothèque ──
     "library:emprunt_action": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
+    "library:emprunt_annuler": (ETUDIANT, lambda m: {"pk": m["emprunt"].pk}),
     "library:emprunt_modifier": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
     "library:emprunt_supprimer": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
+    "library:notice_annuler": (ETUDIANT, lambda m: {"pk": m["notice"].pk}),
     "library:notice_detail": (PUBLIC, lambda m: {"pk": m["notice"].pk}),
     "library:notice_disponibilite": (SECRETARIAT, lambda m: {"pk": m["notice"].pk}),
     "library:notice_modifier": (SECRETARIAT, lambda m: {"pk": m["notice"].pk}),

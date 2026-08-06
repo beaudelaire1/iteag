@@ -47,7 +47,7 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "admissions": {"core", "formations", "accounts"},
     "academics": {"core", "formations", "accounts"},
     "lms": {"core", "academics", "formations", "library"},
-    "elearning": {"core", "accounts", "formations", "academics"},
+    "elearning": {"core", "accounts", "formations", "academics", "documents"},
     "library": {"core", "formations", "accounts"},
     "commerce": {"core", "accounts", "library"},
     # « paiements » encaisse pour le compte des domaines vendeurs : il les

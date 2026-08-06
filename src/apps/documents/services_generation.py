@@ -106,10 +106,19 @@ def fabriquer_document_administratif(document: DocumentAdministratif) -> tuple[b
 
 
 def fabriquer_document_redige(document: DocumentRedige) -> tuple[bytes, str]:
-    auteur = document.auteur
-    signature_pdf = _user_signature_uri(auteur) if auteur else ""
-    signataire_nom_effectif = auteur.nom_autorite_signature or (auteur.get_full_name() if auteur else "") or (auteur.username if auteur else "")
-    signataire_qualite_effectif = auteur.titre_qualite_signature if auteur and auteur.titre_qualite_signature else ""
+    genere_le = timezone.now()
+    redacteur = document.redige_par
+    signature_pdf = _user_signature_uri(redacteur) if redacteur else ""
+    signataire_nom_effectif = (
+        document.signataire_nom
+        or (redacteur.nom_autorite_signature if redacteur else "")
+        or (redacteur.get_full_name() if redacteur else "")
+        or (redacteur.username if redacteur else "")
+    )
+    signataire_qualite_effectif = (
+        document.signataire_qualite
+        or (redacteur.titre_qualite_signature if redacteur and redacteur.titre_qualite_signature else "")
+    )
 
     if not signature_pdf:
         signature_pdf, sec_nom, sec_qualite = obtenir_signature_secretariat_data_uri()
@@ -123,12 +132,12 @@ def fabriquer_document_redige(document: DocumentRedige) -> tuple[bytes, str]:
         contexte_marque(
             profil_polices="document_redige",
             document=document,
-            generated_at=timezone.now(),
+            edite_le=genere_le,
             signature_pdf=signature_pdf,
             signataire_nom_effectif=signataire_nom_effectif,
             signataire_qualite_effectif=signataire_qualite_effectif,
         ),
     )
-
-    nom_fichier = f"doc_{document.reference_complete.lower().replace('/', '_')}.pdf"
-    return contenu, nom_fichier
+    prefixe = "apercu" if document.est_modifiable else slugify(document.reference or document.titre)
+    nom = f"{prefixe}-{slugify(document.titre) or 'document'}-{genere_le:%Y%m%d%H%M%S}.pdf"
+    return contenu, nom

@@ -192,10 +192,11 @@
         <p class="stat-label">Utilisateurs actifs</p>
         <p class="stat-number mt-2" data-counter="{{ total_users }}" data-counter-suffix="">{{ total_users }}</p>
     </div>
-    <div class="card-elevated">
+    <a href="{% url 'library:gestion_emprunts' %}" class="card-elevated group">
         <p class="stat-label">Ouvrages (bibliothèque)</p>
         <p class="stat-number mt-2" data-counter="{{ total_ouvrages }}" data-counter-suffix="">{{ total_ouvrages }}</p>
-    </div>
+        <p class="mt-1 text-xs" style="color: var(--color-warm-400);">{{ total_emprunts_en_cours }} prêt{{ total_emprunts_en_cours|pluralize }} en cours{% if total_emprunts_retards %} · <span class="text-red-600 font-semibold">{{ total_emprunts_retards }} en retard</span>{% endif %}</p>
+    </a>
     <div class="card-elevated">
         <p class="stat-label">Session en cours</p>
         <p class="mt-2 text-lg font-semibold" style="color: var(--color-navy-900);">

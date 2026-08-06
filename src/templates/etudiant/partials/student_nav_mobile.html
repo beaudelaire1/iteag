@@ -5,6 +5,7 @@
 <a href="{% url 'etudiant:progress' %}" class="portal-nav-pill {% if nav == 'progress' %}active{% endif %}">Parcours ECTS</a>
 <a href="{% url 'etudiant:course_catalogue' %}" class="portal-nav-pill {% if nav == 'catalogue' %}active{% endif %}">Catalogue cours</a>
 <a href="{% url 'library:catalogue' %}" class="portal-nav-pill {% if nav == 'bibliotheque' %}active{% endif %}">Bibliothèque</a>
+<a href="{% url 'library:mes_emprunts' %}" class="portal-nav-pill {% if nav == 'mes_emprunts' %}active{% endif %}">Mes emprunts</a>
 <a href="{% url 'etudiant:enrollment_requests' %}" class="portal-nav-pill {% if nav == 'enrollments' %}active{% endif %}">Demandes</a>
 <a href="{% url 'documents:list' %}" class="portal-nav-pill {% if nav == 'documents' %}active{% endif %}">Documents</a>
 <a href="{% url 'etudiant:payments' %}" class="portal-nav-pill {% if nav == 'payments' %}active{% endif %}">Paiements</a>

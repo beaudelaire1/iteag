@@ -22,4 +22,5 @@ urlpatterns = [
     path("notice/<int:pk>/reserver/", views.ReserverOuvrageView.as_view(), name="notice_reserver"),
     path("notice/<int:pk>/annuler/", views.AnnulerReservationView.as_view(), name="notice_annuler"),
     path("emprunt/<int:pk>/annuler/", views.AnnulerReservationView.as_view(), name="emprunt_annuler"),
+    path("mes-emprunts/", views.MesEmpruntsView.as_view(), name="mes_emprunts"),
 ]

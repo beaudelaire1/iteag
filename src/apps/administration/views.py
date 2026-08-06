@@ -104,6 +104,8 @@ class AdminDashboardView(AdminRoleRequiredMixin, TemplateView):
                 "total_cours": Cours.objects.filter(actif=True).count(),
                 "total_parcours": Parcours.objects.filter(actif=True).count(),
                 "total_ouvrages": NoticeBibliographique.objects.count(),
+                "total_emprunts_en_cours": Emprunt.objects.filter(statut=Emprunt.Statut.EN_COURS).count(),
+                "total_emprunts_retards": Emprunt.objects.filter(statut=Emprunt.Statut.EN_RETARD).count(),
                 "total_users": User.objects.filter(is_active=True).count(),
                 "session_en_cours": session_en_cours,
                 "prochaine_session": SessionAcademique.objects.filter(date_debut__gt=today)

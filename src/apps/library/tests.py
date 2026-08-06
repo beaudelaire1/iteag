@@ -219,3 +219,35 @@ class TestEmprunts:
         notice.refresh_from_db()
         assert notice.disponible is True
         assert not Emprunt.objects.filter(pk=emprunt.pk).exists()
+
+    def test_mes_emprunts_view_etudiant(self, client: Client, notice):
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        etudiant = User.objects.create_user(username="etudiant_emprunt", role=User.Role.ETUDIANT)
+        emprunt = services.reserver_ouvrage(notice, etudiant)
+        services.valider_retrait(emprunt)
+
+        client.force_login(etudiant)
+        reponse = client.get(reverse("library:mes_emprunts"))
+        assert reponse.status_code == 200
+        import html
+        assert html.escape(notice.titre) in reponse.content.decode()
+        assert len(reponse.context["emprunts_en_cours"]) == 1
+
+    def test_annuler_emprunt_par_pk_depuis_mes_emprunts(self, client: Client, notice):
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        user = User.objects.create_user(username="etudiant_annulation", role=User.Role.ETUDIANT)
+        emprunt = services.reserver_ouvrage(notice, user)
+
+        client.force_login(user)
+        reponse = client.post(reverse("library:emprunt_annuler", kwargs={"pk": emprunt.pk}))
+        assert reponse.status_code == 302
+        assert not Emprunt.objects.filter(pk=emprunt.pk).exists()
+        notice.refresh_from_db()
+        assert notice.disponible is True
+

@@ -334,8 +334,10 @@ class GestionEmpruntsView(StaffRoleRequiredMixin, ListView):
             {
                 "statuts": Emprunt.Statut.choices,
                 "statut_courant": self.request.GET.get("statut", ""),
+                "nb_en_cours": Emprunt.objects.filter(statut=Emprunt.Statut.EN_COURS).count(),
                 "nb_retards": Emprunt.objects.filter(statut=Emprunt.Statut.EN_RETARD).count(),
                 "nb_reservations": Emprunt.objects.filter(statut=Emprunt.Statut.RESERVE).count(),
+                "nb_rendus": Emprunt.objects.filter(statut=Emprunt.Statut.RENDU).count(),
             }
         )
         return contexte
@@ -424,3 +426,37 @@ class EmpruntDeleteView(StaffRoleRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse("library:gestion_emprunts")
+
+
+class MesEmpruntsView(LoginRequiredMixin, ListView):
+    """Espace personnel de l'emprunteur (étudiant ou enseignant).
+    
+    Affiche la liste des livres actuellement en sa possession (prêts en cours et en retard),
+    les réservations en attente de retrait (avec possibilité d'annuler), ainsi que l'historique.
+    """
+
+    model = Emprunt
+    template_name = "library/mes_emprunts.html"
+    context_object_name = "emprunts"
+
+    def get_queryset(self):
+        return (
+            Emprunt.objects.filter(emprunteur=self.request.user)
+            .select_related("notice", "notice__discipline")
+            .order_by("-created_at")
+        )
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        tous = list(self.get_queryset())
+        contexte["emprunts_en_cours"] = [
+            e for e in tous if e.statut in (Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD)
+        ]
+        contexte["reservations"] = [
+            e for e in tous if e.statut == Emprunt.Statut.RESERVE
+        ]
+        contexte["historique"] = [
+            e for e in tous if e.statut == Emprunt.Statut.RENDU
+        ]
+        return contexte
+
