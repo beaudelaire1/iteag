@@ -34,11 +34,13 @@ def emprunt_en_retard_actif(emprunteur) -> Emprunt | None:
 
 
 def suspension_active(emprunteur) -> SuspensionBibliotheque | None:
+    aujourdhui = timezone.localdate()
     return (
         SuspensionBibliotheque.objects.filter(
             emprunteur=emprunteur,
             levee_le__isnull=True,
-            date_fin__gte=timezone.localdate(),
+            date_debut__lte=aujourdhui,
+            date_fin__gte=aujourdhui,
         )
         .select_related("emprunt", "emprunt__notice")
         .order_by("-date_fin")
@@ -114,7 +116,6 @@ def reserver_ouvrage(
         ),
         envoyer_par_email=True,
     )
-
     return emprunt
 
 
@@ -124,14 +125,12 @@ def annuler_reservation(emprunt: Emprunt, emprunteur) -> NoticeBibliographique:
     emprunt = Emprunt.objects.select_for_update().select_related("notice").get(pk=emprunt.pk)
     if emprunt.emprunteur_id != emprunteur.pk and not getattr(emprunteur, "is_staff", False):
         raise ValidationError("Vous n'êtes pas autorisé à annuler cette réservation.")
-
     if emprunt.statut != Emprunt.Statut.RESERVE:
         raise ValidationError("Seule une réservation en attente de retrait peut être annulée.")
 
     notice = emprunt.notice
     notice.disponible = True
     notice.save(update_fields=["disponible", "updated_at"])
-
     emprunt.delete()
 
     notifier(
@@ -140,7 +139,6 @@ def annuler_reservation(emprunt: Emprunt, emprunteur) -> NoticeBibliographique:
         message=f"Votre réservation pour « {notice.titre} » a été annulée avec succès.",
         envoyer_par_email=True,
     )
-
     return notice
 
 
@@ -155,7 +153,6 @@ def valider_retrait(emprunt: Emprunt) -> Emprunt:
     emprunt.statut = Emprunt.Statut.EN_COURS
     emprunt.date_retrait = timezone.now()
     emprunt.save(update_fields=["statut", "date_retrait", "updated_at"])
-
     return emprunt
 
 
@@ -185,7 +182,7 @@ def restituer_ouvrage(emprunt: Emprunt, *, commentaire: str = "") -> Emprunt:
 
     if jours_retard > 0:
         jours_suspension = _duree_suspension(jours_retard)
-        date_fin = date_retour + timedelta(days=jours_suspension)
+        date_fin = date_retour + timedelta(days=jours_suspension - 1)
         suspension, _ = SuspensionBibliotheque.objects.update_or_create(
             emprunt=emprunt,
             defaults={
@@ -204,12 +201,11 @@ def restituer_ouvrage(emprunt: Emprunt, *, commentaire: str = "") -> Emprunt:
             f"Suspension de prêt — {notice.titre}",
             message=(
                 f"L'ouvrage « {notice.titre} » a été restitué avec {jours_retard} jour(s) de retard. "
-                f"Conformément à la règle de prêt, toute nouvelle réservation est suspendue jusqu'au "
+                "Conformément à la règle de prêt, toute nouvelle réservation est suspendue jusqu'au "
                 f"{suspension.date_fin.strftime('%d/%m/%Y')} inclus."
             ),
             envoyer_par_email=True,
         )
-
     return emprunt
 
 
