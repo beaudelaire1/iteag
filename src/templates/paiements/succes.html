@@ -18,19 +18,16 @@
         <a href="{{ reglement.module.get_absolute_url }}" class="btn-primary">Commencer la formation</a>
         {% elif reglement.nature == "commande" %}
         <a href="{{ reglement.commande.get_absolute_url }}" class="btn-primary">Suivre ma commande</a>
+        {% elif reglement.nature == "frais_inscription" %}
+        <a href="{% url 'etudiant:enrollment_requests' %}" class="btn-primary">Suivre mon inscription</a>
         {% endif %}
 
         {% else %}
-        {% comment %}
-            La notification de Stripe arrive parfois après le retour du
-            navigateur. Annoncer un succès ici serait un mensonge une fois sur
-            vingt ; annoncer l'attente est vrai à chaque fois.
-        {% endcomment %}
         <h1 class="text-2xl mb-4">Paiement en cours de confirmation</h1>
         <p class="text-warm-600 mb-6">
             Votre banque et notre prestataire échangent encore. Cela prend en général
             quelques secondes. Rechargez cette page dans un instant : dès que le
-            règlement est confirmé, votre accès s'ouvre automatiquement.
+            règlement est confirmé, il apparaîtra dans votre dossier.
         </p>
         <p class="text-sm text-warm-500 mb-6">
             Si rien ne change d'ici quelques minutes, contactez le secrétariat en

@@ -114,8 +114,6 @@ class CourseCatalogueView(StudentRoleRequiredMixin, ListView):
             modules = modules.filter(Q(titre__icontains=recherche) | Q(description__icontains=recherche))
         if discipline:
             modules = modules.filter(discipline_id=discipline)
-        # Une session ou une modalité de présentiel ne s'applique pas à un module
-        # vidéo : filtrer là-dessus doit masquer la section, non la fausser.
         if self.request.GET.get("session") or self.request.GET.get("modalite"):
             return {"modules_video": []}
 
@@ -241,7 +239,11 @@ class StudentPaymentsView(StudentRoleRequiredMixin, TemplateView):
                 ),
                 "demandes_a_payer": profil.demandes_inscription.filter(
                     statut=DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
-                ).select_related("cours_session__cours", "cours_session__session"),
+                ).select_related(
+                    "cours_session__cours",
+                    "cours_session__session",
+                    "paiement",
+                ),
             }
         )
         return context

@@ -5,10 +5,6 @@ Un règlement encaissé ne vaut rien tant que la contrepartie n'est pas délivr�
 et une contrepartie délivrée deux fois vaut une réclamation. Tout passe donc
 par ici, sous transaction et sous verrou : c'est le seul endroit qui décide
 qu'un module s'ouvre, qu'une commande est réglée, qu'un dossier est à jour.
-
-Le sens inverse compte autant. Rien, jusqu'ici, ne retirait un accès après un
-remboursement ou une contestation bancaire — l'argent repartait, la formation
-restait.
 """
 
 from django.db import transaction
@@ -23,18 +19,9 @@ class ContrepartieImpossible(RuntimeError):
     """Le règlement est payé mais rien ne peut être délivré : cas à instruire."""
 
 
-# ──────────────────────────────────────────────
-# Délivrance
-# ──────────────────────────────────────────────
-
-
 @transaction.atomic
 def delivrer(reglement: Reglement, *, acteur=None) -> Reglement:
-    """Ouvre la contrepartie d'un règlement encaissé. Idempotent.
-
-    Le verrou porte sur la ligne du règlement : deux notifications Stripe
-    arrivant en parallèle — ce qui arrive — ne peuvent pas délivrer deux fois.
-    """
+    """Ouvre la contrepartie d'un règlement encaissé. Idempotent."""
     reglement = Reglement.objects.select_for_update().get(pk=reglement.pk)
     if reglement.contrepartie_delivree:
         return reglement
@@ -62,17 +49,13 @@ def delivrer(reglement: Reglement, *, acteur=None) -> Reglement:
 
 
 def _delivrer_module(reglement: Reglement, *, acteur=None) -> None:
-    """L'achat d'un module ouvre un accès sans échéance.
-
-    `duree_jours=None` est le choix commercial retenu : l'accès acheté est
-    perpétuel. Le modèle sait poser une échéance, elle n'est simplement pas
-    utilisée ici — la changer un jour se fera à cette ligne, pas ailleurs.
-    """
     from apps.elearning.models import InscriptionModule
     from apps.elearning.services import octroi
 
     if reglement.etudiant is None:
-        raise ContrepartieImpossible(f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant.")
+        raise ContrepartieImpossible(
+            f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant."
+        )
     octroi.octroyer(
         reglement.etudiant,
         reglement.module,
@@ -82,16 +65,35 @@ def _delivrer_module(reglement: Reglement, *, acteur=None) -> None:
     )
 
 
+def _association_inscription(reglement):
+    from apps.paiements.models_inscriptions import ReglementInscription
+
+    return (
+        ReglementInscription.objects.select_related(
+            "demande__cours_session__session",
+            "demande__paiement",
+        )
+        .filter(reglement=reglement)
+        .first()
+    )
+
+
 def _delivrer_frais(reglement: Reglement, *, acteur=None) -> None:
-    """Les frais d'inscription se consignent au dossier de l'étudiant."""
+    """Consigne les frais au dossier et les rattache à la bonne demande."""
     from apps.academics.models import Paiement
 
     if reglement.etudiant is None:
-        raise ContrepartieImpossible(f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant.")
-    Paiement.objects.update_or_create(
+        raise ContrepartieImpossible(
+            f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant."
+        )
+
+    association = _association_inscription(reglement)
+    session = association.demande.cours_session.session if association else None
+    paiement, _ = Paiement.objects.update_or_create(
         reference=str(reglement.pk),
         defaults={
             "etudiant": reglement.etudiant,
+            "session": session,
             "montant": reglement.montant_ttc,
             "date_paiement": timezone.localdate(),
             "mode": Paiement.ModePaiement.CARTE,
@@ -99,31 +101,32 @@ def _delivrer_frais(reglement: Reglement, *, acteur=None) -> None:
         },
     )
 
+    if association is not None:
+        demande = association.demande
+        demande.paiement = paiement
+        demande.reference_paiement = str(reglement.pk)
+        demande.save(
+            update_fields=[
+                "paiement",
+                "reference_paiement",
+                "updated_at",
+            ]
+        )
+
 
 def _delivrer_commande(reglement: Reglement, *, acteur=None) -> None:
-    """Une commande réglée par carte est confirmée sans intervention humaine."""
     from apps.commerce.models import Commande
     from apps.commerce.services import confirmer_commande
 
     commande = reglement.commande
     if commande.statut != Commande.Statut.EN_ATTENTE:
-        # Déjà confirmée à la main par le secrétariat : ne pas la bousculer.
         return
     confirmer_commande(commande, acteur=acteur)
 
 
-# ──────────────────────────────────────────────
-# Retrait
-# ──────────────────────────────────────────────
-
-
 @transaction.atomic
 def retirer(reglement: Reglement, *, motif: str, acteur=None) -> Reglement:
-    """Referme la contrepartie après remboursement ou contestation.
-
-    Symétrique de `delivrer` : si rien n'avait été délivré, il n'y a rien à
-    retirer, et l'appel reste sans effet.
-    """
+    """Referme la contrepartie après remboursement ou contestation."""
     reglement = Reglement.objects.select_for_update().get(pk=reglement.pk)
     if not reglement.contrepartie_delivree:
         return reglement
@@ -152,15 +155,42 @@ def _retirer_module(reglement: Reglement, *, motif: str, acteur=None) -> None:
     from apps.elearning.models import InscriptionModule
     from apps.elearning.services import octroi
 
-    inscription = InscriptionModule.objects.filter(etudiant=reglement.etudiant, module=reglement.module).first()
+    inscription = InscriptionModule.objects.filter(
+        etudiant=reglement.etudiant,
+        module=reglement.module,
+    ).first()
     if inscription is not None:
         octroi.revoquer(inscription, motif=motif, par=acteur)
 
 
 def _retirer_frais(reglement: Reglement, *, motif: str, acteur=None) -> None:
-    from apps.academics.models import Paiement
+    from apps.academics.models import DemandeInscriptionCours, Paiement
 
-    Paiement.objects.filter(reference=str(reglement.pk)).update(statut=Paiement.StatutPaiement.REMBOURSE)
+    paiement = Paiement.objects.filter(reference=str(reglement.pk)).first()
+    if paiement is None:
+        return
+
+    paiement.statut = Paiement.StatutPaiement.REMBOURSE
+    paiement.save(update_fields=["statut", "updated_at"])
+
+    association = _association_inscription(reglement)
+    if association is None:
+        return
+
+    demande = association.demande
+    if (
+        demande.statut == DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
+        and demande.paiement_id == paiement.pk
+    ):
+        demande.paiement = None
+        demande.reference_paiement = ""
+        demande.save(
+            update_fields=[
+                "paiement",
+                "reference_paiement",
+                "updated_at",
+            ]
+        )
 
 
 def _retirer_commande(reglement: Reglement, *, motif: str, acteur=None) -> None:
@@ -169,13 +199,9 @@ def _retirer_commande(reglement: Reglement, *, motif: str, acteur=None) -> None:
 
     commande = reglement.commande
     if commande.statut in (Commande.Statut.EXPEDIEE, Commande.Statut.LIVREE):
-        # Le colis est parti : l'annuler automatiquement remettrait en stock des
-        # exemplaires qui n'y sont plus. Le secrétariat tranche.
         commande.statut_paiement = Commande.StatutPaiement.REMBOURSE
         commande.save(update_fields=["statut_paiement", "updated_at"])
         return
-    # Le motif est connu sans avoir à le demander : c'est le règlement qui a
-    # été retiré, remboursé ou contesté.
     annuler_commande(
         commande,
         acteur=acteur,

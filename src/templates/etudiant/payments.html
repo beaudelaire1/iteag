@@ -20,19 +20,32 @@
 {% block portal_content %}
 {% if demandes_a_payer %}
 <section class="mb-8 rounded border border-amber-200 bg-amber-50 p-6">
-    <h2 class="text-lg font-semibold text-amber-950">Paiements à régulariser</h2>
+    <h2 class="text-lg font-semibold text-amber-950">Inscriptions en attente</h2>
     <div class="mt-4 space-y-3">
         {% for demande in demandes_a_payer %}
-        <div class="flex flex-col justify-between gap-2 rounded bg-white p-4 sm:flex-row sm:items-center">
+        <div class="flex flex-col justify-between gap-4 rounded bg-white p-4 sm:flex-row sm:items-center">
             <div>
                 <p class="font-semibold text-navy-900">{{ demande.cours_session.cours.titre }}</p>
                 <p class="text-xs text-warm-500">{{ demande.cours_session.session }}</p>
+                {% if demande.paiement and demande.paiement.statut == 'confirme' %}
+                <p class="mt-2 text-xs font-semibold text-emerald-700">Paiement reçu — inscription en cours de validation</p>
+                {% endif %}
             </div>
-            <p class="text-lg font-bold text-navy-900">{{ demande.montant_du }} €</p>
+            <div class="flex flex-wrap items-center gap-3 sm:justify-end">
+                <p class="text-lg font-bold text-navy-900">{{ demande.montant_du }} €</p>
+                {% if not demande.paiement or demande.paiement.statut != 'confirme' %}
+                <form method="post" action="{% url 'paiements:payer_inscription' demande.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary text-sm">Payer maintenant</button>
+                </form>
+                {% else %}
+                <span class="badge badge-success">Réglé</span>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
-    <p class="mt-4 text-sm leading-6 text-amber-900">Effectuez le règlement selon les coordonnées communiquées par l’institut, puis transmettez sa référence depuis la fiche du cours. Le secrétariat confirme ensuite le paiement et l’inscription.</p>
+    <p class="mt-4 text-sm leading-6 text-amber-900">Le paiement par carte est disponible directement depuis cette page. Pour un virement, un chèque ou un règlement sur place, utilisez les coordonnées communiquées par l’institut ; le secrétariat validera ensuite l’inscription.</p>
 </section>
 {% endif %}
 
@@ -46,7 +59,7 @@
         <p class="stat-number mt-2">{{ paiements|length }}</p>
     </div>
     <div class="card-elevated">
-        <p class="stat-label">Demandes à payer</p>
+        <p class="stat-label">Inscriptions en attente</p>
         <p class="stat-number mt-2">{{ demandes_a_payer|length }}</p>
     </div>
 </div>
