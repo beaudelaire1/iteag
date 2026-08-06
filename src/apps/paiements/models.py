@@ -38,7 +38,6 @@ class Reglement(UUIDModel, TimeStampedModel):
         COMMANDE = "commande", "Commande de la boutique"
 
     class Statut(models.TextChoices):
-        # Un règlement naît en attente : la session Stripe existe, l'argent non.
         EN_ATTENTE = "en_attente", "En attente de paiement"
         PAYE = "paye", "Payé"
         ECHOUE = "echoue", "Échoué"
@@ -48,7 +47,6 @@ class Reglement(UUIDModel, TimeStampedModel):
 
     nature = models.CharField(max_length=30, choices=Nature.choices)
 
-    # ── La contrepartie : exactement une des trois ──
     module = models.ForeignKey(
         "elearning.ModuleFormation",
         on_delete=models.PROTECT,
@@ -72,7 +70,6 @@ class Reglement(UUIDModel, TimeStampedModel):
         help_text="Dossier crédité — obligatoire pour un module ou des frais d'inscription.",
     )
 
-    # ── Le payeur ──
     utilisateur = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -83,14 +80,6 @@ class Reglement(UUIDModel, TimeStampedModel):
     email = models.EmailField(help_text="Adresse à laquelle le reçu Stripe est envoyé.")
     libelle = models.CharField(max_length=250, help_text="Ce que le payeur lit sur sa page de paiement.")
 
-    # ── Les montants ──
-    #
-    # Le TTC est la référence : c'est le prix affiché, et c'est ce que Stripe
-    # encaisse. La TVA est saisie au formulaire, pas calculée par un service
-    # externe — l'ITEAG peut relever de l'exonération de la formation
-    # professionnelle sur ses modules tout en la facturant sur ses livres.
-    # HT et TVA sont dérivés puis figés : un taux qui change plus tard ne doit
-    # pas réécrire l'histoire comptable.
     montant_ttc = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -110,20 +99,12 @@ class Reglement(UUIDModel, TimeStampedModel):
 
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
 
-    # ── Les références Stripe ──
-    #
-    # `session_stripe` est unique : c'est la clé de rapprochement lorsqu'une
-    # notification arrive, et l'unicité empêche deux règlements de se disputer
-    # le même encaissement.
     session_stripe = models.CharField(max_length=255, blank=True, db_index=True, verbose_name="Session Stripe")
     intention_stripe = models.CharField(max_length=255, blank=True, verbose_name="PaymentIntent Stripe")
 
     date_paiement = models.DateTimeField(null=True, blank=True)
     date_remboursement = models.DateTimeField(null=True, blank=True)
     motif_echec = models.TextField(blank=True)
-    # La contrepartie n'est délivrée qu'une fois. Ce drapeau la garde, en plus
-    # de l'idempotence des services appelés : deux filets valent mieux qu'un
-    # quand Stripe redélivre une notification.
     contrepartie_delivree = models.BooleanField(default=False, editable=False)
 
     class Meta:
@@ -144,7 +125,6 @@ class Reglement(UUIDModel, TimeStampedModel):
                 condition=models.Q(taux_tva__gte=0) & models.Q(taux_tva__lte=100),
                 name="paiements_taux_tva_valide",
             ),
-            # Exactement une contrepartie, cohérente avec la nature déclarée.
             models.CheckConstraint(
                 condition=(
                     models.Q(nature="module", module__isnull=False, commande__isnull=True)
@@ -167,12 +147,7 @@ class Reglement(UUIDModel, TimeStampedModel):
 
     @staticmethod
     def repartir_tva(montant_ttc: Decimal, taux_tva: Decimal) -> tuple[Decimal, Decimal]:
-        """Décompose un TTC en (HT, TVA), arrondi au centime.
-
-        La TVA est calculée par soustraction plutôt que directement : ainsi
-        HT + TVA redonne toujours exactement le TTC encaissé, ce qu'un double
-        arrondi indépendant ne garantit pas.
-        """
+        """Décompose un TTC en (HT, TVA), arrondi au centime."""
         ttc = Decimal(montant_ttc).quantize(CENTIMES, rounding=ROUND_HALF_UP)
         taux = Decimal(taux_tva)
         if taux <= 0:
@@ -190,20 +165,11 @@ class Reglement(UUIDModel, TimeStampedModel):
 
     @property
     def montant_en_centimes(self) -> int:
-        """Stripe raisonne en plus petite unité monétaire, jamais en décimales."""
         return int((self.montant_ttc * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 class EvenementStripe(TimeStampedModel):
-    """
-    Notification reçue de Stripe, consignée avant d'être suivie d'effet.
-
-    Stripe redélivre : une même notification arrive plusieurs fois, et rien
-    n'interdit qu'elle arrive dans le désordre. L'identifiant est donc unique en
-    base, et c'est l'insertion elle-même qui décide si l'événement doit être
-    traité — pas une lecture préalable, qui laisserait passer deux appels
-    concurrents entre le test et l'écriture.
-    """
+    """Notification Stripe consignée avant traitement."""
 
     identifiant = models.CharField(max_length=255, unique=True, verbose_name="Identifiant Stripe")
     type_evenement = models.CharField(max_length=100, verbose_name="Type")
@@ -226,3 +192,9 @@ class EvenementStripe(TimeStampedModel):
 
     def __str__(self):
         return f"{self.type_evenement} — {self.identifiant}"
+
+
+# Django ne découvre automatiquement que le module `models`. Importer la
+# liaison ici, après la définition de Reglement, garantit que la relation
+# inverse `inscription_associee` existe avant la construction des requêtes.
+from apps.paiements.models_inscriptions import ReglementInscription  # noqa: E402, F401
