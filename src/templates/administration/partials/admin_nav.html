@@ -100,6 +100,10 @@ second intitulé « Mon compte ». Ce qui suit n'appartient qu'à la direction.
     <i class="fas fa-book w-5 shrink-0" aria-hidden="true"></i>
     Fonds documentaire
 </a>
+<a href="{% url 'library:gestion_emprunts' %}" class="portal-nav-link {% if nav == 'emprunts' %}active{% endif %}">
+    <i class="fas fa-bookmark w-5 shrink-0" aria-hidden="true"></i>
+    Emprunts & réservations
+</a>
 
 <p class="portal-nav-group">Boutique</p>
 <a href="{% url 'commerce:gestion_commandes' %}" class="portal-nav-link {% if nav == 'commandes' %}active{% endif %}">
