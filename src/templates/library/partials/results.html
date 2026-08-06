@@ -9,12 +9,17 @@
                 <th>Auteur</th>
                 <th>Cote</th>
                 <th>Disponible</th>
+                <th class="text-right">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for notice in notices %}
             <tr>
-                <td class="font-medium" style="color: var(--color-navy-800);">{{ notice.titre }}</td>
+                <td class="font-medium" style="color: var(--color-navy-800);">
+                    <a href="{% url 'library:notice_detail' notice.pk %}" class="hover:underline">
+                        {{ notice.titre }}
+                    </a>
+                </td>
                 <td>{{ notice.auteur|default:"—" }}</td>
                 <td>{{ notice.cote|default:"—" }}</td>
                 <td>
@@ -23,6 +28,32 @@
                     {% else %}
                     <span class="badge badge-danger">Non</span>
                     {% endif %}
+                </td>
+                <td class="text-right">
+                    <div class="flex items-center justify-end gap-2">
+                        {% if notice.pk in user_reservations_notice_ids %}
+                        <form method="post" action="{% url 'library:notice_annuler' notice.pk %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="px-2.5 py-1 text-xs rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors font-medium">
+                                Annuler réservation
+                            </button>
+                        </form>
+                        {% elif notice.pk in user_active_loans_notice_ids %}
+                        <span class="badge badge-info text-xs">Emprunté par vous</span>
+                        {% elif notice.disponible %}
+                        {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'library:notice_reserver' notice.pk %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-primary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;">
+                                Réserver
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                        <a href="{% url 'library:notice_detail' notice.pk %}" class="px-2.5 py-1 text-xs rounded border border-warm-300 text-warm-700 hover:bg-warm-100 transition-colors font-medium">
+                            Détails
+                        </a>
+                    </div>
                 </td>
             </tr>
             {% endfor %}

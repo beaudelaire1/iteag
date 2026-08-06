@@ -79,20 +79,46 @@
                         </dd>
                     </div>
 
-                    {% if notice.disponible %}
+                    {% if user_emprunt %}
+                    <div class="pt-2 space-y-3">
+                        {% if user_emprunt.statut == "reserve" %}
+                        <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                            <p class="font-semibold">Réservation en cours</p>
+                            <p class="mt-1">Présentez-vous au secrétariat pour le retrait (retour prévu le {{ user_emprunt.date_retour_prevue|date:"d/m/Y" }}).</p>
+                        </div>
+                        <form method="post" action="{% url 'library:notice_annuler' notice.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full btn-outline-danger text-xs py-2 px-3 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 flex items-center justify-center gap-1.5 transition-colors font-medium">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Annuler ma réservation
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
+                            <p class="font-semibold">Ouvrage en votre possession</p>
+                            <p class="mt-1">Date d'échéance : {{ user_emprunt.date_retour_prevue|date:"d/m/Y" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% elif notice.disponible %}
                     <div class="pt-2">
                         {% if user.is_authenticated %}
                         <form method="post" action="{% url 'library:notice_reserver' notice.pk %}">
                             {% csrf_token %}
-                            <button type="submit" class="w-full btn btn-primary text-xs py-2">
-                                Réserver pour retrait à l'institut
+                            <button type="submit" class="w-full btn-primary text-xs py-2.5 flex items-center justify-center gap-1.5">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                                Réserver ce livre
                             </button>
                         </form>
                         {% else %}
-                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="w-full block text-center btn btn-outline text-xs py-2">
+                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="w-full block text-center btn-outline text-xs py-2">
                             Se connecter pour réserver
                         </a>
                         {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="pt-2">
+                        <p class="text-xs text-warm-500 italic">Cet ouvrage est actuellement réservé ou emprunté par un autre lecteur.</p>
                     </div>
                     {% endif %}
                 </aside>

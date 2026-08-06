@@ -232,13 +232,19 @@
 
 <section class="body-copy">{{ document.corps|richtext }}</section>
 
-{% if document.signataire_nom or document.signataire_qualite or signature_pdf %}
+{% if document.signataire_nom or document.signataire_qualite or signature_pdf or signataire_nom_effectif %}
 <section class="signature">
-    {% if document.signataire_qualite %}<p class="signature__role">{{ document.signataire_qualite }}</p>{% endif %}
+    {% if document.signataire_qualite %}
+    <p class="signature__role">{{ document.signataire_qualite }}</p>
+    {% else %}
+    <p class="signature__role">Le secrétariat</p>
+    {% endif %}
     <div class="signature__space">
-        {% if signature_pdf %}<img class="signature__image" src="{{ signature_pdf }}" alt="">{% endif %}
+        {% if signature_pdf %}<img class="signature__image" src="{{ signature_pdf }}" alt="Signature">{% endif %}
     </div>
-    {% if document.signataire_nom %}<p class="signature__name">{{ document.signataire_nom }}</p>{% endif %}
+    {% if document.signataire_nom or signataire_nom_effectif %}
+    <p class="signature__name">{{ document.signataire_nom|default:signataire_nom_effectif }}</p>
+    {% endif %}
 </section>
 {% endif %}
 

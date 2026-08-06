@@ -141,12 +141,18 @@ def generer_attestation_pdf(attestation_id: str) -> str:
     from django.conf import settings
 
     from apps.core.services.pdf import MoteurPDFIndisponible, contexte_marque, qr_data_uri, rendre_pdf
+    from apps.documents.services_generation import obtenir_signature_secretariat_data_uri
 
     adresse = f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{attestation.url_verification()}"
+    signature_pdf, _ = obtenir_signature_secretariat_data_uri()
     try:
         pdf = rendre_pdf(
             "elearning/attestation_pdf.html",
-            contexte_marque(attestation=attestation, qr_verification=qr_data_uri(adresse)),
+            contexte_marque(
+                attestation=attestation,
+                qr_verification=qr_data_uri(adresse),
+                signature_pdf=signature_pdf,
+            ),
         )
     except MoteurPDFIndisponible:
         logger.warning("WeasyPrint indisponible : attestation %s sans PDF", attestation_id)

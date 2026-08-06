@@ -20,4 +20,6 @@ urlpatterns = [
     path("gestion/<int:pk>/supprimer/", views.NoticeDeleteView.as_view(), name="notice_supprimer"),
     path("notice/<int:pk>/", views.NoticeDetailView.as_view(), name="notice_detail"),
     path("notice/<int:pk>/reserver/", views.ReserverOuvrageView.as_view(), name="notice_reserver"),
+    path("notice/<int:pk>/annuler/", views.AnnulerReservationView.as_view(), name="notice_annuler"),
+    path("emprunt/<int:pk>/annuler/", views.AnnulerReservationView.as_view(), name="emprunt_annuler"),
 ]

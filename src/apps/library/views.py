@@ -87,6 +87,22 @@ class CatalogueView(ListView):
         context["current_year"] = self.request.GET.get("year", "")
         context["current_sort"] = self.request.GET.get("sort", "titre")
         context["disciplines"] = Discipline.objects.filter(notices__isnull=False).distinct().order_by("nom")
+
+        if self.request.user.is_authenticated:
+            user_emprunts = Emprunt.objects.filter(
+                emprunteur=self.request.user,
+                statut__in=[Emprunt.Statut.RESERVE, Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD],
+            )
+            context["user_reservations_notice_ids"] = set(
+                e.notice_id for e in user_emprunts if e.statut == Emprunt.Statut.RESERVE
+            )
+            context["user_active_loans_notice_ids"] = set(
+                e.notice_id for e in user_emprunts if e.statut in (Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD)
+            )
+        else:
+            context["user_reservations_notice_ids"] = set()
+            context["user_active_loans_notice_ids"] = set()
+
         return context
 
 
@@ -94,6 +110,16 @@ class NoticeDetailView(DetailView):
     model = NoticeBibliographique
     template_name = "library/notice_detail.html"
     context_object_name = "notice"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context["user_emprunt"] = Emprunt.objects.filter(
+                notice=self.object,
+                emprunteur=self.request.user,
+                statut__in=[Emprunt.Statut.RESERVE, Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD],
+            ).first()
+        return context
 
 
 # ══════════════════════════════════════════════
@@ -260,6 +286,31 @@ class ReserverOuvrageView(LoginRequiredMixin, View):
                 ),
             )
         return redirect("library:notice_detail", pk=notice.pk)
+
+
+class AnnulerReservationView(LoginRequiredMixin, View):
+    """Permet à un utilisateur (étudiant ou enseignant) d'annuler sa réservation d'ouvrage."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        emprunt = Emprunt.objects.filter(pk=pk, emprunteur=request.user, statut=Emprunt.Statut.RESERVE).first()
+        if not emprunt:
+            emprunt = get_object_or_404(
+                Emprunt, notice_id=pk, emprunteur=request.user, statut=Emprunt.Statut.RESERVE
+            )
+
+        try:
+            notice = services.annuler_reservation(emprunt, request.user)
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+        else:
+            messages.success(request, f"Votre réservation pour « {notice.titre} » a été annulée.")
+
+        referer = request.META.get("HTTP_REFERER")
+        if referer:
+            return redirect(referer)
+        return redirect("library:catalogue")
 
 
 class GestionEmpruntsView(StaffRoleRequiredMixin, ListView):

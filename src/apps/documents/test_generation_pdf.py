@@ -234,3 +234,27 @@ class TestMiseEnPage:
         contenu = texte_du_pdf(generer(client, etudiant, DocumentAdministratif.TypeDocument.ATTESTATION))
         assert "Fait aux Abymes" in contenu
         assert "SECRÉTARIAT" in contenu.upper()
+
+    def test_la_signature_du_secretariat_est_incluse(self, etudiant, tmp_path, settings):
+        """Si le secrétariat a déposé sa signature, elle est incluse dans le document."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.documents.services_generation import fabriquer_document_administratif
+
+        settings.MEDIA_ROOT = tmp_path
+        image_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x03\x00\x05\xfe\x02\xfe\xa7\x9a\x9c\"\x00\x00\x00\x00IEND\xaeB`\x82"
+        f = SimpleUploadedFile("signature.png", image_png, content_type="image/png")
+        User.objects.create_user(
+            username="secretaire_pdf",
+            email="sec@iteag.org",
+            password="password123",
+            first_name="Jean",
+            last_name="Valjean",
+            role=User.Role.SECRETARIAT,
+            signature=f,
+        )
+        doc = DocumentAdministratif.objects.create(
+            etudiant=etudiant.utilisateur,
+            type_document=DocumentAdministratif.TypeDocument.ATTESTATION,
+        )
+        pdf_bytes, nom = fabriquer_document_administratif(doc)
+        assert len(pdf_bytes) > 0

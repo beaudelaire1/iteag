@@ -163,8 +163,10 @@
             background: var(--iteag-cream);
         }
         .signature__place { margin: 0; color: var(--iteag-muted); font-size: 8pt; }
-        .signature__space { height: 17mm; }
+        .signature__space { height: 18mm; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .signature__image { display: block; max-width: 58mm; max-height: 16mm; object-fit: contain; margin: 0 auto; }
         .signature__role { margin: 0; color: var(--iteag-forest-deep); font-size: 7pt; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+        .signature__name { margin: 1mm 0 0; color: var(--iteag-forest-deep); font-size: 8.5pt; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -228,8 +230,15 @@
 
 <section class="signature">
     <p class="signature__place">Fait aux Abymes, le {{ generated_at|date:"d F Y" }}</p>
-    <div class="signature__space"></div>
+    <div class="signature__space">
+        {% if signature_pdf %}
+        <img class="signature__image" src="{{ signature_pdf }}" alt="Signature numérique">
+        {% endif %}
+    </div>
     <p class="signature__role">Le secrétariat</p>
+    {% if secretariat_nom %}
+    <p class="signature__name">{{ secretariat_nom }}</p>
+    {% endif %}
 </section>
 
 <div class="iteag-security">Toute rature ou surcharge rend ce document nul. Identifiant : {{ document.reference_document }}.</div>

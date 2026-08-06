@@ -34,9 +34,7 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
             font-size: 10pt;
         }
 
-        /* ── Encadrement ──
-           Un filet épais, un filet fin en retrait : le vocabulaire graphique du
-           diplôme. C'est ce qui distingue le document d'une capture d'écran. */
+        /* ── Encadrement ── */
 
         .bordure {
             position: absolute;
@@ -135,15 +133,8 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
         }
         .attributs span { padding: 0 2.5mm; }
 
-        /* ── Pied ──
-           Un tableau plutôt qu'une boîte flexible : WeasyPrint aligne les
-           cellules sans surprise, ce qui n'est pas vrai de toutes les
-           propriétés d'alignement flexible. */
+        /* ── Pied ── */
 
-        /* Un tableau positionné en absolu se contracte sur son contenu, même
-           avec « left » et « right » : les trois colonnes se tassaient alors à
-           gauche. Le positionnement est donc porté par un conteneur, et le
-           tableau ne fait que remplir sa largeur. */
         .bandeau-pied {
             bottom: 8mm;
             left: 16mm;
@@ -177,7 +168,7 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
         .colonne-signature { text-align: center; width: 62mm; }
         .signature-ligne {
             border-top: 0.5pt solid #14243d;
-            margin: 7mm auto 1.5mm;
+            margin: 1mm auto 1.5mm;
             width: 46mm;
         }
 
@@ -219,6 +210,11 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
                     Délivrée le {{ attestation.date_emission|date:"j F Y" }}
                 </td>
                 <td class="colonne-signature">
+                    <div style="height: 12mm; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        {% if signature_pdf %}
+                        <img src="{{ signature_pdf }}" alt="Signature" style="max-height: 11mm; max-width: 40mm; object-fit: contain;">
+                        {% endif %}
+                    </div>
                     <div class="signature-ligne"></div>
                     <span class="etiquette">Pour l'institut</span>
                     {% if attestation.inscription.module.responsable %}

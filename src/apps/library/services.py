@@ -55,6 +55,32 @@ def reserver_ouvrage(
 
 
 @transaction.atomic
+def annuler_reservation(emprunt: Emprunt, emprunteur) -> NoticeBibliographique:
+    """Annule une réservation d'ouvrage en cours et remet l'ouvrage disponible."""
+    emprunt = Emprunt.objects.select_for_update().select_related("notice").get(pk=emprunt.pk)
+    if emprunt.emprunteur_id != emprunteur.pk and not getattr(emprunteur, "is_staff", False):
+        raise ValidationError("Vous n'êtes pas autorisé à annuler cette réservation.")
+
+    if emprunt.statut != Emprunt.Statut.RESERVE:
+        raise ValidationError("Seule une réservation en attente de retrait peut être annulée.")
+
+    notice = emprunt.notice
+    notice.disponible = True
+    notice.save(update_fields=["disponible", "updated_at"])
+
+    emprunt.delete()
+
+    notifier(
+        emprunteur,
+        f"Réservation annulée — {notice.titre}",
+        message=f"Votre réservation pour « {notice.titre} » a été annulée avec succès.",
+        envoyer_par_email=True,
+    )
+
+    return notice
+
+
+@transaction.atomic
 def valider_retrait(emprunt: Emprunt) -> Emprunt:
     """Valide le retrait effectif de l'ouvrage par l'emprunteur."""
     emprunt = Emprunt.objects.select_for_update().get(pk=emprunt.pk)

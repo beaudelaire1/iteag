@@ -189,3 +189,33 @@ class TestEmprunts:
         assert retards == 1
         emprunt.refresh_from_db()
         assert emprunt.statut == Emprunt.Statut.EN_RETARD
+
+    def test_annuler_reservation_service(self, notice):
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        user = User.objects.create_user(username="lecteur_annule", email="la@iteag.org", password="password123")
+        emprunt = services.reserver_ouvrage(notice, user)
+        notice.refresh_from_db()
+        assert notice.disponible is False
+
+        notice_ret = services.annuler_reservation(emprunt, user)
+        notice.refresh_from_db()
+        assert notice.disponible is True
+        assert not Emprunt.objects.filter(pk=emprunt.pk).exists()
+
+    def test_annuler_reservation_view(self, client: Client, notice):
+        from apps.accounts.models import User
+        from apps.library import services
+        from apps.library.models import Emprunt
+
+        user = User.objects.create_user(username="lecteur_view", email="lv@iteag.org", password="password123")
+        emprunt = services.reserver_ouvrage(notice, user)
+
+        client.force_login(user)
+        response = client.post(reverse("library:notice_annuler", kwargs={"pk": notice.pk}))
+        assert response.status_code == 302
+        notice.refresh_from_db()
+        assert notice.disponible is True
+        assert not Emprunt.objects.filter(pk=emprunt.pk).exists()
