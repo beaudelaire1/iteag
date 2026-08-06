@@ -8,6 +8,11 @@ urlpatterns = [
     path("stripe/webhook/", views.WebhookStripeView.as_view(), name="webhook_stripe"),
     path("module/<slug:slug>/acheter/", views.AchatModuleView.as_view(), name="acheter_module"),
     path(
+        "inscription/<int:pk>/payer/",
+        views.PaiementInscriptionView.as_view(),
+        name="payer_inscription",
+    ),
+    path(
         "commande/<uuid:jeton>/payer/",
         views.PaiementCommandeView.as_view(),
         name="payer_commande",
