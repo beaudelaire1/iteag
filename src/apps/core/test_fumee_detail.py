@@ -61,7 +61,7 @@ from apps.elearning.models import (
     VideoAsset,
 )
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
-from apps.library.models import NoticeBibliographique
+from apps.library.models import Emprunt, NoticeBibliographique
 from apps.lms.models import (
     Annonce,
     Choix,
@@ -300,8 +300,13 @@ def univers(db, settings, tmp_path):
     )
     monde["piece"] = PieceDemandee.objects.create(dossier=monde["candidature"], libelle="Acte de naissance")
 
-    # ── Boutique ──
+    # ── Bibliothèque ──
     monde["notice"] = NoticeBibliographique.objects.create(titre="Institution chrétienne", auteur="Jean Calvin")
+    monde["emprunt"] = Emprunt.objects.create(
+        notice=monde["notice"],
+        emprunteur=monde[ETUDIANT],
+        date_retour_prevue=timezone.localdate() + timedelta(days=21),
+    )
     monde["produit"] = ProduitLivre.objects.create(
         titre="Institution chrétienne",
         slug="institution-chretienne",
@@ -403,6 +408,7 @@ FABRIQUES = {
     # ── Portail administratif — scolarité ──
     "administration:course_offering_update": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
     "administration:course_offering_delete": (ADMIN, lambda m: {"pk": m["cours_session"].pk}),
+    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
     "administration:enrollment_request_detail": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
     "administration:enrollment_request_action": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
     "administration:enrollment_proof_download": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
@@ -531,9 +537,11 @@ FABRIQUES = {
     "formations:parcours_detail": (PUBLIC, lambda m: {"slug": m["parcours"].slug}),
     "formations:professeur_detail": (PUBLIC, lambda m: {"slug": m["professeur"].slug}),
     # ── Bibliothèque ──
+    "library:emprunt_action": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
     "library:notice_detail": (PUBLIC, lambda m: {"pk": m["notice"].pk}),
     "library:notice_disponibilite": (SECRETARIAT, lambda m: {"pk": m["notice"].pk}),
     "library:notice_modifier": (SECRETARIAT, lambda m: {"pk": m["notice"].pk}),
+    "library:notice_reserver": (ETUDIANT, lambda m: {"pk": m["notice"].pk}),
     "library:notice_supprimer": (SECRETARIAT, lambda m: {"pk": m["notice"].pk}),
     # ── Salle de cours ──
     "lms:course_detail": (ENSEIGNANT, lambda m: {"pk": m["cours_session"].pk}),
