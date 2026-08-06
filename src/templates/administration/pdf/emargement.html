@@ -99,9 +99,11 @@
 </head>
 <body>
 
-    <div class="header-emargement">
+    {% include "documents/pdf/_entete_institutionnel.html" %}
+
+    <div class="header-emargement" style="margin-top: 4mm;">
         <h1>Feuille d'émargement — {{ cours_session.cours.titre }}</h1>
-        <p><strong>{{ institut.nom }}</strong> — {{ cours_session.session.nom }}</p>
+        <p><strong>{{ cours_session.session.nom }}</strong></p>
     </div>
 
     <div class="meta-grid">

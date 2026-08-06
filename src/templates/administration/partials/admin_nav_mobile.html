@@ -28,7 +28,7 @@
 <a href="{% url 'website:actualites_gestion' %}" class="portal-nav-pill {% if nav == 'actualites' %}active{% endif %}">Actualités</a>
 <a href="{% url 'website:articles_relecture' %}" class="portal-nav-pill {% if nav == 'articles' %}active{% endif %}">Articles</a>
 <a href="{% url 'redaction:documents' %}" class="portal-nav-pill {% if nav == 'documents_rediges' %}active{% endif %}">Documents</a>
+<a href="{% url 'accounts:signature' %}" class="portal-nav-pill {% if nav == 'signature' %}active{% endif %}">Signature</a>
 <a href="{% url 'administration:tableurs' %}" class="portal-nav-pill {% if nav == 'tableurs' %}active{% endif %}">Imports</a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-pill {% if nav == 'profil' %}active{% endif %}">Mon profil</a>
-<a href="{% url 'accounts:signature' %}" class="portal-nav-pill {% if nav == 'signature' %}active{% endif %}">Signature</a>
 {% endif %}
