@@ -1,8 +1,9 @@
 """
 Vues du paiement en ligne.
 
-Le webhook décide de l'encaissement. Les autres vues préparent un règlement ou
-affichent son état sans jamais déclarer elles-mêmes qu'il est payé.
+Le webhook reste la voie principale. La page de retour relit également la
+session auprès de Stripe afin qu'un paiement déjà réussi ne reste pas bloqué si
+la notification serveur est retardée.
 """
 
 import logging
@@ -20,13 +21,15 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.paiements.models import Reglement
-from apps.paiements.services import reglements, webhook
+from apps.paiements.services import reconciliation, reglements, webhook
+from apps.paiements.services.reconciliation import SessionCheckoutIncoherente
 from apps.paiements.services.stripe_client import (
     SessionPaiementTerminee,
     StripeIndisponible,
     creer_session_integree,
     est_configure,
     lire_evenement,
+    recuperer_session_checkout,
 )
 
 logger = logging.getLogger(__name__)
@@ -88,10 +91,31 @@ class WebhookStripeView(View):
 
 
 class SuccesView(View):
-    """Page de retour après paiement — informative, jamais décisionnaire."""
+    """Retour Stripe avec réconciliation serveur immédiate."""
 
     def get(self, request, pk):
         reglement = _reglement_visible(request, pk)
+        session_id = request.GET.get("session_id", "").strip()
+
+        if not reglement.est_paye and session_id:
+            try:
+                session_checkout = recuperer_session_checkout(session_id)
+                reglement = reconciliation.synchroniser_depuis_checkout(
+                    reglement,
+                    session_checkout,
+                )
+            except (StripeIndisponible, SessionCheckoutIncoherente, ValueError) as erreur:
+                logger.warning(
+                    "Réconciliation Stripe refusée pour le règlement %s : %s",
+                    reglement.pk,
+                    erreur,
+                )
+            except Exception:
+                logger.exception(
+                    "Réconciliation Stripe impossible pour le règlement %s",
+                    reglement.pk,
+                )
+
         return render(
             request,
             "paiements/succes.html",
