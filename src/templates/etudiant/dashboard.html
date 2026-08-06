@@ -18,26 +18,18 @@
 {% endblock %}
 
 {% block portal_content %}
-{% comment %}
-Alerte, et non bandeau figé. « data-alerte-valeur » porte le nombre annoncé :
-l'écarter mémorise ce nombre, et l'alerte revient d'elle-même dès qu'un cours
-de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
-{% endcomment %}
 {% if cours_catalogue_count %}
 <div class="mb-8 flex flex-col justify-between gap-4 rounded border border-navy-200 bg-navy-50 p-5 sm:flex-row sm:items-center"
     role="status" data-alerte-effacable="catalogue-etudiant" data-alerte-valeur="{{ cours_catalogue_count }}" hidden>
     <div>
-        <p class="font-semibold text-navy-900">{{ cours_catalogue_count }} cours disponible{{
-            cours_catalogue_count|pluralize }} pour votre parcours</p>
-        <p class="mt-1 text-sm text-warm-600">Consultez le programme et transmettez votre demande d’inscription au
-            secrétariat.</p>
+        <p class="font-semibold text-navy-900">{{ cours_catalogue_count }} cours disponible{{ cours_catalogue_count|pluralize }} pour votre parcours</p>
+        <p class="mt-1 text-sm text-warm-600">Consultez le programme et transmettez votre demande d’inscription au secrétariat.</p>
     </div>
     <div class="flex items-center gap-2">
         <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary whitespace-nowrap">Voir le catalogue</a>
         <button type="button" class="btn-ghost" data-alerte-fermer style="padding: 0.5rem 0.75rem;"
             aria-label="Masquer cette alerte" title="Masquer">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                aria-hidden="true">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
@@ -49,8 +41,7 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
 <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-10">
     <div class="card-elevated">
         <p class="stat-label">ECTS acquis</p>
-        <p class="stat-number mt-2">{{ total_ects_acquis }}<span class="text-base font-normal"
-                style="color: var(--color-warm-400);">/{{ profil.parcours.ects_requis }}</span></p>
+        <p class="stat-number mt-2">{{ total_ects_acquis }}<span class="text-base font-normal" style="color: var(--color-warm-400);">/{{ profil.parcours.ects_requis }}</span></p>
         <div class="progress-bar mt-3">
             <div class="progress-bar-fill" data-progress="{{ progress_percent }}"></div>
         </div>
@@ -58,19 +49,16 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
     <div class="card-elevated">
         <p class="stat-label">Session en cours</p>
         <p class="mt-2 text-lg font-semibold" style="color: var(--color-navy-900);">
-            {% if current_session %}{{ current_session.nom }}{% else %}<span
-                style="color: var(--color-warm-400);">—</span>{% endif %}
+            {% if current_session %}{{ current_session.nom }}{% else %}<span style="color: var(--color-warm-400);">—</span>{% endif %}
         </p>
     </div>
     <div class="card-elevated">
         <p class="stat-label">Évaluations en attente</p>
-        <p class="stat-number mt-2" data-counter="{{ pending_evaluations|length }}" data-counter-suffix="">{{
-            pending_evaluations|length }}</p>
+        <p class="stat-number mt-2" data-counter="{{ pending_evaluations|length }}" data-counter-suffix="">{{ pending_evaluations|length }}</p>
     </div>
     <div class="card-elevated">
         <p class="stat-label">Documents</p>
-        <p class="stat-number mt-2" data-counter="{{ documents_count }}" data-counter-suffix="">{{ documents_count }}
-        </p>
+        <p class="stat-number mt-2" data-counter="{{ documents_count }}" data-counter-suffix="">{{ documents_count }}</p>
     </div>
     <a href="{% url 'etudiant:enrollment_requests' %}" class="card-elevated">
         <p class="stat-label">Demandes en cours</p>
@@ -91,11 +79,9 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
     </div>
     <div class="space-y-3">
         {% for emprunt in emprunts %}
-        <div
-            class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-lg bg-warm-50 border border-warm-200 gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-lg bg-warm-50 border border-warm-200 gap-2">
             <div>
-                <a href="{% url 'library:notice_detail' emprunt.notice.pk %}"
-                    class="font-semibold text-navy-900 text-sm hover:underline">
+                <a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-semibold text-navy-900 text-sm hover:underline">
                     {{ emprunt.notice.titre }}
                 </a>
                 <p class="text-xs text-warm-500 mt-0.5">Auteur : {{ emprunt.notice.auteur|default:"—" }}</p>
@@ -106,8 +92,7 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
                     <span class="badge badge-info text-xs">Réservé (Retrait à venir)</span>
                     <form method="post" action="{% url 'library:emprunt_annuler' emprunt.pk %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit"
-                            class="px-2 py-0.5 text-xs rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors font-medium">
+                        <button type="submit" class="px-2 py-0.5 text-xs rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors font-medium">
                             Annuler
                         </button>
                     </form>
@@ -117,8 +102,7 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
                     <span class="badge badge-warning text-xs">En retard</span>
                     {% endif %}
                 </div>
-                <p class="text-xs font-medium text-warm-700">Date d'échéance : <strong>{{
-                        emprunt.date_retour_prevue|date:"d/m/Y" }}</strong></p>
+                <p class="text-xs font-medium text-warm-700">Date d'échéance : <strong>{{ emprunt.date_retour_prevue|date:"d/m/Y" }}</strong></p>
             </div>
         </div>
         {% endfor %}
@@ -129,17 +113,14 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
 {# ── Formation vidéo ── #}
 {% if modules_total %}
 <div class="card-elevated mb-8" style="padding: 0;">
-    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b"
-        style="border-color: var(--color-warm-100);">
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b" style="border-color: var(--color-warm-100);">
         <div>
             <h2 class="text-base font-semibold" style="color: var(--color-navy-900);">Mon E-Learning</h2>
             <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
-                {{ modules_total }} module{{ modules_total|pluralize }} · {{ modules_termines }} terminé{{
-                modules_termines|pluralize }}
+                {{ modules_total }} module{{ modules_total|pluralize }} · {{ modules_termines }} terminé{{ modules_termines|pluralize }}
             </p>
         </div>
-        <a href="{% url 'elearning:mes_formations' %}" class="text-xs font-semibold uppercase tracking-wider"
-            style="color: var(--color-navy-600);">Tout voir →</a>
+        <a href="{% url 'elearning:mes_formations' %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Tout voir →</a>
     </div>
 
     <div class="divide-y" style="border-color: var(--color-warm-100);">
@@ -147,17 +128,14 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
         <a href="{{ acces.module.get_absolute_url }}" class="block px-5 py-4 hover:bg-warm-50 transition-colors">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ acces.module.titre
-                        }}</p>
+                    <p class="truncate text-sm font-medium" style="color: var(--color-navy-900);">{{ acces.module.titre }}</p>
                     <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">
                         {% if acces.module.discipline %}{{ acces.module.discipline }} · {% endif %}
                         {{ acces.module.duree_minutes }} min
-                        {% if acces.date_fin_acces %} · accès jusqu'au {{ acces.date_fin_acces|date:"d/m/Y" }}{% endif
-                        %}
+                        {% if acces.date_fin_acces %} · accès jusqu'au {{ acces.date_fin_acces|date:"d/m/Y" }}{% endif %}
                     </p>
                 </div>
-                <span class="shrink-0 text-sm font-semibold" style="color: var(--color-navy-800);">{{
-                    acces.progression_percent }} %</span>
+                <span class="shrink-0 text-sm font-semibold" style="color: var(--color-navy-800);">{{ acces.progression_percent }} %</span>
             </div>
             <div class="progress-bar mt-3">
                 <div class="progress-bar-fill" style="width: {{ acces.progression_percent }}%"></div>
@@ -165,8 +143,7 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
         </a>
         {% empty %}
         <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">
-            Aucun module en cours. <a href="{% url 'elearning:catalogue' %}" class="link-reveal">Parcourir le
-                catalogue</a>
+            Aucun module en cours. <a href="{% url 'elearning:catalogue' %}" class="link-reveal">Parcourir le catalogue</a>
         </p>
         {% endfor %}
     </div>
@@ -198,14 +175,11 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
         <div class="divide-y" style="border-color: var(--color-warm-100);">
             {% for insc in inscriptions %}
             <div class="px-5 py-3">
-                <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ insc.cours_session.cours.titre
-                    }}</p>
-                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ insc.cours_session.session.nom }} —
-                    {{ insc.cours_session.enseignant }}</p>
+                <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ insc.cours_session.cours.titre }}</p>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ insc.cours_session.session.nom }} — {{ insc.cours_session.enseignant }}</p>
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune inscription en cours.
-            </p>
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune inscription en cours.</p>
             {% endfor %}
         </div>
     </div>
@@ -219,35 +193,27 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
             {% for eval in pending_evaluations %}
             <div class="px-5 py-3 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{
-                        eval.cours_session.cours.titre }}</p>
+                    <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ eval.cours_session.cours.titre }}</p>
                     <p class="text-xs" style="color: var(--color-warm-500);">{{ eval.get_type_evaluation_display }}</p>
                 </div>
                 {% if eval.statut == 'en_attente' %}
                 {% if eval.devoir.modalite == 'qcm' %}
-                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary"
-                    style="padding: .4rem .75rem; font-size: .6875rem;">
+                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">
                     Répondre
                 </a>
                 {% else %}
-                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary"
-                    style="padding: .4rem .75rem; font-size: .6875rem;">
+                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .4rem .75rem; font-size: .6875rem;">
                     Déposer le devoir
                 </a>
                 {% endif %}
                 {% else %}
-                <span class="badge
-                    {% if eval.statut == 'soumis' %}badge-info
-                    {% elif eval.statut == 'en_correction' %}badge-warning
-                    {% elif eval.statut == 'note' %}badge-success
-                    {% else %}badge-gold{% endif %}">
+                <span class="badge {% if eval.statut == 'soumis' %}badge-info{% elif eval.statut == 'en_correction' %}badge-warning{% elif eval.statut == 'note' %}badge-success{% else %}badge-gold{% endif %}">
                     {{ eval.get_statut_display }}
                 </span>
                 {% endif %}
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune évaluation en cours.
-            </p>
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune évaluation en cours.</p>
             {% endfor %}
         </div>
     </div>
@@ -261,8 +227,7 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
             {% for annonce in recent_annonces %}
             <div class="px-5 py-3">
                 <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ annonce.titre }}</p>
-                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ annonce.cours_session.cours.titre }}
-                    — {{ annonce.created_at|date:"d/m/Y" }}</p>
+                <p class="text-xs mt-0.5" style="color: var(--color-warm-500);">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
             </div>
             {% empty %}
             <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucune annonce récente.</p>
@@ -280,14 +245,12 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
             <div class="px-5 py-3 flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium" style="color: var(--color-navy-900);">{{ p.session }}</p>
-                    <p class="text-xs" style="color: var(--color-warm-500);">{{ p.get_mode_display }} — {{
-                        p.date_paiement|date:"d/m/Y" }}</p>
+                    <p class="text-xs" style="color: var(--color-warm-500);">{{ p.get_mode_display }} — {{ p.date_paiement|date:"d/m/Y" }}</p>
                 </div>
                 <span class="text-sm font-semibold" style="color: var(--color-navy-800);">{{ p.montant }} €</span>
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucun paiement enregistré.
-            </p>
+            <p class="px-5 py-6 text-sm text-center" style="color: var(--color-warm-400);">Aucun paiement enregistré.</p>
             {% endfor %}
         </div>
     </div>
