@@ -34,6 +34,12 @@ class User(AbstractUser):
         verbose_name="Photo",
         help_text="Portrait affiché dans les espaces privés et sur la fiche de scolarité.",
     )
+    signature = models.ImageField(
+        upload_to="comptes/signatures/%Y/",
+        blank=True,
+        verbose_name="Signature numérique",
+        help_text="Image PNG, JPEG ou WebP apposée sur les documents que vous rédigez.",
+    )
     adresse = models.CharField(max_length=250, blank=True, verbose_name="Adresse")
     complement_adresse = models.CharField(max_length=250, blank=True, verbose_name="Complément d'adresse")
     code_postal = models.CharField(max_length=20, blank=True, verbose_name="Code postal")

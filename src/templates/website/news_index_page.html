@@ -11,7 +11,9 @@
             <p class="hero-el hero-el-1 overline mb-3">Actualités</p>
             <h1 class="hero-el hero-el-2 text-4xl font-bold tracking-tight text-navy-900">{{ page.title }}</h1>
             {% if page.introduction %}
-            <p class="hero-el hero-el-3 mt-4 text-lg text-warm-600 max-w-2xl">{{ page.introduction }}</p>
+                <div class="hero-el hero-el-3 mt-4 text-lg text-warm-600 max-w-2xl richtext">
+                    {{ page.introduction|richtext }}
+                </div>
             {% endif %}
             <hr class="hero-el hero-el-3 divider-gold mt-6">
         </header>

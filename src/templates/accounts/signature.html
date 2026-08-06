@@ -1,0 +1,44 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Ma signature — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% if gabarit_navigation %}{% include gabarit_navigation %}{% endif %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% if gabarit_navigation_mobile %}{% include gabarit_navigation_mobile %}{% endif %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <a href="{{ retour }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Retour à mon espace
+    </a>
+    <p class="overline mb-2">{{ user.get_role_display }}</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Ma signature</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<section class="max-w-3xl">
+    <form method="post" enctype="multipart/form-data" class="card-elevated space-y-6" novalidate>
+        {% csrf_token %}
+        {% include "partials/erreurs_formulaire.html" with form=form %}
+
+        <div>
+            <h2 class="text-base font-semibold text-navy-900">Signature utilisée sur vos documents</h2>
+            <p class="mt-1 text-sm text-warm-600">Elle sera apposée automatiquement sur les PDF dont vous êtes le rédacteur.</p>
+        </div>
+
+        {% if user.signature %}
+        <div class="flex min-h-32 items-center justify-center bg-white p-6" style="border: 1px solid var(--color-warm-200);">
+            <img src="{{ user.signature.url }}" alt="Signature numérique actuelle" class="max-h-24 max-w-full object-contain">
+        </div>
+        {% endif %}
+
+        {% include "partials/champ.html" with field=form.signature %}
+        <button type="submit" class="btn-primary">Enregistrer ma signature</button>
+    </form>
+</section>
+{% endblock %}

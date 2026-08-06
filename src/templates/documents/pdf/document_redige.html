@@ -164,7 +164,8 @@
             text-align: center;
         }
         .signature__role { margin: 0; color: var(--iteag-muted); font-size: 7.2pt; letter-spacing: 0.14em; text-transform: uppercase; }
-        .signature__space { height: 16mm; }
+        .signature__space { display: flex; align-items: center; justify-content: center; height: 16mm; }
+        .signature__image { display: block; max-width: 48mm; max-height: 15mm; object-fit: contain; }
         .signature__name {
             margin: 0;
             padding-top: 1.8mm;
@@ -231,10 +232,12 @@
 
 <section class="body-copy">{{ document.corps|richtext }}</section>
 
-{% if document.signataire_nom or document.signataire_qualite %}
+{% if document.signataire_nom or document.signataire_qualite or signature_pdf %}
 <section class="signature">
     {% if document.signataire_qualite %}<p class="signature__role">{{ document.signataire_qualite }}</p>{% endif %}
-    <div class="signature__space"></div>
+    <div class="signature__space">
+        {% if signature_pdf %}<img class="signature__image" src="{{ signature_pdf }}" alt="">{% endif %}
+    </div>
     {% if document.signataire_nom %}<p class="signature__name">{{ document.signataire_nom }}</p>{% endif %}
 </section>
 {% endif %}

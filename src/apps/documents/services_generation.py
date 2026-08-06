@@ -1,5 +1,8 @@
 """Composition des PDF de l'app Documents, sans dépendance à une requête."""
 
+import base64
+import mimetypes
+
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -7,6 +10,17 @@ from apps.academics.models import Paiement
 from apps.core.services.pdf import contexte_marque, rendre_pdf
 
 from .models import DocumentAdministratif, DocumentRedige
+
+
+def _signature_uri(document: DocumentRedige) -> str:
+    redacteur = document.redige_par
+    if redacteur is None or not redacteur.signature:
+        return ""
+
+    type_mime = mimetypes.guess_type(redacteur.signature.name)[0] or "image/png"
+    with redacteur.signature.open("rb") as fichier:
+        contenu = base64.b64encode(fichier.read()).decode("ascii")
+    return f"data:{type_mime};base64,{contenu}"
 
 
 def fabriquer_document_administratif(document: DocumentAdministratif) -> tuple[bytes, str]:
@@ -50,6 +64,7 @@ def fabriquer_document_redige(document: DocumentRedige) -> tuple[bytes, str]:
             profil_polices="document_administratif",
             document=document,
             edite_le=genere_le,
+            signature_pdf=_signature_uri(document),
         ),
     )
     prefixe = "apercu" if document.est_modifiable else slugify(document.reference or document.titre)

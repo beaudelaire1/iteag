@@ -124,6 +124,27 @@ class ProfilForm(FormulaireModeleITEAG):
         return photo
 
 
+class SignatureForm(FormulaireModeleITEAG):
+    class Meta:
+        model = User
+        fields = ["signature"]
+        help_texts = {
+            "signature": "PNG transparent recommandé. JPEG ou WebP acceptés, 2 Mo au plus.",
+        }
+
+    def clean_signature(self):
+        signature = self.cleaned_data.get("signature")
+        taille = getattr(signature, "size", None)
+        if taille is not None and taille > 2 * 1024 * 1024:
+            raise ValidationError("Signature trop lourde : 2 Mo au plus.")
+
+        image = getattr(signature, "image", None)
+        format_image = getattr(image, "format", "")
+        if format_image and format_image.upper() not in {"PNG", "JPEG", "WEBP"}:
+            raise ValidationError("Format non accepté : utilisez une image PNG, JPEG ou WebP.")
+        return signature
+
+
 class MotDePasseForm(PasswordChangeForm):
     """Changement de mot de passe, habillé à la charte."""
 

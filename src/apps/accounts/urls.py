@@ -9,6 +9,7 @@ from .views import (
     OTPActivationView,
     OTPVerificationView,
     ProfilView,
+    SignatureView,
 )
 
 app_name = "accounts"
@@ -17,6 +18,7 @@ urlpatterns = [
     path("connexion/", IteagLoginView.as_view(), name="login"),
     path("deconnexion/", IteagLogoutView.as_view(), name="logout"),
     path("comptes/profil/", ProfilView.as_view(), name="profil"),
+    path("comptes/signature/", SignatureView.as_view(), name="signature"),
     # Double authentification
     path("comptes/securite/activer/", OTPActivationView.as_view(), name="otp_activation"),
     path("comptes/securite/verifier/", OTPVerificationView.as_view(), name="otp_verification"),

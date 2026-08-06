@@ -10,10 +10,11 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 from django_otp import login as otp_login
 
+from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.services.audit import journaliser
 from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
-from .forms import EmailOrUsernameAuthenticationForm, MotDePasseForm, ProfilForm
+from .forms import EmailOrUsernameAuthenticationForm, MotDePasseForm, ProfilForm, SignatureForm
 from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
 from .services.securite import alerter_du_changement, alerter_du_mot_de_passe, etat_sensible
 
@@ -171,6 +172,43 @@ class ProfilView(LoginRequiredMixin, TemplateView):
         journaliser("modification", request=request, objet=request.user, objet_libelle="Changement de mot de passe")
         messages.success(request, "Votre mot de passe a été modifié.")
         return redirect("accounts:profil")
+
+
+class SignatureView(StaffRoleRequiredMixin, TemplateView):
+    template_name = "accounts/signature.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte.setdefault("form", SignatureForm(instance=self.request.user))
+        navigation = gabarit_navigation(self.request.user)
+        contexte.update(
+            {
+                "nav": "signature",
+                "gabarit_navigation": navigation,
+                "gabarit_navigation_mobile": navigation.replace("nav.html", "nav_mobile.html"),
+                "retour": tableau_de_bord(self.request.user) or "/",
+            }
+        )
+        return contexte
+
+    def post(self, request, *args, **kwargs):
+        ancien_nom = request.user.signature.name
+        ancien_stockage = request.user.signature.storage
+        form = SignatureForm(request.POST, request.FILES, instance=request.user)
+        if not form.is_valid():
+            return self.render_to_response(self.get_context_data(form=form))
+
+        utilisateur = form.save()
+        if ancien_nom and ancien_nom != utilisateur.signature.name:
+            ancien_stockage.delete(ancien_nom)
+        journaliser(
+            "modification",
+            request=request,
+            objet=request.user,
+            objet_libelle="Mise à jour de la signature numérique",
+        )
+        messages.success(request, "Votre signature numérique a été enregistrée.")
+        return redirect("accounts:signature")
 
 
 # ──────────────────────────────────────────────
