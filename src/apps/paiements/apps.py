@@ -7,7 +7,4 @@ class PaiementsConfig(AppConfig):
     verbose_name = "Paiements en ligne"
 
     def ready(self):
-        # Modèle séparé pour relier un règlement Stripe à une demande
-        # d'inscription sans alourdir le modèle financier commun.
-        from apps.paiements import models_inscriptions  # noqa: F401
         from apps.paiements import checks  # noqa: F401
