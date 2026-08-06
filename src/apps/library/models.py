@@ -29,7 +29,6 @@ class NoticeBibliographique(TimeStampedModel):
     description = models.TextField(blank=True, verbose_name="Résumé / description")
     disponible = models.BooleanField(default=True, verbose_name="Disponible en bibliothèque")
 
-    # Recherche full-text PostgreSQL
     search_vector = SearchVectorField(null=True, blank=True)
 
     class Meta:
@@ -58,7 +57,6 @@ class NoticeBibliographique(TimeStampedModel):
         from django.db import connection
 
         super().save(*args, **kwargs)
-        # Mise à jour du search_vector via SQL pour bénéficier de la config 'french'
         if connection.vendor == "postgresql":
             NoticeBibliographique.objects.filter(pk=self.pk).update(search_vector=self.vecteur_de_recherche())
 
@@ -76,9 +74,7 @@ class NoticeBibliographique(TimeStampedModel):
 
 
 class Emprunt(TimeStampedModel):
-    """
-    Suivi d'un prêt ou d'une réservation d'ouvrage physique de la bibliothèque.
-    """
+    """Suivi d'un prêt ou d'une réservation d'ouvrage physique."""
 
     class Statut(models.TextChoices):
         RESERVE = "reserve", "Réservé"
@@ -120,3 +116,8 @@ class Emprunt(TimeStampedModel):
 
     def __str__(self):
         return f"{self.notice.titre} — {self.emprunteur} ({self.get_statut_display()})"
+
+
+# Django ne découvre automatiquement que `models.py`. L'import est placé après
+# Emprunt afin que la relation inverse `sanction` soit enregistrée au démarrage.
+from apps.library.models_sanctions import SuspensionBibliotheque  # noqa: E402, F401
