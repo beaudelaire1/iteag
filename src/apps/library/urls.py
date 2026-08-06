@@ -1,19 +1,22 @@
 from django.urls import path
 
-from . import views
+from . import views, views_sanctions
 
 app_name = "library"
 
 urlpatterns = [
     path("", views.CatalogueView.as_view(), name="catalogue"),
-    # « gestion » précède « notice/<pk> » sans ambiguïté, mais l'ordre reste
-    # explicite : les routes de back-office se lisent groupées.
     path("gestion/", views.GestionNoticesView.as_view(), name="gestion"),
     path("gestion/emprunts/", views.GestionEmpruntsView.as_view(), name="gestion_emprunts"),
     path("gestion/emprunts/creer/", views.EmpruntCreateView.as_view(), name="emprunt_creer"),
     path("gestion/emprunts/<int:pk>/modifier/", views.EmpruntUpdateView.as_view(), name="emprunt_modifier"),
     path("gestion/emprunts/<int:pk>/supprimer/", views.EmpruntDeleteView.as_view(), name="emprunt_supprimer"),
     path("gestion/emprunts/<int:pk>/action/", views.EmpruntActionView.as_view(), name="emprunt_action"),
+    path(
+        "gestion/suspensions/<int:pk>/lever/",
+        views_sanctions.LeverSuspensionView.as_view(),
+        name="suspension_lever",
+    ),
     path("gestion/nouvelle/", views.NoticeCreateView.as_view(), name="notice_creer"),
     path("gestion/<int:pk>/modifier/", views.NoticeUpdateView.as_view(), name="notice_modifier"),
     path("gestion/<int:pk>/disponibilite/", views.NoticeDisponibiliteView.as_view(), name="notice_disponibilite"),

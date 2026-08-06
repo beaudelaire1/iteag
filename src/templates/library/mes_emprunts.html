@@ -1,4 +1,5 @@
 {% extends "partials/portal_base.html" %}
+{% load library_tags %}
 
 {% block title %}Mes emprunts & réservations — {{ SITE_NAME }}{% endblock %}
 
@@ -31,20 +32,35 @@
             Suivi des livres en votre possession, des réservations en attente de retrait et de votre historique.
         </p>
     </div>
-    <div>
-        <a href="{% url 'library:catalogue' %}" class="btn-primary text-sm whitespace-nowrap">
-            <svg class="w-4 h-4 mr-1.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            Consulter le catalogue
-        </a>
-    </div>
+    <a href="{% url 'library:catalogue' %}" class="btn-primary text-sm whitespace-nowrap">Consulter le catalogue</a>
 </div>
 {% endblock %}
 
 {% block portal_content %}
+{% etat_bibliotheque request.user as etat_biblio %}
 
-{# ── Résumé rapide ── #}
+{% if etat_biblio.emprunt_retard %}
+<div class="card mb-6 border-l-4 border-l-red-600 bg-red-50/60 p-5">
+    <p class="text-xs font-semibold uppercase text-red-700">Nouveaux prêts bloqués</p>
+    <h2 class="mt-1 font-semibold text-red-950">Un ouvrage doit être restitué</h2>
+    <p class="mt-2 text-sm text-red-800">
+        « {{ etat_biblio.emprunt_retard.notice.titre }} » devait être rendu le
+        {{ etat_biblio.emprunt_retard.date_retour_prevue|date:"d/m/Y" }}. Toute nouvelle réservation est
+        suspendue jusqu'à sa restitution. Une suspension d'un jour par jour de retard sera ensuite appliquée,
+        dans la limite de 30 jours.
+    </p>
+</div>
+{% elif etat_biblio.suspension %}
+<div class="card mb-6 border-l-4 border-l-gold-600 bg-gold-50/60 p-5">
+    <p class="text-xs font-semibold uppercase text-gold-700">Suspension de bibliothèque active</p>
+    <h2 class="mt-1 font-semibold text-navy-950">Nouveaux prêts indisponibles jusqu'au {{ etat_biblio.suspension.date_fin|date:"d/m/Y" }} inclus</h2>
+    <p class="mt-2 text-sm text-warm-700">
+        Cette suspension fait suite à un retard de {{ etat_biblio.suspension.jours_retard }} jour{{ etat_biblio.suspension.jours_retard|pluralize }}.
+        Durée appliquée : {{ etat_biblio.suspension.jours_suspension }} jour{{ etat_biblio.suspension.jours_suspension|pluralize }}.
+    </p>
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
     <div class="card p-5 border-l-4 border-l-navy-600">
         <p class="text-xs text-warm-500 font-semibold uppercase">En ma possession</p>
@@ -60,13 +76,11 @@
     </div>
 </div>
 
-{# ── Section 1 : Livres en possession ── #}
 <div class="mb-10">
     <h2 class="text-base font-semibold text-navy-900 mb-3 flex items-center gap-2">
         <span>Ouvrages actuellement en votre possession</span>
         <span class="badge badge-info">{{ emprunts_en_cours|length }}</span>
     </h2>
-
     {% if emprunts_en_cours %}
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
@@ -75,7 +89,7 @@
                     <tr>
                         <th class="py-3 px-4">Ouvrage / Discipline</th>
                         <th class="py-3 px-4">Cote</th>
-                        <th class="py-3 px-4">Date d'emprunt</th>
+                        <th class="py-3 px-4">Date de retrait</th>
                         <th class="py-3 px-4">Retour prévu</th>
                         <th class="py-3 px-4 text-right">Statut</th>
                     </tr>
@@ -84,26 +98,14 @@
                     {% for emprunt in emprunts_en_cours %}
                     <tr class="hover:bg-warm-50/50">
                         <td class="py-3.5 px-4">
-                            <a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-semibold text-navy-900 hover:underline">
-                                {{ emprunt.notice.titre }}
-                            </a>
-                            <p class="text-xs text-warm-500 mt-0.5">{{ emprunt.notice.auteur }} {% if emprunt.notice.discipline %}· {{ emprunt.notice.discipline.nom }}{% endif %}</p>
+                            <a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-semibold text-navy-900 hover:underline">{{ emprunt.notice.titre }}</a>
+                            <p class="text-xs text-warm-500 mt-0.5">{{ emprunt.notice.auteur }}{% if emprunt.notice.discipline %} · {{ emprunt.notice.discipline.nom }}{% endif %}</p>
                         </td>
-                        <td class="py-3.5 px-4 font-mono text-xs text-warm-700">
-                            {{ emprunt.notice.cote|default:"—" }}
-                        </td>
-                        <td class="py-3.5 px-4 text-warm-700">
-                            {{ emprunt.date_emprunt|date:"d/m/Y"|default:"—" }}
-                        </td>
-                        <td class="py-3.5 px-4 font-medium">
-                            {{ emprunt.date_retour_prevue|date:"d/m/Y" }}
-                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-warm-700">{{ emprunt.notice.cote|default:"—" }}</td>
+                        <td class="py-3.5 px-4 text-warm-700">{{ emprunt.date_retrait|date:"d/m/Y"|default:"—" }}</td>
+                        <td class="py-3.5 px-4 font-medium">{{ emprunt.date_retour_prevue|date:"d/m/Y" }}</td>
                         <td class="py-3.5 px-4 text-right">
-                            {% if emprunt.statut == 'en_retard' %}
-                            <span class="badge badge-gold font-bold">En retard</span>
-                            {% else %}
-                            <span class="badge badge-info">En cours</span>
-                            {% endif %}
+                            {% if emprunt.statut == 'en_retard' %}<span class="badge badge-gold font-bold">En retard</span>{% else %}<span class="badge badge-info">En cours</span>{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -112,54 +114,31 @@
         </div>
     </div>
     {% else %}
-    <div class="card p-6 text-center text-warm-500 bg-warm-50/50">
-        <p>Vous n'avez aucun livre emprunté en votre possession pour le moment.</p>
-    </div>
+    <div class="card p-6 text-center text-warm-500 bg-warm-50/50">Vous n'avez aucun livre emprunté en votre possession.</div>
     {% endif %}
 </div>
 
-{# ── Section 2 : Réservations en attente ── #}
 <div class="mb-10">
     <h2 class="text-base font-semibold text-navy-900 mb-3 flex items-center gap-2">
         <span>Réservations en attente de retrait au secrétariat</span>
         <span class="badge badge-gold">{{ reservations|length }}</span>
     </h2>
-
     {% if reservations %}
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead class="bg-warm-100 text-warm-700 font-semibold border-b border-warm-200">
-                    <tr>
-                        <th class="py-3 px-4">Ouvrage</th>
-                        <th class="py-3 px-4">Date de réservation</th>
-                        <th class="py-3 px-4">Date limite de retrait</th>
-                        <th class="py-3 px-4 text-right">Action</th>
-                    </tr>
+                    <tr><th class="py-3 px-4">Ouvrage</th><th class="py-3 px-4">Réservé le</th><th class="py-3 px-4">Retour prévu</th><th class="py-3 px-4 text-right">Action</th></tr>
                 </thead>
                 <tbody class="divide-y divide-warm-100">
                     {% for emprunt in reservations %}
-                    <tr class="hover:bg-warm-50/50">
-                        <td class="py-3.5 px-4">
-                            <a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-semibold text-navy-900 hover:underline">
-                                {{ emprunt.notice.titre }}
-                            </a>
-                            <p class="text-xs text-warm-500 mt-0.5">{{ emprunt.notice.auteur }}</p>
-                        </td>
-                        <td class="py-3.5 px-4 text-warm-700">
-                            {{ emprunt.created_at|date:"d/m/Y H:i" }}
-                        </td>
-                        <td class="py-3.5 px-4 font-medium text-gold-700">
-                            {{ emprunt.date_retour_prevue|date:"d/m/Y" }}
-                        </td>
+                    <tr>
+                        <td class="py-3.5 px-4"><a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-semibold text-navy-900 hover:underline">{{ emprunt.notice.titre }}</a><p class="text-xs text-warm-500">{{ emprunt.notice.auteur }}</p></td>
+                        <td class="py-3.5 px-4 text-warm-700">{{ emprunt.created_at|date:"d/m/Y H:i" }}</td>
+                        <td class="py-3.5 px-4 font-medium text-gold-700">{{ emprunt.date_retour_prevue|date:"d/m/Y" }}</td>
                         <td class="py-3.5 px-4 text-right">
-                            <form method="post" action="{% url 'library:emprunt_annuler' emprunt.pk %}"
-                                  data-confirmer="Voulez-vous vraiment annuler votre réservation pour « {{ emprunt.notice.titre }} » ?"
-                                  class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn-ghost text-xs text-danger hover:underline">
-                                    Annuler la réservation
-                                </button>
+                            <form method="post" action="{% url 'library:emprunt_annuler' emprunt.pk %}" data-confirmer="Voulez-vous vraiment annuler cette réservation ?" class="inline">
+                                {% csrf_token %}<button type="submit" class="btn-ghost text-xs text-danger hover:underline">Annuler</button>
                             </form>
                         </td>
                     </tr>
@@ -169,47 +148,30 @@
         </div>
     </div>
     {% else %}
-    <div class="card p-6 text-center text-warm-500 bg-warm-50/50">
-        <p>Aucune réservation en attente de retrait.</p>
-    </div>
+    <div class="card p-6 text-center text-warm-500 bg-warm-50/50">Aucune réservation en attente de retrait.</div>
     {% endif %}
 </div>
 
-{# ── Section 3 : Historique des emprunts ── #}
 {% if historique %}
 <div>
-    <h2 class="text-base font-semibold text-navy-900 mb-3 flex items-center gap-2">
-        <span>Historique de vos emprunts restitués</span>
-        <span class="badge badge-neutral">{{ historique|length }}</span>
-    </h2>
+    <h2 class="text-base font-semibold text-navy-900 mb-3 flex items-center gap-2"><span>Historique des emprunts restitués</span><span class="badge badge-neutral">{{ historique|length }}</span></h2>
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <thead class="bg-warm-100 text-warm-700 font-semibold border-b border-warm-200">
-                    <tr>
-                        <th class="py-3 px-4">Ouvrage</th>
-                        <th class="py-3 px-4">Emprunté le</th>
-                        <th class="py-3 px-4">Restitué le</th>
-                        <th class="py-3 px-4 text-right">Statut</th>
-                    </tr>
-                </thead>
+                <thead class="bg-warm-100 text-warm-700 font-semibold border-b border-warm-200"><tr><th class="py-3 px-4">Ouvrage</th><th class="py-3 px-4">Retiré le</th><th class="py-3 px-4">Restitué le</th><th class="py-3 px-4">Conséquence</th></tr></thead>
                 <tbody class="divide-y divide-warm-100">
                     {% for emprunt in historique %}
-                    <tr class="hover:bg-warm-50/50">
-                        <td class="py-3.5 px-4">
-                            <a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-medium text-navy-900 hover:underline">
-                                {{ emprunt.notice.titre }}
-                            </a>
-                            <span class="block text-xs text-warm-500">{{ emprunt.notice.auteur }}</span>
-                        </td>
-                        <td class="py-3.5 px-4 text-warm-700 text-xs">
-                            {{ emprunt.date_emprunt|date:"d/m/Y"|default:"—" }}
-                        </td>
-                        <td class="py-3.5 px-4 text-warm-700 text-xs">
-                            {{ emprunt.date_restitution_effective|date:"d/m/Y"|default:"—" }}
-                        </td>
-                        <td class="py-3.5 px-4 text-right">
-                            <span class="badge badge-neutral">Restitué</span>
+                    <tr>
+                        <td class="py-3.5 px-4"><a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-medium text-navy-900 hover:underline">{{ emprunt.notice.titre }}</a><span class="block text-xs text-warm-500">{{ emprunt.notice.auteur }}</span></td>
+                        <td class="py-3.5 px-4 text-warm-700 text-xs">{{ emprunt.date_retrait|date:"d/m/Y"|default:"—" }}</td>
+                        <td class="py-3.5 px-4 text-warm-700 text-xs">{{ emprunt.date_retour_effectif|date:"d/m/Y"|default:"—" }}</td>
+                        <td class="py-3.5 px-4 text-xs">
+                            {% if emprunt.sanction %}
+                                <span class="font-semibold text-gold-800">{{ emprunt.sanction.jours_retard }} jour{{ emprunt.sanction.jours_retard|pluralize }} de retard</span>
+                                <span class="block text-warm-600">Suspension jusqu'au {{ emprunt.sanction.date_fin|date:"d/m/Y" }}{% if emprunt.sanction.levee_le %} — levée le {{ emprunt.sanction.levee_le|date:"d/m/Y" }}{% endif %}</span>
+                            {% else %}
+                                <span class="badge badge-neutral">Restitué à temps</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -219,5 +181,4 @@
     </div>
 </div>
 {% endif %}
-
 {% endblock %}
