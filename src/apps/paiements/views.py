@@ -1,9 +1,8 @@
 """
 Vues du paiement en ligne.
 
-Une seule compte vraiment : le point d'entrée des notifications Stripe. Les
-deux autres n'affichent qu'un état — elles ne décident de rien, et surtout pas
-qu'un paiement a abouti.
+Le webhook décide de l'encaissement. Les autres vues préparent un règlement ou
+affichent son état sans jamais déclarer elles-mêmes qu'il est payé.
 """
 
 import logging
@@ -39,7 +38,12 @@ def _reglement_visible(request, pk):
     if request.user.is_authenticated:
         filtres |= Q(utilisateur=request.user)
     return get_object_or_404(
-        Reglement.objects.select_related("commande", "module").prefetch_related("commande__lignes"),
+        Reglement.objects.select_related(
+            "commande",
+            "module",
+            "inscription_associee__demande__cours_session__cours",
+            "inscription_associee__demande__cours_session__session",
+        ).prefetch_related("commande__lignes"),
         filtres,
         pk=pk,
     )
@@ -47,17 +51,7 @@ def _reglement_visible(request, pk):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class WebhookStripeView(View):
-    """
-    Réception des notifications Stripe.
-
-    `csrf_exempt` est requis — Stripe n'a pas nos jetons — et sans danger : la
-    protection ne vient pas du CSRF mais de la signature cryptographique, qui
-    est vérifiée avant toute lecture du contenu. Un appel non signé ne franchit
-    pas la première ligne utile.
-
-    Le code de réponse est un engagement : 2xx signifie « pris en compte, ne
-    renvoyez plus ». On ne le renvoie donc jamais par confort.
-    """
+    """Réception authentifiée des notifications Stripe."""
 
     http_method_names = ["post"]
 
@@ -74,20 +68,18 @@ class WebhookStripeView(View):
         except ValueError:
             return HttpResponseBadRequest("Contenu illisible.")
         except Exception as erreur:
-            # `SignatureVerificationError` hérite de la hiérarchie Stripe ; on
-            # ne l'importe pas pour garder ce module indépendant de leur API.
             logger.warning("Signature Stripe refusée : %s", erreur)
             return HttpResponseBadRequest("Signature invalide.")
 
         try:
             trace = webhook.traiter(evenement)
         except webhook.EvenementDejaTraite:
-            # Redélivrance : déjà appliqué, donc acquitté sans rien refaire.
             return HttpResponse(status=200)
         except Exception:
-            logger.exception("Échec du traitement de la notification Stripe %s", evenement.get("id"))
-            # 500 volontaire : Stripe redélivrera, et l'encaissement ne sera pas
-            # perdu. Un 200 complaisant le perdrait définitivement.
+            logger.exception(
+                "Échec du traitement de la notification Stripe %s",
+                evenement.get("id"),
+            )
             return HttpResponse("Traitement impossible.", status=500)
 
         if trace is None:
@@ -96,16 +88,7 @@ class WebhookStripeView(View):
 
 
 class SuccesView(View):
-    """Page de retour après paiement — informative, jamais décisionnaire.
-
-    Le règlement peut y apparaître « en attente » : la notification Stripe
-    arrive parfois après la redirection du navigateur. C'est normal, et c'est
-    dit à l'écran plutôt que masqué par un message de succès mensonger.
-
-    La page nomme le payeur, son courriel et ce qu'il a réglé : elle passe donc
-    par le même filtre que le paiement lui-même. Un identifiant reste un
-    identifiant, pas un droit de lecture.
-    """
+    """Page de retour après paiement — informative, jamais décisionnaire."""
 
     def get(self, request, pk):
         reglement = _reglement_visible(request, pk)
@@ -123,11 +106,7 @@ class AnnulationView(View):
 
 
 class AchatModuleView(LoginRequiredMixin, View):
-    """Prépare le paiement d'un module et ouvre la page sécurisée ITEAG.
-
-    En POST seulement : créer un règlement est une action, pas une consultation,
-    et un lien préchargé par le navigateur ne doit pas en créer un.
-    """
+    """Prépare le paiement d'un module et ouvre la page sécurisée ITEAG."""
 
     http_method_names = ["post"]
 
@@ -138,16 +117,71 @@ class AchatModuleView(LoginRequiredMixin, View):
         profil = getattr(request.user, "profil_etudiant", None)
 
         try:
-            reglement = reglements.pour_module(module, profil, utilisateur=request.user)
+            reglement = reglements.pour_module(
+                module,
+                profil,
+                utilisateur=request.user,
+            )
         except ValidationError as erreur:
             messages.error(request, erreur.messages[0])
         except Exception:
             logger.exception("Préparation du paiement impossible pour le module %s", slug)
-            messages.error(request, "Le paiement ne peut pas être préparé pour le moment. Réessayez.")
+            messages.error(
+                request,
+                "Le paiement ne peut pas être préparé pour le moment. Réessayez.",
+            )
         else:
             return redirect("paiements:checkout", pk=reglement.pk)
 
         return redirect(module.get_absolute_url())
+
+
+class PaiementInscriptionView(LoginRequiredMixin, View):
+    """Ouvre le paiement de la demande appartenant à l'étudiant connecté."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from apps.academics.models import DemandeInscriptionCours, Paiement
+
+        demande = get_object_or_404(
+            DemandeInscriptionCours.objects.select_related(
+                "etudiant__utilisateur",
+                "cours_session__cours",
+                "cours_session__session",
+                "paiement",
+            ),
+            pk=pk,
+            etudiant__utilisateur=request.user,
+        )
+
+        if demande.paiement_id and demande.paiement.statut == Paiement.StatutPaiement.CONFIRME:
+            messages.info(
+                request,
+                "Votre paiement a déjà été reçu. L'inscription attend la validation du secrétariat.",
+            )
+            return redirect("etudiant:enrollment_requests")
+
+        try:
+            reglement = reglements.pour_demande_inscription(
+                demande,
+                utilisateur=request.user,
+            )
+        except ValidationError as erreur:
+            messages.error(request, erreur.messages[0])
+            return redirect("etudiant:enrollment_requests")
+        except Exception:
+            logger.exception(
+                "Préparation du paiement impossible pour la demande %s",
+                demande.pk,
+            )
+            messages.error(
+                request,
+                "Le paiement ne peut pas être préparé pour le moment. Réessayez dans un instant.",
+            )
+            return redirect("etudiant:enrollment_requests")
+
+        return redirect("paiements:checkout", pk=reglement.pk)
 
 
 class PaiementCommandeView(View):
@@ -160,7 +194,10 @@ class PaiementCommandeView(View):
 
         commande = get_object_or_404(Commande, jeton_suivi=jeton)
         if commande.mode_paiement != Commande.ModePaiement.CARTE:
-            messages.error(request, "Cette commande n'a pas été configurée pour un paiement par carte.")
+            messages.error(
+                request,
+                "Cette commande n'a pas été configurée pour un paiement par carte.",
+            )
             return redirect(commande)
         if commande.statut_paiement == Commande.StatutPaiement.CONFIRME:
             messages.info(request, "Cette commande est déjà réglée.")
@@ -171,7 +208,10 @@ class PaiementCommandeView(View):
         except ValidationError as erreur:
             messages.error(request, erreur.messages[0])
         except Exception:
-            logger.exception("Préparation du paiement impossible pour la commande %s", commande.numero)
+            logger.exception(
+                "Préparation du paiement impossible pour la commande %s",
+                commande.numero,
+            )
             messages.error(
                 request,
                 "Le paiement ne peut pas être préparé pour le moment. "
@@ -193,10 +233,15 @@ class CheckoutView(View):
         if reglement.est_paye:
             return redirect("paiements:succes", pk=reglement.pk)
 
+        association = getattr(reglement, "inscription_associee", None)
+        demande_inscription = association.demande if association else None
+
         if reglement.nature == Reglement.Nature.COMMANDE:
             retour = reglement.commande.get_absolute_url()
         elif reglement.module_id:
             retour = reglement.module.get_absolute_url()
+        elif demande_inscription is not None:
+            retour = reverse("etudiant:enrollment_requests")
         else:
             retour = "/"
 
@@ -206,6 +251,7 @@ class CheckoutView(View):
             {
                 "reglement": reglement,
                 "commande": reglement.commande,
+                "demande_inscription": demande_inscription,
                 "retour": retour,
                 "stripe_configure": est_configure(),
                 "stripe_cle_publiable": settings.STRIPE_CLE_PUBLIABLE,
@@ -239,7 +285,10 @@ class SessionCheckoutView(View):
                 status=503,
             )
         except Exception:
-            logger.exception("Ouverture de la session Stripe intégrée impossible pour %s", reglement.pk)
+            logger.exception(
+                "Ouverture de la session Stripe intégrée impossible pour %s",
+                reglement.pk,
+            )
             return JsonResponse(
                 {"message": "Le paiement ne peut pas être chargé. Réessayez dans un instant."},
                 status=502,
