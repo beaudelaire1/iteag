@@ -37,7 +37,7 @@ from apps.core.mixins import (
 from apps.core.services.audit import journaliser
 from apps.core.services.pdf import contexte_marque, rendre_pdf
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
-from apps.library.models import NoticeBibliographique
+from apps.library.models import Emprunt, NoticeBibliographique
 
 from .forms import (
     AdminEtudiantForm,
