@@ -235,7 +235,7 @@
         <img class="signature__image" src="{{ signature_pdf }}" alt="Signature numérique">
         {% endif %}
     </div>
-    <p class="signature__role">Le secrétariat</p>
+    <p class="signature__role">{{ secretariat_qualite|default:"Le secrétariat" }}</p>
     {% if secretariat_nom %}
     <p class="signature__name">{{ secretariat_nom }}</p>
     {% endif %}

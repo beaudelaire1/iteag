@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    DeleteStudentDocumentView,
     DownloadStudentDocumentView,
     GenerateStudentDocumentView,
     StudentDocumentListView,
@@ -14,4 +15,5 @@ urlpatterns = [
     path("generer/<str:document_type>/", GenerateStudentDocumentView.as_view(), name="generate"),
     path("etat/<int:pk>/", StudentDocumentStatusView.as_view(), name="status"),
     path("telecharger/<int:pk>/", DownloadStudentDocumentView.as_view(), name="download"),
+    path("supprimer/<int:pk>/", DeleteStudentDocumentView.as_view(), name="delete"),
 ]

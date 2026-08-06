@@ -144,7 +144,7 @@ def generer_attestation_pdf(attestation_id: str) -> str:
     from apps.documents.services_generation import obtenir_signature_secretariat_data_uri
 
     adresse = f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{attestation.url_verification()}"
-    signature_pdf, _ = obtenir_signature_secretariat_data_uri()
+    signature_pdf, secretariat_nom, secretariat_qualite = obtenir_signature_secretariat_data_uri()
     try:
         pdf = rendre_pdf(
             "elearning/attestation_pdf.html",
@@ -152,6 +152,8 @@ def generer_attestation_pdf(attestation_id: str) -> str:
                 attestation=attestation,
                 qr_verification=qr_data_uri(adresse),
                 signature_pdf=signature_pdf,
+                secretariat_nom=secretariat_nom,
+                secretariat_qualite=secretariat_qualite,
             ),
         )
     except MoteurPDFIndisponible:

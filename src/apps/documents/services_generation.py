@@ -29,8 +29,8 @@ def _signature_uri(document: DocumentRedige) -> str:
     return _user_signature_uri(redacteur)
 
 
-def obtenir_signature_secretariat_data_uri() -> tuple[str, str]:
-    """Retourne (signature_data_uri, nom_du_signataire) du secrétariat ou de la direction.
+def obtenir_signature_secretariat_data_uri() -> tuple[str, str, str]:
+    """Retourne (signature_data_uri, nom_du_signataire, qualite_du_signataire) du secrétariat ou de la direction.
 
     Cherche d'abord un utilisateur du secrétariat ayant déposé une signature numérique,
     puis à défaut un administrateur ayant une signature, puis tout utilisateur avec signature.
@@ -60,11 +60,12 @@ def obtenir_signature_secretariat_data_uri() -> tuple[str, str]:
         )
 
     if not secretaire:
-        return "", ""
+        return "", "", ""
 
     uri = _user_signature_uri(secretaire)
-    nom = secretaire.get_full_name() or secretaire.username
-    return uri, nom
+    nom = secretaire.nom_autorite_signature or secretaire.get_full_name() or secretaire.username
+    qualite = secretaire.titre_qualite_signature or "Le secrétariat"
+    return uri, nom, qualite
 
 
 def fabriquer_document_administratif(document: DocumentAdministratif) -> tuple[bytes, str]:
@@ -79,7 +80,7 @@ def fabriquer_document_administratif(document: DocumentAdministratif) -> tuple[b
     if document.type_document == DocumentAdministratif.TypeDocument.RELEVE_NOTES:
         profil.ects_acquis_annotes = profil.total_ects_acquis
 
-    signature_pdf, secretariat_nom = obtenir_signature_secretariat_data_uri()
+    signature_pdf, secretariat_nom, secretariat_qualite = obtenir_signature_secretariat_data_uri()
 
     genere_le = timezone.now()
     contenu = rendre_pdf(
@@ -97,34 +98,37 @@ def fabriquer_document_administratif(document: DocumentAdministratif) -> tuple[b
             credits=credits,
             signature_pdf=signature_pdf,
             secretariat_nom=secretariat_nom,
+            secretariat_qualite=secretariat_qualite,
         ),
     )
-    identite = slugify(utilisateur.get_full_name() or utilisateur.username)
-    nom = f"{document.type_document}-{identite}-{genere_le:%Y%m%d%H%M%S}.pdf"
-    return contenu, nom
+    nom_fichier = f"{document.reference_document.lower().replace('/', '_')}.pdf"
+    return contenu, nom_fichier
 
 
 def fabriquer_document_redige(document: DocumentRedige) -> tuple[bytes, str]:
-    genere_le = timezone.now()
-    signature_pdf = _signature_uri(document)
-    signataire_nom = document.signataire_nom
+    auteur = document.auteur
+    signature_pdf = _user_signature_uri(auteur) if auteur else ""
+    signataire_nom_effectif = auteur.nom_autorite_signature or (auteur.get_full_name() if auteur else "") or (auteur.username if auteur else "")
+    signataire_qualite_effectif = auteur.titre_qualite_signature if auteur and auteur.titre_qualite_signature else ""
 
     if not signature_pdf:
-        sec_signature_pdf, sec_nom = obtenir_signature_secretariat_data_uri()
-        signature_pdf = sec_signature_pdf
-        if not signataire_nom:
-            signataire_nom = sec_nom
+        signature_pdf, sec_nom, sec_qualite = obtenir_signature_secretariat_data_uri()
+        if not signataire_nom_effectif:
+            signataire_nom_effectif = sec_nom
+        if not signataire_qualite_effectif:
+            signataire_qualite_effectif = sec_qualite
 
     contenu = rendre_pdf(
         "documents/pdf/document_redige.html",
         contexte_marque(
-            profil_polices="document_administratif",
+            profil_polices="document_redige",
             document=document,
-            edite_le=genere_le,
+            generated_at=timezone.now(),
             signature_pdf=signature_pdf,
-            signataire_nom_effectif=signataire_nom,
+            signataire_nom_effectif=signataire_nom_effectif,
+            signataire_qualite_effectif=signataire_qualite_effectif,
         ),
     )
-    prefixe = "apercu" if document.est_modifiable else slugify(document.reference or document.titre)
-    nom = f"{prefixe}-{slugify(document.titre) or 'document'}-{genere_le:%Y%m%d%H%M%S}.pdf"
-    return contenu, nom
+
+    nom_fichier = f"doc_{document.reference_complete.lower().replace('/', '_')}.pdf"
+    return contenu, nom_fichier

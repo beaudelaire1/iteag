@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from django.contrib import messages
-from django.http import FileResponse, Http404, HttpResponseNotAllowed
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import TemplateView
@@ -119,3 +119,22 @@ class DownloadStudentDocumentView(StudentRoleRequiredMixin, View):
         return FileResponse(
             document.fichier_pdf.open("rb"), as_attachment=True, filename=Path(document.fichier_pdf.name).name
         )
+
+
+class DeleteStudentDocumentView(StudentRoleRequiredMixin, View):
+    """Permet à un étudiant de supprimer un document administratif généré de sa liste."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        document = get_object_or_404(DocumentAdministratif, pk=pk, etudiant=request.user)
+        label = document.get_type_document_display()
+        if document.fichier_pdf:
+            document.fichier_pdf.delete(save=False)
+        document.delete()
+
+        if request.headers.get("HX-Request"):
+            return HttpResponse("")
+
+        messages.success(request, f"Le document « {label} » a été supprimé.")
+        return redirect("documents:list")

@@ -127,8 +127,15 @@ class ProfilForm(FormulaireModeleITEAG):
 class SignatureForm(FormulaireModeleITEAG):
     class Meta:
         model = User
-        fields = ["signature"]
+        fields = ["titre_qualite_signature", "nom_autorite_signature", "signature"]
+        labels = {
+            "titre_qualite_signature": "Titre / Qualité de l'autorité",
+            "nom_autorite_signature": "Nom de l'autorité / du signataire",
+            "signature": "Image de la signature numérique",
+        }
         help_texts = {
+            "titre_qualite_signature": "Mention apparaissant sous/au-dessus de la signature (ex: Le secrétariat, Le Directeur).",
+            "nom_autorite_signature": "Nom complet imprimé sur les documents officiels (ex: Jean DUPONT, Secrétariat ITEAG).",
             "signature": "PNG transparent recommandé. JPEG ou WebP acceptés, 2 Mo au plus.",
         }
 

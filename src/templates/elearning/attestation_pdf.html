@@ -216,8 +216,10 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
                         {% endif %}
                     </div>
                     <div class="signature-ligne"></div>
-                    <span class="etiquette">Pour l'institut</span>
-                    {% if attestation.inscription.module.responsable %}
+                    <span class="etiquette">{{ secretariat_qualite|default:"Pour l'institut" }}</span>
+                    {% if secretariat_nom %}
+                    <span class="valeur">{{ secretariat_nom }}</span>
+                    {% elif attestation.inscription.module.responsable %}
                     <span class="valeur">{{ attestation.inscription.module.responsable.nom_complet }}</span>
                     {% else %}
                     <span class="valeur">La direction</span>

@@ -27,18 +27,24 @@
         {% include "partials/erreurs_formulaire.html" with form=form %}
 
         <div>
-            <h2 class="text-base font-semibold text-navy-900">Signature utilisée sur vos documents</h2>
-            <p class="mt-1 text-sm text-warm-600">Elle sera apposée automatiquement sur les PDF dont vous êtes le rédacteur.</p>
+            <h2 class="text-base font-semibold text-navy-900">Signature officielle & Institutionnelle</h2>
+            <p class="mt-1 text-sm text-warm-600">Ces informations et l'image de votre signature apparaîtront automatiquement sur tous les documents officiels (attestations, certificats, relevés de notes, reçus) et documents rédigés.</p>
         </div>
 
+        {% include "partials/champ.html" with field=form.titre_qualite_signature %}
+        {% include "partials/champ.html" with field=form.nom_autorite_signature %}
+
         {% if user.signature %}
-        <div class="flex min-h-32 items-center justify-center bg-white p-6" style="border: 1px solid var(--color-warm-200);">
-            <img src="{{ user.signature.url }}" alt="Signature numérique actuelle" class="max-h-24 max-w-full object-contain">
+        <div>
+            <label class="block text-sm font-medium text-navy-900 mb-2">Signature actuelle</label>
+            <div class="flex min-h-32 items-center justify-center bg-white p-6 rounded" style="border: 1px solid var(--color-warm-200);">
+                <img src="{{ user.signature.url }}" alt="Signature numérique actuelle" class="max-h-24 max-w-full object-contain">
+            </div>
         </div>
         {% endif %}
 
         {% include "partials/champ.html" with field=form.signature %}
-        <button type="submit" class="btn-primary">Enregistrer ma signature</button>
+        <button type="submit" class="btn-primary">Enregistrer la signature officielle</button>
     </form>
 </section>
 {% endblock %}

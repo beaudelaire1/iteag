@@ -266,3 +266,23 @@ class TestModele:
             type_document=DocumentAdministratif.TypeDocument.RECU,
         )
         assert document.date_generation is not None
+
+    def test_suppression_document_par_etudiant(self, client, etudiant):
+        document = DocumentAdministratif.objects.create(
+            etudiant=etudiant.utilisateur,
+            type_document=DocumentAdministratif.TypeDocument.ATTESTATION,
+        )
+        client.force_login(etudiant.utilisateur)
+        reponse = client.post(reverse("documents:delete", kwargs={"pk": document.pk}))
+        assert reponse.status_code == 302
+        assert not DocumentAdministratif.objects.filter(pk=document.pk).exists()
+
+    def test_un_etudiant_ne_peut_pas_supprimer_le_document_d_un_autre(self, client, etudiant, autre_etudiant):
+        document = DocumentAdministratif.objects.create(
+            etudiant=autre_etudiant.utilisateur,
+            type_document=DocumentAdministratif.TypeDocument.ATTESTATION,
+        )
+        client.force_login(etudiant.utilisateur)
+        reponse = client.post(reverse("documents:delete", kwargs={"pk": document.pk}))
+        assert reponse.status_code == 404
+        assert DocumentAdministratif.objects.filter(pk=document.pk).exists()
