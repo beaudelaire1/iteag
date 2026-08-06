@@ -9,8 +9,6 @@ base. C'est ce qui rend le reste testable sans appeler le réseau.
 from django.conf import settings
 from django.urls import reverse
 
-# Le paiement en ligne est facultatif : un déploiement peut n'encaisser que par
-# virement. L'import ne doit donc pas casser une installation sans Stripe.
 try:
     import stripe
 except ImportError:  # pragma: no cover — dépendance déclarée dans base.txt
@@ -26,12 +24,7 @@ class SessionPaiementTerminee(RuntimeError):
 
 
 def est_configure() -> bool:
-    """Stripe peut-il encaisser ?
-
-    Le secret de signature en fait partie. Sans lui, on saurait créer une
-    session de paiement mais pas vérifier qu'elle a abouti : on encaisserait
-    sans jamais délivrer. Une configuration à moitié faite est pire qu'absente.
-    """
+    """Stripe peut-il encaisser et authentifier ses notifications ?"""
     return bool(
         stripe is not None
         and getattr(settings, "STRIPE_CLE_SECRETE", "")
@@ -54,13 +47,7 @@ def _adresse_absolue(request, nom_url: str, **kwargs) -> str:
 
 
 def creer_session_integree(reglement, request=None) -> str:
-    """Ouvre ou reprend une session Checkout intégrée et renvoie son secret client.
-
-    Une session encore ouverte est réutilisée après un rechargement de page.
-    Une ancienne session hébergée ou expirée est remplacée, mais sa clé sert à
-    rendre cette opération idempotente : deux appels simultanés ne peuvent pas
-    produire deux possibilités d'encaissement distinctes.
-    """
+    """Ouvre ou reprend une session Checkout intégrée et renvoie son secret client."""
     client = _client()
     session_precedente = None
 
@@ -110,13 +97,16 @@ def creer_session_integree(reglement, request=None) -> str:
     return session.client_secret
 
 
-def lire_evenement(charge_utile: bytes, signature: str):
-    """Authentifie une notification Stripe et la renvoie décodée.
+def recuperer_session_checkout(session_id: str):
+    """Relit une session Checkout directement chez Stripe côté serveur."""
+    session_id = (session_id or "").strip()
+    if not session_id:
+        raise ValueError("Identifiant de session Stripe absent.")
+    return _client().checkout.Session.retrieve(session_id)
 
-    C'est le contrôle qui empêche un tiers de déclarer un paiement abouti en
-    postant du JSON à notre adresse publique. Une signature invalide lève, et
-    l'appelant répond 400 sans rien écrire.
-    """
+
+def lire_evenement(charge_utile: bytes, signature: str):
+    """Authentifie une notification Stripe et la renvoie décodée."""
     client = _client()
     return client.Webhook.construct_event(
         payload=charge_utile,
