@@ -45,9 +45,10 @@ def reserver_ouvrage(
         emprunteur,
         f"Ouvrage réservé — {notice.titre}",
         message=(
-            f"Votre réservation de « {notice.titre} » est enregistrée. Présentez-vous au secrétariat pour le retrait."
+            f"Votre réservation de « {notice.titre} » est enregistrée. Présentez-vous au secrétariat pour le retrait. "
+            f"Date de retour prévue : {date_retour.strftime('%d/%m/%Y')}."
         ),
-        envoyer_par_email=False,
+        envoyer_par_email=True,
     )
 
     return emprunt
@@ -110,4 +111,29 @@ def verifier_retards() -> int:
             ),
             envoyer_par_email=True,
         )
+    return count
+
+
+@transaction.atomic
+def envoyer_rappels_echeances_proches(jours_avant: int = 3) -> int:
+    """Envoie un rappel par email pour les emprunts dont la date d'échéance approche."""
+    date_cible = timezone.localdate() + timedelta(days=jours_avant)
+    emprunts_proches = Emprunt.objects.filter(
+        statut__in=[Emprunt.Statut.EN_COURS, Emprunt.Statut.RESERVE],
+        date_retour_prevue=date_cible,
+    ).select_related("notice", "emprunteur")
+
+    count = 0
+    for emprunt in emprunts_proches:
+        dt_fmt = emprunt.date_retour_prevue.strftime("%d/%m/%Y")
+        notifier(
+            emprunt.emprunteur,
+            f"Rappel : échéance proche pour « {emprunt.notice.titre} »",
+            message=(
+                f"La date de restitution de l'ouvrage « {emprunt.notice.titre} » approche (échéance le {dt_fmt}). "
+                "Merci de penser à le rapporter au secrétariat."
+            ),
+            envoyer_par_email=True,
+        )
+        count += 1
     return count

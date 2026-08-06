@@ -46,9 +46,9 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "formations": {"core", "library"},
     "admissions": {"core", "formations", "accounts"},
     "academics": {"core", "formations", "accounts"},
-    "lms": {"core", "academics", "formations"},
+    "lms": {"core", "academics", "formations", "library"},
     "elearning": {"core", "accounts", "formations", "academics"},
-    "library": {"core", "formations"},
+    "library": {"core", "formations", "accounts"},
     "commerce": {"core", "accounts", "library"},
     # « paiements » encaisse pour le compte des domaines vendeurs : il les
     # connaît tous les trois, et aucun ne le connaît en retour. Le sens de la
@@ -58,7 +58,7 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "documents": {"core", "accounts", "academics"},
     # Les portails agrègent plusieurs domaines : c'est leur raison d'être, et
     # c'est pourquoi ils vivent hors des applications de domaine.
-    "portail_etudiant": {"core", "accounts", "formations", "academics", "lms", "documents", "elearning"},
+    "portail_etudiant": {"core", "accounts", "formations", "academics", "lms", "documents", "elearning", "library"},
     "portail_enseignant": {"core", "accounts", "formations", "academics", "lms", "elearning"},
     # website est un portail : comme administration, il agrège des domaines.
     # « library » et « commerce » s'y ajoutent pour le plan du site, qui recense

@@ -16,6 +16,9 @@
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Gestion des emprunts et réservations</h1>
     </div>
     <div class="flex items-center gap-3">
+        <a href="{% url 'library:emprunt_creer' %}" class="btn-primary text-sm">
+            + Nouvel emprunt
+        </a>
         <a href="{% url 'library:gestion' %}" class="btn-secondary text-sm">
             Fonds documentaire
         </a>
@@ -91,21 +94,23 @@
                         {{ emprunt.date_retour_prevue|date:"d/m/Y" }}
                     </td>
                     <td class="p-4">
-                        {% if emprunt.statut == "reserve" %}
-                        <form method="post" action="{% url 'library:emprunt_action' emprunt.pk %}" class="inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="valider_retrait">
-                            <button type="submit" class="btn btn-xs btn-primary">Valider le retrait</button>
-                        </form>
-                        {% elif emprunt.statut == "en_cours" or emprunt.statut == "en_retard" %}
-                        <form method="post" action="{% url 'library:emprunt_action' emprunt.pk %}" class="inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="restituer">
-                            <button type="submit" class="btn btn-xs btn-outline">Enregistrer retour</button>
-                        </form>
-                        {% else %}
-                        <span class="text-xs text-warm-400">Terminé</span>
-                        {% endif %}
+                        <div class="flex items-center gap-2 flex-wrap">
+                            {% if emprunt.statut == "reserve" %}
+                            <form method="post" action="{% url 'library:emprunt_action' emprunt.pk %}" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="valider_retrait">
+                                <button type="submit" class="btn btn-xs btn-primary">Valider le retrait</button>
+                            </form>
+                            {% elif emprunt.statut == "en_cours" or emprunt.statut == "en_retard" %}
+                            <form method="post" action="{% url 'library:emprunt_action' emprunt.pk %}" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="restituer">
+                                <button type="submit" class="btn btn-xs btn-outline">Enregistrer retour</button>
+                            </form>
+                            {% endif %}
+                            <a href="{% url 'library:emprunt_modifier' emprunt.pk %}" class="text-xs font-semibold text-navy-700 hover:underline">Modifier</a>
+                            <a href="{% url 'library:emprunt_supprimer' emprunt.pk %}" class="text-xs font-semibold text-rose-600 hover:underline">Supprimer</a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}

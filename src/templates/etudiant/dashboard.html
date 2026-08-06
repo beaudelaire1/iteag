@@ -76,6 +76,38 @@ de plus est ouvert. Écarter une fois pour toutes ferait manquer les suivants.
     </a>
 </div>
 
+{# ── Emprunts Bibliothèque ── #}
+{% if emprunts %}
+<div class="card-elevated mb-8 p-5">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-semibold text-navy-900">📚 Mes emprunts de bibliothèque</h2>
+        <span class="text-xs text-warm-500 font-medium">{{ emprunts|length }} ouvrage{{ emprunts|pluralize }}</span>
+    </div>
+    <div class="space-y-3">
+        {% for emprunt in emprunts %}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-lg bg-warm-50 border border-warm-200 gap-2">
+            <div>
+                <a href="{% url 'library:notice_detail' emprunt.notice.pk %}" class="font-semibold text-navy-900 text-sm hover:underline">
+                    {{ emprunt.notice.titre }}
+                </a>
+                <p class="text-xs text-warm-500 mt-0.5">Auteur : {{ emprunt.notice.auteur|default:"—" }}</p>
+            </div>
+            <div class="sm:text-right shrink-0">
+                {% if emprunt.statut == "reserve" %}
+                <span class="badge badge-info text-xs">Réservé (Retrait à venir)</span>
+                {% elif emprunt.statut == "en_cours" %}
+                <span class="badge badge-success text-xs">En cours</span>
+                {% elif emprunt.statut == "en_retard" %}
+                <span class="badge badge-warning text-xs">En retard</span>
+                {% endif %}
+                <p class="text-xs mt-1 font-medium text-warm-700">Date d'échéance : <strong>{{ emprunt.date_retour_prevue|date:"d/m/Y" }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {# ── Formation vidéo ── #}
 {% if modules_total %}
 <div class="card-elevated mb-8" style="padding: 0;">

@@ -9,7 +9,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 
 from apps.core.mixins import AdminRoleRequiredMixin, StaffRoleRequiredMixin
 from apps.formations.models import Discipline
-from apps.library.formulaires import NoticeForm
+from apps.library.formulaires import EmpruntForm, NoticeForm
 
 from . import services
 from .models import Emprunt, NoticeBibliographique
@@ -311,3 +311,65 @@ class EmpruntActionView(StaffRoleRequiredMixin, View):
         except ValidationError as erreur:
             messages.error(request, erreur.messages[0])
         return redirect("library:gestion_emprunts")
+
+
+class EmpruntCreateView(StaffRoleRequiredMixin, CreateView):
+    """Création manuelle d'un emprunt ou réservation par le secrétariat."""
+
+    model = Emprunt
+    form_class = EmpruntForm
+    template_name = "library/emprunt_form.html"
+
+    def form_valid(self, form):
+        emprunt = form.save(commit=False)
+        notice = emprunt.notice
+        notice.disponible = False
+        notice.save(update_fields=["disponible", "updated_at"])
+        emprunt.save()
+        messages.success(
+            self.request,
+            f"L'emprunt pour « {notice.titre} » a été créé avec succès.",
+        )
+        dt_fmt = emprunt.date_retour_prevue.strftime("%d/%m/%Y")
+        services.notifier(
+            emprunt.emprunteur,
+            f"Nouvel emprunt enregistré — {notice.titre}",
+            message=f"L'emprunt de « {notice.titre} » a été enregistré par le secrétariat. Date d'échéance : {dt_fmt}.",
+            envoyer_par_email=True,
+        )
+        return redirect("library:gestion_emprunts")
+
+
+class EmpruntUpdateView(StaffRoleRequiredMixin, UpdateView):
+    """Modification/prolongation d'un emprunt existant par le secrétariat."""
+
+    model = Emprunt
+    form_class = EmpruntForm
+    template_name = "library/emprunt_form.html"
+
+    def form_valid(self, form):
+        emprunt = form.save()
+        messages.success(
+            self.request,
+            f"L'emprunt de « {emprunt.notice.titre} » a été mis à jour avec succès.",
+        )
+        return redirect("library:gestion_emprunts")
+
+
+class EmpruntDeleteView(StaffRoleRequiredMixin, DeleteView):
+    """Suppression/annulation d'un emprunt par le secrétariat."""
+
+    model = Emprunt
+    template_name = "library/emprunt_confirm_delete.html"
+
+    def form_valid(self, form):
+        emprunt = self.get_object()
+        notice = emprunt.notice
+        if emprunt.statut != Emprunt.Statut.RENDU:
+            notice.disponible = True
+            notice.save(update_fields=["disponible", "updated_at"])
+        messages.success(self.request, f"L'emprunt pour « {notice.titre} » a été supprimé.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("library:gestion_emprunts")

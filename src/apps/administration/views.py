@@ -28,7 +28,12 @@ from apps.administration.services import pilotage, statistiques
 from apps.administration.suppression import SuppressionProtegee
 from apps.admissions.models import DossierCandidature
 from apps.admissions.services import available_status_choices, transition_dossier
-from apps.core.mixins import AdminRoleRequiredMixin, SecretariatRoleRequiredMixin, StaffRoleRequiredMixin
+from apps.core.mixins import (
+    AdminRoleRequiredMixin,
+    SecretariatRoleRequiredMixin,
+    StaffOrTeacherRoleRequiredMixin,
+    StaffRoleRequiredMixin,
+)
 from apps.core.services.audit import journaliser
 from apps.core.services.pdf import contexte_marque, rendre_pdf
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
@@ -1073,7 +1078,7 @@ class BulkCandidatureStatusView(StaffRoleRequiredMixin, View):
         return redirect("administration:candidatures")
 
 
-class EmargementPDFView(StaffRoleRequiredMixin, View):
+class EmargementPDFView(StaffOrTeacherRoleRequiredMixin, View):
     """Génère la feuille d'émargement officielle au format PDF pour un cours de session."""
 
     def get(self, request, pk):

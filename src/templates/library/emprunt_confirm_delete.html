@@ -1,0 +1,31 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Supprimer l'emprunt — Bibliothèque — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='emprunts' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-6">
+    <p class="overline mb-1">Bibliothèque · Confirmation</p>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Supprimer la réservation / l'emprunt</h1>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card-elevated max-w-lg mx-auto p-6 text-center">
+    <div class="mb-4 text-4xl">⚠️</div>
+    <h2 class="text-lg font-semibold text-navy-900 mb-2">Êtes-vous sûr de vouloir supprimer cet emprunt ?</h2>
+    <p class="text-sm text-warm-600 mb-6">
+        Ouvrage : <strong>{{ object.notice.titre }}</strong><br>
+        Emprunteur : <strong>{{ object.emprunteur.get_full_name|default:object.emprunteur.username }}</strong>
+    </p>
+
+    <form method="post" class="flex justify-center gap-3">
+        {% csrf_token %}
+        <a href="{% url 'library:gestion_emprunts' %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-danger">Confirmer la suppression</button>
+    </form>
+</div>
+{% endblock %}

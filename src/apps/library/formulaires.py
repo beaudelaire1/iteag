@@ -3,7 +3,7 @@
 from django import forms
 
 from apps.core.formulaires import FormulaireModeleITEAG
-from apps.library.models import NoticeBibliographique
+from apps.library.models import Emprunt, NoticeBibliographique
 
 
 class NoticeForm(FormulaireModeleITEAG):
@@ -51,3 +51,34 @@ class NoticeForm(FormulaireModeleITEAG):
         if isbn and not (isbn.replace("X", "").replace("x", "").isdigit() and len(isbn) in (10, 13)):
             raise forms.ValidationError("Un ISBN compte 10 ou 13 chiffres.")
         return isbn
+
+
+class EmpruntForm(FormulaireModeleITEAG):
+    """Saisie, création et modification manuelle d'un emprunt par le secrétariat."""
+
+    class Meta:
+        model = Emprunt
+        fields = [
+            "notice",
+            "emprunteur",
+            "statut",
+            "date_retour_prevue",
+            "commentaire",
+        ]
+        widgets = {
+            "date_retour_prevue": forms.DateInput(attrs={"type": "date"}),
+            "commentaire": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        from apps.accounts.models import User
+
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields["notice"].queryset = NoticeBibliographique.objects.filter(disponible=True)
+        self.fields["emprunteur"].queryset = User.objects.all().order_by("last_name", "first_name", "username")
+        self.fields["emprunteur"].label_from_instance = (
+            lambda obj: f"{obj.get_full_name()} ({obj.email})"
+            if obj.get_full_name()
+            else f"{obj.username} ({obj.email})"
+        )

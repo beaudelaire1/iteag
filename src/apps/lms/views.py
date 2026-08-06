@@ -11,6 +11,7 @@ from apps.academics.models import CoursDeSession
 from apps.core.mixins import TeacherRoleRequiredMixin
 from apps.core.models import Notification
 from apps.core.services.notifications import notifier
+from apps.library.models import Emprunt
 
 from .forms import AnnonceForm, GradeForm, ParametresEvaluationForm, RessourceUploadForm
 from .models import Annonce, Evaluation, RessourcePedagogique
@@ -85,12 +86,19 @@ class TeacherDashboardView(TeacherRoleRequiredMixin, TemplateView):
                 "cours_session__cours"
             )[:5]
 
+        emprunts = (
+            Emprunt.objects.filter(emprunteur=self.request.user)
+            .exclude(statut=Emprunt.Statut.RENDU)
+            .select_related("notice")
+        )
+
         context.update(
             {
                 "professeur": professeur,
                 "cours_assignes": cours_assignes,
                 "pending_evaluations": pending_evaluations,
                 "recent_annonces": recent_annonces,
+                "emprunts": emprunts,
             }
         )
         return context

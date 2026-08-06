@@ -29,6 +29,7 @@ from apps.core.mixins import StudentRoleRequiredMixin
 from apps.core.models import Notification
 from apps.core.services.notifications import notifier
 from apps.documents.models import DocumentAdministratif
+from apps.library.models import Emprunt
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
 from apps.lms.notifications import notifier_enseignant
 
@@ -96,6 +97,9 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                     "cours_session__cours", "cours_session__session", "cours_session__enseignant"
                 )[:6],
                 "documents_count": DocumentAdministratif.objects.filter(etudiant=self.request.user).count(),
+                "emprunts": Emprunt.objects.filter(emprunteur=self.request.user)
+                .exclude(statut=Emprunt.Statut.RENDU)
+                .select_related("notice"),
                 # Formation vidéo. Absente du tableau de bord tant que ces vues
                 # vivaient dans « academics », qui n'a pas le droit de dépendre
                 # d'« elearning » : l'étudiant devait deviner qu'un autre écran
