@@ -1,0 +1,71 @@
+name: StreamField browser smoke
+
+on:
+  push:
+    branches: [fix/actualite-streamfield-runtime-officiel]
+
+permissions:
+  contents: read
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install --require-hashes -r requirements/dev.lock
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: python manage.py collectstatic --noinput
+      - name: Construire une page avec le vrai BlockWidget
+        run: |
+          python - <<'PY'
+          import django
+          from pathlib import Path
+
+          django.setup()
+
+          from django.template import RequestContext, Template
+          from django.test import RequestFactory
+          from apps.website.formulaires_actualites import ActualiteForm
+          from apps.website.vues_actualites import ActualiteEditionView
+
+          request = RequestFactory().get("/")
+          request.csp_nonce = "browser-smoke"
+          form = ActualiteForm(initial={"contenu": ActualiteEditionView._contenu_initial(None)})
+          template = Template("""<!doctype html><html><head>{% load socle_wagtail %}{{ form.media.css }}{% wagtail_configuration_portail %}{{ form.media.js }}</head><body>{% wagtail_icones_portail %}{{ form.contenu }}</body></html>""")
+          html = template.render(RequestContext(request, {"form": form}))
+
+          racine = Path("/tmp/iteag-streamfield-browser")
+          racine.mkdir(parents=True, exist_ok=True)
+          (racine / "index.html").write_text(html, encoding="utf-8")
+          static = racine / "static"
+          if static.exists() or static.is_symlink():
+              static.unlink()
+          static.symlink_to(Path.cwd() / "staticfiles", target_is_directory=True)
+          PY
+      - name: Exécuter le composant dans Chrome
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          cd /tmp/iteag-streamfield-browser
+          python -m http.server 8765 >/tmp/iteag-streamfield-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 1
+          "$CHROME" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=8000 --dump-dom \
+            http://127.0.0.1:8765/index.html > /tmp/iteag-streamfield-dom.html
+          grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html
+          grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html
