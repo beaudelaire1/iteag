@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Protection des données personnelles — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Politique de protection des données personnelles de l'ITEAG : traitements, finalités, durées de conservation, destinataires et droits des personnes.{% endblock %}
+
+{% block content %}
+<article class="py-16 lg:py-24">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-12 hero-entrance">
+            <p class="overline mb-3">Vie privée</p>
+            <h1 class="hero-el hero-el-1 text-4xl font-bold tracking-tight text-navy-900">Protection des données personnelles</h1>
+            <p class="hero-el hero-el-2 mt-5 max-w-3xl text-lg leading-relaxed text-warm-600">
+                Cette page explique quelles données l'ITEAG traite, pourquoi elles sont nécessaires,
+                combien de temps elles sont conservées et comment exercer vos droits.
+            </p>
+            <p class="hero-el hero-el-3 mt-4 text-sm text-warm-500">Version du 7 août 2026.</p>
+            <hr class="divider-gold mt-7">
+        </header>
+
+        <div class="contenu-riche prose prose-lg max-w-none reveal">
+            <h2>1. Responsable du traitement</h2>
+            <p>
+                Le responsable des traitements décrits sur cette page est l'<strong>Institut de Théologie Évangélique
+                des Antilles et de la Guyane (ITEAG)</strong>, 201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe.
+            </p>
+            <p>
+                Pour toute question relative à vos données ou pour exercer un droit :
+                <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a> — {{ SITE_PHONE }}.
+            </p>
+
+            <h2>2. Principes appliqués</h2>
+            <p>
+                L'ITEAG ne collecte pas des données « au cas où ». Les informations demandées doivent être utiles à une
+                finalité identifiée : répondre à une demande, instruire une candidature, organiser la scolarité,
+                délivrer une formation, gérer un prêt de bibliothèque, traiter une commande ou un paiement, assurer la
+                sécurité de la plateforme, ou envoyer une lettre d'information lorsque la personne l'a demandé.
+            </p>
+            <p>
+                Les accès sont limités selon les rôles. Les données ne sont ni vendues ni louées à des fins publicitaires.
+            </p>
+
+            <h2>3. Données traitées et finalités</h2>
+
+            <h3>Navigation, sécurité et fonctionnement de la plateforme</h3>
+            <p>
+                Le service peut traiter l'adresse IP, le navigateur et l'appareil utilisés, les informations de session,
+                les événements de connexion et certaines traces techniques. Ces données servent à authentifier les
+                utilisateurs, prévenir les abus, diagnostiquer les erreurs et protéger la plateforme. Ce traitement repose
+                sur l'intérêt légitime de l'ITEAG à sécuriser et maintenir son service.
+            </p>
+
+            <h3>Demandes de contact et lettre d'information</h3>
+            <p>
+                Lorsqu'une personne écrit à l'ITEAG, les coordonnées communiquées et le contenu du message sont utilisés
+                pour répondre et assurer le suivi de la demande. L'inscription à la lettre d'information repose sur le
+                consentement : l'adresse n'est activée qu'après confirmation et chaque message doit permettre de se
+                désinscrire.
+            </p>
+
+            <h3>Candidatures</h3>
+            <p>
+                Un dossier de candidature peut contenir notamment l'identité, les coordonnées, la date de naissance, le
+                parcours demandé, les motivations, l'église d'appartenance lorsque cette information est renseignée, ainsi
+                que les pièces justificatives déposées. Ces données sont utilisées pour instruire le dossier, demander les
+                éléments manquants, prendre une décision et préparer l'inscription lorsqu'une candidature est acceptée.
+                Le traitement principal repose sur les mesures précontractuelles demandées par le candidat.
+            </p>
+
+            <h3>Comptes, scolarité et activités pédagogiques</h3>
+            <p>
+                Pour les étudiants, enseignants et personnels, la plateforme peut traiter des données d'identité et de
+                contact, une photo ou une signature lorsque la personne les fournit pour l'usage prévu, le rôle et les droits
+                d'accès, les inscriptions, présences, travaux remis, copies corrigées, notes, appréciations, crédits ECTS,
+                stages, VAE, documents administratifs et historique des opérations nécessaires au suivi de la formation.
+                Ces traitements sont nécessaires à l'exécution de la relation de formation et à l'organisation du service.
+            </p>
+
+            <h3>Bibliothèque</h3>
+            <p>
+                Les réservations et emprunts associent l'utilisateur aux ouvrages concernés, avec les dates de retrait et de
+                retour et, si nécessaire, les informations utiles au suivi d'un retard ou de l'état d'un ouvrage.
+            </p>
+
+            <h3>Boutique, règlements et facturation</h3>
+            <p>
+                Une commande peut nécessiter le nom, les coordonnées, l'adresse de livraison, le contenu de la commande,
+                son suivi et les références de règlement. Pour un paiement par carte, les données de carte sont saisies dans
+                l'environnement de paiement de Stripe et ne sont pas enregistrées par l'ITEAG. L'ITEAG conserve les
+                références et statuts nécessaires au rapprochement du paiement, au service après-vente et aux obligations
+                comptables.
+            </p>
+
+            <h3>Témoignages et contenus rendus publics</h3>
+            <p>
+                Un témoignage étudiant n'est publié qu'après consentement et validation. La personne peut demander son
+                retrait. Les informations rendues publiques sont limitées à celles prévues par le formulaire et validées
+                dans le cadre de cette publication.
+            </p>
+
+            <h2>4. Données susceptibles de révéler des convictions religieuses</h2>
+            <p>
+                L'église d'appartenance ou certaines informations fournies dans le contexte d'une formation théologique
+                peuvent révéler indirectement des convictions religieuses. Lorsqu'elles relèvent des catégories particulières
+                de données au sens du RGPD, leur traitement est limité aux activités légitimes de l'ITEAG en tant qu'organisme
+                sans but lucratif poursuivant une finalité religieuse, dans le cadre des relations couvertes par l'article
+                9, paragraphe 2, point d) du RGPD. L'accès est restreint aux personnes qui en ont besoin et ces informations
+                ne sont pas utilisées pour de la publicité comportementale. Leur communication en dehors de ce cadre ne peut
+                intervenir qu'avec le consentement de la personne ou lorsqu'une autre exception prévue par le RGPD s'applique.
+            </p>
+
+            <h2>5. Qui peut accéder aux données ?</h2>
+            <p>
+                Selon la finalité, les données peuvent être accessibles à la direction, au secrétariat, aux enseignants pour
+                leurs cours et évaluations, ou aux autres personnes habilitées strictement dans la limite de leurs fonctions.
+                L'ITEAG fait également appel à des prestataires techniques lorsque le service l'exige.
+            </p>
+            <p>Les principaux services susceptibles d'intervenir, selon la configuration activée, sont notamment :</p>
+            <ul>
+                <li>OVHcloud pour l'hébergement de l'infrastructure ;</li>
+                <li>Cloudflare pour la protection anti-abus et le stockage objet R2 ;</li>
+                <li>Stripe pour les paiements par carte ;</li>
+                <li>Sentry pour la supervision des erreurs lorsque le service est activé ;</li>
+                <li>Bunny.net pour la diffusion protégée de vidéos de formation ;</li>
+                <li>le fournisseur de messagerie configuré par l'ITEAG pour l'envoi des courriels ;</li>
+                <li>YouTube ou Vimeo pour certains contenus vidéo publics lorsqu'ils sont utilisés.</li>
+            </ul>
+            <p>
+                Ces prestataires ne reçoivent que les informations nécessaires au service qu'ils rendent. Certains sont des
+                groupes internationaux. Lorsqu'un traitement implique un transfert hors de l'Espace économique européen,
+                l'ITEAG doit l'encadrer par un mécanisme prévu par le RGPD, tel qu'une décision d'adéquation ou des garanties
+                contractuelles appropriées.
+            </p>
+
+            <h2>6. Durées de conservation</h2>
+            <p>
+                Les données ne sont pas conservées indéfiniment. La durée dépend de la finalité et, lorsqu'un texte impose
+                une durée, de cette obligation.
+            </p>
+            <ul>
+                <li><strong>Candidature refusée :</strong> au maximum 2 ans après la décision définitive, sauf nécessité particulière liée à un contentieux.</li>
+                <li><strong>Dossier étudiant et données académiques :</strong> pendant la durée du cursus puis 5 ans, sous réserve des documents qui doivent être conservés plus longtemps en vertu d'une obligation applicable.</li>
+                <li><strong>Commandes, factures et pièces comptables :</strong> 10 ans lorsque cette durée est imposée par les obligations comptables.</li>
+                <li><strong>Événements techniques liés au paiement :</strong> les données détaillées qui ne sont plus nécessaires au suivi comptable ou au règlement d'un litige doivent être supprimées ou minimisées après la période utile au traitement du paiement.</li>
+                <li><strong>Journal de sécurité et d'audit :</strong> 12 mois, sauf événement de sécurité ou contentieux justifiant une conservation ciblée plus longue.</li>
+                <li><strong>Messages de contact :</strong> 12 mois après le dernier échange utile, sauf si la demande débouche sur une relation qui justifie un autre dossier.</li>
+                <li><strong>Lettre d'information :</strong> l'adresse est conservée tant que l'abonnement est actif. Après désinscription, elle n'est plus utilisée pour les envois ; seules les informations strictement nécessaires à la preuve du consentement ou à la prise en compte durable de la désinscription peuvent être conservées pendant une durée proportionnée.</li>
+                <li><strong>Sauvegardes de la base :</strong> sauvegardes quotidiennes conservées environ 35 jours et archives mensuelles environ 400 jours. Une donnée supprimée de la base active peut donc subsister temporairement dans une sauvegarde jusqu'à son expiration normale ; elle n'est pas restaurée pour un autre usage.</li>
+            </ul>
+
+            <h2>7. Vos droits</h2>
+            <p>
+                Selon le traitement concerné, vous pouvez demander l'accès à vos données, leur rectification, leur
+                effacement, la limitation du traitement, vous opposer à certains traitements ou demander la portabilité des
+                données lorsque ce droit s'applique. Lorsque le traitement repose sur votre consentement, vous pouvez le
+                retirer à tout moment sans remettre en cause les traitements effectués auparavant.
+            </p>
+            <p>
+                Pour exercer un droit, écrivez à <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a> en indiquant
+                suffisamment d'éléments pour permettre à l'ITEAG d'identifier la demande sans collecter plus d'informations
+                que nécessaire. Une réponse est apportée dans les délais prévus par le RGPD.
+            </p>
+            <p>
+                Si vous estimez, après avoir contacté l'ITEAG, que vos droits ne sont pas respectés, vous pouvez adresser une
+                réclamation à la <a href="https://www.cnil.fr/" target="_blank" rel="noopener noreferrer">Commission nationale de l'informatique et des libertés (CNIL)</a>.
+            </p>
+
+            <h2>8. Décisions automatisées</h2>
+            <p>
+                La plateforme n'est pas conçue pour accepter ou refuser automatiquement une candidature, attribuer une note
+                ou prendre une décision académique produisant des effets significatifs sans intervention humaine.
+            </p>
+
+            <h2>9. Sécurité</h2>
+            <p>
+                L'ITEAG applique des mesures techniques et organisationnelles proportionnées : connexion chiffrée HTTPS,
+                contrôle des droits par rôle, double authentification pour les accès administratifs concernés, protection
+                contre les tentatives de connexion abusives, stockage protégé des médias et journalisation des opérations
+                sensibles. Les mesures évoluent avec la plateforme et les risques identifiés.
+            </p>
+
+            <h2>10. Mise à jour de cette politique</h2>
+            <p>
+                Cette politique est mise à jour lorsque les traitements, les prestataires, les durées de conservation ou le
+                cadre applicable évoluent. La date de version affichée en haut de page permet d'identifier le texte en vigueur.
+            </p>
+        </div>
+    </div>
+</article>
+{% endblock %}

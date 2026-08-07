@@ -6,6 +6,7 @@ app_name = "website"
 
 urlpatterns = [
     path("contact/merci/", views.contact_success, name="contact_success"),
+    path("protection-des-donnees/", views.politique_donnees, name="politique_donnees"),
     # ── Articles de recherche — lecture publique ──
     path("articles/", vues_articles.ArticlesPublicsView.as_view(), name="articles"),
     path("articles/<slug:slug>/", vues_articles.ArticlePublicView.as_view(), name="article_detail"),
