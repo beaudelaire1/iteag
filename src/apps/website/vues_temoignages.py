@@ -66,7 +66,7 @@ class TemoignageEtudiantView(StudentRoleRequiredMixin, TemplateView):
         temoignage.save()
 
         messages.success(request, "Votre témoignage a été transmis à la direction pour validation.")
-        return redirect("website:temoignage_etudiant")
+        return redirect("etudiant:temoignage")
 
 
 class TemoignageListView(AdminRoleRequiredMixin, ListView):
@@ -93,8 +93,8 @@ class TemoignageListView(AdminRoleRequiredMixin, ListView):
 class TemoignageDecisionView(AdminRoleRequiredMixin, View):
     http_method_names = ["post"]
 
-    def post(self, request):
-        temoignage = get_object_or_404(TemoignageEtudiant, pk=request.POST.get("temoignage_id"))
+    def post(self, request, pk):
+        temoignage = get_object_or_404(TemoignageEtudiant, pk=pk)
         action = request.POST.get("action")
 
         if action == "publier":
