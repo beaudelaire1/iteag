@@ -49,6 +49,7 @@ jobs:
           form = ActualiteForm(initial={"contenu": ActualiteEditionView._contenu_initial(None)})
           template = Template("""
           <!doctype html><html><head>{% load socle_wagtail %}<meta charset="UTF-8">
+          <style>body{width:1200px;margin:20px}</style>
           <script>
           window.__iteagErrors = [];
           window.addEventListener('error', function (event) {
@@ -62,6 +63,15 @@ jobs:
           </head><body>{% wagtail_icones_portail %}{{ form.contenu }}
           <script>
           setTimeout(function () {
+            var editor = document.querySelector('.Draftail-Editor');
+            var wrapper = document.querySelector('.Draftail-editorWrapper') || editor;
+            var rect = wrapper ? wrapper.getBoundingClientRect() : null;
+            var style = wrapper ? window.getComputedStyle(wrapper) : null;
+            var visible = !!(
+              wrapper && rect && rect.width > 100 && rect.height > 40 &&
+              style.display !== 'none' && style.visibility !== 'hidden' &&
+              style.opacity !== '0'
+            );
             var diagnostic = document.createElement('pre');
             diagnostic.id = 'iteag-browser-diagnostic';
             diagnostic.textContent = JSON.stringify({
@@ -70,7 +80,10 @@ jobs:
               wagtail: !!window.wagtail,
               stimulus: !!(window.wagtail && window.wagtail.app),
               count: !!document.querySelector('input[name="contenu-count"]'),
-              draftail: !!document.querySelector('.Draftail-Editor'),
+              draftail: !!editor,
+              visible: visible,
+              width: rect ? Math.round(rect.width) : 0,
+              height: rect ? Math.round(rect.height) : 0,
               controller: !!document.querySelector('[data-controller="w-block"]')
             });
             document.body.appendChild(diagnostic);
@@ -103,10 +116,8 @@ jobs:
 
           echo '--- Diagnostic navigateur ---'
           grep -o '<pre id="iteag-browser-diagnostic">[^<]*' /tmp/iteag-streamfield-dom.html || true
-          echo '--- État du DOM ---'
-          grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html && echo 'contenu-count: OK' || echo 'contenu-count: ABSENT'
-          grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html && echo 'Draftail: OK' || echo 'Draftail: ABSENT'
 
           grep -q '"errors":\[\]' /tmp/iteag-streamfield-dom.html
-          grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html
-          grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html
+          grep -q '"count":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"draftail":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"visible":true' /tmp/iteag-streamfield-dom.html
