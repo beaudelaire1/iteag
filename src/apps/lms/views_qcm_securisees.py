@@ -114,7 +114,7 @@ class TeacherQuestionCreateQCMView(_DevoirQCMSeulement, TeacherQuestionCreateVie
             and form.cleaned_data["type_question"] == Question.TypeQuestion.CHOIX_UNIQUE
             and len(correctes) > 1
         ):
-            form.add_error(None, "Une question à réponse unique ne peut avoir qu'une seule bonne réponse.")
+            form.add_error(None, "Une question à réponse unique ne peut avoir qu’une seule bonne réponse.")
 
         if formulaire_valide and not form.errors:
             with transaction.atomic():

@@ -225,6 +225,7 @@ def test_le_questionnaire_refuse_le_depot_hors_fenetre(cours, etudiant):
     )
     question = Question.objects.create(devoir=devoir, enonce="Q", points=1)
     Choix.objects.create(question=question, libelle="A", correct=True)
+    Choix.objects.create(question=question, libelle="B", correct=False)
     devoir.statut = Devoir.Statut.PUBLIE
     devoir.save(update_fields=["statut", "updated_at"])
     copie = Evaluation.objects.create(cours_session=cours, etudiant=etudiant, devoir=devoir)

@@ -34,6 +34,16 @@ class AssiduiteAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 
 class AssiduiteListView(AssiduiteAccessMixin, ListView):
+    """Vue globale réservée à la direction et au secrétariat.
+
+    L'enseignant conserve l'accès aux feuilles de ses propres cours,
+    mais ne peut pas parcourir l'assiduité de tout l'institut.
+    """
+
+    def test_func(self):
+        user = self.request.user
+        return user.is_admin or user.is_secretariat
+
     template_name = "administration/assiduite/liste.html"
     context_object_name = "offres"
     paginate_by = 20
