@@ -26,6 +26,22 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Une session reste valable 30 minutes après la dernière activité, mais elle ne
+# doit pas être réécrite dans PostgreSQL à chaque requête. Le middleware dédié
+# la touche périodiquement, ce qui conserve l'expiration glissante.
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_REFRESH_INTERVAL = env.int("SESSION_REFRESH_INTERVAL", default=300)  # noqa: F405
+_index_auth = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")  # noqa: F405
+MIDDLEWARE.insert(_index_auth + 1, "apps.core.middleware.RafraichissementSessionMiddleware")  # noqa: F405
+
+# Beat publie un heartbeat court ; le healthcheck du conteneur vérifie qu'il est
+# encore renouvelé. La sonde web /healthz reste volontairement limitée à la
+# base et au cache pour ne pas redémarrer le serveur web lors d'une panne Celery.
+CELERY_BEAT_SCHEDULE["core-heartbeat-celery"] = {  # noqa: F405
+    "task": "core.heartbeat_celery",
+    "schedule": 60.0,
+}
+
 # ──────────────────────────────────────────────
 # Static files — WhiteNoise + manifest
 # ──────────────────────────────────────────────

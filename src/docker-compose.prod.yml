@@ -19,6 +19,7 @@ x-application: &application
     DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
     DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS doit être défini}
     DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?DJANGO_CSRF_TRUSTED_ORIGINS doit être défini}
+    SESSION_REFRESH_INTERVAL: ${SESSION_REFRESH_INTERVAL:-300}
 
     SITE_URL: ${SITE_URL:?SITE_URL doit être défini}
     WAGTAILADMIN_BASE_URL: ${WAGTAILADMIN_BASE_URL:?WAGTAILADMIN_BASE_URL doit être défini}
@@ -115,11 +116,6 @@ services:
       redis:
         condition: service_healthy
 
-    # Une tâche de migration s'exécute puis s'arrête : elle n'a pas d'état
-    # « sain » à surveiller, et « healthcheck: disable » suffit à le dire.
-    # « exclude_from_hc » est un réglage de l'interface Coolify, pas une clé du
-    # format Compose : sa présence ici faisait échouer « docker compose config »
-    # avant même le premier téléchargement d'image.
     restart: "no"
     mem_limit: 1g
 
@@ -157,7 +153,13 @@ services:
     mem_limit: 2g
 
     healthcheck:
-      disable: true
+      test:
+        - CMD-SHELL
+        - celery -A config inspect ping -d celery@$$HOSTNAME --timeout=5 | grep -q pong
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
 
   beat:
     <<: *application
@@ -173,11 +175,25 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      worker:
+        condition: service_healthy
 
     mem_limit: 256m
 
+    # Le heartbeat est planifié par Beat puis exécuté par le worker. S'il cesse
+    # d'être renouvelé, Beat est redémarré sans déclarer le site web en panne.
     healthcheck:
-      disable: true
+      test:
+        - CMD
+        - python
+        - manage.py
+        - verifier_heartbeat_celery
+        - --max-age
+        - "180"
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
 
 volumes:
   postgres_data:

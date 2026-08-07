@@ -3,11 +3,24 @@
 import logging
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.utils import timezone
 
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
+
+HEARTBEAT_CELERY_CACHE_KEY = "iteag:celery:heartbeat"
+
+
+@shared_task(name="core.heartbeat_celery")
+def heartbeat_celery() -> str:
+    """Prouve que Beat planifie et qu'un worker exécute effectivement les tâches."""
+    instant = timezone.now().isoformat()
+    # Une expiration bornée évite qu'un ancien heartbeat survive indéfiniment à
+    # une panne de Beat/worker et donne un faux état sain.
+    cache.set(HEARTBEAT_CELERY_CACHE_KEY, instant, timeout=300)
+    return instant
 
 
 @shared_task(name="core.envoyer_email")
@@ -30,16 +43,9 @@ def purger_notifications(jours: int = 120) -> int:
 
 @shared_task(name="core.purger_sessions")
 def purger_sessions() -> int:
-    """Supprime les sessions expirées de la base.
-
-    Les sessions sont stockées en base et réécrites à chaque requête : la table
-    ne se vide jamais d'elle-même, Django laissant à l'exploitant le soin
-    d'appeler « clearsessions ». Sans cette tâche, « django_session » croît
-    indéfiniment — un fichier de trop, jusqu'à ce qu'il pèse.
-    """
+    """Supprime les sessions expirées de la base."""
     from django.contrib.sessions.models import Session
     from django.core.management import call_command
-    from django.utils import timezone
 
     avant = Session.objects.filter(expire_date__lt=timezone.now()).count()
     call_command("clearsessions", verbosity=0)
