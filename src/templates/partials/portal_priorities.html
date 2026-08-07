@@ -1,0 +1,53 @@
+{% if request.resolver_match.namespace == 'enseignant' and request.resolver_match.url_name == 'accueil' %}
+    {% if evaluations_a_corriger or videos_en_attente or modules_brouillons %}
+    <section class="card-elevated mb-8" style="padding: 0; border-left: 3px solid var(--color-gold-500);">
+        <div class="border-b border-warm-100 px-5 py-4">
+            <p class="overline mb-1">Priorités</p>
+            <h2 class="text-base font-semibold text-navy-900">À traiter maintenant</h2>
+        </div>
+        <div class="divide-y divide-warm-100">
+            {% if evaluations_a_corriger %}
+            <a href="{% url 'lms:evaluations_list' %}" class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-warm-50">
+                <div><p class="text-sm font-semibold text-navy-900">Corriger les copies remises</p><p class="mt-1 text-xs text-warm-500">Les étudiants attendent la publication de leurs résultats.</p></div>
+                <span class="badge badge-warning">{{ evaluations_a_corriger }}</span>
+            </a>
+            {% endif %}
+            {% if videos_en_attente %}
+            <a href="{% url 'elearning:enseignant_videos' %}" class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-warm-50">
+                <div><p class="text-sm font-semibold text-navy-900">Vérifier les vidéos en préparation</p><p class="mt-1 text-xs text-warm-500">Un module ne peut être publié tant que ses vidéos ne sont pas prêtes.</p></div>
+                <span class="badge badge-gold">{{ videos_en_attente }}</span>
+            </a>
+            {% endif %}
+            {% if modules_brouillons %}
+            <a href="{% url 'elearning:enseignant_modules' %}" class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-warm-50">
+                <div><p class="text-sm font-semibold text-navy-900">Reprendre les modules en brouillon</p><p class="mt-1 text-xs text-warm-500">Compléter leur structure avant relecture ou publication.</p></div>
+                <span class="badge badge-neutral">{{ modules_brouillons }}</span>
+            </a>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+{% elif request.resolver_match.namespace == 'etudiant' and request.resolver_match.url_name == 'dashboard' %}
+    {% if pending_evaluations or demandes_paiement %}
+    <section class="card-elevated mb-8" style="padding: 0; border-left: 3px solid var(--color-gold-500);">
+        <div class="border-b border-warm-100 px-5 py-4">
+            <p class="overline mb-1">À faire</p>
+            <h2 class="text-base font-semibold text-navy-900">Vos prochaines actions</h2>
+        </div>
+        <div class="divide-y divide-warm-100">
+            {% if demandes_paiement %}
+            <a href="{% url 'etudiant:payments' %}" class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-warm-50">
+                <div><p class="text-sm font-semibold text-navy-900">Régler les frais demandés</p><p class="mt-1 text-xs text-warm-500">Le paiement est nécessaire pour finaliser les inscriptions concernées.</p></div>
+                <span class="badge badge-warning">{{ demandes_paiement }}</span>
+            </a>
+            {% endif %}
+            {% if pending_evaluations %}
+            <a href="{% url 'etudiant:grades' %}" class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-warm-50">
+                <div><p class="text-sm font-semibold text-navy-900">Consulter les travaux à remettre</p><p class="mt-1 text-xs text-warm-500">Déposer un devoir ou répondre à un questionnaire avant l’échéance.</p></div>
+                <span class="badge badge-gold">{{ pending_evaluations|length }}</span>
+            </a>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+{% endif %}
