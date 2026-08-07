@@ -24,7 +24,7 @@ Trois propriétés sont vérifiées :
 """
 
 import uuid
-from datetime import timedelta
+from datetime import time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -45,6 +45,7 @@ from apps.academics.models import (
     SessionAcademique,
     Stage,
 )
+from apps.academics.models_assiduite import SeanceCours
 from apps.accounts.models import User
 from apps.admissions.models import DossierCandidature, PieceDemandee
 from apps.commerce.models import Commande, DestinationLivraison, ProduitLivre, TarifLivraison, TypeLivraison
@@ -61,7 +62,7 @@ from apps.elearning.models import (
     VideoAsset,
 )
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
-from apps.library.models import Emprunt, NoticeBibliographique
+from apps.library.models import Emprunt, NoticeBibliographique, SuspensionBibliotheque
 from apps.lms.models import (
     Annonce,
     Choix,
@@ -152,6 +153,13 @@ def univers(db, settings, tmp_path):
     )
     monde["cours_session"] = CoursDeSession.objects.create(
         session=monde["session"], cours=monde["cours"], enseignant=monde["professeur"]
+    )
+    monde["seance_assiduite"] = SeanceCours.objects.create(
+        cours_session=monde["cours_session"],
+        date="2027-07-05",
+        heure_debut=time(9, 0),
+        heure_fin=time(12, 0),
+        cree_par=monde[ADMIN],
     )
     monde["demande"] = DemandeInscriptionCours.objects.create(
         etudiant=monde["profil"], cours_session=monde["cours_session"]
@@ -307,6 +315,14 @@ def univers(db, settings, tmp_path):
         emprunteur=monde[ETUDIANT],
         date_retour_prevue=timezone.localdate() + timedelta(days=21),
     )
+    monde["suspension"] = SuspensionBibliotheque.objects.create(
+        emprunteur=monde[ETUDIANT],
+        emprunt=monde["emprunt"],
+        jours_retard=3,
+        jours_suspension=3,
+        date_debut=timezone.localdate(),
+        date_fin=timezone.localdate() + timedelta(days=2),
+    )
     monde["produit"] = ProduitLivre.objects.create(
         titre="Institution chrétienne",
         slug="institution-chretienne",
@@ -409,6 +425,8 @@ FABRIQUES = {
     "administration:course_offering_update": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
     "administration:course_offering_delete": (ADMIN, lambda m: {"pk": m["cours_session"].pk}),
     "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
+    "administration:assiduite_cours": (ENSEIGNANT, lambda m: {"pk": m["cours_session"].pk}),
+    "administration:assiduite_feuille": (ENSEIGNANT, lambda m: {"pk": m["seance_assiduite"].pk}),
     "administration:enrollment_request_detail": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
     "administration:enrollment_request_action": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
     "administration:enrollment_proof_download": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
@@ -542,6 +560,7 @@ FABRIQUES = {
     "library:emprunt_annuler": (ETUDIANT, lambda m: {"pk": m["emprunt"].pk}),
     "library:emprunt_modifier": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
     "library:emprunt_supprimer": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
+    "library:suspension_lever": (SECRETARIAT, lambda m: {"pk": m["suspension"].pk}),
     "library:notice_annuler": (ETUDIANT, lambda m: {"pk": m["notice"].pk}),
     "library:notice_detail": (PUBLIC, lambda m: {"pk": m["notice"].pk}),
     "library:notice_disponibilite": (SECRETARIAT, lambda m: {"pk": m["notice"].pk}),
@@ -588,6 +607,7 @@ FABRIQUES = {
     "paiements:annulation": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
     "paiements:recu": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
     "paiements:payer_commande": (PUBLIC, lambda m: {"jeton": m["commande"].jeton_suivi}),
+    "paiements:payer_inscription": (ETUDIANT, lambda m: {"pk": m["demande"].pk}),
     # ── Articles de recherche ──
     "website:article_detail": (PUBLIC, lambda m: {"slug": m["article"].slug}),
     "website:article_edition": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),

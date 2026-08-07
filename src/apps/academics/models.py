@@ -647,3 +647,9 @@ class PropositionEnseignement(TimeStampedModel):
         self.date_reponse = timezone.now()
         self.save(update_fields=["statut", "motif_refus", "date_reponse", "updated_at"])
         return self
+
+
+# Django ne découvre automatiquement que `models.py`. L’import est placé après
+# les modèles académiques historiques afin que les relations inverses
+# d’assiduité existent avant la construction des requêtes ORM.
+from apps.academics.models_assiduite import HistoriquePresence, Presence, SeanceCours  # noqa: E402, F401
