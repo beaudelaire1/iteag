@@ -191,15 +191,20 @@ def _purger(client, sous_prefixe: str, jours: int) -> None:
     ]
     for debut in range(0, len(a_supprimer), 1000):
         lot = a_supprimer[debut : debut + 1000]
-        reponse = client.delete_objects(
-            Bucket=_bucket(),
-            Delete={"Objects": [{"Key": cle} for cle in lot], "Quiet": True},
-        )
+        try:
+            reponse = client.delete_objects(
+                Bucket=_bucket(),
+                Delete={"Objects": [{"Key": cle} for cle in lot], "Quiet": True},
+            )
+        except ClientError as erreur:
+            # Une règle Bucket Lock peut volontairement empêcher la purge. La
+            # nouvelle sauvegarde est déjà vérifiée : la rétention ne doit pas
+            # la transformer artificiellement en échec.
+            code = erreur.response.get("Error", {}).get("Code", "inconnu")
+            print(f"AVERTISSEMENT : purge R2 refusée ({code}).", file=sys.stderr)
+            continue
         erreurs = reponse.get("Errors", [])
         if erreurs:
-            # Une règle Bucket Lock peut volontairement empêcher une suppression.
-            # L'upload reste valide : on remonte un avertissement sans invalider
-            # la sauvegarde qui vient d'être créée.
             print(f"AVERTISSEMENT : {len(erreurs)} objet(s) ancien(s) n'ont pas pu être supprimés.", file=sys.stderr)
 
 
@@ -242,9 +247,7 @@ def statut(age_max: int) -> None:
     dernier = _dernier_objet(client)
     age = datetime.now(UTC) - dernier["LastModified"]
     if age.total_seconds() > age_max:
-        raise RuntimeError(
-            f"Dernière sauvegarde trop ancienne : {int(age.total_seconds())} s (maximum {age_max} s)."
-        )
+        raise RuntimeError(f"Dernière sauvegarde trop ancienne : {int(age.total_seconds())} s (maximum {age_max} s).")
     print(f"OK — dernière sauvegarde R2 : {dernier['Key']} ({int(age.total_seconds())} s).")
 
 
