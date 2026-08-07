@@ -1,11 +1,10 @@
-"""Socle JavaScript Wagtail nécessaire aux widgets rendus hors de l'admin.
+"""Configuration et socle Wagtail pour les widgets rendus hors de l'admin.
 
-Un ``BlockWidget`` de StreamField n'est pas un champ HTML autonome : Wagtail
-rend d'abord un conteneur ``data-controller=\"w-block\"``, puis son runtime
-client dépaquette la définition Telepath et construit l'interface. Dans
-``wagtailadmin/admin_base.html``, la configuration ``wagtail-config`` est émise
-avant ``core.js`` et ``vendor.js``. Un portail Django qui rend un BlockWidget
-doit respecter le même contrat avant de charger les médias propres au widget.
+Les widgets Wagtail dynamiques lisent ``wagtail-config`` avant leur démarrage.
+Leur ``Media`` sait ensuite déclarer les scripts propres au widget, mais Django
+``forms.Media`` ne peut pas émettre ce bloc JSON inline. Ce module fournit donc
+la configuration avec le nonce CSP ; le tag de socle complet reste disponible
+pour les écrans qui en auraient besoin.
 """
 
 from django import template
@@ -15,30 +14,21 @@ from wagtail.admin.staticfiles import versioned_static
 
 register = template.Library()
 
-# Sous-ensemble du socle officiel de wagtailadmin/admin_base.html requis par
-# les widgets utilisés dans les portails ITEAG. Les médias spécifiques
-# (telepath/blocks.js, Draftail, TypedTableBlock, choosers...) restent déclarés
-# par le widget lui-même via ``form.media``.
+# Sous-ensemble du socle officiel de wagtailadmin/admin_base.html. L'ordre est
+# intentionnel : core.js crée window.telepath et l'application Stimulus avant
+# que les adaptateurs spécifiques des widgets ne s'enregistrent.
 SOCLE = (
     "wagtailadmin/js/vendor/jquery-3.6.0.min.js",
     "wagtailadmin/js/vendor/bootstrap-transition.js",
     "wagtailadmin/js/vendor/bootstrap-modal.js",
-    # core.js crée window.telepath et initialise les contrôleurs Stimulus Wagtail.
     "wagtailadmin/js/core.js",
-    # Les bundles StreamField / Draftail partagent les dépendances de vendor.js.
     "wagtailadmin/js/vendor.js",
     "wagtailadmin/js/modal-workflow.js",
 )
 
 
-@register.simple_tag(takes_context=True)
-def wagtail_socle_portail(context):
-    """Émet la configuration Wagtail puis son runtime de base, dans cet ordre.
-
-    La configuration n'est pas décorative : les bundles Wagtail la lisent au
-    démarrage. Elle porte le nonce CSP de la réponse, car un ``script`` de type
-    ``application/json`` reste soumis à ``script-src``.
-    """
+def _configuration_wagtail(context):
+    """Construit le ``wagtail-config`` officiel avec le nonce CSP courant."""
     import json
 
     from django.core.serializers.json import DjangoJSONEncoder
@@ -49,10 +39,22 @@ def wagtail_socle_portail(context):
     )
     requete = context.get("request")
     nonce = getattr(requete, "csp_nonce", "") if requete is not None else ""
-    configuration = format_html(
+    return format_html(
         '<script id="wagtail-config" type="application/json" nonce="{}">{}</script>',
         nonce,
         mark_safe(charge),  # noqa: S308 — caractères HTML sensibles échappés ci-dessus
     )
+
+
+@register.simple_tag(takes_context=True)
+def wagtail_configuration_portail(context):
+    """Émet uniquement la configuration requise avant les médias du widget."""
+    return _configuration_wagtail(context)
+
+
+@register.simple_tag(takes_context=True)
+def wagtail_socle_portail(context):
+    """Émet la configuration puis le runtime de base, comme ``admin_base``."""
+    configuration = _configuration_wagtail(context)
     scripts = format_html_join("\n", '<script src="{}"></script>', ((versioned_static(c),) for c in SOCLE))
     return format_html("{}\n{}", configuration, scripts)
