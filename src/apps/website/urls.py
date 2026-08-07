@@ -64,11 +64,13 @@ urlpatterns = [
         name="actualite_decision",
     ),
     # ── Témoignages étudiants ──
-    # La saisie appartient au namespace de l'espace étudiant ; le domaine
-    # website conserve le modèle, la publication publique et la modération.
+    # L'URL reste située dans l'espace étudiant mais la vue appartient au
+    # domaine website, qui porte le modèle et sa publication publique. Cela
+    # évite une dépendance portail_etudiant → website uniquement pour router.
+    path("espace-etudiant/temoignage/", vues_temoignages.TemoignageEtudiantView.as_view(), name="temoignage_etudiant"),
     path("espace-admin/temoignages/", vues_temoignages.TemoignageListView.as_view(), name="temoignages_gestion"),
     path(
-        "espace-admin/temoignages/<int:pk>/decision/",
+        "espace-admin/temoignages/decision/",
         vues_temoignages.TemoignageDecisionView.as_view(),
         name="temoignage_decision",
     ),
