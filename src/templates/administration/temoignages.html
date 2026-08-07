@@ -41,15 +41,17 @@
 
         <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
             {% if temoignage.statut != 'publie' %}
-            <form method="post" action="{% url 'website:temoignage_decision' temoignage.pk %}">
+            <form method="post" action="{% url 'website:temoignage_decision' %}">
                 {% csrf_token %}
+                <input type="hidden" name="temoignage_id" value="{{ temoignage.pk }}">
                 <input type="hidden" name="action" value="publier">
                 <button type="submit" class="btn-primary">Publier</button>
             </form>
             {% endif %}
             {% if temoignage.statut != 'refuse' %}
-            <form method="post" action="{% url 'website:temoignage_decision' temoignage.pk %}" class="flex flex-1 gap-2">
+            <form method="post" action="{% url 'website:temoignage_decision' %}" class="flex flex-1 gap-2">
                 {% csrf_token %}
+                <input type="hidden" name="temoignage_id" value="{{ temoignage.pk }}">
                 <input type="hidden" name="action" value="refuser">
                 <input type="text" name="motif" class="form-input flex-1" maxlength="500" placeholder="Motif du refus" aria-label="Motif du refus pour {{ temoignage.nom_affiche }}">
                 <button type="submit" class="btn-ghost">Refuser</button>
