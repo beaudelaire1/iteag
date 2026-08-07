@@ -91,12 +91,14 @@ jobs:
               editorStyle.display !== 'none' && editorStyle.visibility !== 'hidden' &&
               editorStyle.opacity !== '0'
             );
-            var panelIcon = document.querySelector('.w-panel__icon');
+            var panelIcon = document.querySelector('.w-panel__toggle .w-panel__icon');
             var actionButton = document.querySelector('.w-panel__controls .button');
             var heading = document.querySelector('.w-panel__heading');
+            var anchor = document.querySelector('.w-panel__anchor');
             var iconRect = panelIcon ? panelIcon.getBoundingClientRect() : null;
             var buttonRect = actionButton ? actionButton.getBoundingClientRect() : null;
             var headingStyle = heading ? window.getComputedStyle(heading) : null;
+            var anchorStyle = anchor ? window.getComputedStyle(anchor) : null;
             var controlsCompact = !!(
               iconRect && iconRect.width > 0 && iconRect.width <= 24 && iconRect.height <= 24 &&
               buttonRect && buttonRect.width >= 24 && buttonRect.width <= 40 &&
@@ -105,6 +107,7 @@ jobs:
             var headingSane = !!(
               headingStyle && parseFloat(headingStyle.fontSize) >= 12 && parseFloat(headingStyle.fontSize) <= 18
             );
+            var anchorsHidden = !anchor || (anchorStyle && anchorStyle.display === 'none');
             var diagnostic = document.createElement('pre');
             diagnostic.id = 'iteag-browser-diagnostic';
             diagnostic.textContent = JSON.stringify({
@@ -124,6 +127,7 @@ jobs:
               buttonHeight: buttonRect ? Math.round(buttonRect.height) : 0,
               headingSane: headingSane,
               headingFont: headingStyle ? headingStyle.fontSize : '',
+              anchorsHidden: anchorsHidden,
               controller: !!document.querySelector('[data-controller="w-block"]')
             });
             document.body.appendChild(diagnostic);
@@ -163,3 +167,4 @@ jobs:
           grep -q '"visible":true' /tmp/iteag-streamfield-dom.html
           grep -q '"controlsCompact":true' /tmp/iteag-streamfield-dom.html
           grep -q '"headingSane":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"anchorsHidden":true' /tmp/iteag-streamfield-dom.html
