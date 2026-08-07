@@ -12,7 +12,10 @@ RUN apk add --no-cache \
 
 COPY scripts/postgres_backup_r2.py /opt/iteag/postgres_backup_r2.py
 COPY scripts/postgres_backup_scheduler.py /opt/iteag/postgres_backup_scheduler.py
-RUN chmod 0555 /opt/iteag/postgres_backup_r2.py /opt/iteag/postgres_backup_scheduler.py
+RUN chmod 0555 /opt/iteag/postgres_backup_r2.py /opt/iteag/postgres_backup_scheduler.py \
+    && python3 -m py_compile \
+        /opt/iteag/postgres_backup_r2.py \
+        /opt/iteag/postgres_backup_scheduler.py
 
 USER postgres
 
