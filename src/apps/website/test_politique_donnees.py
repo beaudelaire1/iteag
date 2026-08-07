@@ -25,9 +25,7 @@ def test_politique_donnees_est_dans_le_sitemap_public():
 
 
 def test_politique_couvre_les_traitements_reellement_presents():
-    source = (
-        Path(settings.BASE_DIR) / "templates" / "website" / "politique_donnees.html"
-    ).read_text(encoding="utf-8")
+    source = (Path(settings.BASE_DIR) / "templates" / "website" / "politique_donnees.html").read_text(encoding="utf-8")
 
     for attendu in (
         "Candidatures",
@@ -55,9 +53,9 @@ def test_les_formulaires_principaux_informent_sur_les_donnees():
 
 
 def test_le_registre_interne_documente_les_durees_du_cahier_des_charges():
-    registre = (
-        Path(settings.BASE_DIR).parent / "docs" / "conformite" / "registre_traitements.md"
-    ).read_text(encoding="utf-8")
+    registre = (Path(settings.BASE_DIR).parent / "docs" / "conformite" / "registre_traitements.md").read_text(
+        encoding="utf-8"
+    )
 
     assert "refus : 2 ans" in registre
     assert "cursus + 5 ans" in registre
