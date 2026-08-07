@@ -64,12 +64,11 @@ urlpatterns = [
         name="actualite_decision",
     ),
     # ── Témoignages étudiants ──
-    # Le contenu appartient au domaine website, même si la saisie est présentée
-    # dans l'espace étudiant. La validation reste réservée à la direction.
-    path("espace-etudiant/temoignage/", vues_temoignages.TemoignageEtudiantView.as_view(), name="temoignage_etudiant"),
+    # La saisie appartient au namespace de l'espace étudiant ; le domaine
+    # website conserve le modèle, la publication publique et la modération.
     path("espace-admin/temoignages/", vues_temoignages.TemoignageListView.as_view(), name="temoignages_gestion"),
     path(
-        "espace-admin/temoignages/decision/",
+        "espace-admin/temoignages/<int:pk>/decision/",
         vues_temoignages.TemoignageDecisionView.as_view(),
         name="temoignage_decision",
     ),
