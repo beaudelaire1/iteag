@@ -41,6 +41,10 @@ explicit-preview-rules = true
 # versets). Découper cette prose nuirait à sa relecture par l'ITEAG.
 "**/management/commands/seed_*.py" = ["E501"]
 "apps/core/templatetags/iteag_tags.py" = ["E501"]
+# Le conteneur de sauvegarde invoque volontairement les clients PostgreSQL et
+# son propre script avec des listes d'arguments entièrement contrôlées, jamais
+# avec une commande reçue d'un utilisateur ni avec shell=True.
+"scripts/postgres_backup_*.py" = ["S404", "S603", "S607"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]
