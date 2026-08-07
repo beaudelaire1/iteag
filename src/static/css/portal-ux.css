@@ -1,0 +1,81 @@
+.portal-nav-section {
+  border-bottom: 1px solid var(--color-warm-200);
+  padding: 0.2rem 0 0.55rem;
+}
+.portal-nav-section:last-child { border-bottom: 0; }
+.portal-nav-section > summary {
+  align-items: center;
+  color: var(--color-warm-500);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.65rem;
+  font-weight: 750;
+  justify-content: space-between;
+  letter-spacing: 0.12em;
+  list-style: none;
+  padding: 0.7rem 0.7rem 0.5rem;
+  text-transform: uppercase;
+}
+.portal-nav-section > summary::-webkit-details-marker { display: none; }
+.portal-nav-section > summary:hover { color: var(--color-navy-700); }
+.portal-nav-section-chevron {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+.portal-nav-section[open] .portal-nav-section-chevron { transform: rotate(180deg); }
+.portal-nav-section-links { display: grid; gap: 0.12rem; }
+.portal-nav-section:not([open]) .portal-nav-section-links { display: none; }
+.portal-nav-section .portal-nav-link { border-radius: 3px; min-height: 2.35rem; }
+.portal-nav-section .portal-nav-link.active { box-shadow: inset 3px 0 0 var(--color-gold-400); }
+
+.portal-mobile-menu {
+  background: #fff;
+  border: 1px solid var(--color-warm-200);
+  border-radius: 4px;
+  box-shadow: var(--shadow-soft);
+}
+.portal-mobile-menu > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0.9rem 1rem;
+}
+.portal-mobile-menu > summary::-webkit-details-marker { display: none; }
+.portal-mobile-menu-kicker {
+  color: var(--color-gold-600);
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.portal-mobile-menu-title {
+  color: var(--color-navy-900);
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 650;
+  margin-top: 0.1rem;
+}
+.portal-mobile-menu-chevron {
+  color: var(--color-navy-600);
+  font-size: 1.25rem;
+  transition: transform 180ms ease;
+}
+.portal-mobile-menu[open] .portal-mobile-menu-chevron { transform: rotate(180deg); }
+.portal-mobile-menu-links {
+  border-top: 1px solid var(--color-warm-100);
+  display: grid;
+  gap: 0.4rem;
+  max-height: min(65vh, 34rem);
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+.portal-mobile-menu-links .portal-nav-pill {
+  justify-content: flex-start;
+  min-width: 0;
+  text-align: left;
+  width: 100%;
+}
