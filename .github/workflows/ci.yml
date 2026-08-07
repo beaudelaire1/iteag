@@ -66,8 +66,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: src/package-lock.json
-      # npm ci refuse un package.json qui diverge du verrou. C'est exactement
-      # ce que l'on veut dans la CI et dans l'image de production.
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - name: Run tests
@@ -82,7 +80,7 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
 
   build:
-    name: Build assets
+    name: Build & production checks
     runs-on: ubuntu-latest
     needs: lint
     defaults:
@@ -113,15 +111,26 @@ jobs:
           DJANGO_SECRET_KEY: ci-collectstatic-key-not-for-production
           DJANGO_ALLOWED_HOSTS: localhost
         run: python manage.py collectstatic --noinput --clear
-      # Les erreurs de déploiement Django (HTTPS, cookies, SECRET_KEY, etc.)
-      # deviennent des erreurs de CI au lieu d'être découvertes sur le serveur.
       - name: Vérifier la configuration de déploiement Django
         env:
           DJANGO_SETTINGS_MODULE: config.settings.prod
           DJANGO_SECRET_KEY: ci-deploy-check-key-not-for-production
           DJANGO_ALLOWED_HOSTS: localhost
           DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
+          AWS_ACCESS_KEY_ID: ci-r2-access
+          AWS_SECRET_ACCESS_KEY: ci-r2-secret
+          AWS_STORAGE_BUCKET_NAME: ci-media
+          AWS_S3_ENDPOINT_URL: https://example.invalid
         run: python manage.py check --deploy --fail-level ERROR
+      - name: Vérifier le fichier Compose de production
+        env:
+          DJANGO_SECRET_KEY: ci-compose-secret
+          DJANGO_ALLOWED_HOSTS: localhost
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
+          SITE_URL: https://localhost
+          WAGTAILADMIN_BASE_URL: https://localhost
+          POSTGRES_PASSWORD: ci-postgres-secret
+        run: docker compose -f docker-compose.prod.yml config --quiet
 
   security:
     name: Security Scan
