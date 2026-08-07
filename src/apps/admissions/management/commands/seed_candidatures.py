@@ -2,15 +2,6 @@
 Peuple les dossiers de candidature.
 
 Usage : python manage.py seed_candidatures
-
-C'est la porte d'entrée du travail du secrétariat, et l'écran le plus visité du
-portail. Les dossiers couvrent les cinq états du workflow d'admission, avec une
-majorité en attente de décision : une file où tout est déjà tranché ne montre
-pas à quoi sert l'écran.
-
-L'historique de statut est écrit aussi. Sans lui, le détail d'un dossier
-accepté affiche une décision sans trace de la manière dont elle a été prise,
-alors que la traçabilité est précisément ce que cet écran promet.
 """
 
 import secrets
@@ -20,10 +11,9 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.admissions.models import DossierCandidature, HistoriqueStatut, PieceDemandee
+from apps.admissions.models import DemandePieces, DossierCandidature, HistoriqueStatut, PieceDemandee
 from apps.formations.models import Parcours
 
-# (prénom, nom, ville, église, fondatrice, statut, jours d'ancienneté)
 CANDIDATS = [
     ("Roselyne", "Édouard", "Le Moule", "Église évangélique du Moule", True, "soumis", 2),
     ("Frantz", "Bélizaire", "Cayenne", "Assemblée de Dieu de Cayenne", False, "soumis", 4),
@@ -95,8 +85,6 @@ class Command(BaseCommand):
             )
             crees += 1
 
-            # Un dossier tranché sans historique afficherait une décision sortie
-            # de nulle part, alors que l'écran promet la traçabilité.
             if statut != "soumis":
                 HistoriqueStatut.objects.create(
                     dossier=dossier,
@@ -117,60 +105,123 @@ class Command(BaseCommand):
                 )
 
         pieces = self._seed_pieces()
-
         self.stdout.write(
             self.style.SUCCESS(
                 f"Admissions : {crees} dossier(s) créé(s), {DossierCandidature.objects.count()} au total, "
-                f"{pieces} pièce(s) réclamée(s)."
+                f"{pieces} pièce(s) répartie(s) dans des demandes groupées."
             )
         )
 
     def _seed_pieces(self) -> int:
-        """Pièces réclamées aux dossiers acceptés, dans les quatre états.
-
-        C'est ce qui rend l'écran démonstratif : une pièce encore attendue, une
-        déposée à vérifier, une validée, une refusée à refournir. Une liste où
-        tout est au même stade ne montre pas ce que l'écran sait faire.
-        """
+        """Crée un exemple cohérent par état de demande, jamais un lot mixte."""
         from django.core.files.base import ContentFile
 
-        modeles = [
-            ("Acte de naissance", "Copie intégrale de moins de trois mois.", PieceDemandee.Statut.VALIDEE),
-            ("Copie du dernier diplôme", "Avec relevé de notes si disponible.", PieceDemandee.Statut.DEPOSEE),
-            ("Photo d'identité", "Format identité, sur fond clair.", PieceDemandee.Statut.DEMANDEE),
-            (
-                "Justificatif de domicile",
-                "De moins de trois mois : facture, quittance ou attestation.",
-                PieceDemandee.Statut.REFUSEE,
-            ),
-        ]
-        maintenant = timezone.now()
         total = 0
+        maintenant = timezone.now()
+        echeance = timezone.localdate() + timedelta(days=21)
 
         for dossier in DossierCandidature.objects.filter(statut=DossierCandidature.Statut.ACCEPTE):
-            for libelle, precisions, statut in modeles:
-                if dossier.pieces_demandees.filter(libelle=libelle).exists():
-                    continue
-                piece = PieceDemandee(
+            if dossier.demandes_pieces.exists() or dossier.pieces_demandees.exists():
+                continue
+
+            scenarios = [
+                (
+                    DemandePieces.Statut.VALIDEE,
+                    "Les pièces d'état civil ont été vérifiées.",
+                    [
+                        (
+                            "Acte de naissance",
+                            "Copie intégrale de moins de trois mois.",
+                            PieceDemandee.Statut.VALIDEE,
+                            "",
+                        )
+                    ],
+                ),
+                (
+                    DemandePieces.Statut.A_VERIFIER,
+                    "Merci de transmettre les justificatifs de formation dans un seul envoi.",
+                    [
+                        (
+                            "Copie du dernier diplôme",
+                            "Avec relevé de notes si disponible.",
+                            PieceDemandee.Statut.DEPOSEE,
+                            "",
+                        ),
+                        (
+                            "Photo d'identité",
+                            "Format identité, sur fond clair.",
+                            PieceDemandee.Statut.DEPOSEE,
+                            "",
+                        ),
+                    ],
+                ),
+                (
+                    DemandePieces.Statut.A_CORRIGER,
+                    "Le justificatif doit être récent et parfaitement lisible.",
+                    [
+                        (
+                            "Justificatif de domicile",
+                            "De moins de trois mois : facture, quittance ou attestation.",
+                            PieceDemandee.Statut.REFUSEE,
+                            "Le document date de plus de trois mois.",
+                        )
+                    ],
+                ),
+                (
+                    DemandePieces.Statut.A_FOURNIR,
+                    "Ces documents complètent le dossier administratif.",
+                    [
+                        (
+                            "Lettre de recommandation pastorale",
+                            "Rédigée par le responsable de votre Église locale.",
+                            PieceDemandee.Statut.DEMANDEE,
+                            "",
+                        ),
+                        (
+                            "Curriculum vitæ",
+                            "Parcours de formation et expérience de service.",
+                            PieceDemandee.Statut.DEMANDEE,
+                            "",
+                        ),
+                    ],
+                ),
+            ]
+
+            for statut_demande, message, pieces in scenarios:
+                demande = DemandePieces.objects.create(
                     dossier=dossier,
-                    libelle=libelle,
-                    precisions=precisions,
-                    statut=statut,
-                    date_limite=timezone.localdate() + timedelta(days=21),
-                    motif_refus=(
-                        "Le document date de plus de trois mois." if statut == PieceDemandee.Statut.REFUSEE else ""
-                    ),
-                    date_depot=maintenant if statut != PieceDemandee.Statut.DEMANDEE else None,
+                    message=message,
+                    date_limite=echeance,
+                    statut=statut_demande,
+                    date_soumission=maintenant if statut_demande == DemandePieces.Statut.A_VERIFIER else None,
                     date_decision=(
-                        maintenant if statut in (PieceDemandee.Statut.VALIDEE, PieceDemandee.Statut.REFUSEE) else None
+                        maintenant
+                        if statut_demande in (DemandePieces.Statut.VALIDEE, DemandePieces.Statut.A_CORRIGER)
+                        else None
                     ),
                 )
-                if statut != PieceDemandee.Statut.DEMANDEE:
-                    piece.fichier.save(
-                        f"{dossier.pk}-{libelle[:20].lower().replace(' ', '-')}.pdf",
-                        ContentFile(b"%PDF-1.4 piece de demonstration\n%%EOF\n"),
-                        save=False,
+                for libelle, precisions, statut_piece, motif in pieces:
+                    piece = PieceDemandee(
+                        dossier=dossier,
+                        demande=demande,
+                        libelle=libelle,
+                        precisions=precisions,
+                        statut=statut_piece,
+                        date_limite=echeance,
+                        motif_refus=motif,
+                        date_depot=(maintenant if statut_piece != PieceDemandee.Statut.DEMANDEE else None),
+                        date_decision=(
+                            maintenant
+                            if statut_piece in (PieceDemandee.Statut.VALIDEE, PieceDemandee.Statut.REFUSEE)
+                            else None
+                        ),
                     )
-                piece.save()
-                total += 1
+                    if statut_piece != PieceDemandee.Statut.DEMANDEE:
+                        piece.fichier.save(
+                            f"{dossier.pk}-{libelle[:20].lower().replace(' ', '-')}.pdf",
+                            ContentFile(b"%PDF-1.4 piece de demonstration\n%%EOF\n"),
+                            save=False,
+                        )
+                    piece.save()
+                    total += 1
         return total
