@@ -44,7 +44,7 @@ FONCTIONNALITES_EDITEUR_PORTAIL = (
     "link",
 )
 
-VERSION_ASSETS_EDITEUR = "3"
+VERSION_ASSETS_EDITEUR = "4"
 
 
 def _asset_iteag(chemin: str) -> str:
@@ -60,13 +60,19 @@ class StreamFieldPortail(BlockWidget):
     bundles que ``wagtailadmin/admin_base.html`` charge normalement avant les
     médias propres aux blocs. Le gabarit doit émettre ``wagtail-config`` avant
     ``form.media.js`` via ``wagtail_configuration_portail``.
+
+    ``core.css`` n'est volontairement pas importé : il contient les resets et
+    styles d'éléments globaux de l'administration Wagtail. Le portail fournit
+    à la place une feuille locale, limitée à ``.streamfield-portail``.
     """
 
     @cached_property
     def media(self):
         media_blocs = super().media
         prerequis = [versioned_static(chemin) for chemin in SOCLE]
-        return forms.Media(css=media_blocs._css, js=[*prerequis, *media_blocs._js])
+        css = {medium: list(urls) for medium, urls in media_blocs._css.items()}
+        css.setdefault("all", []).append(_asset_iteag("css/streamfield-portail.css"))
+        return forms.Media(css=css, js=[*prerequis, *media_blocs._js])
 
 
 class DraftailPortail(DraftailRichTextArea):
