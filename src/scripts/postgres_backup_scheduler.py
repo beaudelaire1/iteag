@@ -51,6 +51,15 @@ def _lancer() -> bool:
 
 
 def main() -> None:
+    if not _booleen("BACKUP_ENABLED", False):
+        print(
+            "Sauvegarde R2 installée mais désactivée. Renseigner les variables BACKUP_R2_* "
+            "puis définir BACKUP_ENABLED=true et redéployer.",
+            flush=True,
+        )
+        while True:
+            time.sleep(3600)
+
     retry = max(_entier("BACKUP_RETRY_SECONDS", 3600), 60)
 
     if _booleen("BACKUP_RUN_ON_START", True):
