@@ -1,6 +1,6 @@
 {% extends "partials/portal_base.html" %}
 
-{% block title %}Mes devoirs — Espace enseignant — {{ SITE_NAME }}{% endblock %}
+{% block title %}Devoirs et QCM — Espace enseignant — {{ SITE_NAME }}{% endblock %}
 
 {% block portal_nav %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav.html" %}{% endwith %}{% endblock %}
 {% block portal_nav_mobile %}{% with nav='devoirs' %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endwith %}{% endblock %}
@@ -8,9 +8,9 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Espace enseignant</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes devoirs</h1>
+    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Devoirs et QCM</h1>
     <p class="mt-2 text-sm text-warm-600">
-        Ce qui a été demandé, ce qui est rendu, ce qu'il reste à corriger.
+        Créer et suivre les devoirs écrits, dépôts de fichiers et questionnaires à choix multiple.
     </p>
 </div>
 {% endblock %}
@@ -43,14 +43,14 @@
     {% if cours_enseignes %}
     <form method="get" action="{% url 'lms:devoir_create' %}" class="flex flex-wrap items-end gap-3">
         <div class="champ" style="margin-bottom: 0;">
-            <label class="form-label" for="cours-devoir">Créer un devoir pour</label>
+            <label class="form-label" for="cours-devoir">Créer un devoir ou un QCM pour</label>
             <select name="cours" id="cours-devoir" class="form-select" style="min-width: 16rem;">
                 {% for offre in cours_enseignes %}
                 <option value="{{ offre.pk }}">{{ offre.cours.titre }} — {{ offre.session }}</option>
                 {% endfor %}
             </select>
         </div>
-        <button type="submit" class="btn-primary">Créer un devoir</button>
+        <button type="submit" class="btn-primary">Commencer la création</button>
     </form>
     {% endif %}
 </div>
@@ -116,7 +116,7 @@
 <div class="card text-center" style="padding: 3rem 1.5rem;">
     <p class="text-sm text-warm-600">
         {% if etat_courant %}Aucun devoir ne correspond à ce filtre.
-        {% else %}Vous n'avez pas encore créé de devoir. Choisissez un cours pour en ouvrir un.{% endif %}
+        {% else %}Vous n'avez encore créé ni devoir ni QCM. Choisissez un cours pour commencer.{% endif %}
     </p>
 </div>
 {% endif %}
