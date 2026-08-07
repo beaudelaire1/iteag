@@ -77,6 +77,8 @@ services:
   # PostgreSQL puis le dump quitte immédiatement le serveur vers un bucket R2
   # dédié. BACKUP_ENABLED reste faux tant que les identifiants n'ont pas été
   # ajoutés dans Coolify, afin qu'un déploiement du code ne casse pas la prod.
+  # Le premier dump attend la fin des migrations pour ne jamais courir en
+  # parallèle d'une modification de schéma.
   backup:
     build:
       context: .
@@ -114,8 +116,8 @@ services:
       BACKUP_MONTHLY_RETENTION_DAYS: ${BACKUP_MONTHLY_RETENTION_DAYS:-400}
 
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
     restart: unless-stopped
     mem_limit: 256m
