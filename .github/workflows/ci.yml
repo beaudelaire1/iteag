@@ -132,7 +132,13 @@ jobs:
           SITE_URL: https://localhost
           WAGTAILADMIN_BASE_URL: https://localhost
           POSTGRES_PASSWORD: ci-postgres-secret
+          BACKUP_R2_ENDPOINT_URL: https://example.invalid
+          BACKUP_R2_ACCESS_KEY_ID: ci-backup-access
+          BACKUP_R2_SECRET_ACCESS_KEY: ci-backup-secret
+          BACKUP_R2_BUCKET: ci-backups
         run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Construire l'image de sauvegarde PostgreSQL
+        run: docker build -f Dockerfile.backup -t iteag-backup-ci .
 
   security:
     name: Security Scan
