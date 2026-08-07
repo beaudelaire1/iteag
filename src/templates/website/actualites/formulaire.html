@@ -5,10 +5,6 @@
 
 {% block extra_head %}
 {{ form.media.css }}
-{% endblock %}
-
-{% block extra_js %}
-{% wagtail_icones_portail %}
 {% wagtail_configuration_portail %}
 {{ form.media.js }}
 {% endblock %}
@@ -34,6 +30,7 @@
 {% endblock %}
 
 {% block portal_content %}
+{% wagtail_icones_portail %}
 <form method="post" enctype="multipart/form-data" class="space-y-6"
       action="{% if actualite %}{% url 'website:actualite_edition' actualite.pk %}{% else %}{% url 'website:actualite_creation' %}{% endif %}">
     {% csrf_token %}
