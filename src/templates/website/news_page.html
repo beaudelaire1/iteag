@@ -28,9 +28,17 @@
         </figure>
         {% endif %}
 
-        <div class="prose prose-lg contenu-riche max-w-none reveal reveal-delay-1">
-            {{ page.body|richtext }}
-        </div>
+        {% with contenu=page.contenu_structure.contenu %}
+            {% if contenu %}
+            <div class="space-y-6 reveal reveal-delay-1">
+                {% for block in contenu %}{% include_block block %}{% endfor %}
+            </div>
+            {% else %}
+            <div class="prose prose-lg contenu-riche max-w-none reveal reveal-delay-1">
+                {{ page.body|richtext }}
+            </div>
+            {% endif %}
+        {% endwith %}
     </div>
 </article>
 {% endblock %}
