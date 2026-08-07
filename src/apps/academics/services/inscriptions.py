@@ -220,8 +220,17 @@ def traiter_demande(
     if action not in transitions:
         raise ValidationError("Action inconnue.")
     sources, cible = transitions[action]
+
+    # Un double clic, un retour arrière ou une reprise réseau peut rejouer
+    # exactement la décision qui vient d'aboutir. L'opération est alors
+    # idempotente : elle ne crée ni second historique, ni message d'erreur.
+    if demande.statut == cible:
+        return demande
+
     if demande.statut not in sources:
-        raise ValidationError("Cette transition n'est pas autorisée depuis le statut actuel.")
+        raise ValidationError(
+            "Cette demande a déjà changé d'état. Rechargez la page avant d'appliquer une nouvelle décision."
+        )
     if action == "refuser" and not commentaire.strip():
         raise ValidationError("Précisez le motif du refus.")
 
@@ -264,13 +273,19 @@ def traiter_demande(
 
 def _confirmer_inscription(demande, *, par, paiement, exonere_paiement, commentaire):
     cours_session = type(demande.cours_session).objects.select_for_update().get(pk=demande.cours_session_id)
-    motif = cours_session.motif_indisponibilite(demande.etudiant)
     deja_inscrit = InscriptionSession.objects.filter(
         etudiant=demande.etudiant,
         cours_session=cours_session,
     ).first()
-    if motif and not deja_inscrit:
-        raise ValidationError(motif)
+
+    # La recevabilité publique a été vérifiée au dépôt de la demande.
+    # Le secrétariat ne rejoue donc pas la fermeture des inscriptions,
+    # la date limite, le statut du cours ou le parcours au moment de statuer.
+    # Ces valeurs peuvent légitimement évoluer pendant l'instruction.
+    if deja_inscrit:
+        raise ValidationError("Cet étudiant est déjà inscrit à ce cours.")
+    if cours_session.places_restantes <= 0:
+        raise ValidationError("Ce cours est complet : aucune place ne peut être attribuée.")
 
     paiement_valide = paiement or _paiement_confirme_compatible(demande)
     if demande.montant_du > 0 and not exonere_paiement:
@@ -338,7 +353,7 @@ def _changer_statut(demande, statut, *, acteur, commentaire):
 
 
 def _details_demande(demande) -> list[dict]:
-    """Cours, session et état : de quoi reconnaître la demande dont on parle."""
+    """Cours, session, état et éventuel motif : le courriel doit être autonome."""
     cours_session = demande.cours_session
     details = [
         {"libelle": "Cours", "valeur": cours_session.cours.titre},
@@ -347,6 +362,9 @@ def _details_demande(demande) -> list[dict]:
     ]
     if demande.montant_du:
         details.append({"libelle": "Montant dû", "valeur": f"{demande.montant_du} €"})
+    motif = (demande.motif_decision or "").strip()
+    if demande.statut == DemandeInscriptionCours.Statut.REFUSEE and motif:
+        details.append({"libelle": "Motif du refus", "valeur": motif})
     return details
 
 
@@ -354,9 +372,20 @@ def _message_notification(demande) -> str:
     """Ce que l'étudiant doit comprendre — et faire — selon l'état de sa demande.
 
     Un avis qui se contente de nommer un statut laisse son destinataire deviner
-    ce qu'on attend de lui. C'est l'action requise qui manquait.
+    ce qu'on attend de lui. Le motif saisi par le secrétariat doit donc apparaître
+    directement dans le message de refus, sans obliger l'étudiant à se connecter.
     """
     cours = demande.cours_session.cours.titre
+    motif = (demande.motif_decision or "").strip()
+    message_refus = (
+        f"Votre demande d'inscription au cours « {cours} » n'a pas été retenue. "
+        f"Motif communiqué par le secrétariat : {motif}"
+        if motif
+        else (
+            f"Votre demande d'inscription au cours « {cours} » n'a pas été retenue. "
+            "Contactez le secrétariat pour obtenir les précisions utiles."
+        )
+    )
     return {
         DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE: (
             f"Votre inscription au cours « {cours} » est acceptée sous réserve de règlement. "
@@ -367,11 +396,7 @@ def _message_notification(demande) -> str:
             f"Votre inscription au cours « {cours} » est confirmée. Le cours apparaît désormais "
             "dans votre espace étudiant, avec ses ressources et ses évaluations."
         ),
-        DemandeInscriptionCours.Statut.REFUSEE: (
-            f"Votre demande d'inscription au cours « {cours} » n'a pas été retenue. "
-            "Le secrétariat vous en précisera les raisons et pourra vous orienter vers une "
-            "autre session ou un autre cours."
-        ),
+        DemandeInscriptionCours.Statut.REFUSEE: message_refus,
         DemandeInscriptionCours.Statut.SOUMISE: (
             f"Votre demande d'inscription au cours « {cours} » a été rouverte et va être réexaminée par le secrétariat."
         ),

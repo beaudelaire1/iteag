@@ -36,7 +36,7 @@
         <section class="card-elevated">
             <h2 class="text-lg font-semibold text-navy-900">Cours et capacité</h2>
             <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-sm">
-                <div><dt class="text-xs text-warm-500">Session</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.session }}</dd></div>
+                <div><dt class="text-xs text-warm-500">Session</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.session }}</dd><p class="mt-1 text-xs text-warm-500">Du {{ demande.cours_session.session.date_debut|date:"d/m/Y" }} au {{ demande.cours_session.session.date_fin|date:"d/m/Y" }}</p></div>
                 <div><dt class="text-xs text-warm-500">Enseignant</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.enseignant }}</dd></div>
                 <div><dt class="text-xs text-warm-500">Modalité</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.get_modalite_display }}</dd></div>
                 <div><dt class="text-xs text-warm-500">Places disponibles</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.places_restantes }} / {{ demande.cours_session.capacite }}</dd></div>
@@ -65,14 +65,22 @@
     </div>
 
     <aside>
-        <form method="post" action="{% url 'administration:enrollment_request_action' demande.pk %}" class="card-elevated sticky top-24 space-y-5">
-            {% csrf_token %}
-            <div><h2 class="text-lg font-semibold text-navy-900">Décision du secrétariat</h2><p class="mt-1 text-xs leading-5 text-warm-500">La confirmation crée automatiquement l’inscription au cours. Si un montant est dû, un paiement confirmé ou une exonération motivée est obligatoire.</p></div>
-            {% for field in decision_form %}
-            <div><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="mt-1 text-xs text-warm-500">{{ field.help_text }}</p>{% endif %}</div>
-            {% endfor %}
-            <button type="submit" class="btn-primary w-full">Appliquer la décision</button>
-        </form>
-    </aside>
+    {% if decision_form.action.field.choices %}
+    <form method="post" action="{% url 'administration:enrollment_request_action' demande.pk %}" class="card-elevated sticky top-24 space-y-5">
+        {% csrf_token %}
+        <div><h2 class="text-lg font-semibold text-navy-900">Décision du secrétariat</h2><p class="mt-1 text-xs leading-5 text-warm-500">La confirmation crée automatiquement l’inscription au cours. Si un montant est dû, un paiement confirmé ou une exonération motivée est obligatoire.</p></div>
+        {% for field in decision_form %}
+        <div><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="mt-1 text-xs text-warm-500">{{ field.help_text }}</p>{% endif %}</div>
+        {% endfor %}
+        <button type="submit" class="btn-primary w-full">Appliquer la décision</button>
+    </form>
+    {% else %}
+    <div class="card-elevated sticky top-24" style="border-left: 3px solid var(--color-gold-500);">
+        <p class="overline mb-2">Demande clôturée</p>
+        <h2 class="text-lg font-semibold text-navy-900">{{ demande.get_statut_display }}</h2>
+        <p class="mt-2 text-sm text-warm-600">Aucune décision supplémentaire n’est disponible pour cet état. L’historique conserve la décision appliquée.</p>
+    </div>
+    {% endif %}
+</aside>
 </div>
 {% endblock %}

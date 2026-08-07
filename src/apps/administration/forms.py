@@ -302,6 +302,14 @@ class EnrollmentDecisionForm(FormulaireITEAG):
         ("reouvrir", "Rouvrir la demande"),
     ]
 
+    ACTIONS_PAR_STATUT = {
+        DemandeInscriptionCours.Statut.SOUMISE: {"demander_paiement", "confirmer", "refuser"},
+        DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE: {"confirmer", "refuser"},
+        DemandeInscriptionCours.Statut.CONFIRMEE: set(),
+        DemandeInscriptionCours.Statut.REFUSEE: {"reouvrir"},
+        DemandeInscriptionCours.Statut.ANNULEE: {"reouvrir"},
+    }
+
     action = forms.ChoiceField(choices=ACTIONS, widget=forms.Select(attrs={"class": "form-input"}))
     paiement = forms.ModelChoiceField(
         queryset=Paiement.objects.none(),
@@ -323,6 +331,10 @@ class EnrollmentDecisionForm(FormulaireITEAG):
     def __init__(self, *args, demande: DemandeInscriptionCours, **kwargs):
         super().__init__(*args, **kwargs)
         self.demande = demande
+        actions_autorisees = self.ACTIONS_PAR_STATUT.get(demande.statut, set())
+        self.fields["action"].choices = [
+            (valeur, libelle) for valeur, libelle in self.ACTIONS if valeur in actions_autorisees
+        ]
         self.fields["paiement"].queryset = Paiement.objects.filter(
             etudiant=demande.etudiant,
             session=demande.cours_session.session,

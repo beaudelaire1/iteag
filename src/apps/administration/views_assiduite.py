@@ -34,6 +34,8 @@ class AssiduiteAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 
 class AssiduiteListView(AssiduiteAccessMixin, ListView):
+    """Liste globale pour le personnel, limitée aux propres cours de l'enseignant."""
+
     template_name = "administration/assiduite/liste.html"
     context_object_name = "offres"
     paginate_by = 20

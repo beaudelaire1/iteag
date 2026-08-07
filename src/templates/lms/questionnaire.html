@@ -50,9 +50,118 @@
 </form>
 {% endif %}
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+<section class="card-elevated mb-10" aria-labelledby="ajouter-question-titre">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+        <div>
+            <p class="overline mb-1">Création en une étape</p>
+            <h2 id="ajouter-question-titre" class="text-xl font-semibold" style="color: var(--color-navy-900);">
+                Ajouter une question
+            </h2>
+            <p class="mt-1 text-sm text-warm-600">
+                Saisissez l'énoncé, les propositions et la bonne réponse avant d'enregistrer.
+            </p>
+        </div>
+        <span class="badge shrink-0">Question {{ questions|length|add:"1" }}</span>
+    </div>
 
-    <section class="lg:col-span-2 space-y-4">
+    <form id="qcm-question-form" method="post" action="{% url 'lms:question_create' devoir.pk %}" class="space-y-7" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="ordre" value="0">
+
+        {% if form_question.non_field_errors %}
+        <div class="rounded border p-4" role="alert" style="border-color: var(--color-warm-300); background: var(--color-warm-50);">
+            {% for erreur in form_question.non_field_errors %}
+            <p class="text-sm form-erreur">{{ erreur }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="md:col-span-2">
+                {% with field=form_question.enonce %}{% include "partials/champ.html" %}{% endwith %}
+            </div>
+            <div>
+                {% with field=form_question.type_question %}{% include "partials/champ.html" %}{% endwith %}
+            </div>
+            <div>
+                {% with field=form_question.points %}{% include "partials/champ.html" %}{% endwith %}
+            </div>
+            <div class="md:col-span-2">
+                {% with field=form_question.explication %}{% include "partials/champ.html" %}{% endwith %}
+            </div>
+        </div>
+
+        <fieldset class="rounded border p-4 sm:p-5" style="border-color: var(--color-warm-200);">
+            <legend class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+                Propositions de réponse
+            </legend>
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-1 mb-4">
+                <p id="qcm-correction-aide" class="text-sm text-warm-600">
+                    Sélectionnez la proposition correcte.
+                </p>
+                <button id="qcm-ajouter-proposition" type="button" class="btn-ghost shrink-0">
+                    Ajouter une proposition
+                </button>
+            </div>
+
+            <div id="qcm-propositions" class="space-y-3">
+                {% for proposition in propositions %}
+                <div class="rounded border p-3 sm:p-4" data-proposition-row style="border-color: var(--color-warm-200);">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-warm-600" data-proposition-label>
+                            Proposition {{ forloop.counter }}
+                        </label>
+                        <button type="button" class="text-xs font-medium text-danger" data-remove-proposition>
+                            Retirer
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 sm:items-center">
+                        <input
+                            type="text"
+                            name="proposition"
+                            value="{{ proposition.libelle }}"
+                            maxlength="500"
+                            class="form-input"
+                            placeholder="Saisissez une réponse possible"
+                            aria-label="Proposition {{ forloop.counter }}"
+                        >
+                        <label class="inline-flex items-center gap-2 text-sm font-medium whitespace-nowrap" style="color: var(--color-navy-800);">
+                            <input
+                                type="{% if form_question.type_question.value == 'choix_multiple' %}checkbox{% else %}radio{% endif %}"
+                                name="correcte"
+                                value="{{ proposition.index }}"
+                                data-correcte
+                                {% if proposition.correcte %}checked{% endif %}
+                            >
+                            Bonne réponse
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p class="text-xs text-warm-500">
+                Au moins deux propositions et une bonne réponse sont nécessaires.
+            </p>
+            <button type="submit" class="btn-primary justify-center">Enregistrer la question</button>
+        </div>
+    </form>
+</section>
+
+<section aria-labelledby="questions-questionnaire-titre">
+    <div class="flex items-end justify-between gap-4 mb-4">
+        <div>
+            <p class="overline mb-1">Questionnaire</p>
+            <h2 id="questions-questionnaire-titre" class="text-xl font-semibold" style="color: var(--color-navy-900);">
+                Questions enregistrées
+            </h2>
+        </div>
+        <span class="text-sm text-warm-500">{{ questions|length }} au total</span>
+    </div>
+
+    <div class="space-y-4">
         {% for question in questions %}
         <article class="card">
             <div class="flex items-start justify-between gap-4">
@@ -65,11 +174,6 @@
                 <a href="{% url 'lms:question_detail' question.pk %}" class="btn-ghost shrink-0">Modifier</a>
             </div>
 
-            {% comment %}
-                « est_valide » ne prend aucun argument : le gabarit peut l'appeler
-                directement, ce qui évite de transporter un dictionnaire indexé
-                par identifiant que le langage de gabarit ne sait pas relire.
-            {% endcomment %}
             {% if question.est_valide %}
             <p class="mt-3 text-sm form-erreur" role="alert">{{ question.est_valide }}</p>
             {% endif %}
@@ -93,24 +197,85 @@
         </article>
         {% empty %}
         <div class="card text-center" style="padding: 3rem 1.5rem;">
-            <p class="text-sm text-warm-600">Aucune question. Ajoutez la première à droite.</p>
+            <p class="text-sm text-warm-600">Aucune question enregistrée pour le moment.</p>
         </div>
         {% endfor %}
-    </section>
+    </div>
+</section>
+{% endblock %}
 
-    <aside class="lg:col-span-1">
-        <form method="post" action="{% url 'lms:question_create' devoir.pk %}" class="card-elevated space-y-5" novalidate>
-            {% csrf_token %}
-            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
-                Ajouter une question
-            </h2>
-            {% for field in form_question %}{% include "partials/champ.html" %}{% endfor %}
-            <button type="submit" class="btn-primary w-full justify-center">Ajouter</button>
-            <p class="text-xs text-warm-500">
-                Les propositions de réponse se saisissent ensuite, sur la fiche de la question.
-            </p>
-        </form>
-    </aside>
+{% block extra_js %}
+{{ block.super }}
+<script>
+(() => {
+    const conteneur = document.getElementById("qcm-propositions");
+    const boutonAjouter = document.getElementById("qcm-ajouter-proposition");
+    const selectType = document.getElementById("id_type_question");
+    const aideCorrection = document.getElementById("qcm-correction-aide");
+    if (!conteneur || !boutonAjouter || !selectType) return;
 
-</div>
+    const lignes = () => Array.from(conteneur.querySelectorAll("[data-proposition-row]"));
+
+    const synchroniser = () => {
+        const toutesLesLignes = lignes();
+        toutesLesLignes.forEach((ligne, index) => {
+            const etiquette = ligne.querySelector("[data-proposition-label]");
+            const champ = ligne.querySelector('input[name="proposition"]');
+            const correction = ligne.querySelector("[data-correcte]");
+            const retrait = ligne.querySelector("[data-remove-proposition]");
+            if (etiquette) etiquette.textContent = `Proposition ${index + 1}`;
+            if (champ) champ.setAttribute("aria-label", `Proposition ${index + 1}`);
+            if (correction) correction.value = String(index);
+            if (retrait) retrait.hidden = toutesLesLignes.length <= 2;
+        });
+        boutonAjouter.disabled = toutesLesLignes.length >= 10;
+    };
+
+    const appliquerType = () => {
+        const multiple = selectType.value === "choix_multiple";
+        const corrections = lignes()
+            .map((ligne) => ligne.querySelector("[data-correcte]"))
+            .filter(Boolean);
+        corrections.forEach((champ) => {
+            champ.type = multiple ? "checkbox" : "radio";
+        });
+        if (!multiple) {
+            corrections.filter((champ) => champ.checked).slice(1).forEach((champ) => {
+                champ.checked = false;
+            });
+        }
+        if (aideCorrection) {
+            aideCorrection.textContent = multiple
+                ? "Cochez toutes les propositions correctes."
+                : "Sélectionnez l'unique proposition correcte.";
+        }
+    };
+
+    boutonAjouter.addEventListener("click", () => {
+        const toutesLesLignes = lignes();
+        if (!toutesLesLignes.length || toutesLesLignes.length >= 10) return;
+        const nouvelleLigne = toutesLesLignes[toutesLesLignes.length - 1].cloneNode(true);
+        const champ = nouvelleLigne.querySelector('input[name="proposition"]');
+        const correction = nouvelleLigne.querySelector("[data-correcte]");
+        if (champ) champ.value = "";
+        if (correction) correction.checked = false;
+        conteneur.appendChild(nouvelleLigne);
+        synchroniser();
+        appliquerType();
+        if (champ) champ.focus();
+    });
+
+    conteneur.addEventListener("click", (evenement) => {
+        const bouton = evenement.target.closest("[data-remove-proposition]");
+        if (!bouton || lignes().length <= 2) return;
+        bouton.closest("[data-proposition-row]").remove();
+        synchroniser();
+        appliquerType();
+    });
+
+    selectType.addEventListener("change", appliquerType);
+    synchroniser();
+    appliquerType();
+})();
+</script>
 {% endblock %}
