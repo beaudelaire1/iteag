@@ -9,11 +9,18 @@
             {% for item in temoignages_etudiants %}
             <article class="card-elevated reveal">
                 <blockquote class="leading-relaxed mb-5" style="color: var(--color-warm-700);">
-                    <p>« {{ item.texte }} »</p>
+                    <span aria-hidden="true" class="text-3xl leading-none" style="color: var(--color-gold-500);">“</span>
+                    <div class="mt-2 prose max-w-none">{{ item.texte|safe }}</div>
                 </blockquote>
-                <div class="pt-5 border-t" style="border-color: var(--color-warm-200);">
-                    <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ item.nom_affiche }}</p>
-                    {% if item.promotion %}<p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ item.promotion }}</p>{% endif %}
+                <div class="pt-5 border-t flex items-center gap-3" style="border-color: var(--color-warm-200);">
+                    {% if item.photo %}
+                    <img src="{{ item.photo.url }}" alt="Photo de {{ item.nom_affiche }}"
+                         class="h-12 w-12 rounded-full object-cover" loading="lazy">
+                    {% endif %}
+                    <div>
+                        <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ item.nom_affiche }}</p>
+                        {% if item.promotion %}<p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ item.promotion }}</p>{% endif %}
+                    </div>
                 </div>
             </article>
             {% endfor %}
