@@ -72,7 +72,9 @@ jobs:
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
           DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
-        run: pytest --cov=apps --cov-report=term --cov-report=xml -q
+        # Le dernier état validé est à 92 %. Le plancher de 90 % absorbe les
+        # petites variations légitimes tout en bloquant une vraie régression.
+        run: pytest --cov=apps --cov-report=term --cov-report=xml --cov-fail-under=90 -q
       - name: Vérifier les migrations
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
