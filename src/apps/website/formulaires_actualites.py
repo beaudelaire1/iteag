@@ -3,6 +3,7 @@
 from django import forms
 
 from apps.core.formulaires import FormulaireITEAG
+from apps.core.services.redaction import assainir, en_texte
 from apps.website.models_publications import ContenuActualite
 
 INPUT = "form-input"
@@ -33,6 +34,10 @@ class ActualiteForm(FormulaireITEAG):
             "graphique simple, citation ou encadré."
         ),
     )
+    # Compatibilité avec les anciennes requêtes/tests. Ce champ n'est jamais
+    # montré dans la nouvelle interface ; s'il arrive encore, il devient un
+    # bloc texte et passe par la même liste blanche que l'ancien éditeur.
+    corps = forms.CharField(required=False, widget=forms.HiddenInput())
     image = forms.ImageField(
         required=False,
         label="Image à la une",
@@ -48,6 +53,12 @@ class ActualiteForm(FormulaireITEAG):
 
     def clean_contenu(self):
         contenu = self.cleaned_data.get("contenu")
-        if not contenu:
-            raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")
-        return contenu
+        if contenu:
+            return contenu
+
+        corps_heritage = self.data.get("corps") or ""
+        if en_texte(corps_heritage).strip():
+            bloc = ContenuActualite._meta.get_field("contenu").stream_block
+            return bloc.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
+
+        raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")
