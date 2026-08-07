@@ -1,5 +1,5 @@
 {% extends "partials/portal_base.html" %}
-{% load static %}
+{% load static socle_wagtail %}
 
 {% block title %}{% if actualite %}{{ actualite.title }}{% else %}Nouvelle actualité{% endif %} — {{ SITE_NAME }}{% endblock %}
 
@@ -8,6 +8,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% wagtail_socle_portail %}
 {{ form.media.js }}
 <script src="{% static 'js/streamfield-portail.js' %}?v={{ ASSET_VERSION }}"></script>
 {% endblock %}
