@@ -20,6 +20,7 @@ RUN chmod 0555 /opt/iteag/postgres_backup_r2.py /opt/iteag/postgres_backup_sched
 USER postgres
 
 HEALTHCHECK --interval=1h --timeout=30s --start-period=10m --retries=2 \
-    CMD python3 /opt/iteag/postgres_backup_r2.py status --max-age 129600 || exit 1
+    CMD if [ "${BACKUP_ENABLED:-false}" != "true" ]; then exit 0; fi; \
+        python3 /opt/iteag/postgres_backup_r2.py status --max-age 129600 || exit 1
 
 CMD ["python3", "/opt/iteag/postgres_backup_scheduler.py"]
