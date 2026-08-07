@@ -197,9 +197,6 @@ def _purger(client, sous_prefixe: str, jours: int) -> None:
                 Delete={"Objects": [{"Key": cle} for cle in lot], "Quiet": True},
             )
         except ClientError as erreur:
-            # Une règle Bucket Lock peut volontairement empêcher la purge. La
-            # nouvelle sauvegarde est déjà vérifiée : la rétention ne doit pas
-            # la transformer artificiellement en échec.
             code = erreur.response.get("Error", {}).get("Code", "inconnu")
             print(f"AVERTISSEMENT : purge R2 refusée ({code}).", file=sys.stderr)
             continue
@@ -224,11 +221,12 @@ def sauvegarder() -> None:
         print(f"Envoi R2 : {cle} ({taille} octets)…")
         _upload(client, archive, cle, empreinte)
 
-        if maintenant.day == 1:
-            mensuelle = _cle_mensuelle(maintenant)
-            if not _existe(client, mensuelle):
-                print(f"Copie mensuelle : {mensuelle}…")
-                _upload(client, archive, mensuelle, empreinte)
+        # La première sauvegarde réussie du mois devient l'archive mensuelle.
+        # Ainsi une panne ou une maintenance le 1er ne fait pas perdre le mois.
+        mensuelle = _cle_mensuelle(maintenant)
+        if not _existe(client, mensuelle):
+            print(f"Copie mensuelle : {mensuelle}…")
+            _upload(client, archive, mensuelle, empreinte)
 
     _purger(client, "daily", _entier("BACKUP_RETENTION_DAYS", 35))
     _purger(client, "monthly", _entier("BACKUP_MONTHLY_RETENTION_DAYS", 400))
