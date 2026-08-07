@@ -8,9 +8,6 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Wagtail n'inclut pas telepath.js dans BlockWidget.media : l'admin le charge globalement. #}
-{# Ce formulaire vit hors de l'admin Wagtail, il faut donc charger Telepath explicitement. #}
-<script src="{% static 'telepath/js/telepath.js' %}"></script>
 {{ form.media.js }}
 <script src="{% static 'js/streamfield-portail.js' %}?v={{ ASSET_VERSION }}"></script>
 {% endblock %}
