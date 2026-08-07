@@ -27,10 +27,10 @@ def test_actualite_conserve_le_blockwidget_wagtail():
 def test_blockwidget_rend_le_controleur_officiel_w_block():
     html = str(ActualiteForm()["contenu"])
 
-    assert 'data-block' in html
+    assert "data-block" in html
     assert 'data-controller="w-block"' in html
-    assert 'data-w-block-data-value=' in html
-    assert 'data-w-block-arguments-value=' in html
+    assert "data-w-block-data-value=" in html
+    assert "data-w-block-arguments-value=" in html
     assert 'id="contenu"' in html
 
 
