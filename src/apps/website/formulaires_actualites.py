@@ -45,6 +45,31 @@ class ActualiteForm(FormulaireITEAG):
         widget=forms.ClearableFileInput(attrs={"class": "form-file", "accept": "image/*"}),
     )
 
+    def __init__(self, *args, **kwargs):
+        """Laisse les anciens clients POSTer ``corps`` pendant la transition.
+
+        Un StreamField Wagtail attend normalement ses champs de gestion
+        ``contenu-count`` avant même l'étape ``clean_*``. Les anciennes vues,
+        intégrations et tests envoient seulement ``corps`` : on remplace alors
+        le widget structuré par un champ caché pour cette requête précise. Le
+        contenu historique est ensuite converti en bloc ``texte`` dans
+        ``clean_contenu``. L'éditeur moderne reste inchangé pour tous les POST
+        StreamField réels.
+        """
+        donnees = kwargs.get("data")
+        if donnees is None and args:
+            donnees = args[0]
+        requete_heritage = donnees is not None and "contenu-count" not in donnees and "corps" in donnees
+
+        super().__init__(*args, **kwargs)
+
+        if requete_heritage:
+            self.fields["contenu"] = forms.CharField(
+                required=False,
+                label="Contenu de l'actualité",
+                widget=forms.HiddenInput(),
+            )
+
     def clean_titre(self):
         titre = (self.cleaned_data.get("titre") or "").strip()
         if not titre:
