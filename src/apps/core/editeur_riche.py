@@ -1,11 +1,4 @@
-"""Éditeur Draftail partagé par les formulaires métier de l'ITEAG.
-
-Wagtail initialise normalement Draftail depuis son propre tableau de bord. Les
-enseignants, étudiants et membres du secrétariat travaillent, eux, dans les
-portails Django de l'ITEAG. Ce widget conserve le convertisseur officiel
-HTML/ContentState de Wagtail, mais livre une initialisation et une apparence
-autonomes, sans CDN et sans charger toute l'interface d'administration.
-"""
+"""Éditeurs Wagtail utilisables dans les portails métier de l'ITEAG."""
 
 from __future__ import annotations
 
@@ -20,6 +13,9 @@ from django.utils.functional import cached_property
 from wagtail.admin.icons import get_icon_sprite_url
 from wagtail.admin.rich_text.editors.draftail import DraftailRichTextArea
 from wagtail.admin.staticfiles import versioned_static
+from wagtail.blocks import BlockWidget
+
+from apps.core.templatetags.socle_wagtail import SOCLE
 
 # Profil éditorial commun aux articles, actualités et annonces. Les images et
 # documents restent des champs structurés dédiés : leurs droits, crédits et
@@ -54,6 +50,23 @@ VERSION_ASSETS_EDITEUR = "3"
 def _asset_iteag(chemin: str) -> str:
     """URL statique ITEAG avec cache-buster propre au composant."""
     return f"{static(chemin)}?v={VERSION_ASSETS_EDITEUR}"
+
+
+class StreamFieldPortail(BlockWidget):
+    """BlockWidget Wagtail avec son runtime de base hors administration.
+
+    Le rendu du widget reste intégralement celui de Wagtail. Cette classe ne
+    réimplémente ni Telepath ni le StreamField : elle ajoute seulement les
+    bundles que ``wagtailadmin/admin_base.html`` charge normalement avant les
+    médias propres aux blocs. Le gabarit doit émettre ``wagtail-config`` avant
+    ``form.media.js`` via ``wagtail_configuration_portail``.
+    """
+
+    @cached_property
+    def media(self):
+        media_blocs = super().media
+        prerequis = [versioned_static(chemin) for chemin in SOCLE]
+        return forms.Media(css=media_blocs._css, js=[*prerequis, *media_blocs._js])
 
 
 class DraftailPortail(DraftailRichTextArea):
@@ -92,12 +105,7 @@ class DraftailPortail(DraftailRichTextArea):
         return context
 
     def value_from_datadict(self, data, files, name):
-        """Accepte ContentState, tout en préservant les intégrations HTML.
-
-        Le navigateur envoie le JSON ContentState produit par Draftail. Les
-        imports, tests et anciens clients peuvent encore envoyer le HTML déjà
-        sérialisé ; le reconnaître évite une rupture brutale du contrat HTTP.
-        """
+        """Accepte ContentState, tout en préservant les intégrations HTML."""
         valeur = data.get(name)
         if valeur in (None, ""):
             return valeur
@@ -110,24 +118,13 @@ class DraftailPortail(DraftailRichTextArea):
         return self.converter.to_database_format(json.dumps(contenu, cls=DjangoJSONEncoder))
 
     def format_value(self, value):
-        """Normalise les sauts de ligne des anciens éditeurs HTML.
-
-        Quill et certains navigateurs ont enregistré ``<br>`` comme une
-        balise ouvrante. Le convertisseur Wagtail attend sa forme XHTML
-        autofermante ; sans cette adaptation, une ancienne actualité vide ne
-        peut même plus être réaffichée après une erreur de validation.
-        """
+        """Normalise les sauts de ligne des anciens éditeurs HTML."""
         if isinstance(value, str):
             value = re.sub(r"<br\s*/?>", "<br />", value, flags=re.IGNORECASE)
         return super().format_value(value)
 
     @cached_property
     def media(self):
-        # ``draftail.js`` est un morceau webpack qui partage ses dépendances
-        # avec ``vendor.js``. Dans l'admin elles sont déjà présentes ; dans un
-        # portail il faut les déclarer explicitement. Les quatre petits scripts
-        # jQuery/Bootstrap ne servent qu'au dialogue officiel d'insertion de
-        # lien et restent tous auto-hébergés.
         return forms.Media(
             css={
                 "all": [
