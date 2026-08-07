@@ -57,6 +57,16 @@ def test_runtime_officiel_precede_les_adaptateurs_streamfield():
     assert vendor < draftail
 
 
+def test_styles_streamfield_restent_isoles_du_portail():
+    widget = ActualiteForm().fields["contenu"].widget
+    ressources = [str(url) for urls in widget.media._css.values() for url in urls]
+    gabarit = _lire("templates/website/actualites/formulaire.html")
+
+    assert any("/css/streamfield-portail.css" in url for url in ressources)
+    assert not any("wagtailadmin/css/core.css" in url for url in ressources)
+    assert 'class="streamfield-portail"' in gabarit
+
+
 def test_le_portail_ne_reimplemente_plus_blockcontroller():
     gabarit = _lire("templates/website/actualites/formulaire.html")
 
