@@ -220,8 +220,17 @@ def traiter_demande(
     if action not in transitions:
         raise ValidationError("Action inconnue.")
     sources, cible = transitions[action]
+
+    # Un double clic, un retour arrière ou une reprise réseau peut rejouer
+    # exactement la décision qui vient d'aboutir. L'opération est alors
+    # idempotente : elle ne crée ni second historique, ni message d'erreur.
+    if demande.statut == cible:
+        return demande
+
     if demande.statut not in sources:
-        raise ValidationError("Cette transition n'est pas autorisée depuis le statut actuel.")
+        raise ValidationError(
+            "Cette demande a déjà changé d'état. Rechargez la page avant d'appliquer une nouvelle décision."
+        )
     if action == "refuser" and not commentaire.strip():
         raise ValidationError("Précisez le motif du refus.")
 
@@ -264,13 +273,19 @@ def traiter_demande(
 
 def _confirmer_inscription(demande, *, par, paiement, exonere_paiement, commentaire):
     cours_session = type(demande.cours_session).objects.select_for_update().get(pk=demande.cours_session_id)
-    motif = cours_session.motif_indisponibilite(demande.etudiant)
     deja_inscrit = InscriptionSession.objects.filter(
         etudiant=demande.etudiant,
         cours_session=cours_session,
     ).first()
-    if motif and not deja_inscrit:
-        raise ValidationError(motif)
+
+    # La recevabilité publique a été vérifiée au dépôt de la demande.
+    # Le secrétariat ne rejoue donc pas la fermeture des inscriptions,
+    # la date limite, le statut du cours ou le parcours au moment de statuer.
+    # Ces valeurs peuvent légitimement évoluer pendant l'instruction.
+    if deja_inscrit:
+        raise ValidationError("Cet étudiant est déjà inscrit à ce cours.")
+    if cours_session.places_restantes <= 0:
+        raise ValidationError("Ce cours est complet : aucune place ne peut être attribuée.")
 
     paiement_valide = paiement or _paiement_confirme_compatible(demande)
     if demande.montant_du > 0 and not exonere_paiement:
