@@ -34,10 +34,17 @@ def _contentstate(type_bloc="ITEAG_ALIGN_JUSTIFY", texte="Texte structuré"):
 
 @pytest.mark.parametrize(
     ("formulaire", "champ"),
-    [(ArticleForm, "corps"), (ActualiteForm, "corps"), (AnnonceForm, "contenu")],
+    [(ArticleForm, "corps"), (AnnonceForm, "contenu")],
 )
-def test_le_meme_widget_draftail_equipe_les_formulaires_metier(formulaire, champ):
+def test_le_meme_widget_draftail_equipe_les_champs_riches_directs(formulaire, champ):
     assert isinstance(formulaire().fields[champ].widget, DraftailPortail)
+
+
+def test_actualite_remplace_le_corps_direct_par_un_streamfield_structure():
+    formulaire = ActualiteForm()
+    assert formulaire.fields["corps"].widget.is_hidden
+    stream_block = formulaire.fields["contenu"].block
+    assert "texte" in stream_block.child_blocks
 
 
 def test_contentstate_est_converti_en_html_persistable():
