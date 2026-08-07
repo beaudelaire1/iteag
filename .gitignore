@@ -25,7 +25,8 @@ staticfiles/
 
 # Node
 node_modules/
-package-lock.json
+# package-lock.json est volontairement versionné : les builds frontend doivent
+# installer exactement les dépendances validées par la CI et la production.
 
 # IDE
 .vscode/
