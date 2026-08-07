@@ -10,6 +10,7 @@ on:
       - "src/apps/website/vues_actualites.py"
       - "src/static/css/streamfield-portail.css"
       - "src/static/css/streamfield-draftail-portail.css"
+      - "src/static/js/streamfield-draftail-portail.js"
       - "src/templates/website/actualites/formulaire.html"
       - ".github/workflows/streamfield-browser-smoke.yml"
   push:
@@ -22,6 +23,7 @@ on:
       - "src/apps/website/vues_actualites.py"
       - "src/static/css/streamfield-portail.css"
       - "src/static/css/streamfield-draftail-portail.css"
+      - "src/static/js/streamfield-draftail-portail.js"
       - "src/templates/website/actualites/formulaire.html"
       - ".github/workflows/streamfield-browser-smoke.yml"
 
