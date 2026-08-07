@@ -1,4 +1,12 @@
 {% if request.resolver_match.namespace == 'enseignant' and request.resolver_match.url_name == 'accueil' %}
+    <a href="{% url 'lms:devoirs_list' %}" class="card-elevated mb-8 flex flex-wrap items-center justify-between gap-5 hover:shadow-elevated transition-shadow" style="border-left: 3px solid var(--color-gold-500);">
+        <div>
+            <p class="overline mb-1">Action rapide</p>
+            <h2 class="text-base font-semibold text-navy-900">Créer un devoir ou un QCM</h2>
+            <p class="mt-1 text-sm text-warm-500">Choisissez le cours, puis le format : dépôt de fichier, réponse rédigée ou questionnaire à choix multiple.</p>
+        </div>
+        <span class="btn-primary">Commencer</span>
+    </a>
     {% if evaluations_a_corriger or videos_en_attente or modules_brouillons %}
     <section class="card-elevated mb-8" style="padding: 0; border-left: 3px solid var(--color-gold-500);">
         <div class="border-b border-warm-100 px-5 py-4">
