@@ -1,24 +1,27 @@
 """Configuration et socle Wagtail pour les widgets rendus hors de l'admin.
 
-Les widgets Wagtail dynamiques lisent ``wagtail-config`` avant leur démarrage.
-Leur ``Media`` sait ensuite déclarer les scripts propres au widget, mais Django
-``forms.Media`` ne peut pas émettre ce bloc JSON inline. Ce module fournit donc
-la configuration avec le nonce CSP ; le tag de socle complet reste disponible
-pour les écrans qui en auraient besoin.
+Un ``BlockWidget`` StreamField n'embarque que ses médias spécifiques. Dans
+l'administration, le gabarit Wagtail lui fournit auparavant la configuration,
+le runtime de base et le sprite SVG utilisé par ses contrôles. Les portails
+ITEAG doivent fournir le même contrat sans importer toute l'interface admin.
 """
 
 from django import template
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
+from wagtail.admin.icons import get_icon_sprite_url
 from wagtail.admin.staticfiles import versioned_static
 
 register = template.Library()
 
-# Sous-ensemble du socle officiel de wagtailadmin/admin_base.html. L'ordre est
-# intentionnel : core.js crée window.telepath et l'application Stimulus avant
-# que les adaptateurs spécifiques des widgets ne s'enregistrent.
+# Sous-ensemble du socle officiel de wagtailadmin/admin_base.html requis par
+# les blocs présents dans les publications ITEAG. Les deux bibliothèques de
+# calendrier précèdent date-time-chooser.js, que DateBlock peut ajouter via le
+# Media du BlockWidget (notamment dans les tableaux typés).
 SOCLE = (
     "wagtailadmin/js/vendor/jquery-3.6.0.min.js",
+    "wagtailadmin/js/vendor/jquery-ui-1.13.2.min.js",
+    "wagtailadmin/js/vendor/jquery.datetimepicker.js",
     "wagtailadmin/js/vendor/bootstrap-transition.js",
     "wagtailadmin/js/vendor/bootstrap-modal.js",
     "wagtailadmin/js/core.js",
@@ -50,6 +53,22 @@ def _configuration_wagtail(context):
 def wagtail_configuration_portail(context):
     """Émet uniquement la configuration requise avant les médias du widget."""
     return _configuration_wagtail(context)
+
+
+@register.simple_tag
+def wagtail_icones_portail():
+    """Charge le sprite SVG utilisé par les boutons et menus StreamField.
+
+    Un StreamField vide affiche d'abord un bouton dont le SVG référence
+    ``#icon-plus``. Sans le sprite chargé par ``skeleton.html`` dans l'admin,
+    ce contrôle perd son glyphe dans un portail personnalisé.
+    """
+    return format_html(
+        '<div data-sprite aria-hidden="true"></div>'
+        '<script src="{}" data-icon-url="{}"></script>',
+        versioned_static("wagtailadmin/js/icons.js"),
+        get_icon_sprite_url(),
+    )
 
 
 @register.simple_tag(takes_context=True)
