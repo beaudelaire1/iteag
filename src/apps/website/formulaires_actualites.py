@@ -77,8 +77,6 @@ class ActualiteForm(FormulaireITEAG):
 
         corps_heritage = self.data.get("corps") or ""
         if en_texte(corps_heritage).strip():
-            return CHAMP_CONTENU.stream_block.to_python(
-                [{"type": "texte", "value": assainir(corps_heritage)}]
-            )
+            return CHAMP_CONTENU.stream_block.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
 
         raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")
