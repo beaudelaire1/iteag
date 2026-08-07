@@ -24,119 +24,74 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          def remplacer(path, ancien, nouveau):
-              fichier = Path(path)
-              texte = fichier.read_text(encoding="utf-8")
-              if ancien not in texte:
-                  raise SystemExit(f"Bloc attendu absent dans {path}")
-              fichier.write_text(texte.replace(ancien, nouveau, 1), encoding="utf-8")
-
-          remplacer(
-              "src/apps/academics/apps.py",
-              '''class AcademicsConfig(AppConfig):
-              default_auto_field = "django.db.models.BigAutoField"
-              name = "apps.academics"
-              verbose_name = "Vie académique"
-
-              def ready(self):
-                  # Les modèles d'assiduité sont isolés pour ne pas alourdir le modèle
-                  # académique historique, mais doivent être enregistrés au démarrage.
-                  from . import models_assiduite  # noqa: F401
-          ''',
-              '''class AcademicsConfig(AppConfig):
-              default_auto_field = "django.db.models.BigAutoField"
-              name = "apps.academics"
-              verbose_name = "Vie académique"
-          ''',
+          Path("src/apps/academics/apps.py").write_text(
+              'from django.apps import AppConfig\n\n\n'
+              'class AcademicsConfig(AppConfig):\n'
+              '    default_auto_field = "django.db.models.BigAutoField"\n'
+              '    name = "apps.academics"\n'
+              '    verbose_name = "Vie académique"\n',
+              encoding="utf-8",
           )
 
           models = Path("src/apps/academics/models.py")
           texte = models.read_text(encoding="utf-8")
-          import_assiduite = (
-              '\n\n# Django ne découvre automatiquement que `models.py`. L’import est placé après\n'
-              '# les modèles académiques historiques afin que les relations inverses\n'
-              '# d’assiduité existent avant la construction des requêtes ORM.\n'
-              'from apps.academics.models_assiduite import HistoriquePresence, Presence, SeanceCours  # noqa: E402, F401\n'
-          )
           if "from apps.academics.models_assiduite import" not in texte:
-              models.write_text(texte.rstrip() + import_assiduite, encoding="utf-8")
+              texte = texte.rstrip() + (
+                  '\n\n# Django ne découvre automatiquement que `models.py`. L’import est placé après\n'
+                  '# les modèles académiques historiques afin que les relations inverses\n'
+                  '# d’assiduité existent avant la construction des requêtes ORM.\n'
+                  'from apps.academics.models_assiduite import HistoriquePresence, Presence, SeanceCours  # noqa: E402, F401\n'
+              )
+              models.write_text(texte, encoding="utf-8")
 
-          remplacer(
-              "src/apps/lms/test_qcm_groupes.py",
-              '''    devoir = Devoir.objects.create(
-                  cours_session=cours,
-                  titre="Fermé",
-                  modalite=Devoir.Modalite.QCM,
+          qcm = Path("src/apps/lms/test_qcm_groupes.py")
+          texte = qcm.read_text(encoding="utf-8")
+          cible = '''        modalite=Devoir.Modalite.QCM,
                   statut=Devoir.Statut.PUBLIE,
-                  date_ouverture=timezone.now() - timedelta(days=5),
-                  date_fermeture=timezone.now() - timedelta(days=1),
-              )
-              question = Question.objects.create(devoir=devoir, enonce="Q", points=1)
-              Choix.objects.create(question=question, libelle="A", correct=True)
-              copie = Evaluation.objects.create(cours_session=cours, etudiant=etudiant, devoir=devoir)
-          ''',
-              '''    devoir = Devoir.objects.create(
-                  cours_session=cours,
-                  titre="Fermé",
-                  modalite=Devoir.Modalite.QCM,
-                  date_ouverture=timezone.now() - timedelta(days=5),
-                  date_fermeture=timezone.now() - timedelta(days=1),
-              )
-              question = Question.objects.create(devoir=devoir, enonce="Q", points=1)
-              Choix.objects.create(question=question, libelle="A", correct=True)
-              devoir.statut = Devoir.Statut.PUBLIE
-              devoir.save(update_fields=["statut", "updated_at"])
-              copie = Evaluation.objects.create(cours_session=cours, etudiant=etudiant, devoir=devoir)
-          ''',
-          )
+                  date_ouverture=timezone.now() - timedelta(days=5),'''
+          remplacement = '''        modalite=Devoir.Modalite.QCM,
+                  date_ouverture=timezone.now() - timedelta(days=5),'''
+          if cible not in texte:
+              raise SystemExit("Statut QCM publié introuvable")
+          texte = texte.replace(cible, remplacement, 1)
+          marqueur = '    Choix.objects.create(question=question, libelle="A", correct=True)\n'
+          ajout = marqueur + '    devoir.statut = Devoir.Statut.PUBLIE\n    devoir.save(update_fields=["statut", "updated_at"])\n'
+          if marqueur not in texte:
+              raise SystemExit("Choix QCM introuvable")
+          texte = texte.replace(marqueur, ajout, 1)
+          qcm.write_text(texte, encoding="utf-8")
 
           fumee = Path("src/apps/core/test_fumee_detail.py")
           texte = fumee.read_text(encoding="utf-8")
           texte = texte.replace("from datetime import timedelta", "from datetime import time, timedelta", 1)
-          texte = texte.replace(
-              "from apps.accounts.models import User\n",
-              "from apps.academics.models_assiduite import SeanceCours\nfrom apps.accounts.models import User\n",
-              1,
-          )
+          if "from apps.academics.models_assiduite import SeanceCours" not in texte:
+              texte = texte.replace(
+                  "from apps.accounts.models import User\n",
+                  "from apps.academics.models_assiduite import SeanceCours\nfrom apps.accounts.models import User\n",
+                  1,
+              )
           texte = texte.replace(
               "from apps.library.models import Emprunt, NoticeBibliographique",
               "from apps.library.models import Emprunt, NoticeBibliographique, SuspensionBibliotheque",
               1,
           )
-          ancien = '''    monde["cours_session"] = CoursDeSession.objects.create(
-              session=monde["session"], cours=monde["cours"], enseignant=monde["professeur"]
-          )
-          monde["demande"] = DemandeInscriptionCours.objects.create(
-          '''
-          nouveau = '''    monde["cours_session"] = CoursDeSession.objects.create(
-              session=monde["session"], cours=monde["cours"], enseignant=monde["professeur"]
-          )
-          monde["seance_assiduite"] = SeanceCours.objects.create(
+
+          marqueur = '    monde["demande"] = DemandeInscriptionCours.objects.create(\n'
+          ajout = '''    monde["seance_assiduite"] = SeanceCours.objects.create(
               cours_session=monde["cours_session"],
               date="2027-07-05",
               heure_debut=time(9, 0),
               heure_fin=time(12, 0),
               cree_par=monde[ADMIN],
           )
-          monde["demande"] = DemandeInscriptionCours.objects.create(
           '''
-          if ancien not in texte:
-              raise SystemExit("Insertion de la séance impossible")
-          texte = texte.replace(ancien, nouveau, 1)
+          if "monde[\"seance_assiduite\"]" not in texte:
+              if marqueur not in texte:
+                  raise SystemExit("Marqueur demande d'inscription absent")
+              texte = texte.replace(marqueur, ajout + marqueur, 1)
 
-          ancien = '''    monde["emprunt"] = Emprunt.objects.create(
-              notice=monde["notice"],
-              emprunteur=monde[ETUDIANT],
-              date_retour_prevue=timezone.localdate() + timedelta(days=21),
-          )
-          monde["produit"] = ProduitLivre.objects.create(
-          '''
-          nouveau = '''    monde["emprunt"] = Emprunt.objects.create(
-              notice=monde["notice"],
-              emprunteur=monde[ETUDIANT],
-              date_retour_prevue=timezone.localdate() + timedelta(days=21),
-          )
-          monde["suspension"] = SuspensionBibliotheque.objects.create(
+          marqueur = '    monde["produit"] = ProduitLivre.objects.create(\n'
+          ajout = '''    monde["suspension"] = SuspensionBibliotheque.objects.create(
               emprunteur=monde[ETUDIANT],
               emprunt=monde["emprunt"],
               jours_retard=3,
@@ -144,37 +99,31 @@ jobs:
               date_debut=timezone.localdate(),
               date_fin=timezone.localdate() + timedelta(days=2),
           )
-          monde["produit"] = ProduitLivre.objects.create(
           '''
-          if ancien not in texte:
-              raise SystemExit("Insertion de la suspension impossible")
-          texte = texte.replace(ancien, nouveau, 1)
+          if "monde[\"suspension\"]" not in texte:
+              if marqueur not in texte:
+                  raise SystemExit("Marqueur produit absent")
+              texte = texte.replace(marqueur, ajout + marqueur, 1)
 
-          texte = texte.replace(
-              '''    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
-          ''',
-              '''    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
-              "administration:assiduite_cours": (ENSEIGNANT, lambda m: {"pk": m["cours_session"].pk}),
-              "administration:assiduite_feuille": (ENSEIGNANT, lambda m: {"pk": m["seance_assiduite"].pk}),
-          ''',
-              1,
-          )
-          texte = texte.replace(
-              '''    "library:emprunt_supprimer": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
-          ''',
-              '''    "library:emprunt_supprimer": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),
-              "library:suspension_lever": (SECRETARIAT, lambda m: {"pk": m["suspension"].pk}),
-          ''',
-              1,
-          )
-          texte = texte.replace(
-              '''    "paiements:payer_commande": (PUBLIC, lambda m: {"jeton": m["commande"].jeton_suivi}),
-          ''',
-              '''    "paiements:payer_commande": (PUBLIC, lambda m: {"jeton": m["commande"].jeton_suivi}),
-              "paiements:payer_inscription": (ETUDIANT, lambda m: {"pk": m["demande"].pk}),
-          ''',
-              1,
-          )
+          ajouts_routes = {
+              '    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),\n': (
+                  '    "administration:assiduite_cours": (ENSEIGNANT, lambda m: {"pk": m["cours_session"].pk}),\n'
+                  '    "administration:assiduite_feuille": (ENSEIGNANT, lambda m: {"pk": m["seance_assiduite"].pk}),\n'
+              ),
+              '    "library:emprunt_supprimer": (SECRETARIAT, lambda m: {"pk": m["emprunt"].pk}),\n': (
+                  '    "library:suspension_lever": (SECRETARIAT, lambda m: {"pk": m["suspension"].pk}),\n'
+              ),
+              '    "paiements:payer_commande": (PUBLIC, lambda m: {"jeton": m["commande"].jeton_suivi}),\n': (
+                  '    "paiements:payer_inscription": (ETUDIANT, lambda m: {"pk": m["demande"].pk}),\n'
+              ),
+          }
+          for route, ajout_route in ajouts_routes.items():
+              nom = ajout_route.split('"', 2)[1]
+              if f'"{nom}"' in texte:
+                  continue
+              if route not in texte:
+                  raise SystemExit(f"Route d’ancrage absente : {route.strip()}")
+              texte = texte.replace(route, route + ajout_route, 1)
           fumee.write_text(texte, encoding="utf-8")
           PY
       - name: Régénérer le verrou et formater
