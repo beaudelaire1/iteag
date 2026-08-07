@@ -1,0 +1,37 @@
+name: Format code temporaire
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/format-code-temporaire.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer Ruff
+        run: pip install ruff==0.16.1
+      - name: Formater le code
+        working-directory: src
+        run: ruff format .
+      - name: Publier le formatage
+        run: |
+          if git diff --quiet; then
+            echo "Aucun fichier à reformater."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "style: appliquer ruff format au projet"
+          git push origin HEAD:main
