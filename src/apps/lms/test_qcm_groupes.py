@@ -139,8 +139,6 @@ def test_une_question_sans_bonne_reponse_est_signalee(questionnaire):
 def test_une_question_unique_avec_deux_bonnes_reponses_est_signalee(questionnaire):
     question = Question.objects.create(devoir=questionnaire, enonce="Ambiguë", points=1, ordre=4)
     Choix.objects.create(question=question, libelle="A", correct=True)
-    devoir.statut = Devoir.Statut.PUBLIE
-    devoir.save(update_fields=["statut", "updated_at"])
     Choix.objects.create(question=question, libelle="B", correct=True)
     assert "une seule proposition correcte" in question.est_valide()
 
@@ -227,6 +225,8 @@ def test_le_questionnaire_refuse_le_depot_hors_fenetre(cours, etudiant):
     )
     question = Question.objects.create(devoir=devoir, enonce="Q", points=1)
     Choix.objects.create(question=question, libelle="A", correct=True)
+    devoir.statut = Devoir.Statut.PUBLIE
+    devoir.save(update_fields=["statut", "updated_at"])
     copie = Evaluation.objects.create(cours_session=cours, etudiant=etudiant, devoir=devoir)
 
     with pytest.raises(ValidationError):
