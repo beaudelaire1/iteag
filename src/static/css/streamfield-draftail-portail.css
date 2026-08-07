@@ -1,0 +1,67 @@
+/*
+ * Intégration de Draftail à l'intérieur du StreamField du portail.
+ *
+ * Draftail est conçu pour le back-office Wagtail et sa barre principale peut
+ * devenir sticky afin de rester visible pendant le défilement de la page.
+ * Dans le portail ITEAG, le StreamField possède déjà sa propre hiérarchie de
+ * blocs : la barre de texte doit donc rester physiquement attachée à son bloc
+ * et ne jamais se détacher dans la fenêtre.
+ */
+
+.streamfield-portail .Draftail-Editor__wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Neutralise le comportement sticky/pinnable hérité de Draftail. */
+.streamfield-portail .Draftail-Toolbar,
+.streamfield-portail .Draftail-Editor--focus .Draftail-Toolbar {
+    position: static !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100%;
+    max-width: none;
+    transform: none !important;
+    z-index: auto;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Le bouton d'épinglage n'a plus de sens lorsque la barre est ancrée. */
+.streamfield-portail .Draftail-ToolbarButton--pin {
+    display: none !important;
+}
+
+/* Le StreamField fournit déjà les commandes d'ajout de blocs. Le mini-outil
+   latéral de Draftail ferait doublon et peut apparaître hors de la carte. */
+.streamfield-portail .Draftail-BlockToolbar {
+    display: none !important;
+}
+
+.streamfield-portail .Draftail-BlockToolbar ~ .DraftEditor-root,
+.streamfield-portail .Draftail-BlockToolbar ~ .Draftail-Toolbar {
+    margin-inline-start: 0 !important;
+}
+
+/* Garde une zone de rédaction utile sans retrouver la hauteur de quasi-page
+   visible lorsque les règles de l'admin prennent le dessus. */
+.streamfield-portail .Draftail-Editor .DraftEditor-root {
+    min-height: 12rem !important;
+}
+
+.streamfield-portail .Draftail-Editor .public-DraftEditor-content {
+    box-sizing: border-box;
+    min-height: 12rem;
+}
+
+@media (max-width: 48rem) {
+    .streamfield-portail .Draftail-Toolbar {
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: thin;
+    }
+}
