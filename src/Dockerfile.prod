@@ -12,8 +12,10 @@
 FROM node:22-alpine AS assets
 
 WORKDIR /app
-COPY package.json ./
-RUN npm install --no-audit --no-fund
+COPY package.json package-lock.json ./
+# Le lockfile fait partie du contrat de production : « npm ci » échoue si le
+# manifeste et le verrou divergent, et n'en réécrit aucun des deux.
+RUN npm ci --no-audit --no-fund
 
 COPY assets/ assets/
 COPY static/ static/
