@@ -1,10 +1,12 @@
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.academics.models import ProfilEtudiant, Promotion
 from apps.accounts.models import User
+from apps.core.models import Notification
 from apps.formations.models import Parcours
 from apps.website.models_publications import TemoignageEtudiant
 
@@ -74,6 +76,16 @@ def _soumission(texte="L'ITEAG m'a donné des repères solides pour approfondir 
     return {"texte": texte, "consentement_publication": "on"}
 
 
+def _petite_photo():
+    # GIF 1×1 valide : aucune dépendance à un fichier du dépôt.
+    contenu = (
+        b"GIF87a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff"
+        b"!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00"
+        b"\x00\x02\x02D\x01\x00;"
+    )
+    return SimpleUploadedFile("portrait.gif", contenu, content_type="image/gif")
+
+
 def _rendu_public():
     return Template("{% load website_public %}{% temoignages_publics %}").render(Context())
 
@@ -84,7 +96,9 @@ class TestSoumissionEtudiant:
         html = client.get(reverse("etudiant:dashboard")).content.decode()
         assert reverse("website:temoignage_etudiant") in html
 
-    def test_l_etudiant_soumet_un_temoignage_en_attente(self, client, etudiant, promotion):
+    def test_l_etudiant_soumet_un_temoignage_en_attente_et_notifie_la_direction(
+        self, client, etudiant, promotion, admin
+    ):
         client.force_login(etudiant)
         reponse = client.post(reverse("website:temoignage_etudiant"), _soumission())
         assert reponse.status_code == 302
@@ -94,6 +108,7 @@ class TestSoumissionEtudiant:
         assert temoignage.nom_affiche == "Maya Jean"
         assert temoignage.promotion == str(promotion)
         assert temoignage.consentement_publication
+        assert Notification.objects.filter(destinataire=admin, titre__contains="Témoignage à valider").exists()
 
     def test_le_consentement_est_obligatoire(self, client, etudiant):
         client.force_login(etudiant)
@@ -103,6 +118,30 @@ class TestSoumissionEtudiant:
         )
         assert reponse.status_code == 200
         assert not TemoignageEtudiant.objects.filter(etudiant=etudiant).exists()
+
+    def test_gras_et_italique_sont_conserves_mais_le_script_est_supprime(self, client, etudiant, admin):
+        client.force_login(etudiant)
+        client.post(
+            reverse("website:temoignage_etudiant"),
+            _soumission(
+                "<p>Une expérience <strong>très structurante</strong> et <em>humaine</em> "
+                "qui m'aide à progresser durablement.</p><script>alert('x')</script>"
+            ),
+        )
+        texte = TemoignageEtudiant.objects.get(etudiant=etudiant).texte
+        assert "<strong>très structurante</strong>" in texte
+        assert "<em>humaine</em>" in texte
+        assert "<script" not in texte
+
+    def test_l_etudiant_peut_choisir_une_photo_specifique(self, client, etudiant, admin):
+        client.force_login(etudiant)
+        donnees = _soumission()
+        donnees["photo"] = _petite_photo()
+        reponse = client.post(reverse("website:temoignage_etudiant"), donnees)
+        assert reponse.status_code == 302
+
+        temoignage = TemoignageEtudiant.objects.get(etudiant=etudiant)
+        assert temoignage.photo.name.startswith("temoignages/")
 
     def test_modifier_un_temoignage_publie_le_remet_en_attente(self, client, etudiant, admin):
         temoignage = TemoignageEtudiant.objects.create(
@@ -135,7 +174,7 @@ class TestModeration:
         client.force_login(admin)
         assert client.get(reverse("website:temoignages_gestion")).status_code == 200
 
-    def test_la_direction_publie_un_temoignage_consenti(self, client, admin, etudiant):
+    def test_la_direction_publie_et_l_etudiant_est_notifie(self, client, admin, etudiant):
         temoignage = TemoignageEtudiant.objects.create(
             etudiant=etudiant,
             nom_affiche="Maya Jean",
@@ -152,8 +191,9 @@ class TestModeration:
         assert temoignage.statut == TemoignageEtudiant.Statut.PUBLIE
         assert temoignage.valide_par == admin
         assert temoignage.valide_le is not None
+        assert Notification.objects.filter(destinataire=etudiant, titre__contains="est publié").exists()
 
-    def test_un_refus_exige_un_motif(self, client, admin, etudiant):
+    def test_un_refus_exige_un_motif_et_notifie_l_etudiant(self, client, admin, etudiant):
         temoignage = TemoignageEtudiant.objects.create(
             etudiant=etudiant,
             nom_affiche="Maya Jean",
@@ -179,6 +219,30 @@ class TestModeration:
         temoignage.refresh_from_db()
         assert temoignage.statut == TemoignageEtudiant.Statut.REFUSE
         assert "Précisez" in temoignage.motif_refus
+        assert Notification.objects.filter(destinataire=etudiant, titre__contains="à reprendre").exists()
+
+    def test_la_direction_peut_retirer_un_temoignage_publie(self, client, admin, etudiant):
+        temoignage = TemoignageEtudiant.objects.create(
+            etudiant=etudiant,
+            nom_affiche="Maya Jean",
+            texte="Un témoignage publié qui pourra ensuite être retiré sans être supprimé.",
+            consentement_publication=True,
+            statut=TemoignageEtudiant.Statut.PUBLIE,
+            valide_le=timezone.now(),
+            valide_par=admin,
+        )
+        client.force_login(admin)
+        reponse = client.post(
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "retirer"},
+        )
+        assert reponse.status_code == 302
+
+        temoignage.refresh_from_db()
+        assert temoignage.statut == TemoignageEtudiant.Statut.RETIRE
+        assert TemoignageEtudiant.objects.filter(pk=temoignage.pk).exists()
+        assert Notification.objects.filter(destinataire=etudiant, titre__contains="retiré du site").exists()
+        assert "publié qui pourra ensuite être retiré" not in _rendu_public()
 
 
 class TestPublicationPublique:
@@ -202,6 +266,20 @@ class TestPublicationPublique:
         html = _rendu_public()
         assert "explicitement validé" in html
         assert "attend encore une décision" not in html
+
+    def test_le_rendu_public_conserve_la_mise_en_forme_validee(self, etudiant, admin):
+        TemoignageEtudiant.objects.create(
+            etudiant=etudiant,
+            nom_affiche="Maya Jean",
+            texte="<p>Une expérience <strong>solide</strong> et <em>exigeante</em>.</p>",
+            consentement_publication=True,
+            statut=TemoignageEtudiant.Statut.PUBLIE,
+            valide_le=timezone.now(),
+            valide_par=admin,
+        )
+        html = _rendu_public()
+        assert "<strong>solide</strong>" in html
+        assert "<em>exigeante</em>" in html
 
     def test_aucune_section_vide_n_est_affichee(self):
         assert "Paroles d'étudiants" not in _rendu_public()

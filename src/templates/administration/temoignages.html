@@ -8,30 +8,41 @@
 <div class="mb-8">
     <p class="overline mb-2">Publications</p>
     <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Témoignages étudiants</h1>
-    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">Seule la direction peut rendre un témoignage public.</p>
+    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">Seule la direction peut publier, refuser ou retirer un témoignage du site.</p>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-<div class="grid grid-cols-3 gap-3 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
     <div class="card text-center"><p class="text-2xl font-bold text-navy-900">{{ en_attente }}</p><p class="text-xs text-warm-500">En attente</p></div>
     <div class="card text-center"><p class="text-2xl font-bold text-navy-900">{{ publies }}</p><p class="text-xs text-warm-500">Publiés</p></div>
     <div class="card text-center"><p class="text-2xl font-bold text-navy-900">{{ refuses }}</p><p class="text-xs text-warm-500">Refusés</p></div>
+    <div class="card text-center"><p class="text-2xl font-bold text-navy-900">{{ retires }}</p><p class="text-xs text-warm-500">Retirés</p></div>
 </div>
 
 <div class="space-y-5">
     {% for temoignage in temoignages %}
     <article class="card">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-                <h2 class="text-lg font-semibold text-navy-900">{{ temoignage.nom_affiche }}</h2>
-                {% if temoignage.promotion %}<p class="text-sm text-warm-500">{{ temoignage.promotion }}</p>{% endif %}
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex items-center gap-4">
+                {% if temoignage.photo %}
+                <img src="{{ temoignage.photo.url }}" alt="Photo proposée par {{ temoignage.nom_affiche }}"
+                     class="h-16 w-16 rounded-full object-cover" loading="lazy">
+                {% endif %}
+                <div>
+                    <h2 class="text-lg font-semibold text-navy-900">{{ temoignage.nom_affiche }}</h2>
+                    {% if temoignage.promotion %}<p class="text-sm text-warm-500">{{ temoignage.promotion }}</p>{% endif %}
+                </div>
             </div>
             <span class="badge{% if temoignage.statut == 'publie' %} badge-gold{% endif %}">{{ temoignage.get_statut_display }}</span>
         </div>
 
-        <blockquote class="mt-5 leading-relaxed" style="color: var(--color-warm-700);">« {{ temoignage.texte }} »</blockquote>
-        <p class="mt-3 text-xs" style="color: var(--color-warm-500);">Soumis le {{ temoignage.soumis_le|date:"d/m/Y à H:i" }} · consentement {% if temoignage.consentement_publication %}accordé{% else %}absent{% endif %}</p>
+        <blockquote class="mt-5 leading-relaxed prose max-w-none" style="color: var(--color-warm-700);">
+            {{ temoignage.texte|safe }}
+        </blockquote>
+        <p class="mt-3 text-xs" style="color: var(--color-warm-500);">
+            Soumis le {{ temoignage.soumis_le|date:"d/m/Y à H:i" }} · consentement {% if temoignage.consentement_publication %}accordé{% else %}absent{% endif %} · photo {% if temoignage.photo %}prévue{% else %}non fournie{% endif %}
+        </p>
 
         {% if temoignage.motif_refus %}
         <div class="mt-4 rounded-lg p-3 text-sm" style="background: var(--color-warm-100); color: var(--color-warm-700);">
@@ -45,10 +56,19 @@
                 {% csrf_token %}
                 <input type="hidden" name="temoignage_id" value="{{ temoignage.pk }}">
                 <input type="hidden" name="action" value="publier">
-                <button type="submit" class="btn-primary">Publier</button>
+                <button type="submit" class="btn-primary">{% if temoignage.statut == 'retire' %}Republier{% else %}Publier{% endif %}</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'website:temoignage_decision' %}"
+                  data-confirmer="Retirer le témoignage de {{ temoignage.nom_affiche }} du site public ?">
+                {% csrf_token %}
+                <input type="hidden" name="temoignage_id" value="{{ temoignage.pk }}">
+                <input type="hidden" name="action" value="retirer">
+                <button type="submit" class="btn-ghost">Retirer du site</button>
             </form>
             {% endif %}
-            {% if temoignage.statut != 'refuse' %}
+
+            {% if temoignage.statut == 'en_attente' %}
             <form method="post" action="{% url 'website:temoignage_decision' %}" class="flex flex-1 gap-2">
                 {% csrf_token %}
                 <input type="hidden" name="temoignage_id" value="{{ temoignage.pk }}">
