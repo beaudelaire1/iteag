@@ -9,7 +9,7 @@
 
 {% block extra_js %}
 {{ form.media.js }}
-<script src="{% static 'js/streamfield-portail.js' %}"></script>
+<script src="{% static 'js/streamfield-portail.js' %}?v={{ ASSET_VERSION }}"></script>
 {% endblock %}
 
 {% block portal_nav %}{% with nav='actualites' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
