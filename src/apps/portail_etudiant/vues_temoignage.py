@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.utils import timezone
 from django.views.generic import TemplateView
 
 from apps.core.mixins import StudentRoleRequiredMixin
