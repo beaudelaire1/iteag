@@ -20,7 +20,6 @@ from django.utils.functional import cached_property
 from wagtail.admin.icons import get_icon_sprite_url
 from wagtail.admin.rich_text.editors.draftail import DraftailRichTextArea
 from wagtail.admin.staticfiles import versioned_static
-from wagtail.blocks import BlockWidget
 
 # Profil éditorial commun aux articles, actualités et annonces. Les images et
 # documents restent des champs structurés dédiés : leurs droits, crédits et
@@ -55,38 +54,6 @@ VERSION_ASSETS_EDITEUR = "3"
 def _asset_iteag(chemin: str) -> str:
     """URL statique ITEAG avec cache-buster propre au composant."""
     return f"{static(chemin)}?v={VERSION_ASSETS_EDITEUR}"
-
-
-class StreamFieldPortail(BlockWidget):
-    """Widget StreamField utilisable hors de l'administration Wagtail.
-
-    ``BlockWidget.media`` ne déclare que les adaptateurs propres aux blocs :
-    Wagtail considère que son ``admin_base.html`` a déjà chargé le runtime
-    global (notamment ``core.js``, qui crée ``window.telepath``). Dans les
-    portails ITEAG cette hypothèse est fausse. Sans ces prérequis, le conteneur
-    ``data-controller=\"w-block\"`` reste vide et aucune zone de saisie n'est
-    rendue.
-
-    On fournit ici uniquement les dépendances JavaScript nécessaires au widget
-    et à Draftail ; aucune feuille de style ni navigation de l'admin n'est
-    injectée dans le portail.
-    """
-
-    @cached_property
-    def media(self):
-        media_blocs = super().media
-        prerequis = [
-            versioned_static("wagtailadmin/js/vendor/jquery-3.6.0.min.js"),
-            versioned_static("wagtailadmin/js/vendor/bootstrap-transition.js"),
-            versioned_static("wagtailadmin/js/vendor/bootstrap-modal.js"),
-            # core.js instancie window.telepath et le runtime Stimulus Wagtail.
-            versioned_static("wagtailadmin/js/core.js"),
-            # Draftail est un morceau webpack qui partage ce bundle.
-            versioned_static("wagtailadmin/js/vendor.js"),
-            versioned_static("wagtailadmin/js/modal-workflow.js"),
-            versioned_static("wagtailadmin/js/page-chooser-modal.js"),
-        ]
-        return forms.Media(css=media_blocs._css, js=[*prerequis, *media_blocs._js])
 
 
 class DraftailPortail(DraftailRichTextArea):
