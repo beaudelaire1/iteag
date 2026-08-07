@@ -1,10 +1,11 @@
 import uuid
 
-import apps.website.editorial
 import django.db.models.deletion
 import wagtail.fields
 from django.conf import settings
 from django.db import migrations, models
+
+import apps.website.editorial
 
 
 def migrer_corps_actualites(apps, schema_editor):
