@@ -60,7 +60,7 @@
     {# Fil d'Ariane — §14/§15 cahier des charges #}
     {% block breadcrumb %}{% endblock %}
 
-    {# Messages Django — notifications éphémères #}
+    {# Messages Django — confirmations brèves, erreurs persistantes #}
     {% if messages %}
     <div id="messages" class="fixed top-20 right-4 z-50 space-y-3 w-96 max-w-[calc(100vw-2rem)]"
          role="status" aria-live="polite">
@@ -70,7 +70,7 @@
                     {% elif message.tags == 'error' %}bg-red-50/95 text-red-900 border-red-200
                     {% elif message.tags == 'warning' %}bg-amber-50/95 text-amber-900 border-amber-200
                     {% else %}bg-sky-50/95 text-sky-900 border-sky-200{% endif %}"
-             data-flash="5000">
+             data-flash="{% if message.tags == 'success' or message.tags == 'info' %}5000{% else %}0{% endif %}">
             <span class="flex-1">{{ message }}</span>
             <button type="button" data-flash-close aria-label="Fermer ce message"
                     class="shrink-0 opacity-40 hover:opacity-100 transition-opacity text-lg leading-none">&times;</button>
