@@ -40,7 +40,7 @@
 <p class="portal-nav-group">Évaluer et suivre</p>
 <a href="{% url 'lms:devoirs_list' %}" class="portal-nav-link {% if nav == 'devoirs' %}active{% endif %}">
     {% include "partials/nav_icon.html" with name="clipboard" only %}
-    Devoirs
+    Devoirs et QCM
 </a>
 <a href="{% url 'lms:evaluations_list' %}" class="portal-nav-link {% if nav == 'evaluations' %}active{% endif %}">
     {% include "partials/nav_icon.html" with name="check" only %}
