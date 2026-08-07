@@ -34,6 +34,14 @@ SESSION_REFRESH_INTERVAL = env.int("SESSION_REFRESH_INTERVAL", default=300)  # n
 _index_auth = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")  # noqa: F405
 MIDDLEWARE.insert(_index_auth + 1, "apps.core.middleware.RafraichissementSessionMiddleware")  # noqa: F405
 
+# Beat publie un heartbeat court ; le healthcheck du conteneur vérifie qu'il est
+# encore renouvelé. La sonde web /healthz reste volontairement limitée à la
+# base et au cache pour ne pas redémarrer le serveur web lors d'une panne Celery.
+CELERY_BEAT_SCHEDULE["core-heartbeat-celery"] = {  # noqa: F405
+    "task": "core.heartbeat_celery",
+    "schedule": 60.0,
+}
+
 # ──────────────────────────────────────────────
 # Static files — WhiteNoise + manifest
 # ──────────────────────────────────────────────
