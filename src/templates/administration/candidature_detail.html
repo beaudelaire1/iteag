@@ -1,278 +1,119 @@
 {% extends "partials/portal_base.html" %}
 
 {% block title %}{{ dossier.nom_complet }} — Candidature — {{ SITE_NAME }}{% endblock %}
-
-{% block portal_nav %}
-{% with nav='candidatures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}
-{% endblock %}
-{% block portal_nav_mobile %}
-{% with nav='candidatures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}
-{% endblock %}
+{% block portal_nav %}{% with nav='candidatures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='candidatures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'administration:candidatures' %}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
-        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-        Retour aux candidatures
-    </a>
+    <a href="{% url 'administration:candidatures' %}" class="mb-4 inline-flex items-center text-sm font-medium text-navy-600">← Retour aux candidatures</a>
     <div class="flex flex-wrap items-center gap-3">
         <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ dossier.nom_complet }}</h1>
-        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
-            {% if dossier.statut == 'soumis' %}badge-info
-            {% elif dossier.statut == 'en_examen' %}bg-amber-50 text-amber-700
-            {% elif dossier.statut == 'accepte' %}bg-emerald-50 text-emerald-700
-            {% elif dossier.statut == 'refuse' %}bg-red-50 text-rose-700
-            {% else %}bg-orange-50 text-orange-700{% endif %}">
-            {{ dossier.get_statut_display }}
-        </span>
+        <span class="badge {% if dossier.statut == 'soumis' %}badge-info{% elif dossier.statut == 'en_examen' %}badge-warning{% elif dossier.statut == 'accepte' %}badge-success{% elif dossier.statut == 'refuse' %}badge-danger{% else %}badge-gold{% endif %}">{{ dossier.get_statut_display }}</span>
     </div>
+    <p class="mt-2 text-sm text-warm-500">{{ dossier.parcours_souhaite }} · dossier reçu le {{ dossier.date_soumission|date:"d/m/Y" }}</p>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-<div class="grid lg:grid-cols-3 gap-8">
-    {# ── Infos principales ── #}
-    <div class="lg:col-span-2 space-y-6">
-        {# Identité #}
-        <div class="card-elevated">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Identité</h2>
-            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div>
-                    <dt style="color: var(--color-warm-500);">Nom complet</dt>
-                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.nom_complet }}</dd>
-                </div>
-                <div>
-                    <dt style="color: var(--color-warm-500);">Email</dt>
-                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.email }}</dd>
-                </div>
-                {% if dossier.telephone %}
-                <div>
-                    <dt style="color: var(--color-warm-500);">Téléphone</dt>
-                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.telephone }}</dd>
-                </div>
-                {% endif %}
-                {% if dossier.date_naissance %}
-                <div>
-                    <dt style="color: var(--color-warm-500);">Date de naissance</dt>
-                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.date_naissance|date:"d/m/Y" }}</dd>
-                </div>
-                {% endif %}
-            </dl>
-        </div>
-
-        {# Candidature #}
-        <div class="card-elevated">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Candidature</h2>
-            <dl class="space-y-4 text-sm">
-                <div>
-                    <dt style="color: var(--color-warm-500);">Parcours souhaité</dt>
-                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.parcours_souhaite }}</dd>
-                </div>
-                {% if dossier.eglise %}
-                <div>
-                    <dt style="color: var(--color-warm-500);">Église</dt>
-                    <dd class="font-medium mt-0.5" style="color: var(--color-navy-900);">{{ dossier.eglise }} {% if dossier.eglise_fondatrice %}<span class="badge badge-gold ml-2" style="font-size: 0.625rem;">Fondatrice</span>{% endif %}</dd>
-                </div>
-                {% endif %}
-                <div>
-                    <dt style="color: var(--color-warm-500);">Motivations</dt>
-                    <dd class="mt-1 leading-relaxed" style="color: var(--color-warm-700);">{{ dossier.motivations|linebreaks }}</dd>
-                </div>
-            </dl>
-        </div>
-
-        {# Pièces jointes #}
-        {% if dossier.piece_identite or dossier.diplomes or dossier.autre_document %}
-        <div class="card-elevated">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Pièces jointes</h2>
-            <div class="space-y-3">
-                {% if dossier.piece_identite %}
-                <a href="{{ dossier.piece_identite.url }}" target="_blank" class="flex items-center gap-3 p-3 rounded border hover:bg-warm-50 transition-colors" style="border-color: var(--color-warm-200);">
-                    <svg class="h-5 w-5 shrink-0" style="color: var(--color-navy-600);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                    <span class="text-sm font-medium" style="color: var(--color-navy-800);">Pièce d'identité</span>
-                </a>
-                {% endif %}
-                {% if dossier.diplomes %}
-                <a href="{{ dossier.diplomes.url }}" target="_blank" class="flex items-center gap-3 p-3 rounded border hover:bg-warm-50 transition-colors" style="border-color: var(--color-warm-200);">
-                    <svg class="h-5 w-5 shrink-0" style="color: var(--color-navy-600);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                    <span class="text-sm font-medium" style="color: var(--color-navy-800);">Diplômes</span>
-                </a>
-                {% endif %}
-                {% if dossier.autre_document %}
-                <a href="{{ dossier.autre_document.url }}" target="_blank" class="flex items-center gap-3 p-3 rounded border hover:bg-warm-50 transition-colors" style="border-color: var(--color-warm-200);">
-                    <svg class="h-5 w-5 shrink-0" style="color: var(--color-navy-600);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                    <span class="text-sm font-medium" style="color: var(--color-navy-800);">Autre document</span>
-                </a>
-                {% endif %}
+<div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div class="space-y-6">
+        <section class="card-elevated">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div><p class="overline mb-1">Candidat</p><h2 class="text-lg font-semibold">Identité et candidature</h2></div>
+                <a href="mailto:{{ dossier.email }}" class="btn-ghost" style="padding:.45rem 1rem;">Contacter</a>
             </div>
-        </div>
+            <dl class="grid gap-5 text-sm sm:grid-cols-2">
+                <div><dt class="text-warm-500">Nom complet</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.nom_complet }}</dd></div>
+                <div><dt class="text-warm-500">Courriel</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.email }}</dd></div>
+                {% if dossier.telephone %}<div><dt class="text-warm-500">Téléphone</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.telephone }}</dd></div>{% endif %}
+                {% if dossier.date_naissance %}<div><dt class="text-warm-500">Date de naissance</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.date_naissance|date:"d/m/Y" }}</dd></div>{% endif %}
+                {% if dossier.eglise %}<div><dt class="text-warm-500">Église</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.eglise }}</dd></div>{% endif %}
+                <div><dt class="text-warm-500">Parcours souhaité</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.parcours_souhaite }}</dd></div>
+            </dl>
+            <div class="mt-6 border-t border-warm-100 pt-5"><p class="text-sm font-semibold text-navy-900">Motivations</p><div class="mt-2 text-sm leading-relaxed text-warm-700">{{ dossier.motivations|linebreaks }}</div></div>
+        </section>
+
+        {% if dossier.piece_identite or dossier.diplomes or dossier.autre_document %}
+        <section class="card-elevated">
+            <p class="overline mb-1">Dépôt initial</p><h2 class="mb-5 text-lg font-semibold">Pièces de la candidature</h2>
+            <div class="grid gap-3 sm:grid-cols-2">
+                {% if dossier.piece_identite %}<a href="{{ dossier.piece_identite.url }}" target="_blank" class="rounded border border-warm-200 p-4 text-sm font-semibold text-navy-700 hover:border-gold-400">Pièce d’identité ↗</a>{% endif %}
+                {% if dossier.diplomes %}<a href="{{ dossier.diplomes.url }}" target="_blank" class="rounded border border-warm-200 p-4 text-sm font-semibold text-navy-700 hover:border-gold-400">Diplômes ↗</a>{% endif %}
+                {% if dossier.autre_document %}<a href="{{ dossier.autre_document.url }}" target="_blank" class="rounded border border-warm-200 p-4 text-sm font-semibold text-navy-700 hover:border-gold-400">Autre document ↗</a>{% endif %}
+            </div>
+        </section>
         {% endif %}
 
-        {# Pièces réclamées après examen du dossier #}
-        <div class="card-elevated">
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
-                    Pièces à fournir
-                </h2>
-                <a href="{% url 'administration:demander_pieces' dossier.pk %}" class="btn-ghost" style="padding: 0.4rem 1rem;">
-                    + Réclamer une pièce
-                </a>
+        <section class="card-elevated">
+            <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div><p class="overline mb-1">Justificatifs complémentaires</p><h2 class="text-lg font-semibold">Demandes de pièces</h2><p class="mt-1 text-sm text-warm-500">Chaque bloc correspond à un message, un dépôt et une décision uniques.</p></div>
+                <a href="{% url 'administration:demander_pieces' dossier.pk %}" class="btn-primary">Nouvelle demande</a>
             </div>
 
-            {% for piece in pieces_demandees %}
-            <div class="border-t border-warm-100 py-4 first:border-t-0 first:pt-0">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <p class="text-sm font-semibold" style="color: var(--color-navy-900);">
-                            {{ piece.libelle }}
-                            {% if not piece.obligatoire %}<span class="text-xs font-normal text-warm-500">(facultative)</span>{% endif %}
-                        </p>
-                        {% if piece.precisions %}<p class="mt-1 text-xs text-warm-500">{{ piece.precisions }}</p>{% endif %}
-                        {% if piece.date_limite %}
-                        <p class="mt-1 text-xs {% if piece.est_en_retard %}text-rose-700 font-semibold{% else %}text-warm-500{% endif %}">
-                            Attendue avant le {{ piece.date_limite|date:"d/m/Y" }}{% if piece.est_en_retard %} — en retard{% endif %}
-                        </p>
-                        {% endif %}
-                        {% if piece.motif_refus %}
-                        <p class="mt-1 text-xs text-rose-700">Refusée : {{ piece.motif_refus }}</p>
-                        {% endif %}
+            <div class="space-y-6">
+                {% for demande in dossier.demandes_pieces.all %}
+                <article class="rounded border border-warm-200">
+                    <header class="flex flex-wrap items-start justify-between gap-4 border-b border-warm-100 p-5">
+                        <div><p class="text-sm font-semibold text-navy-900">Demande du {{ demande.created_at|date:"d/m/Y" }}</p><p class="mt-1 text-xs text-warm-500">{{ demande.pieces.count }} document{{ demande.pieces.count|pluralize }}{% if demande.date_limite %} · échéance {{ demande.date_limite|date:"d/m/Y" }}{% endif %}</p></div>
+                        <span class="badge {% if demande.statut == 'validee' %}badge-success{% elif demande.statut == 'a_verifier' %}badge-info{% elif demande.statut == 'a_corriger' %}badge-warning{% else %}badge-gold{% endif %}">{{ demande.get_statut_display }}</span>
+                    </header>
+
+                    {% if demande.message %}<div class="border-b border-warm-100 bg-warm-50 px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wider text-warm-500">Message envoyé</p><p class="mt-2 whitespace-pre-line text-sm text-warm-700">{{ demande.message }}</p></div>{% endif %}
+
+                    {% if demande.statut == 'a_verifier' %}
+                    <form method="post" action="{% url 'administration:piece_decision' demande.pk %}" class="p-5">
+                        {% csrf_token %}
+                        <div class="mb-5"><h3 class="text-base font-semibold text-navy-900">Vérifier l’envoi en une seule fois</h3><p class="mt-1 text-sm text-warm-500">La décision finale générera un seul courriel récapitulatif au candidat.</p></div>
+                        <div class="space-y-4">
+                            {% for piece in demande.pieces.all %}
+                            <div class="grid gap-4 rounded border border-warm-200 p-4 lg:grid-cols-[minmax(0,1fr)_150px_minmax(180px,1fr)] lg:items-center">
+                                <div><p class="text-sm font-semibold text-navy-900">{{ piece.libelle }}</p>{% if piece.precisions %}<p class="mt-1 text-xs text-warm-500">{{ piece.precisions }}</p>{% endif %}{% if piece.fichier %}<a href="{% url 'administration:piece_fichier' piece.pk %}" class="mt-2 inline-block text-sm font-semibold text-navy-600">Télécharger le fichier</a>{% endif %}</div>
+                                {% if piece.statut == 'deposee' %}
+                                <div><label class="form-label" for="decision_{{ piece.pk }}">Décision</label><select id="decision_{{ piece.pk }}" name="decision_{{ piece.pk }}" class="form-input"><option value="valider">Valider</option><option value="refuser">Refuser</option></select></div>
+                                <div><label class="form-label" for="motif_{{ piece.pk }}">Motif si refus</label><input id="motif_{{ piece.pk }}" name="motif_{{ piece.pk }}" class="form-input" placeholder="Ex. document illisible"></div>
+                                {% else %}<div class="lg:col-span-2"><span class="badge badge-success">{{ piece.get_statut_display }}</span></div>{% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn-primary mt-5">Enregistrer la décision groupée</button>
+                    </form>
+                    {% else %}
+                    <div class="divide-y divide-warm-100 px-5">
+                        {% for piece in demande.pieces.all %}
+                        <div class="flex flex-wrap items-start justify-between gap-3 py-4">
+                            <div><p class="text-sm font-semibold text-navy-900">{{ piece.libelle }}</p>{% if piece.precisions %}<p class="mt-1 text-xs text-warm-500">{{ piece.precisions }}</p>{% endif %}{% if piece.motif_refus %}<p class="mt-1 text-xs font-medium text-rose-700">{{ piece.motif_refus }}</p>{% endif %}{% if piece.fichier %}<a href="{% url 'administration:piece_fichier' piece.pk %}" class="mt-2 inline-block text-xs font-semibold text-navy-600">Télécharger</a>{% endif %}</div>
+                            <span class="badge {% if piece.statut == 'validee' %}badge-success{% elif piece.statut == 'deposee' %}badge-info{% elif piece.statut == 'refusee' %}badge-warning{% else %}badge-neutral{% endif %}">{{ piece.get_statut_display }}</span>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <span class="badge shrink-0 {% if piece.statut == 'validee' %}badge-success{% elif piece.statut == 'deposee' %}badge-info{% elif piece.statut == 'refusee' %}badge-warning{% else %}badge-gold{% endif %}">
-                        {{ piece.get_statut_display }}
-                    </span>
-                </div>
-
-                <div class="mt-3 flex flex-wrap items-center gap-3">
-                    {% if piece.fichier %}
-                    <a href="{% url 'administration:piece_fichier' piece.pk %}" class="text-sm font-semibold text-navy-600">
-                        Télécharger
-                    </a>
                     {% endif %}
-
-                    {% if piece.statut == 'deposee' %}
-                    <form method="post" action="{% url 'administration:piece_decision' piece.pk %}" class="inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="valider">
-                        <button type="submit" class="text-sm font-semibold text-emerald-700">Valider</button>
-                    </form>
-                    <form method="post" action="{% url 'administration:piece_decision' piece.pk %}"
-                          class="inline-flex items-center gap-2">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="refuser">
-                        <input type="text" name="motif" placeholder="Motif du refus" class="form-input"
-                               style="padding: 0.3rem 0.6rem; font-size: 0.8rem; max-width: 15rem;" required>
-                        <button type="submit" class="text-sm font-semibold text-rose-700">Refuser</button>
-                    </form>
-                    {% endif %}
-
-                    <form method="post" action="{% url 'administration:piece_decision' piece.pk %}" class="inline ml-auto">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="retirer">
-                        <button type="submit" class="text-xs text-warm-500">Retirer de la liste</button>
-                    </form>
-                </div>
+                </article>
+                {% empty %}<div class="rounded border border-dashed border-warm-300 p-8 text-center"><p class="text-sm font-medium text-navy-900">Aucune demande complémentaire</p><p class="mt-1 text-sm text-warm-500">Le dossier contient uniquement les pièces du formulaire initial.</p></div>{% endfor %}
             </div>
-            {% empty %}
-            <p class="py-6 text-center text-sm text-warm-400">
-                Aucune pièce réclamée. Le candidat n'a fourni que les documents du formulaire public.
-            </p>
-            {% endfor %}
-        </div>
+        </section>
 
-        {# Historique #}
         {% if historique %}
-        <div class="card-elevated">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Historique</h2>
-            <div class="space-y-3">
-                {% for h in historique %}
-                <div class="flex items-start gap-3 text-sm p-3 rounded" style="background: var(--color-warm-50);">
-                    <div class="h-2 w-2 rounded-full mt-1.5 shrink-0" style="background: var(--color-navy-400);"></div>
-                    <div>
-                        <p style="color: var(--color-navy-800);">
-                            <span class="font-semibold">{{ h.get_ancien_statut_display }}</span>
-                            →
-                            <span class="font-semibold">{{ h.get_nouveau_statut_display }}</span>
-                        </p>
-                        <p class="text-xs mt-0.5" style="color: var(--color-warm-400);">
-                            {{ h.created_at|date:"d/m/Y H:i" }}{% if h.modifie_par %} — {{ h.modifie_par.get_full_name|default:h.modifie_par.username }}{% endif %}
-                        </p>
-                        {% if h.commentaire %}<p class="mt-1" style="color: var(--color-warm-600);">{{ h.commentaire }}</p>{% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+        <section class="card-elevated"><p class="overline mb-1">Traçabilité</p><h2 class="mb-5 text-lg font-semibold">Historique du dossier</h2><div class="space-y-3">{% for h in historique %}<div class="rounded bg-warm-50 p-4 text-sm"><p class="font-semibold text-navy-900">{{ h.get_ancien_statut_display }} → {{ h.get_nouveau_statut_display }}</p><p class="mt-1 text-xs text-warm-500">{{ h.created_at|date:"d/m/Y H:i" }}{% if h.modifie_par %} · {{ h.modifie_par.get_full_name|default:h.modifie_par.username }}{% endif %}</p>{% if h.commentaire %}<p class="mt-2 text-warm-700">{{ h.commentaire }}</p>{% endif %}</div>{% endfor %}</div></section>
         {% endif %}
     </div>
 
-    {# ── Sidebar : Actions ── #}
-    <div class="space-y-6">
-        {# Changer le statut #}
-        <div class="card-elevated">
-            <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Changer le statut</h3>
+    <aside class="space-y-6">
+        <section class="card-elevated">
+            <p class="overline mb-1">Prochaine action</p><h2 class="mb-5 text-lg font-semibold">Statut du dossier</h2>
             {% if statut_choices %}
             <form method="post" class="space-y-4">
                 {% csrf_token %}
-                <div>
-                    <label class="form-label" for="id_statut">Nouveau statut</label>
-                    <select name="statut" id="id_statut" class="form-input">
-                        {% for value, label in statut_choices %}
-                        <option value="{{ value }}" {% if value == dossier.statut %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% if not dossier.utilisateur_cree %}
-                <div>
-                    <label class="form-label" for="id_promotion">Promotion d'affectation</label>
-                    <select name="promotion" id="id_promotion" class="form-input">
-                        <option value="">— Choisir —</option>
-                        {% for promotion in promotions %}
-                        <option value="{{ promotion.pk }}">{{ promotion.nom }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="mt-2 text-xs" style="color: var(--color-warm-500);">
-                        Requise pour l'acceptation : elle crée le compte étudiant et ouvre
-                        automatiquement les modules obligatoires du parcours.
-                    </p>
-                </div>
-                {% endif %}
-                <div>
-                    <label class="form-label" for="id_commentaire">Commentaire (optionnel)</label>
-                    <textarea name="commentaire" id="id_commentaire" rows="3" class="form-input" placeholder="Note sur le changement de statut…"></textarea>
-                </div>
+                <div><label class="form-label" for="id_statut">Nouveau statut</label><select name="statut" id="id_statut" class="form-input">{% for value, label in statut_choices %}<option value="{{ value }}" {% if value == dossier.statut %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+                {% if not dossier.utilisateur_cree %}<div><label class="form-label" for="id_promotion">Promotion d’affectation</label><select name="promotion" id="id_promotion" class="form-input"><option value="">— Choisir —</option>{% for promotion in promotions %}<option value="{{ promotion.pk }}">{{ promotion.nom }}</option>{% endfor %}</select><p class="mt-2 text-xs text-warm-500">Requise uniquement pour accepter la candidature.</p></div>{% endif %}
+                <div><label class="form-label" for="id_commentaire">Commentaire</label><textarea name="commentaire" id="id_commentaire" rows="3" class="form-input" placeholder="Précision interne ou motif…"></textarea></div>
                 <button type="submit" class="btn-primary w-full justify-center">Mettre à jour</button>
             </form>
-            {% else %}
-            <p class="text-sm text-warm-500">Ce dossier a atteint un statut final. Aucune transition supplémentaire n’est autorisée.</p>
-            {% endif %}
-        </div>
+            {% else %}<p class="text-sm text-warm-500">Ce dossier a atteint un statut final.</p>{% endif %}
+        </section>
 
-        {# Résumé #}
-        <div class="card-elevated">
-            <h3 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">Résumé</h3>
-            <dl class="space-y-3 text-sm">
-                <div class="flex justify-between">
-                    <dt style="color: var(--color-warm-500);">Soumis le</dt>
-                    <dd class="font-medium" style="color: var(--color-navy-800);">{{ dossier.date_soumission|date:"d/m/Y" }}</dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt style="color: var(--color-warm-500);">Dernière MAJ</dt>
-                    <dd class="font-medium" style="color: var(--color-navy-800);">{{ dossier.date_derniere_maj|date:"d/m/Y" }}</dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt style="color: var(--color-warm-500);">Église fondatrice</dt>
-                    <dd class="font-medium" style="color: var(--color-navy-800);">{% if dossier.eglise_fondatrice %}Oui{% else %}Non{% endif %}</dd>
-                </div>
-            </dl>
-        </div>
-
-        {# Notes internes #}
-        {% if dossier.notes_internes %}
-        <div class="card-elevated" style="background: var(--color-warm-100);">
-            <h3 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">Notes internes</h3>
-            <p class="text-sm leading-relaxed" style="color: var(--color-warm-700);">{{ dossier.notes_internes }}</p>
-        </div>
-        {% endif %}
-    </div>
+        <section class="card-elevated"><p class="overline mb-1">Résumé</p><dl class="mt-4 space-y-3 text-sm"><div class="flex justify-between gap-4"><dt class="text-warm-500">Soumis le</dt><dd class="font-medium text-navy-800">{{ dossier.date_soumission|date:"d/m/Y" }}</dd></div><div class="flex justify-between gap-4"><dt class="text-warm-500">Dernière mise à jour</dt><dd class="font-medium text-navy-800">{{ dossier.date_derniere_maj|date:"d/m/Y" }}</dd></div><div class="flex justify-between gap-4"><dt class="text-warm-500">Église fondatrice</dt><dd class="font-medium text-navy-800">{% if dossier.eglise_fondatrice %}Oui{% else %}Non{% endif %}</dd></div></dl></section>
+        {% if dossier.notes_internes %}<section class="card-elevated bg-warm-100"><p class="overline mb-2">Notes internes</p><p class="whitespace-pre-line text-sm text-warm-700">{{ dossier.notes_internes }}</p></section>{% endif %}
+    </aside>
 </div>
 {% endblock %}
