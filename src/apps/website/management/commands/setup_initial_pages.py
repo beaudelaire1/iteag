@@ -15,7 +15,6 @@ from apps.website.models import (
     NewsIndexPage,
 )
 
-
 PRESENTATION_META = (
     "Découvrir l'ITEAG, centre de formation en théologie évangélique des Antilles et de la Guyane : "
     "sa vocation, sa forme associative et les principes de sa formation."
