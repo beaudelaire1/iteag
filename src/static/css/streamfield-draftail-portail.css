@@ -16,6 +16,7 @@
 /* Neutralise le comportement sticky/pinnable hérité de Draftail. */
 .streamfield-portail .Draftail-Toolbar,
 .streamfield-portail .Draftail-Editor--focus .Draftail-Toolbar {
+    box-sizing: border-box;
     position: static !important;
     inset: auto !important;
     top: auto !important;
