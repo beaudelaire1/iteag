@@ -17,6 +17,7 @@ from .vues_inscription import (
     MyEnrollmentRequestsView,
     StudentPaymentsView,
 )
+from .vues_temoignage import TemoignageEtudiantView
 
 app_name = "etudiant"
 
@@ -39,6 +40,7 @@ urlpatterns = [
     ),
     path("paiements/", StudentPaymentsView.as_view(), name="payments"),
     path("notes/", StudentGradesView.as_view(), name="grades"),
+    path("temoignage/", TemoignageEtudiantView.as_view(), name="temoignage"),
     path("evaluations/<int:pk>/remettre/", StudentEvaluationSubmitView.as_view(), name="submit_evaluation"),
     path("evaluations/<int:pk>/questionnaire/", StudentQuestionnaireView.as_view(), name="questionnaire"),
 ]
