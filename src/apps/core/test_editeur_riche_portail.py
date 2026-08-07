@@ -11,6 +11,7 @@ from apps.core.editeur_riche import DraftailPortail
 from apps.lms.forms import AnnonceForm
 from apps.website.formulaires_actualites import ActualiteForm
 from apps.website.formulaires_articles import ArticleForm
+from apps.website.models_publications import ContenuActualite
 
 
 def _contentstate(type_bloc="ITEAG_ALIGN_JUSTIFY", texte="Texte structuré"):
@@ -43,7 +44,8 @@ def test_le_meme_widget_draftail_equipe_les_champs_riches_directs(formulaire, ch
 def test_actualite_remplace_le_corps_direct_par_un_streamfield_structure():
     formulaire = ActualiteForm()
     assert formulaire.fields["corps"].widget.is_hidden
-    stream_block = formulaire.fields["contenu"].block
+    assert not formulaire.fields["contenu"].widget.is_hidden
+    stream_block = ContenuActualite._meta.get_field("contenu").stream_block
     assert "texte" in stream_block.child_blocks
 
 
