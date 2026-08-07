@@ -5,9 +5,6 @@ from django import forms
 from apps.admissions.models import PieceDemandee
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
 
-# Les justificatifs que l'ITEAG réclame le plus souvent. Les proposer en cases
-# à cocher évite de les ressaisir à chaque dossier — et évite surtout les
-# libellés qui varient d'un dossier à l'autre, qui rendent tout décompte faux.
 PIECES_COURANTES = [
     ("Acte de naissance", "Copie intégrale de moins de trois mois."),
     ("Copie du dernier diplôme", "Diplôme le plus élevé obtenu, avec relevé de notes si disponible."),
@@ -19,9 +16,24 @@ PIECES_COURANTES = [
     ("Relevé d'identité bancaire", "Nécessaire pour la mise en place du prélèvement des frais."),
 ]
 
+EXTENSIONS_PIECES = {".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".odt"}
+TAILLE_MAX_PIECE = 10 * 1024 * 1024
+ACCEPT_PIECES = ".pdf,.jpg,.jpeg,.png,.doc,.docx,.odt"
+
+
+def valider_fichier_piece(fichier):
+    if not fichier:
+        raise forms.ValidationError("Choisissez un fichier.")
+    nom = fichier.name.lower()
+    if not any(nom.endswith(extension) for extension in EXTENSIONS_PIECES):
+        raise forms.ValidationError("Formats acceptés : PDF, JPEG, PNG, Word ou OpenDocument.")
+    if fichier.size > TAILLE_MAX_PIECE:
+        raise forms.ValidationError("Le fichier dépasse 10 Mo. Réduisez-le ou scannez en qualité inférieure.")
+    return fichier
+
 
 class DemandePiecesForm(FormulaireITEAG):
-    """Réclame une ou plusieurs pièces à un candidat, en une fois."""
+    """Réclame plusieurs justificatifs comme une seule demande."""
 
     pieces = forms.MultipleChoiceField(
         label="Pièces à réclamer",
@@ -36,23 +48,24 @@ class DemandePiecesForm(FormulaireITEAG):
         help_text="Pour un justificatif qui ne figure pas dans la liste.",
     )
     precisions = forms.CharField(
-        label="Précisions communes",
+        label="Message commun au candidat",
         required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-        help_text="Ajoutées à chaque pièce réclamée. Le candidat les lit sur sa page de suivi.",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text=(
+            "Ce texte est affiché et envoyé une seule fois pour l'ensemble de la demande. "
+            "Les exigences propres à chaque document restent indiquées sous son libellé."
+        ),
     )
     date_limite = forms.DateField(
         label="À fournir avant le",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
-        help_text="Facultatif. Une pièce en retard est signalée dans la liste des dossiers.",
+        help_text="Facultatif. La même échéance s'applique à tout le lot.",
     )
 
     def __init__(self, *args, dossier=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.dossier = dossier
-        # Ne pas reproposer ce qui a déjà été réclamé : la contrainte d'unicité
-        # le refuserait, et l'erreur serait incompréhensible pour l'utilisateur.
         if dossier is not None:
             deja = set(dossier.pieces_demandees.values_list("libelle", flat=True))
             self.fields["pieces"].choices = [
@@ -65,14 +78,12 @@ class DemandePiecesForm(FormulaireITEAG):
         libre = (donnees.get("piece_libre") or "").strip()
         if not choisies and not libre:
             raise forms.ValidationError("Sélectionnez au moins une pièce, ou saisissez-en une.")
-
         if libre and self.dossier is not None:
             if self.dossier.pieces_demandees.filter(libelle__iexact=libre).exists():
                 self.add_error("piece_libre", "Cette pièce a déjà été réclamée à ce candidat.")
         return donnees
 
     def libelles(self) -> list[str]:
-        """Toutes les pièces à créer, liste et champ libre confondus."""
         retenues = list(self.cleaned_data.get("pieces") or [])
         libre = (self.cleaned_data.get("piece_libre") or "").strip()
         if libre:
@@ -80,25 +91,41 @@ class DemandePiecesForm(FormulaireITEAG):
         return retenues
 
 
-class DepotPieceForm(FormulaireModeleITEAG):
-    """Dépôt d'une pièce par le candidat, depuis sa page de suivi."""
+class DepotPiecesGroupeForm(FormulaireITEAG):
+    """Un seul envoi pour tous les documents encore attendus d'une demande."""
 
-    EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".odt"}
-    TAILLE_MAX = 10 * 1024 * 1024
+    def __init__(self, *args, demande, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.demande = demande
+        self.pieces_attendues = [
+            piece
+            for piece in demande.pieces.all()
+            if piece.statut in (PieceDemandee.Statut.DEMANDEE, PieceDemandee.Statut.REFUSEE)
+        ]
+        for piece in self.pieces_attendues:
+            self.fields[f"piece_{piece.pk}"] = forms.FileField(
+                label=piece.libelle,
+                required=piece.obligatoire,
+                validators=[valider_fichier_piece],
+                widget=forms.ClearableFileInput(attrs={"accept": ACCEPT_PIECES, "class": "form-file"}),
+                help_text=piece.precisions,
+            )
+
+    def fichiers(self):
+        return [
+            (piece, self.cleaned_data.get(f"piece_{piece.pk}"))
+            for piece in self.pieces_attendues
+            if self.cleaned_data.get(f"piece_{piece.pk}")
+        ]
+
+
+class DepotPieceForm(FormulaireModeleITEAG):
+    """Compatibilité avec les anciennes demandes non regroupées."""
 
     class Meta:
         model = PieceDemandee
         fields = ["fichier"]
-        widgets = {"fichier": forms.ClearableFileInput(attrs={"accept": ".pdf,.jpg,.jpeg,.png,.doc,.docx,.odt"})}
+        widgets = {"fichier": forms.ClearableFileInput(attrs={"accept": ACCEPT_PIECES})}
 
     def clean_fichier(self):
-        fichier = self.cleaned_data.get("fichier")
-        if not fichier:
-            raise forms.ValidationError("Choisissez un fichier.")
-
-        nom = fichier.name.lower()
-        if not any(nom.endswith(extension) for extension in self.EXTENSIONS):
-            raise forms.ValidationError("Formats acceptés : PDF, JPEG, PNG, Word ou OpenDocument.")
-        if fichier.size > self.TAILLE_MAX:
-            raise forms.ValidationError("Le fichier dépasse 10 Mo. Réduisez-le ou scannez en qualité inférieure.")
-        return fichier
+        return valider_fichier_piece(self.cleaned_data.get("fichier"))
