@@ -1,42 +1,53 @@
 <p class="portal-nav-group">Vue d’ensemble</p>
 <a href="{% url 'etudiant:dashboard' %}" class="portal-nav-link {% if nav == 'dashboard' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="home" only %}
     Tableau de bord
 </a>
 
 <p class="portal-nav-group">Ma formation</p>
 <a href="{% url 'etudiant:courses' %}" class="portal-nav-link {% if nav == 'courses' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="book" only %}
     Mes formations
 </a>
 <a href="{% url 'etudiant:grades' %}" class="portal-nav-link {% if nav == 'grades' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="check" only %}
     Devoirs et notes
 </a>
 <a href="{% url 'etudiant:progress' %}" class="portal-nav-link {% if nav == 'progress' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="chart" only %}
     Mon parcours ECTS
 </a>
 
 <p class="portal-nav-group">Inscriptions</p>
 <a href="{% url 'etudiant:course_catalogue' %}" class="portal-nav-link {% if nav == 'catalogue' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="cap" only %}
     Catalogue des cours
 </a>
 <a href="{% url 'etudiant:enrollment_requests' %}" class="portal-nav-link {% if nav == 'enrollments' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="inbox" only %}
     Mes demandes
 </a>
 
 <p class="portal-nav-group">Ressources</p>
 <a href="{% url 'library:catalogue' %}" class="portal-nav-link {% if nav == 'bibliotheque' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="book" only %}
     Catalogue bibliothèque
 </a>
 <a href="{% url 'library:mes_emprunts' %}" class="portal-nav-link {% if nav == 'mes_emprunts' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="clock" only %}
     Mes emprunts et réservations
 </a>
 <a href="{% url 'documents:list' %}" class="portal-nav-link {% if nav == 'documents' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="folder" only %}
     Mes documents
 </a>
 
 <p class="portal-nav-group">Mon dossier</p>
 <a href="{% url 'etudiant:payments' %}" class="portal-nav-link {% if nav == 'payments' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="card" only %}
     Mes paiements
 </a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-link {% if nav == 'profil' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="profile" only %}
     Mon profil
 </a>
