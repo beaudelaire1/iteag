@@ -1,7 +1,6 @@
 from django.urls import path
 
 from apps.lms.views_qcm import StudentQuestionnaireView
-from apps.website.vues_temoignages import TemoignageEtudiantView
 
 from .vues import (
     StudentCoursesView,
@@ -39,7 +38,6 @@ urlpatterns = [
         name="enrollment_request_cancel",
     ),
     path("paiements/", StudentPaymentsView.as_view(), name="payments"),
-    path("temoignage/", TemoignageEtudiantView.as_view(), name="temoignage"),
     path("notes/", StudentGradesView.as_view(), name="grades"),
     path("evaluations/<int:pk>/remettre/", StudentEvaluationSubmitView.as_view(), name="submit_evaluation"),
     path("evaluations/<int:pk>/questionnaire/", StudentQuestionnaireView.as_view(), name="questionnaire"),
