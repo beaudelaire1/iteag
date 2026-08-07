@@ -41,11 +41,7 @@
                 {% endfor %}
             </div>
 
-            {% if demande.statut == 'a_verifier' %}
-            <div class="mt-6 rounded border border-navy-100 bg-navy-50 p-4"><p class="text-sm font-semibold text-navy-900">Envoi reçu</p><p class="mt-1 text-sm text-warm-600">Le secrétariat vérifie l'ensemble des documents. Vous recevrez une seule réponse récapitulative.</p></div>
-            {% elif demande.statut == 'validee' %}
-            <div class="mt-6 rounded border border-emerald-200 bg-emerald-50 p-4"><p class="text-sm font-semibold text-emerald-800">Demande complète</p><p class="mt-1 text-sm text-emerald-700">Tous les documents de cette demande ont été validés.</p></div>
-            {% elif bloc.a_transmettre %}
+            {% if bloc.a_transmettre %}
             <form method="post" action="{% url 'admissions:deposer_piece' dossier.token_suivi demande.pk %}" enctype="multipart/form-data" class="mt-6 space-y-5">
                 {% csrf_token %}
                 <div><h3 class="text-base font-semibold text-navy-900">{% if demande.statut == 'a_corriger' %}Remplacer les documents refusés{% else %}Déposer tous les documents{% endif %}</h3><p class="mt-1 text-sm text-warm-500">Sélectionnez chaque fichier, puis envoyez l'ensemble en une seule fois. Formats : PDF, image, Word ou OpenDocument · 10 Mo maximum par fichier.</p></div>
@@ -59,6 +55,10 @@
                 {% endfor %}
                 <button type="submit" class="btn-primary">Envoyer {{ bloc.a_transmettre|length }} document{{ bloc.a_transmettre|length|pluralize }}</button>
             </form>
+            {% elif demande.statut == 'a_verifier' %}
+            <div class="mt-6 rounded border border-navy-100 bg-navy-50 p-4"><p class="text-sm font-semibold text-navy-900">Envoi reçu</p><p class="mt-1 text-sm text-warm-600">Le secrétariat vérifie l'ensemble des documents. Vous recevrez une seule réponse récapitulative.</p></div>
+            {% elif demande.statut == 'validee' %}
+            <div class="mt-6 rounded border border-emerald-200 bg-emerald-50 p-4"><p class="text-sm font-semibold text-emerald-800">Demande complète</p><p class="mt-1 text-sm text-emerald-700">Tous les documents de cette demande ont été validés.</p></div>
             {% endif %}
         </section>
         {% endwith %}
