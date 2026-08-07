@@ -106,7 +106,8 @@ jobs:
             var toolbarAnchored = !!(
               toolbar && toolbarRect && toolbarStyle && editorRect &&
               toolbarStyle.position === 'static' &&
-              toolbarRect.width > 100 && toolbarRect.height >= 24 && toolbarRect.height <= 90 &&
+              toolbarRect.width > 100 && toolbarRect.width <= editorRect.width + 2 &&
+              toolbarRect.height >= 24 && toolbarRect.height <= 90 &&
               toolbarRect.top >= editorRect.top - 2 && toolbarRect.bottom <= editorRect.bottom + 2
             );
             var pinHidden = !pin || (pinStyle && pinStyle.display === 'none');
