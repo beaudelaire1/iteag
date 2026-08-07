@@ -1,20 +1,10 @@
-"""Formulaire de rédaction d'une actualité.
-
-Un formulaire simple, et non un « ModelForm » sur « NewsPage » : une page
-Wagtail ne s'enregistre pas comme un modèle ordinaire — elle s'insère dans un
-arbre, se versionne, se publie. Laisser un « ModelForm » appeler « save() »
-produirait une page hors de l'arbre, invisible et sans URL. Le formulaire
-recueille donc la saisie, et la vue fait le placement.
-
-L'image est reçue en fichier plutôt qu'en choix parmi la médiathèque : la
-personne qui écrit l'annonce a la photo sous la main, pas l'identifiant d'une
-image déjà téléversée depuis Wagtail — auquel, précisément, elle n'a pas accès.
-"""
+"""Formulaire de rédaction d'une actualité depuis le portail de gestion."""
 
 from django import forms
 
-from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireITEAG
+from apps.core.services.redaction import assainir, en_texte
+from apps.website.models_publications import ContenuActualite
 
 INPUT = "form-input"
 
@@ -37,16 +27,17 @@ class ActualiteForm(FormulaireITEAG):
         help_text="Deux ou trois phrases, affichées dans la liste des actualités et par les moteurs.",
         widget=forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Deux ou trois phrases…"}),
     )
-    corps = ChampTexteRiche(
-        required=False,
+    contenu = ContenuActualite._meta.get_field("contenu").formfield(
         label="Contenu de l'actualité",
-        placeholder="Rédigez l'actualité ici…",
-        min_height="20rem",
         help_text=(
-            "Le même éditeur Wagtail est utilisé dans toute la plateforme ; "
-            "le HTML est assaini côté serveur avant publication."
+            "Ajoutez uniquement les blocs utiles : texte, tableau, procédure, chiffres clés, "
+            "graphique simple, citation ou encadré."
         ),
     )
+    # Compatibilité avec les anciennes requêtes/tests. Ce champ n'est jamais
+    # montré dans la nouvelle interface ; s'il arrive encore, il devient un
+    # bloc texte et passe par la même liste blanche que l'ancien éditeur.
+    corps = forms.CharField(required=False, widget=forms.HiddenInput())
     image = forms.ImageField(
         required=False,
         label="Image à la une",
@@ -54,22 +45,45 @@ class ActualiteForm(FormulaireITEAG):
         widget=forms.ClearableFileInput(attrs={"class": "form-file", "accept": "image/*"}),
     )
 
+    def __init__(self, *args, **kwargs):
+        """Laisse les anciens clients POSTer ``corps`` pendant la transition.
+
+        Un StreamField Wagtail attend normalement ses champs de gestion
+        ``contenu-count`` avant même l'étape ``clean_*``. Les anciennes vues,
+        intégrations et tests envoient seulement ``corps`` : on remplace alors
+        le widget structuré par un champ caché pour cette requête précise. Le
+        contenu historique est ensuite converti en bloc ``texte`` dans
+        ``clean_contenu``. L'éditeur moderne reste inchangé pour tous les POST
+        StreamField réels.
+        """
+        donnees = kwargs.get("data")
+        if donnees is None and args:
+            donnees = args[0]
+        requete_heritage = donnees is not None and "contenu-count" not in donnees and "corps" in donnees
+
+        super().__init__(*args, **kwargs)
+
+        if requete_heritage:
+            self.fields["contenu"] = forms.CharField(
+                required=False,
+                label="Contenu de l'actualité",
+                widget=forms.HiddenInput(),
+            )
+
     def clean_titre(self):
         titre = (self.cleaned_data.get("titre") or "").strip()
         if not titre:
             raise forms.ValidationError("Une actualité a besoin d'un titre.")
         return titre
 
-    def clean_corps(self):
-        """Le corps est le seul contenu de l'annonce : une actualité vide n'annonce rien.
+    def clean_contenu(self):
+        contenu = self.cleaned_data.get("contenu")
+        if contenu:
+            return contenu
 
-        La vérification porte sur le texte, pas sur le balisage : l'éditeur
-        peut laisser un paragraphe vide quand on efface tout, et ce n'est pas
-        du contenu.
-        """
-        from apps.core.services.redaction import en_texte
+        corps_heritage = self.data.get("corps") or ""
+        if en_texte(corps_heritage).strip():
+            bloc = ContenuActualite._meta.get_field("contenu").stream_block
+            return bloc.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
 
-        corps = self.cleaned_data.get("corps") or ""
-        if not en_texte(corps).strip():
-            raise forms.ValidationError("Écrivez le contenu de l'actualité.")
-        return corps
+        raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")

@@ -9,6 +9,7 @@
 
 {% block extra_js %}
 {{ form.media.js }}
+<script src="{% static 'js/streamfield-portail.js' %}"></script>
 {% endblock %}
 
 {% block portal_nav %}{% with nav='actualites' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
@@ -32,7 +33,6 @@
 {% endblock %}
 
 {% block portal_content %}
-
 <form method="post" enctype="multipart/form-data" class="space-y-6"
       action="{% if actualite %}{% url 'website:actualite_edition' actualite.pk %}{% else %}{% url 'website:actualite_creation' %}{% endif %}">
     {% csrf_token %}
@@ -44,7 +44,11 @@
     </div>
 
     <div class="card">
-        {% include "partials/champ_editeur_riche.html" with field=form.corps min_height="20rem" only %}
+        <h2 class="mb-1 text-sm font-bold uppercase tracking-wider text-navy-800">Contenu de l'actualité</h2>
+        <p class="mb-4 text-sm" style="color: var(--color-warm-500);">
+            Construisez l'annonce avec seulement les blocs nécessaires ; le texte simple reste le choix par défaut.
+        </p>
+        {% include "partials/champ.html" with field=form.contenu %}
     </div>
 
     <div class="card space-y-4">
@@ -99,5 +103,4 @@
     {% endif %}
 </div>
 {% endif %}
-
 {% endblock %}

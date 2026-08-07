@@ -113,6 +113,10 @@
     {% include "partials/nav_icon.html" with name="news" only %}
     Actualités
 </a>
+<a href="{% url 'website:temoignages_gestion' %}" class="portal-nav-link {% if nav == 'temoignages' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="users" only %}
+    Témoignages étudiants
+</a>
 <a href="{% url 'website:articles_relecture' %}" class="portal-nav-link {% if nav == 'articles' %}active{% endif %}">
     {% include "partials/nav_icon.html" with name="pen" only %}
     Articles de recherche
