@@ -47,6 +47,10 @@
     {% include "partials/nav_icon.html" with name="card" only %}
     Mes paiements
 </a>
+<a href="{% url 'etudiant:temoignage' %}" class="portal-nav-link {% if nav == 'temoignage' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="pen" only %}
+    Mon témoignage
+</a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-link {% if nav == 'profil' %}active{% endif %}">
     {% include "partials/nav_icon.html" with name="profile" only %}
     Mon profil
