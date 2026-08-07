@@ -67,9 +67,13 @@ def routes_sans_argument() -> list[str]:
 
 ROUTES = routes_sans_argument()
 
-# Préfixes réservés au personnel. Un étudiant ou un enseignant qui obtient 200
-# sur l'un d'eux est une fuite de droits, pas une commodité.
+# Préfixes réservés au personnel. Un étudiant qui obtient 200 sur l'un d'eux
+# est une fuite de droits. Certaines fonctions métier partagées restent
+# accessibles à un rôle précis et sont déclarées explicitement ci-dessous.
 PREFIXES_PERSONNEL = ("administration:", "secretariat:", "redaction:")
+ROUTES_PERSONNEL_PARTAGEES = {
+    "administration:assiduite": {User.Role.ENSEIGNANT},
+}
 
 
 @pytest.fixture
@@ -124,12 +128,7 @@ class TestAucuneErreurServeur:
 
 @pytest.mark.django_db
 class TestCloisonnementDesPortails:
-    """
-    Le portail administratif ne s'ouvre pas aux étudiants ni aux enseignants.
-
-    Vérifié route par route plutôt que par sondage : c'est précisément le genre
-    de contrôle qu'on croit acquis et qu'une seule vue mal protégée dément.
-    """
+    """Le portail administratif reste fermé, hors fonctions métier explicitement partagées."""
 
     @pytest.mark.parametrize("role", [User.Role.ETUDIANT, User.Role.ENSEIGNANT])
     def test_les_pages_du_personnel_sont_fermees(self, client, comptes, role):
@@ -137,6 +136,8 @@ class TestCloisonnementDesPortails:
         fuites = []
         for nom_route in ROUTES:
             if not nom_route.startswith(PREFIXES_PERSONNEL):
+                continue
+            if role in ROUTES_PERSONNEL_PARTAGEES.get(nom_route, set()):
                 continue
             reponse = client.get(reverse(nom_route))
             if reponse.status_code == 200:
