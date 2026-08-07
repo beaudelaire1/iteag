@@ -133,6 +133,12 @@ jobs:
           WAGTAILADMIN_BASE_URL: https://localhost
           POSTGRES_PASSWORD: ci-postgres-secret
         run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Construire et éprouver l'image de sauvegarde PostgreSQL
+        run: |
+          docker build -f Dockerfile.backup -t iteag-backup-ci .
+          docker run --rm iteag-backup-ci pg_dump --version | grep -q "16\."
+          docker run --rm iteag-backup-ci \
+            python3 /opt/iteag/postgres_backup_r2.py --help >/dev/null
 
   security:
     name: Security Scan

@@ -1,0 +1,26 @@
+# ITEAG — sauvegarde PostgreSQL hors serveur vers Cloudflare R2
+#
+# L'image est volontairement distincte de l'application : elle embarque le
+# client PostgreSQL de la même version majeure que le serveur et uniquement ce
+# qui est nécessaire pour parler à l'API S3 de R2.
+FROM postgres:16-alpine
+
+RUN apk add --no-cache \
+    python3 \
+    py3-boto3 \
+    tzdata
+
+COPY scripts/postgres_backup_r2.py /opt/iteag/postgres_backup_r2.py
+COPY scripts/postgres_backup_scheduler.py /opt/iteag/postgres_backup_scheduler.py
+RUN chmod 0555 /opt/iteag/postgres_backup_r2.py /opt/iteag/postgres_backup_scheduler.py \
+    && python3 -m py_compile \
+        /opt/iteag/postgres_backup_r2.py \
+        /opt/iteag/postgres_backup_scheduler.py
+
+USER postgres
+
+HEALTHCHECK --interval=1h --timeout=30s --start-period=10m --retries=2 \
+    CMD if [ "${BACKUP_ENABLED:-false}" != "true" ]; then exit 0; fi; \
+        python3 /opt/iteag/postgres_backup_r2.py status --max-age 129600 || exit 1
+
+CMD ["python3", "/opt/iteag/postgres_backup_scheduler.py"]
