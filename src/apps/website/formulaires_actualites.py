@@ -49,16 +49,7 @@ class ActualiteForm(FormulaireITEAG):
     )
 
     def __init__(self, *args, **kwargs):
-        """Laisse les anciens clients POSTer ``corps`` pendant la transition.
-
-        Un StreamField Wagtail attend normalement ses champs de gestion
-        ``contenu-count`` avant même l'étape ``clean_*``. Les anciennes vues,
-        intégrations et tests envoient seulement ``corps`` : on remplace alors
-        le widget structuré par un champ caché pour cette requête précise. Le
-        contenu historique est ensuite converti en bloc ``texte`` dans
-        ``clean_contenu``. L'éditeur moderne reste inchangé pour tous les POST
-        StreamField réels.
-        """
+        """Laisse les anciens clients POSTer ``corps`` pendant la transition."""
         donnees = kwargs.get("data")
         if donnees is None and args:
             donnees = args[0]
@@ -86,7 +77,6 @@ class ActualiteForm(FormulaireITEAG):
 
         corps_heritage = self.data.get("corps") or ""
         if en_texte(corps_heritage).strip():
-            bloc = ContenuActualite._meta.get_field("contenu").stream_block
-            return bloc.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
+            return CHAMP_CONTENU.stream_block.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
 
         raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")

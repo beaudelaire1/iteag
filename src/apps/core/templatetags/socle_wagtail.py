@@ -1,65 +1,78 @@
-"""Le socle JavaScript qu'exigent les bundles Wagtail hors de l'administration.
+"""Configuration et socle Wagtail pour les widgets rendus hors de l'admin.
 
-« draftail.js », les adaptateurs telepath et les sélecteurs supposent que
-« vendor.js » et ses dépendances sont déjà chargés — dans l'administration,
-elles le sont toujours. Servis seuls dans un portail, ces bundles s'exécutent
-sans rien enregistrer : telepath reste vide, le champ ne se construit pas, et
-l'envoi du formulaire part amputé.
-
-La liste est celle de « DraftailPortail.media », dans le même ordre. La tenir
-à deux endroits finirait par les faire diverger ; ce module est donc l'endroit
-unique, et le widget d'éditeur riche pourra s'y brancher à son tour.
+Un ``BlockWidget`` StreamField n'embarque que ses médias spécifiques. Dans
+l'administration, le gabarit Wagtail lui fournit auparavant la configuration,
+le runtime de base et le sprite SVG utilisé par ses contrôles. Les portails
+ITEAG doivent fournir le même contrat sans importer toute l'interface admin.
 """
 
 from django import template
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
+from wagtail.admin.icons import get_icon_sprite_url
 from wagtail.admin.staticfiles import versioned_static
 
 register = template.Library()
 
+# Sous-ensemble du socle officiel de wagtailadmin/admin_base.html requis par
+# les blocs présents dans les publications ITEAG. Les deux bibliothèques de
+# calendrier précèdent date-time-chooser.js, que DateBlock peut ajouter via le
+# Media du BlockWidget (notamment dans les tableaux typés).
 SOCLE = (
     "wagtailadmin/js/vendor/jquery-3.6.0.min.js",
+    "wagtailadmin/js/vendor/jquery-ui-1.13.2.min.js",
+    "wagtailadmin/js/vendor/jquery.datetimepicker.js",
     "wagtailadmin/js/vendor/bootstrap-transition.js",
     "wagtailadmin/js/vendor/bootstrap-modal.js",
+    "wagtailadmin/js/core.js",
     "wagtailadmin/js/vendor.js",
     "wagtailadmin/js/modal-workflow.js",
 )
 
 
-@register.simple_tag(takes_context=True)
-def wagtail_socle_portail(context):
-    """La configuration Wagtail, puis les scripts du socle, dans cet ordre.
-
-    « vendor.js » commence par lire l'élément « wagtail-config » et le passer à
-    « JSON.parse ». Absent, il lève « Unexpected end of JSON input » et abandonne
-    **avant** de créer « window.telepath » — d'où une cascade de « Cannot read
-    properties of undefined (reading 'register') » sur tous les bundles suivants,
-    et un champ qui ne se construit jamais.
-
-    Rien dans ces messages ne désigne la configuration manquante : c'est ce qui
-    a rendu ce défaut long à cerner. Le gabarit « admin_base.html » de Wagtail
-    l'émet juste avant ses scripts ; un portail doit faire de même.
-    """
+def _configuration_wagtail(context):
+    """Construit le ``wagtail-config`` officiel avec le nonce CSP courant."""
     import json
 
     from django.core.serializers.json import DjangoJSONEncoder
     from wagtail.admin.templatetags.wagtailadmin_tags import wagtail_config
 
-    # Le bloc porte le nonce de la réponse. « script-src 'self' » vaut aussi
-    # pour les blocs en ligne, y compris de type « application/json » : sans
-    # nonce, le navigateur le bloque, « vendor.js » lit une chaîne vide et lève
-    # « Unexpected end of JSON input ». L'élément est bien dans le HTML servi —
-    # c'est ce qui rend le défaut si difficile à voir depuis le serveur.
     charge = json.dumps(wagtail_config(context), cls=DjangoJSONEncoder).translate(
         {ord("<"): "\u003c", ord(">"): "\u003e", ord("&"): "\u0026"}
     )
     requete = context.get("request")
     nonce = getattr(requete, "csp_nonce", "") if requete is not None else ""
-    configuration = format_html(
+    return format_html(
         '<script id="wagtail-config" type="application/json" nonce="{}">{}</script>',
         nonce,
-        mark_safe(charge),  # noqa: S308 — échappé ci-dessus comme le fait « json_script »
+        mark_safe(charge),  # noqa: S308 — caractères HTML sensibles échappés ci-dessus
     )
+
+
+@register.simple_tag(takes_context=True)
+def wagtail_configuration_portail(context):
+    """Émet uniquement la configuration requise avant les médias du widget."""
+    return _configuration_wagtail(context)
+
+
+@register.simple_tag
+def wagtail_icones_portail():
+    """Charge le sprite SVG utilisé par les boutons et menus StreamField.
+
+    Un StreamField vide affiche d'abord un bouton dont le SVG référence
+    ``#icon-plus``. Sans le sprite chargé par ``skeleton.html`` dans l'admin,
+    ce contrôle perd son glyphe dans un portail personnalisé.
+    """
+    return format_html(
+        '<div data-sprite aria-hidden="true"></div><script src="{}" data-icon-url="{}"></script>',
+        versioned_static("wagtailadmin/js/icons.js"),
+        get_icon_sprite_url(),
+    )
+
+
+@register.simple_tag(takes_context=True)
+def wagtail_socle_portail(context):
+    """Émet la configuration puis le runtime de base, comme ``admin_base``."""
+    configuration = _configuration_wagtail(context)
     scripts = format_html_join("\n", '<script src="{}"></script>', ((versioned_static(c),) for c in SOCLE))
     return format_html("{}\n{}", configuration, scripts)

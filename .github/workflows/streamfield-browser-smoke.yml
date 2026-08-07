@@ -1,0 +1,140 @@
+name: StreamField browser smoke
+
+on:
+  pull_request:
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/apps/core/templatetags/socle_wagtail.py"
+      - "src/apps/website/editorial.py"
+      - "src/apps/website/formulaires_actualites.py"
+      - "src/apps/website/vues_actualites.py"
+      - "src/templates/website/actualites/formulaire.html"
+      - ".github/workflows/streamfield-browser-smoke.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/apps/core/templatetags/socle_wagtail.py"
+      - "src/apps/website/editorial.py"
+      - "src/apps/website/formulaires_actualites.py"
+      - "src/apps/website/vues_actualites.py"
+      - "src/templates/website/actualites/formulaire.html"
+      - ".github/workflows/streamfield-browser-smoke.yml"
+
+permissions:
+  contents: read
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install --require-hashes -r requirements/dev.lock
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: python manage.py collectstatic --noinput
+      - name: Construire une page avec le vrai BlockWidget
+        run: |
+          python - <<'PY'
+          import django
+          from pathlib import Path
+
+          django.setup()
+
+          from django.core.management import call_command
+          from django.template import RequestContext, Template
+          from django.test import RequestFactory
+          from apps.website.formulaires_actualites import ActualiteForm
+          from apps.website.vues_actualites import ActualiteEditionView
+
+          call_command("migrate", interactive=False, verbosity=0)
+
+          request = RequestFactory().get("/")
+          request.csp_nonce = "browser-smoke"
+          form = ActualiteForm(initial={"contenu": ActualiteEditionView._contenu_initial(None)})
+          template = Template("""
+          <!doctype html><html><head>{% load socle_wagtail %}<meta charset="UTF-8">
+          <style>body{width:1200px;margin:20px}</style>
+          <script>
+          window.__iteagErrors = [];
+          window.addEventListener('error', function (event) {
+            window.__iteagErrors.push(String(event.message || event.error || 'error'));
+          });
+          window.addEventListener('unhandledrejection', function (event) {
+            window.__iteagErrors.push('promise:' + String(event.reason));
+          });
+          </script>
+          {{ form.media.css }}{% wagtail_configuration_portail %}{{ form.media.js }}
+          </head><body>{% wagtail_icones_portail %}{{ form.contenu }}
+          <script>
+          setTimeout(function () {
+            var editor = document.querySelector('.Draftail-Editor');
+            var wrapper = document.querySelector('.Draftail-editorWrapper') || editor;
+            var rect = wrapper ? wrapper.getBoundingClientRect() : null;
+            var style = wrapper ? window.getComputedStyle(wrapper) : null;
+            var visible = !!(
+              wrapper && rect && rect.width > 100 && rect.height > 40 &&
+              style.display !== 'none' && style.visibility !== 'hidden' &&
+              style.opacity !== '0'
+            );
+            var diagnostic = document.createElement('pre');
+            diagnostic.id = 'iteag-browser-diagnostic';
+            diagnostic.textContent = JSON.stringify({
+              errors: window.__iteagErrors,
+              telepath: !!window.telepath,
+              wagtail: !!window.wagtail,
+              stimulus: !!(window.wagtail && window.wagtail.app),
+              count: !!document.querySelector('input[name="contenu-count"]'),
+              draftail: !!editor,
+              visible: visible,
+              width: rect ? Math.round(rect.width) : 0,
+              height: rect ? Math.round(rect.height) : 0,
+              controller: !!document.querySelector('[data-controller="w-block"]')
+            });
+            document.body.appendChild(diagnostic);
+          }, 3000);
+          </script>
+          </body></html>
+          """)
+          html = template.render(RequestContext(request, {"form": form}))
+
+          racine = Path("/tmp/iteag-streamfield-browser")
+          racine.mkdir(parents=True, exist_ok=True)
+          (racine / "index.html").write_text(html, encoding="utf-8")
+          static = racine / "static"
+          if static.exists() or static.is_symlink():
+              static.unlink()
+          static.symlink_to(Path.cwd() / "staticfiles", target_is_directory=True)
+          PY
+      - name: Exécuter le composant dans Chrome
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          cd /tmp/iteag-streamfield-browser
+          python -m http.server 8765 >/tmp/iteag-streamfield-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 1
+          "$CHROME" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=8000 --dump-dom \
+            http://127.0.0.1:8765/index.html > /tmp/iteag-streamfield-dom.html
+
+          echo '--- Diagnostic navigateur ---'
+          grep -o '<pre id="iteag-browser-diagnostic">[^<]*' /tmp/iteag-streamfield-dom.html || true
+
+          grep -q '"errors":\[\]' /tmp/iteag-streamfield-dom.html
+          grep -q '"count":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"draftail":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"visible":true' /tmp/iteag-streamfield-dom.html

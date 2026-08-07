@@ -101,11 +101,20 @@ class TestStructure:
         noms = set(CorpsActualiteBlock().child_blocks)
         assert noms == {"texte", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}
 
-    def test_l_editeur_du_portail_amorce_streamfield(self, client, secretaire, index):
+    def test_l_editeur_du_portail_sert_le_runtime_wagtail_complet(self, client, secretaire, index):
         client.force_login(secretaire)
         html = client.get(reverse("website:actualite_creation")).content.decode()
-        assert "streamfield-portail.js" in html
+
+        assert 'id="wagtail-config"' in html
+        assert "wagtailadmin/js/core.js" in html
+        assert "wagtailadmin/js/vendor.js" in html
+        assert "telepath/blocks.js" in html
+        assert 'data-controller="w-block"' in html
         assert "Contenu de l'actualité" in html
+        assert "streamfield-portail.js" not in html
+
+        assert html.index("wagtail-config") < html.index("wagtailadmin/js/core.js")
+        assert html.index("wagtailadmin/js/core.js") < html.index("telepath/blocks.js")
 
     def test_un_ancien_corps_devient_un_bloc_texte(self, client, secretaire, index):
         client.force_login(secretaire)
