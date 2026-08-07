@@ -42,15 +42,42 @@ jobs:
           from apps.website.formulaires_actualites import ActualiteForm
           from apps.website.vues_actualites import ActualiteEditionView
 
-          # Les settings de test utilisent SQLite en mémoire. Les migrations
-          # doivent donc être exécutées dans ce même processus avant d'appeler
-          # le tag wagtail_config, qui lit notamment les locales Wagtail.
           call_command("migrate", interactive=False, verbosity=0)
 
           request = RequestFactory().get("/")
           request.csp_nonce = "browser-smoke"
           form = ActualiteForm(initial={"contenu": ActualiteEditionView._contenu_initial(None)})
-          template = Template("""<!doctype html><html><head>{% load socle_wagtail %}{{ form.media.css }}{% wagtail_configuration_portail %}{{ form.media.js }}</head><body>{% wagtail_icones_portail %}{{ form.contenu }}</body></html>""")
+          template = Template("""
+          <!doctype html><html><head>{% load socle_wagtail %}
+          <script>
+          window.__iteagErrors = [];
+          window.addEventListener('error', function (event) {
+            window.__iteagErrors.push(String(event.message || event.error || 'error'));
+          });
+          window.addEventListener('unhandledrejection', function (event) {
+            window.__iteagErrors.push('promise:' + String(event.reason));
+          });
+          </script>
+          {{ form.media.css }}{% wagtail_configuration_portail %}{{ form.media.js }}
+          </head><body>{% wagtail_icones_portail %}{{ form.contenu }}
+          <script>
+          setTimeout(function () {
+            var diagnostic = document.createElement('pre');
+            diagnostic.id = 'iteag-browser-diagnostic';
+            diagnostic.textContent = JSON.stringify({
+              errors: window.__iteagErrors,
+              telepath: !!window.telepath,
+              wagtail: !!window.wagtail,
+              stimulus: !!(window.wagtail && window.wagtail.app),
+              count: !!document.querySelector('input[name="contenu-count"]'),
+              draftail: !!document.querySelector('.Draftail-Editor'),
+              controller: !!document.querySelector('[data-controller="w-block"]')
+            });
+            document.body.appendChild(diagnostic);
+          }, 1000);
+          </script>
+          </body></html>
+          """)
           html = template.render(RequestContext(request, {"form": form}))
 
           racine = Path("/tmp/iteag-streamfield-browser")
@@ -73,5 +100,14 @@ jobs:
           "$CHROME" --headless=new --no-sandbox --disable-gpu \
             --virtual-time-budget=8000 --dump-dom \
             http://127.0.0.1:8765/index.html > /tmp/iteag-streamfield-dom.html
+
+          echo '--- Diagnostic navigateur ---'
+          grep -o '<pre id="iteag-browser-diagnostic">[^<]*' /tmp/iteag-streamfield-dom.html || true
+          echo '--- État du DOM ---'
+          grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html && echo 'contenu-count: OK' || echo 'contenu-count: ABSENT'
+          grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html && echo 'Draftail: OK' || echo 'Draftail: ABSENT'
+          echo '--- Requêtes HTTP en erreur ---'
+          grep ' 404 ' /tmp/iteag-streamfield-http.log || true
+
           grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html
           grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html
