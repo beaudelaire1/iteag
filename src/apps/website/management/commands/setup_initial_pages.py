@@ -84,7 +84,7 @@ def contenu_presentation_initial():
                 "<h2>Se former à l'ITEAG</h2>"
                 "<p>Les parcours proposés permettent d'aborder la formation théologique selon son projet : "
                 "approfondissement personnel, préparation au ministère ou parcours diplômant.</p>"
-                "<p><a href=\"/formations/\">Découvrir les formations proposées</a></p>"
+                '<p><a href="/formations/">Découvrir les formations proposées</a></p>'
             ),
         },
     ]
