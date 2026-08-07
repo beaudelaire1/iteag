@@ -1,22 +1,11 @@
-"""Politique de sécurité du contenu ajustée pour l'administration Django.
-
-Jazzmin, le thème de « /django-admin/ », écrit ses initialisations directement
-dans les pages qu'il rend. Une politique qui refuse les scripts en ligne les
-supprime silencieusement : le menu latéral, les listes déroulantes et les
-filtres cessent alors de répondre, sans qu'aucune erreur ne s'affiche.
-
-Ces gabarits appartiennent à une dépendance : les corriger reviendrait à en
-recopier le contenu et à en assumer la maintenance à chaque montée de version.
-On préfère n'assouplir « script-src » que sur ce préfixe, qui n'est ouvert
-qu'aux comptes techniques et déjà protégé par la double authentification. Le
-reste du site — celui que visitent les étudiants et les visiteurs — conserve la
-politique stricte.
-"""
+"""Middlewares transverses du socle ITEAG."""
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
+from django.conf import settings
 from csp.middleware import CSPMiddleware
 
 if TYPE_CHECKING:
@@ -31,7 +20,13 @@ SCRIPT_SRC_ADMIN_DJANGO = ["'self'", "'unsafe-inline'"]
 
 
 class CSPAvecAdminDjango(CSPMiddleware):
-    """Applique la politique du site, sauf sur l'administration Django."""
+    """Applique la politique du site, sauf sur l'administration Django.
+
+    Jazzmin écrit certaines initialisations directement dans ses pages. On
+    limite donc l'assouplissement CSP à /django-admin/, déjà réservé au
+    personnel et protégé par le second facteur ; le reste du site conserve la
+    politique stricte.
+    """
 
     def get_policy_parts(
         self,
@@ -47,3 +42,32 @@ class CSPAvecAdminDjango(CSPMiddleware):
         remplacements.setdefault("script-src", SCRIPT_SRC_ADMIN_DJANGO)
         parties.replace = remplacements
         return parties
+
+
+class RafraichissementSessionMiddleware:
+    """Conserve une expiration glissante sans écrire la session à chaque requête.
+
+    Django ne réécrit normalement une session que lorsqu'elle est modifiée.
+    ``SESSION_SAVE_EVERY_REQUEST`` donnait bien une expiration après 30 minutes
+    d'inactivité, mais au prix d'une écriture PostgreSQL pour chaque ressource
+    ou page authentifiée. Ici, on ne touche la session qu'à intervalles réguliers
+    (5 minutes par défaut) : l'expiration reste glissante, avec une charge
+    d'écriture bornée et prévisible.
+    """
+
+    CLE_DERNIER_RAFRAICHISSEMENT = "_iteag_session_refresh"
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.intervalle = max(int(getattr(settings, "SESSION_REFRESH_INTERVAL", 300)), 60)
+
+    def __call__(self, request):
+        utilisateur = getattr(request, "user", None)
+        session = getattr(request, "session", None)
+        if utilisateur is not None and utilisateur.is_authenticated and session is not None:
+            maintenant = int(time.time())
+            dernier = int(session.get(self.CLE_DERNIER_RAFRAICHISSEMENT, 0) or 0)
+            if maintenant - dernier >= self.intervalle:
+                session[self.CLE_DERNIER_RAFRAICHISSEMENT] = maintenant
+
+        return self.get_response(request)
