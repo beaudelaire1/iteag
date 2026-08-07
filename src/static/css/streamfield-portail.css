@@ -1,0 +1,398 @@
+/*
+ * StreamField Wagtail hors administration.
+ *
+ * Wagtail admin charge normalement core.css, qui contient aussi des resets et
+ * des styles globaux. Le portail ITEAG ne doit pas hériter de toute cette
+ * couche : seules les briques réellement rendues dans le StreamField sont
+ * reprises ici et scellées sous .streamfield-portail.
+ */
+
+.streamfield-portail {
+    --sf-ink: #24342f;
+    --sf-muted: #6b756f;
+    --sf-line: #d9d4ca;
+    --sf-line-strong: #b9b0a1;
+    --sf-surface: #ffffff;
+    --sf-surface-soft: #f8f6f1;
+    --sf-accent: #315f55;
+    --sf-accent-dark: #173b35;
+    --sf-danger: #9f2d25;
+}
+
+/* Le titre de section est déjà porté par la carte « Contenu de l'actualité ». */
+.streamfield-portail > .champ > .form-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.streamfield-portail > .champ > .form-aide {
+    margin-top: 0.65rem;
+}
+
+.streamfield-portail svg.icon {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    fill: currentColor;
+}
+
+.streamfield-portail [data-streamfield-stream-container] {
+    width: 100%;
+}
+
+.streamfield-portail [data-streamfield-child] {
+    min-width: 0;
+}
+
+/* Bouton + entre deux blocs. */
+.streamfield-portail .c-sf-add-button {
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    margin: 0.55rem auto;
+    padding: 0;
+    border: 1px solid var(--sf-line-strong);
+    border-radius: 999px;
+    color: var(--sf-accent);
+    background: var(--sf-surface);
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+
+.streamfield-portail .c-sf-add-button .icon {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
+.streamfield-portail .c-sf-add-button:hover,
+.streamfield-portail .c-sf-add-button:focus-visible,
+.streamfield-portail .c-sf-add-button[aria-expanded="true"] {
+    border-color: var(--sf-accent);
+    color: #fff;
+    background: var(--sf-accent);
+    outline: none;
+}
+
+.streamfield-portail .c-sf-add-button[aria-expanded="true"] .icon {
+    transform: rotate(45deg);
+}
+
+.streamfield-portail .c-sf-add-button:focus-visible {
+    box-shadow: 0 0 0 3px rgb(49 95 85 / 14%);
+}
+
+/* Carte d'un bloc. */
+.streamfield-portail .w-panel {
+    margin: 0;
+    border: 1px solid var(--sf-line);
+    border-radius: 0.7rem;
+    background: var(--sf-surface);
+    box-shadow: 0 1px 2px rgb(23 59 53 / 4%);
+}
+
+.streamfield-portail .w-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.9rem;
+    margin: 0;
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--sf-line);
+    border-radius: 0.7rem 0.7rem 0 0;
+    background: var(--sf-surface-soft);
+}
+
+/* Les ancres de l'admin ne sont pas utiles dans un formulaire métier et
+   doublent visuellement le contrôle du bloc. */
+.streamfield-portail .w-panel__anchor {
+    display: none;
+}
+
+.streamfield-portail .w-panel__toggle,
+.streamfield-portail .w-panel__controls .button {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0.42rem;
+    color: var(--sf-muted);
+    background: transparent;
+    cursor: pointer;
+    line-height: 1;
+    appearance: none;
+}
+
+.streamfield-portail .w-panel__toggle:hover,
+.streamfield-portail .w-panel__toggle:focus-visible,
+.streamfield-portail .w-panel__controls .button:hover,
+.streamfield-portail .w-panel__controls .button:focus-visible {
+    color: var(--sf-accent-dark);
+    background: #fff;
+    outline: none;
+    box-shadow: 0 0 0 1px var(--sf-line);
+}
+
+.streamfield-portail .w-panel__controls .button[data-streamfield-action="DELETE"]:hover,
+.streamfield-portail .w-panel__controls .button[data-streamfield-action="DELETE"]:focus-visible {
+    color: var(--sf-danger);
+}
+
+.streamfield-portail .w-panel__toggle:disabled,
+.streamfield-portail .w-panel__controls .button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.streamfield-portail .w-panel__toggle .w-panel__icon,
+.streamfield-portail .w-panel__controls .icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.streamfield-portail .w-panel__heading {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    color: var(--sf-ink);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.streamfield-portail .c-sf-block__type {
+    font: inherit;
+}
+
+.streamfield-portail .c-sf-block__title {
+    margin-inline-start: 0.35rem;
+    color: var(--sf-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.streamfield-portail .w-required-mark {
+    margin-inline-start: 0.15rem;
+    color: var(--sf-danger);
+}
+
+.streamfield-portail .w-panel__divider {
+    flex: 1 1 auto;
+    min-width: 0.5rem;
+}
+
+.streamfield-portail .w-panel__controls {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.12rem;
+    margin: 0;
+    padding: 0;
+}
+
+.streamfield-portail .w-panel__content {
+    min-width: 0;
+    padding: 0.85rem;
+}
+
+.streamfield-portail [aria-expanded="false"] + .w-panel__heading,
+.streamfield-portail .w-panel__toggle[aria-expanded="false"] .icon-placeholder {
+    opacity: 0.85;
+}
+
+/* Champs simples des StructBlock / ListBlock. */
+.streamfield-portail .w-field__wrapper {
+    min-width: 0;
+    margin: 0 0 0.9rem;
+}
+
+.streamfield-portail .w-field__wrapper:last-child {
+    margin-bottom: 0;
+}
+
+.streamfield-portail .w-field__help,
+.streamfield-portail .help {
+    margin: 0.25rem 0 0.45rem;
+    color: var(--sf-muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.streamfield-portail .w-field__errors {
+    color: var(--sf-danger);
+    font-size: 0.78rem;
+}
+
+.streamfield-portail .w-field__errors .icon {
+    display: none;
+}
+
+.streamfield-portail .w-field__input > input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+.streamfield-portail .w-field__input > textarea,
+.streamfield-portail .w-field__input > select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 2.55rem;
+    padding: 0.62rem 0.72rem;
+    border: 1px solid var(--sf-line);
+    border-radius: 0.42rem;
+    color: var(--sf-ink);
+    background: #fff;
+    font: inherit;
+}
+
+.streamfield-portail .w-field__input > textarea {
+    min-height: 7rem;
+    resize: vertical;
+}
+
+.streamfield-portail .w-field__input > input:focus,
+.streamfield-portail .w-field__input > textarea:focus,
+.streamfield-portail .w-field__input > select:focus {
+    border-color: var(--sf-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(49 95 85 / 12%);
+}
+
+/* Draftail inclus dans les RichTextBlock du StreamField. */
+.streamfield-portail .Draftail-Editor {
+    overflow: hidden;
+    border: 1px solid var(--sf-line);
+    border-radius: 0.55rem;
+    color: var(--sf-ink);
+    background: #fff;
+}
+
+.streamfield-portail .Draftail-Editor--focus {
+    border-color: var(--sf-accent);
+    box-shadow: 0 0 0 3px rgb(49 95 85 / 12%);
+}
+
+.streamfield-portail .Draftail-Toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.45rem;
+    border-bottom: 1px solid var(--sf-line);
+    background: var(--sf-surface-soft);
+}
+
+.streamfield-portail .Draftail-ToolbarGroup {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.08rem;
+    padding-inline-end: 0.3rem;
+}
+
+.streamfield-portail .Draftail-ToolbarButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    min-width: 1.85rem;
+    height: 1.85rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
+    color: var(--sf-ink);
+    background: transparent;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.78rem;
+    line-height: 1;
+}
+
+.streamfield-portail .Draftail-ToolbarButton:hover,
+.streamfield-portail .Draftail-ToolbarButton:focus-visible {
+    border-color: var(--sf-line);
+    color: var(--sf-accent-dark);
+    background: #fff;
+    outline: none;
+}
+
+.streamfield-portail .Draftail-ToolbarButton--active,
+.streamfield-portail .Draftail-ToolbarButton--active:hover {
+    border-color: var(--sf-accent);
+    color: #fff;
+    background: var(--sf-accent);
+}
+
+.streamfield-portail .Draftail-ToolbarButton .icon {
+    width: 0.92rem;
+    height: 0.92rem;
+}
+
+.streamfield-portail .Draftail-Editor .DraftEditor-root {
+    min-height: 12rem;
+    color: var(--sf-ink);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.65;
+}
+
+.streamfield-portail .Draftail-Editor .public-DraftEditor-content,
+.streamfield-portail .Draftail-Editor .public-DraftEditorPlaceholder-root {
+    padding: 0.9rem 1rem 1.25rem;
+}
+
+.streamfield-portail .Draftail-Editor .public-DraftEditorPlaceholder-inner {
+    color: #87918d;
+}
+
+/* Le menu de choix de bloc doit rester au-dessus des cartes du portail. */
+.streamfield-portail .c-sf-block-picker,
+.streamfield-portail [data-streamfield-block-picker] {
+    z-index: 40;
+}
+
+@media (max-width: 48rem) {
+    .streamfield-portail .w-panel__header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .streamfield-portail .w-panel__heading {
+        flex: 1 1 calc(100% - 2.5rem);
+        padding-top: 0.35rem;
+    }
+
+    .streamfield-portail .w-panel__divider {
+        display: none;
+    }
+
+    .streamfield-portail .w-panel__controls {
+        flex: 1 0 100%;
+        justify-content: flex-end;
+        padding-top: 0.25rem;
+        border-top: 1px solid var(--sf-line);
+    }
+
+    .streamfield-portail .Draftail-Toolbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    .streamfield-portail .w-panel__content {
+        padding: 0.7rem;
+    }
+}
