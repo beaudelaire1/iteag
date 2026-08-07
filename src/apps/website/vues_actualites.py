@@ -118,23 +118,25 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
 
     @staticmethod
     def _contenu_initial(actualite):
+        stream_block = ContenuActualite._meta.get_field("contenu").stream_block
         if actualite is None:
-            return []
+            # Une publication commence presque toujours par du texte. Wagtail
+            # conserve néanmoins ses contrôles d'insertion autour de ce bloc,
+            # donc tableau, procédure, chiffres, graphique, citation et encadré
+            # restent disponibles immédiatement.
+            return stream_block.to_python([{"type": "texte", "value": ""}])
         try:
             return actualite.contenu_structure.contenu
         except ContenuActualite.DoesNotExist:
             if not actualite.body:
-                return []
-            stream_block = ContenuActualite._meta.get_field("contenu").stream_block
+                return stream_block.to_python([{"type": "texte", "value": ""}])
             return stream_block.to_python([{"type": "texte", "value": _html_richtext(actualite.body)}])
 
     def _valeurs_initiales(self, actualite):
-        if actualite is None:
-            return {}
         return {
-            "titre": actualite.title,
-            "date": actualite.date,
-            "chapeau": actualite.excerpt,
+            "titre": actualite.title if actualite else "",
+            "date": actualite.date if actualite else None,
+            "chapeau": actualite.excerpt if actualite else "",
             "contenu": self._contenu_initial(actualite),
         }
 
