@@ -48,7 +48,7 @@ jobs:
           request.csp_nonce = "browser-smoke"
           form = ActualiteForm(initial={"contenu": ActualiteEditionView._contenu_initial(None)})
           template = Template("""
-          <!doctype html><html><head>{% load socle_wagtail %}
+          <!doctype html><html><head>{% load socle_wagtail %}<meta charset="UTF-8">
           <script>
           window.__iteagErrors = [];
           window.addEventListener('error', function (event) {
@@ -74,7 +74,7 @@ jobs:
               controller: !!document.querySelector('[data-controller="w-block"]')
             });
             document.body.appendChild(diagnostic);
-          }, 1000);
+          }, 3000);
           </script>
           </body></html>
           """)
@@ -106,8 +106,7 @@ jobs:
           echo '--- État du DOM ---'
           grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html && echo 'contenu-count: OK' || echo 'contenu-count: ABSENT'
           grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html && echo 'Draftail: OK' || echo 'Draftail: ABSENT'
-          echo '--- Requêtes HTTP en erreur ---'
-          grep ' 404 ' /tmp/iteag-streamfield-http.log || true
 
+          grep -q '"errors":\[\]' /tmp/iteag-streamfield-dom.html
           grep -q 'name="contenu-count"' /tmp/iteag-streamfield-dom.html
           grep -q 'Draftail-Editor' /tmp/iteag-streamfield-dom.html
