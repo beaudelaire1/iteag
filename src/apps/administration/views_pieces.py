@@ -1,28 +1,17 @@
-"""
-Réclamation de pièces justificatives à un candidat.
-
-Le formulaire public ne recueille que trois pièces génériques. Une fois le
-dossier tranché, il en faut d'autres — variables selon le parcours et le
-profil — et jusqu'ici la seule voie était d'écrire une liste en prose dans
-« éléments manquants », puis d'attendre un courriel. Rien n'était suivi : ni ce
-qui avait été demandé, ni ce qui était revenu, ni ce qui manquait encore.
-
-Ces vues font de chaque pièce un objet avec un état. Le candidat dépose depuis
-la page de suivi qu'il possède déjà ; le secrétariat valide ou refuse, et un
-refus dit pourquoi.
-"""
+"""Demandes groupées de pièces justificatives à un candidat."""
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views import View
 from django.views.generic import FormView
 
-from apps.admissions.emails import envoyer_demande_de_pieces
+from apps.admissions.emails import envoyer_decision_pieces, envoyer_demande_de_pieces, envoyer_refus_de_piece
 from apps.admissions.formulaires import PIECES_COURANTES, DemandePiecesForm
-from apps.admissions.models import DossierCandidature, PieceDemandee
+from apps.admissions.models import DemandePieces, DossierCandidature, PieceDemandee
 from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.models import JournalAudit
 from apps.core.services.audit import journaliser
@@ -31,7 +20,7 @@ PRECISIONS_PAR_DEFAUT = dict(PIECES_COURANTES)
 
 
 class DemanderPiecesView(StaffRoleRequiredMixin, FormView):
-    """Réclame une ou plusieurs pièces, et prévient le candidat une seule fois."""
+    """Crée une seule demande contenant toutes les pièces sélectionnées."""
 
     template_name = "administration/demander_pieces.html"
     form_class = DemandePiecesForm
@@ -51,50 +40,56 @@ class DemanderPiecesView(StaffRoleRequiredMixin, FormView):
             {
                 "dossier": self.dossier,
                 "nav": "candidatures",
-                "deja_demandees": self.dossier.pieces_demandees.all(),
+                "deja_demandees": self.dossier.demandes_pieces.prefetch_related("pieces"),
             }
         )
         return contexte
 
     def form_valid(self, form):
-        precisions = form.cleaned_data.get("precisions", "")
+        message_commun = form.cleaned_data.get("precisions", "").strip()
         date_limite = form.cleaned_data.get("date_limite")
+        existantes = {
+            libelle.casefold()
+            for libelle in self.dossier.pieces_demandees.values_list("libelle", flat=True)
+        }
+        libelles = [libelle for libelle in form.libelles() if libelle.casefold() not in existantes]
 
-        creees = []
-        for libelle in form.libelles():
-            # La précision propre à la pièce sert de repli : elle explique le
-            # format attendu, ce qu'une consigne générale ne dit pas.
-            detail = precisions or PRECISIONS_PAR_DEFAUT.get(libelle, "")
-            piece, cree = PieceDemandee.objects.get_or_create(
-                dossier=self.dossier,
-                libelle=libelle,
-                defaults={
-                    "precisions": detail,
-                    "date_limite": date_limite,
-                    "demandee_par": self.request.user,
-                },
-            )
-            if cree:
-                creees.append(piece)
-
-        if not creees:
+        if not libelles:
             messages.info(self.request, "Ces pièces avaient déjà été réclamées.")
             return redirect(self.get_success_url())
 
-        # Un seul courriel pour l'ensemble : en envoyer un par pièce ferait
-        # passer le secrétariat pour un robot, et noierait la demande.
-        envoyer_demande_de_pieces(self.dossier, creees)
+        with transaction.atomic():
+            demande = DemandePieces.objects.create(
+                dossier=self.dossier,
+                message=message_commun,
+                date_limite=date_limite,
+                demandee_par=self.request.user,
+            )
+            pieces = [
+                PieceDemandee.objects.create(
+                    dossier=self.dossier,
+                    demande=demande,
+                    libelle=libelle,
+                    precisions=PRECISIONS_PAR_DEFAUT.get(libelle, ""),
+                    date_limite=date_limite,
+                    demandee_par=self.request.user,
+                )
+                for libelle in libelles
+            ]
+
+        envoyer_demande_de_pieces(demande)
         journaliser(
             JournalAudit.Action.MODIFICATION,
             utilisateur=self.request.user,
             request=self.request,
             objet=self.dossier,
-            objet_libelle=f"Pièces réclamées à {self.dossier.prenom} {self.dossier.nom}",
-            pieces=", ".join(piece.libelle for piece in creees),
+            objet_libelle=f"Demande de pièces à {self.dossier.nom_complet}",
+            pieces=", ".join(piece.libelle for piece in pieces),
+            demande_id=demande.pk,
         )
         messages.success(
             self.request,
-            f"{len(creees)} pièce(s) réclamée(s). {self.dossier.prenom} en est informé(e) par courriel.",
+            f"Demande envoyée : {len(pieces)} document(s), un seul courriel et un seul dépôt attendu.",
         )
         return redirect(self.get_success_url())
 
@@ -103,17 +98,82 @@ class DemanderPiecesView(StaffRoleRequiredMixin, FormView):
 
 
 class PieceDecisionView(StaffRoleRequiredMixin, View):
-    """Valide ou refuse une pièce déposée."""
+    """Traite en une seule opération toutes les pièces déposées d'une demande."""
 
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        piece = get_object_or_404(PieceDemandee.objects.select_related("dossier"), pk=pk)
-        action = request.POST.get("action")
-        # Retenu avant toute suppression : après « delete », l'objet n'a plus de
-        # clé et la redirection n'aurait plus où aller.
-        dossier_id = piece.dossier_id
+        demande = (
+            DemandePieces.objects.select_related("dossier")
+            .prefetch_related("pieces")
+            .filter(pk=pk)
+            .first()
+        )
+        if demande is not None:
+            return self._traiter_demande(request, demande)
 
+        piece = get_object_or_404(PieceDemandee.objects.select_related("dossier"), pk=pk, demande__isnull=True)
+        return self._traiter_piece_legacy(request, piece)
+
+    def _traiter_demande(self, request, demande):
+        dossier_id = demande.dossier_id
+        pieces = [piece for piece in demande.pieces.all() if piece.statut == PieceDemandee.Statut.DEPOSEE]
+        if not pieces:
+            messages.info(request, "Aucun document de cette demande n'attend de décision.")
+            return redirect("administration:candidature_detail", pk=dossier_id)
+
+        decisions = []
+        erreurs = []
+        for piece in pieces:
+            action = request.POST.get(f"decision_{piece.pk}")
+            motif = request.POST.get(f"motif_{piece.pk}", "").strip()
+            if action not in {"valider", "refuser"}:
+                erreurs.append(f"Choisissez une décision pour « {piece.libelle} ».")
+            elif action == "refuser" and not motif:
+                erreurs.append(f"Indiquez le motif du refus pour « {piece.libelle} ».")
+            decisions.append((piece, action, motif))
+
+        if erreurs:
+            for erreur in erreurs:
+                messages.error(request, erreur)
+            return redirect("administration:candidature_detail", pk=dossier_id)
+
+        validees = []
+        refusees = []
+        with transaction.atomic():
+            demande_verrouillee = DemandePieces.objects.select_for_update().get(pk=demande.pk)
+            for piece, action, motif in decisions:
+                if action == "valider":
+                    piece.valider()
+                    validees.append(piece)
+                else:
+                    piece.refuser(motif)
+                    refusees.append(piece)
+            demande_verrouillee.marquer_decision(comporte_refus=bool(refusees))
+
+        envoyer_decision_pieces(demande, validees, refusees)
+        journaliser(
+            JournalAudit.Action.MODIFICATION,
+            utilisateur=request.user,
+            request=request,
+            objet=demande.dossier,
+            objet_libelle=f"Décision groupée sur les pièces de {demande.dossier.nom_complet}",
+            validees=[piece.libelle for piece in validees],
+            refusees=[{"piece": piece.libelle, "motif": piece.motif_refus} for piece in refusees],
+        )
+        if refusees:
+            messages.success(
+                request,
+                f"Décision enregistrée en une fois : {len(validees)} validée(s), "
+                f"{len(refusees)} à refournir. Un seul courriel a été envoyé.",
+            )
+        else:
+            messages.success(request, f"Les {len(validees)} document(s) de la demande sont validés.")
+        return redirect("administration:candidature_detail", pk=dossier_id)
+
+    def _traiter_piece_legacy(self, request, piece):
+        dossier_id = piece.dossier_id
+        action = request.POST.get("action")
         if action == "valider":
             piece.valider()
             messages.success(request, f"« {piece.libelle} » validée.")
@@ -123,23 +183,18 @@ class PieceDecisionView(StaffRoleRequiredMixin, View):
             except ValidationError as erreur:
                 messages.error(request, erreur.messages[0])
             else:
-                from apps.admissions.emails import envoyer_refus_de_piece
-
                 envoyer_refus_de_piece(piece)
-                messages.success(request, f"« {piece.libelle} » refusée, le candidat est prévenu.")
+                messages.success(request, f"« {piece.libelle} » refusée.")
         elif action == "retirer":
             libelle = piece.libelle
             piece.delete()
-            messages.success(request, f"« {libelle} » retirée de la liste des pièces à fournir.")
+            messages.success(request, f"« {libelle} » retirée.")
         else:
             messages.error(request, "Action inconnue.")
-
         return redirect("administration:candidature_detail", pk=dossier_id)
 
 
 class PieceTelechargementView(StaffRoleRequiredMixin, View):
-    """Sert le fichier déposé par le candidat."""
-
     def get(self, request, pk):
         piece = get_object_or_404(PieceDemandee, pk=pk)
         if not piece.fichier:
