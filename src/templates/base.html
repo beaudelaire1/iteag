@@ -90,6 +90,8 @@
 
     {# HTMX auto-hébergé avec les autres ressources du projet. #}
     <script src="{% static 'js/htmx.min.js' %}"></script>
+    {# Le correctif a11y doit s'enregistrer avant le gestionnaire d'ancres global. #}
+    <script src="{% static 'js/accessibilite.js' %}?v={{ ASSET_VERSION }}" defer></script>
     {# ITEAG global JS — scroll reveal, counters, HTMX handlers #}
     <script src="{% static 'js/iteag.js' %}?v={{ ASSET_VERSION }}" defer></script>
 
