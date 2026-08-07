@@ -140,7 +140,10 @@ class TemoignageDecisionView(AdminRoleRequiredMixin, View):
             temoignage.valide_par = request.user
             avis = f"Le témoignage de {temoignage.nom_affiche} est publié."
             titre_notification = "Votre témoignage ITEAG est publié"
-            message_notification = "La direction a validé votre témoignage. Il est maintenant visible sur le site de l'ITEAG."
+            message_notification = (
+                "La direction a validé votre témoignage. "
+                "Il est maintenant visible sur le site de l'ITEAG."
+            )
         elif action == "refuser":
             if temoignage.statut == TemoignageEtudiant.Statut.PUBLIE:
                 messages.error(request, "Retirez d'abord du site un témoignage déjà publié.")
@@ -155,7 +158,10 @@ class TemoignageDecisionView(AdminRoleRequiredMixin, View):
             temoignage.valide_par = request.user
             avis = f"Le témoignage de {temoignage.nom_affiche} a été refusé."
             titre_notification = "Votre témoignage ITEAG est à reprendre"
-            message_notification = "La direction vous demande de reprendre votre témoignage avant une éventuelle publication."
+            message_notification = (
+                "La direction vous demande de reprendre votre témoignage "
+                "avant une éventuelle publication."
+            )
             details.append({"libelle": "Motif", "valeur": motif})
         elif action == "retirer":
             if temoignage.statut != TemoignageEtudiant.Statut.PUBLIE:
