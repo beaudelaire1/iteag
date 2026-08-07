@@ -82,11 +82,11 @@ class TestSoumissionEtudiant:
     def test_l_etudiant_dispose_d_un_chemin_dans_son_espace(self, client, etudiant):
         client.force_login(etudiant)
         html = client.get(reverse("etudiant:dashboard")).content.decode()
-        assert reverse("etudiant:temoignage") in html
+        assert reverse("website:temoignage_etudiant") in html
 
     def test_l_etudiant_soumet_un_temoignage_en_attente(self, client, etudiant, promotion):
         client.force_login(etudiant)
-        reponse = client.post(reverse("etudiant:temoignage"), _soumission())
+        reponse = client.post(reverse("website:temoignage_etudiant"), _soumission())
         assert reponse.status_code == 302
 
         temoignage = TemoignageEtudiant.objects.get(etudiant=etudiant)
@@ -98,7 +98,7 @@ class TestSoumissionEtudiant:
     def test_le_consentement_est_obligatoire(self, client, etudiant):
         client.force_login(etudiant)
         reponse = client.post(
-            reverse("etudiant:temoignage"),
+            reverse("website:temoignage_etudiant"),
             {"texte": "Un témoignage suffisamment long pour être recevable sans consentement."},
         )
         assert reponse.status_code == 200
@@ -117,7 +117,7 @@ class TestSoumissionEtudiant:
         )
         client.force_login(etudiant)
         client.post(
-            reverse("etudiant:temoignage"),
+            reverse("website:temoignage_etudiant"),
             _soumission("Voici une nouvelle version de mon témoignage, qui doit être relue avant publication."),
         )
         temoignage.refresh_from_db()
@@ -145,8 +145,8 @@ class TestModeration:
         )
         client.force_login(admin)
         client.post(
-            reverse("website:temoignage_decision", args=[temoignage.pk]),
-            {"action": "publier"},
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "publier"},
         )
         temoignage.refresh_from_db()
         assert temoignage.statut == TemoignageEtudiant.Statut.PUBLIE
@@ -162,15 +162,19 @@ class TestModeration:
         )
         client.force_login(admin)
         client.post(
-            reverse("website:temoignage_decision", args=[temoignage.pk]),
-            {"action": "refuser", "motif": ""},
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "refuser", "motif": ""},
         )
         temoignage.refresh_from_db()
         assert temoignage.statut == TemoignageEtudiant.Statut.EN_ATTENTE
 
         client.post(
-            reverse("website:temoignage_decision", args=[temoignage.pk]),
-            {"action": "refuser", "motif": "Précisez davantage ce que la formation vous a apporté."},
+            reverse("website:temoignage_decision"),
+            {
+                "temoignage_id": temoignage.pk,
+                "action": "refuser",
+                "motif": "Précisez davantage ce que la formation vous a apporté.",
+            },
         )
         temoignage.refresh_from_db()
         assert temoignage.statut == TemoignageEtudiant.Statut.REFUSE
