@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, vues_actualites, vues_articles
+from . import views, vues_actualites, vues_articles, vues_temoignages
 
 app_name = "website"
 
@@ -47,11 +47,7 @@ urlpatterns = [
         name="illustration_supprimer",
     ),
     # ── Actualités, côté back-office (direction et secrétariat) ──
-    path(
-        "espace-admin/actualites/",
-        vues_actualites.ActualitesGestionView.as_view(),
-        name="actualites_gestion",
-    ),
+    path("espace-admin/actualites/", vues_actualites.ActualitesGestionView.as_view(), name="actualites_gestion"),
     path(
         "espace-admin/actualites/nouvelle/",
         vues_actualites.ActualiteEditionView.as_view(),
@@ -66,6 +62,13 @@ urlpatterns = [
         "espace-admin/actualites/<int:pk>/decision/",
         vues_actualites.ActualiteDecisionView.as_view(),
         name="actualite_decision",
+    ),
+    # ── Témoignages étudiants — validation direction uniquement ──
+    path("espace-admin/temoignages/", vues_temoignages.TemoignageListView.as_view(), name="temoignages_gestion"),
+    path(
+        "espace-admin/temoignages/<int:pk>/decision/",
+        vues_temoignages.TemoignageDecisionView.as_view(),
+        name="temoignage_decision",
     ),
     # ── Relecture, côté administration ──
     path("espace-admin/articles/", vues_articles.ArticlesRelectureView.as_view(), name="articles_relecture"),
