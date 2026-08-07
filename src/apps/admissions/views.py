@@ -14,7 +14,8 @@ from apps.formations.models import Parcours
 from .emails import envoyer_confirmation_depot_pieces, send_candidature_confirmation
 from .forms import CandidatureForm
 from .formulaires import DepotPieceForm, DepotPiecesGroupeForm
-from .models import DemandePieces, DossierCandidature
+from .models import DemandePieces, DossierCandidature, PieceDemandee
+from .services_pieces import synchroniser_statut_demande
 
 
 def candidature_form(request):
@@ -65,7 +66,7 @@ def candidature_suivi(request, token):
         a_transmettre = [
             piece
             for piece in pieces
-            if piece.statut in (piece.Statut.DEMANDEE, piece.Statut.REFUSEE)
+            if piece.statut in (PieceDemandee.Statut.DEMANDEE, PieceDemandee.Statut.REFUSEE)
         ]
         demandes.append({"demande": demande, "pieces": pieces, "a_transmettre": a_transmettre})
     return render(
@@ -124,7 +125,7 @@ def deposer_piece(request, token, piece_id):
                 for piece, fichier in fichiers:
                     piece.deposer(fichier)
                     pieces_deposees.append(piece)
-                demande_verrouillee.marquer_deposee()
+                synchroniser_statut_demande(demande_verrouillee)
 
             envoyer_confirmation_depot_pieces(demande, pieces_deposees)
             _notifier_depot_groupe(dossier, pieces_deposees)
