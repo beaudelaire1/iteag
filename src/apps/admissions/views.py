@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -10,10 +11,10 @@ from apps.core.services.notifications import notifier_plusieurs
 from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 from apps.formations.models import Parcours
 
-from .emails import send_candidature_confirmation
+from .emails import envoyer_confirmation_depot_pieces, send_candidature_confirmation
 from .forms import CandidatureForm
-from .formulaires import DepotPieceForm
-from .models import DossierCandidature
+from .formulaires import DepotPieceForm, DepotPiecesGroupeForm
+from .models import DemandePieces, DossierCandidature
 
 
 def candidature_form(request):
@@ -51,40 +52,93 @@ def candidature_form(request):
 
 
 def candidature_confirmation(request, token):
-    """Page de confirmation après soumission."""
     dossier = get_object_or_404(DossierCandidature, token_suivi=token)
     return render(request, "admissions/candidature_confirmation.html", {"dossier": dossier})
 
 
 def candidature_suivi(request, token):
-    """Suivi public du dossier via lien signé."""
+    """Suivi public : les pièces sont présentées et déposées par demande."""
     dossier = get_object_or_404(DossierCandidature, token_suivi=token)
-    pieces = dossier.pieces_demandees.all()
+    demandes = []
+    for demande in dossier.demandes_pieces.prefetch_related("pieces").all():
+        pieces = list(demande.pieces.all())
+        a_transmettre = [
+            piece
+            for piece in pieces
+            if piece.statut in (piece.Statut.DEMANDEE, piece.Statut.REFUSEE)
+        ]
+        demandes.append({"demande": demande, "pieces": pieces, "a_transmettre": a_transmettre})
     return render(
         request,
         "admissions/candidature_suivi.html",
         {
             "dossier": dossier,
-            "pieces": pieces,
-            "pieces_a_fournir": [p for p in pieces if not p.est_fournie],
+            "demandes_pieces": demandes,
+            "pieces_legacy": dossier.pieces_demandees.filter(demande__isnull=True),
             "formulaire_depot": DepotPieceForm(),
         },
     )
 
 
+def _notifier_depot_groupe(dossier, pieces):
+    noms = ", ".join(piece.libelle for piece in pieces)
+    notifier_plusieurs(
+        User.objects.filter(
+            is_active=True,
+            role__in=[User.Role.ADMIN, User.Role.SECRETARIAT],
+        ),
+        f"Documents déposés — {dossier.nom_complet}",
+        type_notification=Notification.Type.CANDIDATURE,
+        message=(
+            f"{dossier.nom_complet} a transmis {len(pieces)} document(s) en une seule fois. "
+            "L'ensemble de la demande attend une vérification."
+        ),
+        details=[
+            {"libelle": "Candidat", "valeur": dossier.nom_complet},
+            {"libelle": "Documents", "valeur": noms},
+        ],
+        url_cible=reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
+    )
+
+
 @require_POST
 def deposer_piece(request, token, piece_id):
-    """Dépôt d'une pièce par le candidat, depuis sa page de suivi.
-
-    Le jeton de suivi tient lieu d'authentification : le candidat n'a pas de
-    compte, et lui en imposer un pour transmettre un acte de naissance ferait
-    abandonner la moitié des dossiers. Le jeton est long, non devinable, et ne
-    donne accès qu'à ce dossier — la pièce est d'ailleurs relue depuis le
-    dossier lui-même, jamais depuis son seul identifiant.
-    """
+    """Dépose un lot complet ; conserve une compatibilité pour les anciennes pièces."""
     dossier = get_object_or_404(DossierCandidature, token_suivi=token)
-    piece = get_object_or_404(dossier.pieces_demandees, pk=piece_id)
+    demande = dossier.demandes_pieces.filter(pk=piece_id).prefetch_related("pieces").first()
 
+    if demande is not None:
+        if demande.statut not in (DemandePieces.Statut.A_FOURNIR, DemandePieces.Statut.A_CORRIGER):
+            messages.info(request, "Cette demande a déjà été transmise ou validée.")
+            return redirect("admissions:candidature_suivi", token=token)
+
+        formulaire = DepotPiecesGroupeForm(request.POST, request.FILES, demande=demande)
+        if formulaire.is_valid():
+            fichiers = formulaire.fichiers()
+            with transaction.atomic():
+                demande_verrouillee = DemandePieces.objects.select_for_update().get(
+                    pk=demande.pk,
+                    dossier=dossier,
+                )
+                pieces_deposees = []
+                for piece, fichier in fichiers:
+                    piece.deposer(fichier)
+                    pieces_deposees.append(piece)
+                demande_verrouillee.marquer_deposee()
+
+            envoyer_confirmation_depot_pieces(demande, pieces_deposees)
+            _notifier_depot_groupe(dossier, pieces_deposees)
+            messages.success(
+                request,
+                f"{len(pieces_deposees)} document(s) transmis en une seule fois. "
+                "Le secrétariat vérifiera l'ensemble de la demande.",
+            )
+        else:
+            for erreurs in formulaire.errors.values():
+                messages.error(request, erreurs[0])
+        return redirect("admissions:candidature_suivi", token=token)
+
+    piece = get_object_or_404(dossier.pieces_demandees.filter(demande__isnull=True), pk=piece_id)
     formulaire = DepotPieceForm(request.POST, request.FILES, instance=piece)
     if formulaire.is_valid():
         piece.deposer(formulaire.cleaned_data["fichier"])
@@ -103,33 +157,15 @@ def deposer_piece(request, token, piece_id):
             libelle_lien="Suivre mon dossier",
             destinataires=[dossier.email],
         )
-        notifier_plusieurs(
-            User.objects.filter(
-                is_active=True,
-                role__in=[User.Role.ADMIN, User.Role.SECRETARIAT],
-            ),
-            f"Pièce déposée — {dossier.nom_complet}",
-            type_notification=Notification.Type.CANDIDATURE,
-            message=(
-                f"{dossier.nom_complet} a déposé la pièce « {piece.libelle} » réclamée à son dossier. "
-                "Elle attend une vérification."
-            ),
-            details=[
-                {"libelle": "Candidat", "valeur": dossier.nom_complet},
-                {"libelle": "Pièce déposée", "valeur": piece.libelle},
-            ],
-            url_cible=reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
-        )
-        messages.success(request, f"« {piece.libelle} » a bien été transmis. Le secrétariat va le vérifier.")
+        _notifier_depot_groupe(dossier, [piece])
+        messages.success(request, f"« {piece.libelle} » a bien été transmis.")
     else:
         for erreurs in formulaire.errors.values():
             messages.error(request, erreurs[0])
-
     return redirect("admissions:candidature_suivi", token=token)
 
 
 def parcours_preview(request):
-    """Retourne un encart de prévisualisation du parcours choisi pour le formulaire HTMX."""
     parcours_id = request.GET.get("parcours")
     parcours = None
     if parcours_id:
