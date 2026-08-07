@@ -77,7 +77,14 @@ class StreamFieldPortail(BlockWidget):
                 _asset_iteag("css/streamfield-draftail-portail.css"),
             ]
         )
-        return forms.Media(css=css, js=[*prerequis, *media_blocs._js])
+        return forms.Media(
+            css=css,
+            js=[
+                *prerequis,
+                *media_blocs._js,
+                _asset_iteag("js/streamfield-draftail-portail.js"),
+            ],
+        )
 
 
 class DraftailPortail(DraftailRichTextArea):
