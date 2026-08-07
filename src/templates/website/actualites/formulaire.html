@@ -46,7 +46,9 @@
         <p class="mb-4 text-sm" style="color: var(--color-warm-500);">
             Construisez l'annonce avec seulement les blocs nécessaires ; le texte simple reste le choix par défaut.
         </p>
-        {% include "partials/champ.html" with field=form.contenu %}
+        <div class="streamfield-portail">
+            {% include "partials/champ.html" with field=form.contenu %}
+        </div>
     </div>
 
     <div class="card space-y-4">
