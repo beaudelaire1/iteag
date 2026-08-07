@@ -3,7 +3,9 @@
 Le but n'est pas de transformer l'éditeur en tableur ou en outil de dataviz.
 Une actualité doit simplement pouvoir porter les formes d'information que
 l'ancien site utilisait déjà : texte, tableau, procédure, chiffres, graphique
-simple, image, citation, encadré et document.
+simple, citation et encadré. L'image à la une reste le mécanisme d'illustration
+existant, afin de ne pas réintroduire toute la médiathèque Wagtail dans le
+portail de gestion.
 """
 
 from decimal import Decimal
@@ -11,13 +13,7 @@ from decimal import Decimal
 from wagtail import blocks
 from wagtail.contrib.typed_table_block.blocks import TypedTableBlock
 
-from apps.website.models import (
-    CitationEditorialeBlock,
-    DocumentEditorialBlock,
-    EncadreEditorialBlock,
-    ImageEditorialeBlock,
-    TexteEditorialBlock,
-)
+from apps.website.models import CitationEditorialeBlock, EncadreEditorialBlock, TexteEditorialBlock
 
 
 class TableauEditorialBlock(TypedTableBlock):
@@ -91,12 +87,7 @@ class DonneeGraphiqueBlock(blocks.StructBlock):
 
 
 class GraphiqueSimpleEditorialBlock(blocks.StructBlock):
-    """Barres horizontales pour une petite série de valeurs positives.
-
-    Ce bloc couvre le besoin courant d'une actualité sans introduire Chart.js
-    dans l'éditeur ni stocker une configuration graphique opaque. Les valeurs
-    restent lisibles comme données textuelles même sans CSS ou JavaScript.
-    """
+    """Barres horizontales pour une petite série de valeurs positives."""
 
     titre = blocks.CharBlock(max_length=180, label="Titre")
     unite = blocks.CharBlock(required=False, max_length=40, label="Unité", help_text="Ex. %, étudiants, €")
@@ -124,14 +115,12 @@ class CorpsActualiteBlock(blocks.StreamBlock):
     """Les seules formes nécessaires à une actualité ITEAG."""
 
     texte = TexteEditorialBlock()
-    image = ImageEditorialeBlock()
     tableau = TableauEditorialBlock(required=False)
     procedure = ProcedureEditorialBlock()
     chiffres_cles = ChiffresClesEditorialBlock()
     graphique = GraphiqueSimpleEditorialBlock()
     citation = CitationEditorialeBlock()
     encadre = EncadreEditorialBlock()
-    document = DocumentEditorialBlock()
 
     class Meta:
         block_counts = {
