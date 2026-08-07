@@ -3,8 +3,8 @@ from django.template import Context, Template
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User
 from apps.academics.models import ProfilEtudiant, Promotion
+from apps.accounts.models import User
 from apps.formations.models import Parcours
 from apps.website.models_publications import TemoignageEtudiant
 
