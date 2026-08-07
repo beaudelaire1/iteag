@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from apps.accounts.models import User
 from apps.admissions.models import DemandePieces, DossierCandidature, PieceDemandee
+from apps.admissions.services_pieces import synchroniser_statut_demande
 from apps.core.models import Notification
 from apps.formations.models import Parcours
 
@@ -138,3 +139,28 @@ def test_secretariat_prend_une_decision_groupee_et_un_seul_mail_part(client, uni
     assert len(mail.outbox) == 1
     assert "Acte de naissance" in mail.outbox[0].body
     assert "La photo est trop sombre." in mail.outbox[0].body
+
+
+@pytest.mark.django_db
+def test_un_document_obligatoire_manquant_empeche_la_cloture(univers_pieces_groupes):
+    dossier, secretaire, _ = univers_pieces_groupes
+    demande = DemandePieces.objects.create(dossier=dossier, demandee_par=secretaire)
+    PieceDemandee.objects.create(
+        dossier=dossier,
+        demande=demande,
+        libelle="Acte de naissance",
+        statut=PieceDemandee.Statut.VALIDEE,
+        demandee_par=secretaire,
+    )
+    PieceDemandee.objects.create(
+        dossier=dossier,
+        demande=demande,
+        libelle="Photo d'identité",
+        statut=PieceDemandee.Statut.DEMANDEE,
+        demandee_par=secretaire,
+    )
+
+    synchroniser_statut_demande(demande)
+
+    demande.refresh_from_db()
+    assert demande.statut == DemandePieces.Statut.A_FOURNIR
