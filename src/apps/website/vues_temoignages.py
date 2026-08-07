@@ -16,9 +16,7 @@ class TemoignageListView(AdminRoleRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        return TemoignageEtudiant.objects.select_related("etudiant", "valide_par").order_by(
-            "statut", "-soumis_le"
-        )
+        return TemoignageEtudiant.objects.select_related("etudiant", "valide_par").order_by("statut", "-soumis_le")
 
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
