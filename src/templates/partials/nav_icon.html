@@ -1,0 +1,55 @@
+<svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+{% if name == "home" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12 10.5 3.75a2.121 2.121 0 0 1 3 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-5.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/>
+{% elif name == "chart" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5h4.5V21H3v-7.5Zm6.75-6H14.25V21H9.75V7.5Zm6.75-4.5H21v18h-4.5V3Z"/>
+{% elif name == "inbox" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5v15H3.75v-15Zm0 10.5h4.125l1.5 2.25h5.25l1.5-2.25h4.125"/>
+{% elif name == "check" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="m9 12.75 2.25 2.25L15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+{% elif name == "users" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0M18 8.25a3 3 0 0 1 0 5.5M20.25 21a5.25 5.25 0 0 0-2.5-4.48"/>
+{% elif name == "cap" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="m2.25 9 9.75-5.25L21.75 9 12 14.25 2.25 9Zm3 2.25v5.25c3.75 3 9.75 3 13.5 0v-5.25M21.75 9v6"/>
+{% elif name == "calendar" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v3m10.5-3v3M3.75 8.25h16.5m-15 12h13.5a1.5 1.5 0 0 0 1.5-1.5V6.75a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v12a1.5 1.5 0 0 0 1.5 1.5Z"/>
+{% elif name == "book" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25A8.966 8.966 0 0 1 18 3.75c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
+{% elif name == "video" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9A2.25 2.25 0 0 1 2.25 16.5v-9A2.25 2.25 0 0 1 4.5 5.25Zm11.25 5.25 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72"/>
+{% elif name == "eye" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6 9.75-6 9.75 6 9.75 6-3.75 6-9.75 6-9.75-6-9.75-6Zm12.75 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+{% elif name == "clock" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4.5 2.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+{% elif name == "document" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M14.25 2.25H6.375A1.125 1.125 0 0 0 5.25 3.375v17.25c0 .621.504 1.125 1.125 1.125h11.25c.621 0 1.125-.504 1.125-1.125V6.75l-4.5-4.5Zm0 0v4.5h4.5M8.25 12h7.5m-7.5 3h7.5m-7.5 3H12"/>
+{% elif name == "folder" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h6l2.25 2.25h8.25v11.25H3.75V5.25Z"/>
+{% elif name == "clipboard" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M9 5.25A2.25 2.25 0 0 1 11.25 3h1.5A2.25 2.25 0 0 1 15 5.25m-6 0h6m-9 0h12A1.5 1.5 0 0 1 19.5 6.75v13.5H4.5V6.75A1.5 1.5 0 0 1 6 5.25Zm2.25 6h7.5m-7.5 3h7.5"/>
+{% elif name == "briefcase" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M9 6V4.5h6V6m-12 3h18v10.5H3V9Zm0 4.5c5.25 2.25 12.75 2.25 18 0"/>
+{% elif name == "cart" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.5l2.25 12h11.25l2.25-8.25H5.25M8.25 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/>
+{% elif name == "box" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="m12 3 9 4.5-9 4.5-9-4.5L12 3Zm9 4.5v9L12 21l-9-4.5v-9M12 12v9"/>
+{% elif name == "card" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M3 6.75h18v10.5H3V6.75Zm0 3.75h18M6 14.25h4.5"/>
+{% elif name == "tag" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M3 12.75 12.75 3H21v8.25L11.25 21 3 12.75Zm13.5-5.25h.008v.008H16.5V7.5Z"/>
+{% elif name == "news" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 4.5h12v15h-12v-15Zm12 3h3v12h-3M7.5 8.25h6m-6 3h6m-6 3h4.5"/>
+{% elif name == "pen" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 3.75-.75L19.5 7.5 16.5 4.5 5.25 15.75l-.75 3.75ZM14.25 6.75l3 3"/>
+{% elif name == "table" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5v15H3.75v-15Zm0 5h16.5M9 4.5v15m6-15v15"/>
+{% elif name == "settings" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25A3.75 3.75 0 1 1 12 15.75 3.75 3.75 0 0 1 12 8.25Zm0-5.25v2.25m0 13.5V21M3 12h2.25m13.5 0H21M5.636 5.636l1.591 1.591m9.546 9.546 1.591 1.591m0-12.728-1.591 1.591m-9.546 9.546-1.591 1.591"/>
+{% elif name == "profile" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0"/>
+{% elif name == "download" %}
+<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4.5 20.25h15"/>
+{% else %}
+<circle cx="12" cy="12" r="8.25"/><path stroke-linecap="round" d="M12 8.25v7.5"/>
+{% endif %}
+</svg>
