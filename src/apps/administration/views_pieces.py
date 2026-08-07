@@ -9,9 +9,14 @@ from django.urls import reverse
 from django.views import View
 from django.views.generic import FormView
 
-from apps.admissions.emails import envoyer_decision_pieces, envoyer_demande_de_pieces, envoyer_refus_de_piece
+from apps.admissions.emails import (
+    envoyer_decision_pieces,
+    envoyer_demande_de_pieces,
+    envoyer_refus_de_piece,
+)
 from apps.admissions.formulaires import PIECES_COURANTES, DemandePiecesForm
 from apps.admissions.models import DemandePieces, DossierCandidature, PieceDemandee
+from apps.admissions.services_pieces import synchroniser_statut_demande
 from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.models import JournalAudit
 from apps.core.services.audit import journaliser
@@ -149,7 +154,7 @@ class PieceDecisionView(StaffRoleRequiredMixin, View):
                 else:
                     piece.refuser(motif)
                     refusees.append(piece)
-            demande_verrouillee.marquer_decision(comporte_refus=bool(refusees))
+            synchroniser_statut_demande(demande_verrouillee)
 
         envoyer_decision_pieces(demande, validees, refusees)
         journaliser(
