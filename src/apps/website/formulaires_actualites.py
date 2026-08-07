@@ -2,7 +2,6 @@
 
 from django import forms
 
-from apps.core.editeur_riche import StreamFieldPortail
 from apps.core.formulaires import FormulaireITEAG
 from apps.core.services.redaction import assainir, en_texte
 from apps.website.models_publications import ContenuActualite
@@ -29,13 +28,16 @@ class ActualiteForm(FormulaireITEAG):
         help_text="Deux ou trois phrases, affichées dans la liste des actualités et par les moteurs.",
         widget=forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Deux ou trois phrases…"}),
     )
+    # Le BlockWidget officiel reste le point d'entrée : il connaît les médias
+    # Telepath de chacun des blocs (RichText, tableau typé, structures, etc.).
+    # Le portail fournit seulement le socle global que Wagtail charge normalement
+    # dans admin_base.html, avant ces médias.
     contenu = CHAMP_CONTENU.formfield(
         label="Contenu de l'actualité",
         help_text=(
             "Ajoutez uniquement les blocs utiles : texte, tableau, procédure, chiffres clés, "
             "graphique simple, citation ou encadré."
         ),
-        widget=StreamFieldPortail(CHAMP_CONTENU.stream_block),
     )
     # Compatibilité avec les anciennes requêtes/tests. Ce champ n'est jamais
     # montré dans la nouvelle interface ; s'il arrive encore, il devient un
@@ -86,7 +88,7 @@ class ActualiteForm(FormulaireITEAG):
 
         corps_heritage = self.data.get("corps") or ""
         if en_texte(corps_heritage).strip():
-            bloc = ContenuActualite._meta.get_field("contenu").stream_block
+            bloc = CHAMP_CONTENU.stream_block
             return bloc.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
 
         raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")
