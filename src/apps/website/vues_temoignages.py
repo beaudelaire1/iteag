@@ -141,8 +141,7 @@ class TemoignageDecisionView(AdminRoleRequiredMixin, View):
             avis = f"Le témoignage de {temoignage.nom_affiche} est publié."
             titre_notification = "Votre témoignage ITEAG est publié"
             message_notification = (
-                "La direction a validé votre témoignage. "
-                "Il est maintenant visible sur le site de l'ITEAG."
+                "La direction a validé votre témoignage. Il est maintenant visible sur le site de l'ITEAG."
             )
         elif action == "refuser":
             if temoignage.statut == TemoignageEtudiant.Statut.PUBLIE:
@@ -159,8 +158,7 @@ class TemoignageDecisionView(AdminRoleRequiredMixin, View):
             avis = f"Le témoignage de {temoignage.nom_affiche} a été refusé."
             titre_notification = "Votre témoignage ITEAG est à reprendre"
             message_notification = (
-                "La direction vous demande de reprendre votre témoignage "
-                "avant une éventuelle publication."
+                "La direction vous demande de reprendre votre témoignage avant une éventuelle publication."
             )
             details.append({"libelle": "Motif", "valeur": motif})
         elif action == "retirer":
