@@ -64,8 +64,7 @@ def wagtail_icones_portail():
     ce contrôle perd son glyphe dans un portail personnalisé.
     """
     return format_html(
-        '<div data-sprite aria-hidden="true"></div>'
-        '<script src="{}" data-icon-url="{}"></script>',
+        '<div data-sprite aria-hidden="true"></div><script src="{}" data-icon-url="{}"></script>',
         versioned_static("wagtailadmin/js/icons.js"),
         get_icon_sprite_url(),
     )
