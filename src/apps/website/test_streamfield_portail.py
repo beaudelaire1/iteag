@@ -63,8 +63,17 @@ def test_styles_streamfield_restent_isoles_du_portail():
     gabarit = _lire("templates/website/actualites/formulaire.html")
 
     assert any("/css/streamfield-portail.css" in url for url in ressources)
+    assert any("/css/streamfield-draftail-portail.css" in url for url in ressources)
     assert not any("wagtailadmin/css/core.css" in url for url in ressources)
     assert 'class="streamfield-portail"' in gabarit
+
+
+def test_draftail_streamfield_est_ancre_au_bloc():
+    styles = _lire("static/css/streamfield-draftail-portail.css")
+
+    assert "position: static !important" in styles
+    assert ".Draftail-ToolbarButton--pin" in styles
+    assert ".Draftail-BlockToolbar" in styles
 
 
 def test_le_portail_ne_reimplemente_plus_blockcontroller():
