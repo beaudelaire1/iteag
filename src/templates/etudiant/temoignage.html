@@ -1,6 +1,15 @@
 {% extends "partials/portal_base.html" %}
 
 {% block title %}Mon témoignage — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_head %}
+{{ form.media.css }}
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }}
+{% endblock %}
+
 {% block portal_nav %}{% include "etudiant/partials/student_nav.html" %}{% endblock %}
 {% block portal_nav_mobile %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endblock %}
 
@@ -22,20 +31,34 @@
         <span class="text-xs" style="color: var(--color-warm-500);">Dernière modification : {{ temoignage.modifie_le|date:"d/m/Y à H:i" }}</span>
     </div>
     {% if temoignage.statut == 'publie' %}
-    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">Ce texte est actuellement visible sur le site. Toute modification le remettra en attente de validation.</p>
+    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">Ce témoignage est actuellement visible sur le site. Toute modification le remettra en attente de validation.</p>
+    {% elif temoignage.statut == 'retire' %}
+    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">Ce témoignage est conservé dans votre espace mais n'est plus affiché publiquement.</p>
     {% elif temoignage.statut == 'refuse' and temoignage.motif_refus %}
     <div class="mt-4 rounded-lg p-4" style="background: var(--color-warm-100);">
         <p class="text-sm font-semibold" style="color: var(--color-navy-900);">À reprendre</p>
         <p class="mt-1 text-sm" style="color: var(--color-warm-700);">{{ temoignage.motif_refus }}</p>
     </div>
     {% endif %}
+
+    {% if temoignage.photo %}
+    <div class="mt-5 flex items-center gap-4">
+        <img src="{{ temoignage.photo.url }}" alt="Photo actuellement associée au témoignage de {{ temoignage.nom_affiche }}"
+             class="h-20 w-20 rounded-full object-cover" loading="lazy">
+        <p class="text-sm" style="color: var(--color-warm-600);">Cette photo accompagnera le témoignage s'il est publié.</p>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
-<form method="post" class="space-y-6">
+<form method="post" enctype="multipart/form-data" class="space-y-6">
     {% csrf_token %}
     <div class="card space-y-5">
         {% include "partials/champ.html" with field=form.texte %}
+        {% include "partials/champ.html" with field=form.photo %}
+        {% if temoignage.photo %}
+            {% include "partials/champ.html" with field=form.supprimer_photo %}
+        {% endif %}
         {% include "partials/champ.html" with field=form.consentement_publication %}
     </div>
     <button type="submit" class="btn-primary">
