@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.html import escape
 from django.utils.text import slugify
 from django.views import View
 from django.views.generic import ListView, TemplateView
@@ -55,6 +56,29 @@ def _texte_pour_meta(contenu) -> str:
             if titre:
                 return str(titre)[:300]
     return ""
+
+
+def _corps_compatibilite(contenu, *, historique: str = "", chapeau: str = "", titre: str = "") -> str:
+    """Maintient le champ RichText Wagtail obligatoire sans dupliquer l'éditeur.
+
+    Le rendu public privilégie ``ContenuActualite``. ``NewsPage.body`` reste
+    néanmoins requis par Wagtail lors de ``save_revision`` et sert aussi de
+    filet de sécurité pour les anciennes actualités. Quand un bloc texte existe,
+    il devient ce repli ; sinon un corps historique déjà présent est conservé.
+    Une actualité neuve composée uniquement de blocs structurés reçoit enfin un
+    court paragraphe issu du chapeau ou du titre afin de rester valide.
+    """
+    for bloc in contenu or []:
+        if bloc.block_type == "texte":
+            texte = str(bloc.value).strip()
+            if texte:
+                return texte
+
+    if historique and historique.strip():
+        return historique
+
+    repli = en_texte(chapeau or titre, limite=500).strip() or "Actualité ITEAG"
+    return f"<p>{escape(repli)}</p>"
 
 
 class ActualitesGestionView(StaffRoleRequiredMixin, ListView):
@@ -121,12 +145,12 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
         donnees = formulaire.cleaned_data
         creation = actualite is None
         index = _index_des_actualites() if creation else None
+        corps_historique = "" if creation else actualite.body
 
         if creation:
             actualite = NewsPage(
                 title=donnees["titre"],
                 slug=find_available_slug(index, slugify(donnees["titre"]) or "actualite"),
-                body="",
                 live=False,
                 has_unpublished_changes=True,
             )
@@ -135,6 +159,12 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
 
         actualite.date = donnees["date"]
         actualite.excerpt = donnees["chapeau"]
+        actualite.body = _corps_compatibilite(
+            donnees["contenu"],
+            historique=corps_historique,
+            chapeau=donnees["chapeau"],
+            titre=donnees["titre"],
+        )
         actualite.meta_description = en_texte(
             donnees["chapeau"] or _texte_pour_meta(donnees["contenu"]) or donnees["titre"],
             limite=300,
