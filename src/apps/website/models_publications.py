@@ -1,28 +1,15 @@
-"""Articles de recherche rédigés par les enseignants.
-
-Les enseignants de l'ITEAG sont des chercheurs, et n'avaient aucun moyen de
-publier : les actualités passent par l'admin Wagtail, à laquelle ils n'ont pas
-accès, et rien d'autre n'existait. Leurs travaux vivaient donc hors de la
-plateforme, quand ils vivaient quelque part.
-
-Le cycle reprend celui des modules e-learning, que le corps enseignant connaît
-déjà : brouillon, soumis à relecture, publié. Rien ne paraît sous le nom de
-l'institut sans un second regard — un article mal calibré, une fois indexé par
-les moteurs, ne se retire pas d'un clic.
-
-Le corps est du HTML **assaini à l'enregistrement**, jamais à l'affichage : ce
-qui est en base est déjà propre, et une page qui oublierait le filtre ne
-deviendrait pas pour autant vulnérable.
-"""
+"""Articles de recherche et contenus éditoriaux publics hors arborescence Wagtail."""
 
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+from wagtail.fields import StreamField
 
 from apps.core.models import TimeStampedModel
 from apps.core.services.redaction import assainir, en_texte
+from apps.website.editorial import CorpsActualiteBlock
 
 
 class Article(TimeStampedModel):
@@ -61,9 +48,6 @@ class Article(TimeStampedModel):
     date_publication = models.DateTimeField(null=True, blank=True, verbose_name="Publié le")
     date_soumission = models.DateTimeField(null=True, blank=True, verbose_name="Soumis le")
     motif_refus = models.TextField(blank=True, verbose_name="Motif du renvoi en brouillon")
-    # L'auteur ne dépublie pas lui-même — le retrait d'une page indexée est une
-    # décision éditoriale. Il la demande, et la demande doit se voir : sans
-    # trace en base, elle vivrait dans un courriel que personne ne relit.
     retrait_demande_le = models.DateTimeField(null=True, blank=True, verbose_name="Retrait demandé le")
     motif_retrait = models.TextField(blank=True, verbose_name="Motif de la demande de retrait")
     relu_par = models.ForeignKey(
@@ -96,9 +80,6 @@ class Article(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self._slug_libre()
-        # L'assainissement a lieu ici, et non dans la vue : quel que soit le
-        # chemin d'écriture — formulaire, import, shell — ce qui entre en base
-        # est passé par la liste blanche.
         self.corps = assainir(self.corps)
         super().save(*args, **kwargs)
 
@@ -113,31 +94,16 @@ class Article(TimeStampedModel):
     def get_absolute_url(self):
         return reverse("website:article_detail", kwargs={"slug": self.slug})
 
-    # ── Cycle de vie ──
-
     @property
     def est_public(self) -> bool:
         return self.statut == self.Statut.PUBLIE
 
     @property
     def est_modifiable(self) -> bool:
-        """Un article publié se retire avant d'être repris.
-
-        Le modifier en place changerait sous les yeux du lecteur une page déjà
-        indexée, sans que personne ne l'ait relue.
-        """
         return self.statut in (self.Statut.BROUILLON, self.Statut.RETIRE)
 
     @property
     def est_supprimable(self) -> bool:
-        """L'auteur ne détruit que ce qui n'engage personne d'autre.
-
-        Un brouillon et un article retiré ne sont lus que par lui : les
-        supprimer ne prend rien à personne. Un article soumis attend une
-        décision qu'un relecteur est peut-être en train d'écrire, et un article
-        publié a une adresse en ligne, indexée et peut-être citée — il se
-        retire d'abord, il se supprime ensuite.
-        """
         return self.statut in (self.Statut.BROUILLON, self.Statut.RETIRE)
 
     @property
@@ -158,8 +124,6 @@ class Article(TimeStampedModel):
         self.statut = self.Statut.RELECTURE
         self.date_soumission = timezone.now()
         self.motif_refus = ""
-        # Un article retiré puis resoumis repart d'une page blanche : la
-        # demande de retrait qui l'a fait descendre est honorée, donc close.
         self.retrait_demande_le = None
         self.motif_retrait = ""
         self.save(
@@ -175,12 +139,6 @@ class Article(TimeStampedModel):
         return self
 
     def demander_le_retrait(self, motif: str):
-        """L'auteur demande que son article publié redescende.
-
-        Il ne le dépublie pas lui-même : une page en ligne relève de la même
-        décision éditoriale que sa mise en ligne. Le motif est obligatoire —
-        sans lui, le relecteur arbitre à l'aveugle.
-        """
         from django.core.exceptions import ValidationError
 
         motif = (motif or "").strip()
@@ -205,7 +163,6 @@ class Article(TimeStampedModel):
         return self
 
     def renvoyer_en_brouillon(self, motif: str, *, par=None):
-        """Le relecteur refuse : sans motif, l'auteur ne sait pas quoi corriger."""
         from django.core.exceptions import ValidationError
 
         motif = (motif or "").strip()
@@ -220,15 +177,12 @@ class Article(TimeStampedModel):
         return self
 
     def retirer(self, *, par=None):
-        """Dépublie sans détruire : l'article redevient modifiable."""
         from django.core.exceptions import ValidationError
 
         if self.statut != self.Statut.PUBLIE:
             raise ValidationError("Seul un article publié peut être retiré.")
         self.statut = self.Statut.RETIRE
         self.relu_par = par
-        # La demande, s'il y en avait une, vient d'être satisfaite : la laisser
-        # ouverte la ferait reparaître au prochain passage en ligne.
         self.retrait_demande_le = None
         self.motif_retrait = ""
         self.save(update_fields=["statut", "relu_par", "retrait_demande_le", "motif_retrait", "updated_at"])
@@ -236,12 +190,7 @@ class Article(TimeStampedModel):
 
 
 class ImageArticle(TimeStampedModel):
-    """Une illustration déposée pour être insérée dans le corps d'un article.
-
-    Elles vivent à part de l'image à la une : un article de recherche porte
-    volontiers des figures, des tableaux photographiés ou des cartes, et
-    l'auteur doit pouvoir les déposer puis les placer où il veut dans le texte.
-    """
+    """Une illustration déposée pour être insérée dans le corps d'un article."""
 
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="illustrations")
     fichier = models.ImageField(upload_to="articles/illustrations/%Y/%m/")
@@ -254,3 +203,75 @@ class ImageArticle(TimeStampedModel):
 
     def __str__(self):
         return self.legende or self.fichier.name.rsplit("/", 1)[-1]
+
+
+class ContenuActualite(models.Model):
+    """Corps structuré d'une page d'actualité existante.
+
+    Le RichText historique de ``NewsPage.body`` reste en place comme filet de
+    sécurité. Une migration copie chaque ancien corps dans un premier bloc
+    texte ; aucun article existant n'est donc converti de force en JSON.
+    """
+
+    actualite = models.OneToOneField(
+        "website.NewsPage",
+        on_delete=models.CASCADE,
+        related_name="contenu_structure",
+    )
+    contenu = StreamField(
+        CorpsActualiteBlock(),
+        blank=True,
+        use_json_field=True,
+        verbose_name="Contenu structuré",
+    )
+
+    class Meta:
+        verbose_name = "Contenu structuré d'actualité"
+        verbose_name_plural = "Contenus structurés d'actualités"
+
+    def __str__(self):
+        return self.actualite.title
+
+
+class TemoignageEtudiant(models.Model):
+    """Témoignage proposé par un étudiant et publié uniquement par la direction."""
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = "en_attente", "En attente"
+        PUBLIE = "publie", "Publié"
+        REFUSE = "refuse", "Refusé"
+
+    etudiant = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="temoignage_iteag",
+        limit_choices_to={"role": "etudiant"},
+        verbose_name="Étudiant",
+    )
+    nom_affiche = models.CharField(max_length=160, verbose_name="Nom affiché")
+    promotion = models.CharField(max_length=160, blank=True, verbose_name="Promotion / parcours")
+    texte = models.TextField(max_length=2000, verbose_name="Témoignage")
+    consentement_publication = models.BooleanField(default=False, verbose_name="Consentement à la publication")
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE, db_index=True)
+    motif_refus = models.CharField(max_length=500, blank=True, verbose_name="Motif du refus")
+    soumis_le = models.DateTimeField(auto_now_add=True)
+    modifie_le = models.DateTimeField(auto_now=True)
+    valide_le = models.DateTimeField(null=True, blank=True)
+    valide_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="temoignages_valides",
+        verbose_name="Validé par",
+    )
+
+    class Meta:
+        verbose_name = "Témoignage étudiant"
+        verbose_name_plural = "Témoignages étudiants"
+        ordering = ["-soumis_le"]
+
+    def __str__(self):
+        return f"{self.nom_affiche} — {self.get_statut_display()}"
