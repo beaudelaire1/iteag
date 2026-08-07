@@ -1,0 +1,95 @@
+name: Rendre QCM visible temporairement
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/rendre-qcm-visible-temporaire.yml
+
+permissions:
+  contents: write
+
+jobs:
+  appliquer:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rendre le parcours QCM explicite
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def remplacer(path, ancien, nouveau, nombre=1):
+              fichier = Path(path)
+              texte = fichier.read_text(encoding="utf-8")
+              if ancien not in texte:
+                  raise SystemExit(f"Texte introuvable dans {path}: {ancien!r}")
+              fichier.write_text(texte.replace(ancien, nouveau, nombre), encoding="utf-8")
+
+          remplacer(
+              "src/templates/lms/partials/teacher_nav.html",
+              "    Devoirs\n",
+              "    Devoirs et QCM\n",
+          )
+          remplacer(
+              "src/templates/lms/partials/teacher_nav_mobile.html",
+              ">Devoirs</a>",
+              ">Devoirs et QCM</a>",
+          )
+          remplacer(
+              "src/templates/lms/devoirs_list.html",
+              "{% block title %}Mes devoirs — Espace enseignant — {{ SITE_NAME }}{% endblock %}",
+              "{% block title %}Devoirs et QCM — Espace enseignant — {{ SITE_NAME }}{% endblock %}",
+          )
+          remplacer(
+              "src/templates/lms/devoirs_list.html",
+              ">Mes devoirs</h1>",
+              ">Devoirs et QCM</h1>",
+          )
+          remplacer(
+              "src/templates/lms/devoirs_list.html",
+              "Ce qui a été demandé, ce qui est rendu, ce qu'il reste à corriger.",
+              "Créer et suivre les devoirs écrits, dépôts de fichiers et questionnaires à choix multiple.",
+          )
+          remplacer(
+              "src/templates/lms/devoirs_list.html",
+              ">Créer un devoir pour</label>",
+              ">Créer un devoir ou un QCM pour</label>",
+          )
+          remplacer(
+              "src/templates/lms/devoirs_list.html",
+              ">Créer un devoir</button>",
+              ">Commencer la création</button>",
+          )
+          remplacer(
+              "src/templates/lms/devoirs_list.html",
+              "Vous n'avez pas encore créé de devoir. Choisissez un cours pour en ouvrir un.",
+              "Vous n'avez encore créé ni devoir ni QCM. Choisissez un cours pour commencer.",
+          )
+
+          accueil = Path("src/templates/enseignant/accueil.html")
+          texte = accueil.read_text(encoding="utf-8")
+          marqueur = "{% else %}\n\n{# ── Chiffres clés, les deux modes confondus ── #}"
+          bloc = '''{% else %}
+
+<a href="{% url 'lms:devoirs_list' %}" class="card-elevated mb-8 flex flex-wrap items-center justify-between gap-5 hover:shadow-elevated transition-shadow" style="border-left: 3px solid var(--color-gold-500);">
+    <div>
+        <p class="overline mb-1">Action rapide</p>
+        <h2 class="text-base font-semibold text-navy-900">Créer un devoir ou un QCM</h2>
+        <p class="mt-1 text-sm text-warm-500">Choisissez le cours, puis le format : dépôt de fichier, réponse rédigée ou questionnaire à choix multiple.</p>
+    </div>
+    <span class="btn-primary">Commencer</span>
+</a>
+
+{# ── Chiffres clés, les deux modes confondus ── #}'''
+          if marqueur not in texte:
+              raise SystemExit("Point d’insertion de l’accueil enseignant introuvable")
+          accueil.write_text(texte.replace(marqueur, bloc, 1), encoding="utf-8")
+          PY
+      - name: Publier
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/templates
+          git commit -m "ux(enseignant): rendre la création de QCM explicite"
+          git push origin HEAD:main
