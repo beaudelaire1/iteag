@@ -36,10 +36,16 @@ jobs:
 
           django.setup()
 
+          from django.core.management import call_command
           from django.template import RequestContext, Template
           from django.test import RequestFactory
           from apps.website.formulaires_actualites import ActualiteForm
           from apps.website.vues_actualites import ActualiteEditionView
+
+          # Les settings de test utilisent SQLite en mémoire. Les migrations
+          # doivent donc être exécutées dans ce même processus avant d'appeler
+          # le tag wagtail_config, qui lit notamment les locales Wagtail.
+          call_command("migrate", interactive=False, verbosity=0)
 
           request = RequestFactory().get("/")
           request.csp_nonce = "browser-smoke"
