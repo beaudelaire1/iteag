@@ -6,22 +6,22 @@ from django.urls import reverse
 from apps.core.services.emails import envoyer_notification_email
 
 
-def send_candidature_confirmation(dossier):
-    """Email de confirmation envoyé au candidat après soumission (PUB-011)."""
-    suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
+def _url_suivi(dossier):
+    return f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
 
+
+def send_candidature_confirmation(dossier):
+    suivi_url = _url_suivi(dossier)
     envoyer_notification_email(
         sujet="Votre candidature a bien été enregistrée",
         titre="Votre candidature a bien été enregistrée",
         message=(
             f"Bonjour {dossier.prenom},\n\n"
-            f"Nous avons bien reçu votre candidature pour le parcours "
-            f"« {dossier.parcours_souhaite} ».\n\n"
+            f"Nous avons bien reçu votre candidature pour le parcours « {dossier.parcours_souhaite} ».\n\n"
             f"Votre dossier est en cours d'examen. Vous pouvez suivre son avancement "
             f"à tout moment depuis votre page de suivi.\n\n"
             f"Nous reviendrons vers vous dans les meilleurs délais.\n\n"
-            f"Cordialement,\n"
-            f"Le secrétariat de l'ITEAG"
+            f"Cordialement,\nLe secrétariat de l'ITEAG"
         ),
         lien=suivi_url,
         libelle_lien="Suivre ma candidature",
@@ -30,23 +30,19 @@ def send_candidature_confirmation(dossier):
 
 
 def send_statut_change_email(dossier):
-    """Email envoyé au candidat lors d'un changement de statut (ADM-001)."""
     from .models import DossierCandidature
 
-    suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
-
+    suivi_url = _url_suivi(dossier)
     subject_map = {
-        DossierCandidature.Statut.EN_EXAMEN: None,  # Pas d'email à cette étape (CDC §7.1)
+        DossierCandidature.Statut.EN_EXAMEN: None,
         DossierCandidature.Statut.INCOMPLET: "ITEAG — Votre dossier est incomplet",
         DossierCandidature.Statut.ACCEPTE: "ITEAG — Votre candidature est acceptée",
         DossierCandidature.Statut.REFUSE: "ITEAG — Réponse à votre candidature",
     }
-
     body_map = {
         DossierCandidature.Statut.INCOMPLET: (
             f"Bonjour {dossier.prenom},\n\n"
-            f"Après examen de votre dossier, il apparaît que certains éléments "
-            f"sont manquants ou à compléter :\n\n"
+            f"Après examen de votre dossier, certains éléments sont manquants ou à compléter :\n\n"
             f"{dossier.elements_manquants or 'Veuillez nous contacter pour plus de détails.'}\n\n"
             f"Vous pouvez suivre l'état de votre dossier ici :\n{suivi_url}\n\n"
             f"Cordialement,\nLe secrétariat de l'ITEAG"
@@ -55,8 +51,7 @@ def send_statut_change_email(dossier):
             f"Bonjour {dossier.prenom},\n\n"
             f"Nous avons le plaisir de vous informer que votre candidature "
             f"pour le parcours « {dossier.parcours_souhaite} » a été acceptée.\n\n"
-            f"Vous recevrez prochainement les instructions pour finaliser "
-            f"votre inscription et procéder au règlement.\n\n"
+            f"Vous recevrez prochainement les instructions pour finaliser votre inscription.\n\n"
             f"Cordialement,\nLe secrétariat de l'ITEAG"
         ),
         DossierCandidature.Statut.REFUSE: (
@@ -68,73 +63,115 @@ def send_statut_change_email(dossier):
             f"Cordialement,\nLe secrétariat de l'ITEAG"
         ),
     }
-
     subject = subject_map.get(dossier.statut)
     if not subject:
-        return  # Pas d'email pour EN_EXAMEN ni SOUMIS
-
-    body = body_map.get(dossier.statut, "")
-
+        return
     envoyer_notification_email(
         sujet=subject.removeprefix("ITEAG — "),
         titre=subject.removeprefix("ITEAG — "),
-        message=body,
+        message=body_map.get(dossier.statut, ""),
         lien=suivi_url,
         libelle_lien="Suivre ma candidature",
         destinataires=[dossier.email],
     )
 
 
-def envoyer_demande_de_pieces(dossier, pieces):
-    """Prévient le candidat des pièces qui lui sont réclamées.
-
-    Un seul message pour l'ensemble : un courriel par pièce noierait la demande
-    et donnerait l'impression d'un automate.
-    """
-    suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
+def envoyer_demande_de_pieces(demande):
+    """Un seul message pour le lot ; le texte commun n'est jamais répété."""
+    dossier = demande.dossier
+    pieces = list(demande.pieces.all())
     liste = "\n".join(
-        f"  - {piece.libelle}" + (f"\n      {piece.precisions}" if piece.precisions else "") for piece in pieces
+        f"  - {piece.libelle}" + (f"\n      {piece.precisions}" if piece.precisions else "")
+        for piece in pieces
     )
-    echeances = {piece.date_limite for piece in pieces if piece.date_limite}
-    echeance = f"\nCes pièces sont attendues avant le {min(echeances):%d/%m/%Y}.\n" if echeances else ""
-
+    message_commun = f"Message du secrétariat :\n{demande.message}\n\n" if demande.message.strip() else ""
+    echeance = (
+        f"Ces documents sont attendus avant le {demande.date_limite:%d/%m/%Y}.\n\n"
+        if demande.date_limite
+        else ""
+    )
     envoyer_notification_email(
         sujet="Pièces à fournir pour votre dossier",
         titre="Pièces à fournir pour votre dossier",
         message=(
             f"Bonjour {dossier.prenom},\n\n"
-            f"Pour finaliser votre dossier, le secrétariat vous demande de fournir "
-            f"{'la pièce suivante' if len(pieces) == 1 else 'les pièces suivantes'} :\n\n"
-            f"{liste}\n"
-            f"{echeance}\n"
-            f"Vous pouvez les déposer directement depuis votre page de suivi, "
-            f"sans créer de compte.\n\n"
-            f"Cordialement,\n"
-            f"Le secrétariat de l'ITEAG"
+            f"Pour finaliser votre dossier, le secrétariat vous demande de transmettre "
+            f"{'le document suivant' if len(pieces) == 1 else 'les documents suivants'} :\n\n"
+            f"{message_commun}{liste}\n\n{echeance}"
+            f"Déposez l'ensemble des documents attendus depuis votre page de suivi, "
+            f"puis envoyez-les en une seule fois.\n\n"
+            f"Cordialement,\nLe secrétariat de l'ITEAG"
         ),
-        lien=suivi_url,
-        libelle_lien="Déposer les pièces",
+        lien=_url_suivi(dossier),
+        libelle_lien="Déposer les documents",
+        destinataires=[dossier.email],
+    )
+
+
+def envoyer_confirmation_depot_pieces(demande, pieces):
+    dossier = demande.dossier
+    noms = "\n".join(f"  - {piece.libelle}" for piece in pieces)
+    envoyer_notification_email(
+        sujet="Vos documents ont bien été reçus",
+        titre="Vos documents ont bien été reçus",
+        message=(
+            f"Bonjour {dossier.prenom},\n\n"
+            f"Nous avons bien reçu votre envoi :\n\n{noms}\n\n"
+            f"Le secrétariat va vérifier l'ensemble de la demande. Vous recevrez une seule "
+            f"réponse récapitulative.\n\n"
+            f"Cordialement,\nLe secrétariat de l'ITEAG"
+        ),
+        lien=_url_suivi(dossier),
+        libelle_lien="Suivre mon dossier",
+        destinataires=[dossier.email],
+    )
+
+
+def envoyer_decision_pieces(demande, validees, refusees):
+    """Une décision et un courriel pour tout le lot, même en cas de refus partiel."""
+    dossier = demande.dossier
+    blocs = []
+    if validees:
+        blocs.append("Documents validés :\n" + "\n".join(f"  - {piece.libelle}" for piece in validees))
+    if refusees:
+        blocs.append(
+            "Documents à refournir :\n"
+            + "\n".join(f"  - {piece.libelle} : {piece.motif_refus}" for piece in refusees)
+        )
+    conclusion = (
+        "Déposez ensemble les documents à corriger depuis votre page de suivi."
+        if refusees
+        else "L'ensemble des documents de cette demande est validé."
+    )
+    envoyer_notification_email(
+        sujet="Vérification de vos pièces justificatives",
+        titre="Vérification de vos pièces justificatives",
+        message=(
+            f"Bonjour {dossier.prenom},\n\n"
+            f"Le secrétariat a terminé la vérification de votre envoi.\n\n"
+            f"{chr(10).join(blocs)}\n\n{conclusion}\n\n"
+            f"Cordialement,\nLe secrétariat de l'ITEAG"
+        ),
+        lien=_url_suivi(dossier),
+        libelle_lien="Consulter la demande",
         destinataires=[dossier.email],
     )
 
 
 def envoyer_refus_de_piece(piece):
-    """Explique au candidat pourquoi une pièce déposée ne convient pas."""
+    """Compatibilité avec une ancienne pièce non rattachée à un lot."""
     dossier = piece.dossier
-    suivi_url = f"{settings.SITE_URL}{reverse('admissions:candidature_suivi', kwargs={'token': dossier.token_suivi})}"
-
     envoyer_notification_email(
         sujet=f"La pièce « {piece.libelle} » est à refournir",
         titre=f"La pièce « {piece.libelle} » est à refournir",
         message=(
             f"Bonjour {dossier.prenom},\n\n"
-            f"Le document que vous avez déposé pour « {piece.libelle} » n'a pas pu être retenu.\n\n"
+            f"Le document déposé pour « {piece.libelle} » n'a pas pu être retenu.\n\n"
             f"Motif : {piece.motif_refus}\n\n"
             f"Vous pouvez en déposer un nouveau depuis votre page de suivi.\n\n"
-            f"Cordialement,\n"
-            f"Le secrétariat de l'ITEAG"
+            f"Cordialement,\nLe secrétariat de l'ITEAG"
         ),
-        lien=suivi_url,
+        lien=_url_suivi(dossier),
         libelle_lien="Déposer une nouvelle pièce",
         destinataires=[dossier.email],
     )
