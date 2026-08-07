@@ -58,7 +58,17 @@ def _texte_pour_meta(contenu) -> str:
     return ""
 
 
-def _corps_compatibilite(contenu, *, historique: str = "", chapeau: str = "", titre: str = "") -> str:
+def _html_richtext(valeur) -> str:
+    """Retourne la source HTML enregistrable d'un RichText ou d'une chaîne."""
+    if not valeur:
+        return ""
+    source = getattr(valeur, "source", None)
+    if source is not None:
+        return str(source).strip()
+    return str(valeur).strip()
+
+
+def _corps_compatibilite(contenu, *, historique="", chapeau: str = "", titre: str = "") -> str:
     """Maintient le champ RichText Wagtail obligatoire sans dupliquer l'éditeur.
 
     Le rendu public privilégie ``ContenuActualite``. ``NewsPage.body`` reste
@@ -70,12 +80,13 @@ def _corps_compatibilite(contenu, *, historique: str = "", chapeau: str = "", ti
     """
     for bloc in contenu or []:
         if bloc.block_type == "texte":
-            texte = str(bloc.value).strip()
+            texte = _html_richtext(bloc.value)
             if texte:
                 return texte
 
-    if historique and historique.strip():
-        return historique
+    historique_html = _html_richtext(historique)
+    if historique_html:
+        return historique_html
 
     repli = en_texte(chapeau or titre, limite=500).strip() or "Actualité ITEAG"
     return f"<p>{escape(repli)}</p>"
@@ -115,7 +126,7 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
             if not actualite.body:
                 return []
             stream_block = ContenuActualite._meta.get_field("contenu").stream_block
-            return stream_block.to_python([{"type": "texte", "value": actualite.body}])
+            return stream_block.to_python([{"type": "texte", "value": _html_richtext(actualite.body)}])
 
     def _valeurs_initiales(self, actualite):
         if actualite is None:
