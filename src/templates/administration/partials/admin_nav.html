@@ -4,113 +4,143 @@
 
 <p class="portal-nav-group">Vue d’ensemble</p>
 <a href="{% url 'administration:dashboard' %}" class="portal-nav-link {% if nav == 'dashboard' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="home" only %}
     Tableau de bord
 </a>
 <a href="{% url 'administration:statistiques' %}" class="portal-nav-link {% if nav == 'statistiques' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="chart" only %}
     Statistiques
 </a>
 
 <p class="portal-nav-group">À traiter</p>
 <a href="{% url 'administration:candidatures' %}" class="portal-nav-link {% if nav == 'candidatures' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="inbox" only %}
     Candidatures
 </a>
 <a href="{% url 'administration:enrollment_requests' %}" class="portal-nav-link {% if nav == 'enrollment_requests' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="check" only %}
     Inscriptions aux cours
 {% if demandes_inscription_a_traiter %}<span class="portal-nav-count">{{ demandes_inscription_a_traiter }}</span>{% endif %}
 </a>
 <a href="{% url 'administration:acces' %}" class="portal-nav-link {% if nav == 'acces' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="video" only %}
     Accès aux modules
 {% if demandes_acces_video %}<span class="portal-nav-count">{{ demandes_acces_video }}</span>{% endif %}
 </a>
 
 <p class="portal-nav-group">Scolarité</p>
 <a href="{% url 'administration:etudiants' %}" class="portal-nav-link {% if nav == 'etudiants' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="users" only %}
     Étudiants
 </a>
 <a href="{% url 'administration:promotions' %}" class="portal-nav-link {% if nav == 'promotions' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="cap" only %}
     Promotions
 </a>
 <a href="{% url 'administration:credits_ects' %}" class="portal-nav-link {% if nav == 'credits_ects' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="check" only %}
     Crédits ECTS
 </a>
 <a href="{% url 'administration:stages' %}" class="portal-nav-link {% if nav == 'stages' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="briefcase" only %}
     Stages
 </a>
 <a href="{% url 'administration:vae' %}" class="portal-nav-link {% if nav == 'vae' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="document" only %}
     Validation des acquis
 </a>
 
 <p class="portal-nav-group">Offre de formation</p>
 <a href="{% url 'administration:formations' %}" class="portal-nav-link {% if nav == 'formations' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="book" only %}
     Parcours et cours
 </a>
 <a href="{% url 'administration:sessions' %}" class="portal-nav-link {% if nav == 'sessions' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="calendar" only %}
     Sessions
 </a>
 <a href="{% url 'administration:course_offerings' %}" class="portal-nav-link {% if nav == 'course_offerings' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="clock" only %}
     Programmation des cours
 </a>
 <a href="{% url 'administration:professeurs' %}" class="portal-nav-link {% if nav == 'professeurs' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="cap" only %}
     Corps professoral
 </a>
 
 <p class="portal-nav-group">E-Learning</p>
 <a href="{% url 'administration:video_statistiques' %}" class="portal-nav-link {% if nav == 'video_statistiques' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="eye" only %}
     Visionnage par module
 </a>
 <a href="{% url 'administration:video_journal' %}" class="portal-nav-link {% if nav == 'video_journal' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="clipboard" only %}
     Journal des accès
 </a>
 
 <p class="portal-nav-group">Bibliothèque</p>
 <a href="{% url 'library:gestion' %}" class="portal-nav-link {% if nav == 'bibliotheque' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="book" only %}
     Fonds documentaire
 </a>
 <a href="{% url 'library:gestion_emprunts' %}" class="portal-nav-link {% if nav == 'emprunts' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="clock" only %}
     Emprunts et réservations
 </a>
 
 <p class="portal-nav-group">Boutique</p>
 <a href="{% url 'commerce:gestion_commandes' %}" class="portal-nav-link {% if nav == 'commandes' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="cart" only %}
     Commandes
 </a>
 <a href="{% url 'commerce:gestion_stock' %}" class="portal-nav-link {% if nav == 'stock' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="box" only %}
     Stocks
 </a>
 
 <p class="portal-nav-group">Finances</p>
 <a href="{% url 'administration:payments' %}" class="portal-nav-link {% if nav == 'payments' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="card" only %}
     Paiements
 </a>
 <a href="{% url 'administration:tarifs' %}" class="portal-nav-link {% if nav == 'tarifs' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="tag" only %}
     Grille tarifaire
 </a>
 
 <p class="portal-nav-group">Publications et documents</p>
 <a href="{% url 'website:actualites_gestion' %}" class="portal-nav-link {% if nav == 'actualites' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="news" only %}
     Actualités
 </a>
 <a href="{% url 'website:articles_relecture' %}" class="portal-nav-link {% if nav == 'articles' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="pen" only %}
     Articles de recherche
 </a>
 <a href="{% url 'redaction:documents' %}" class="portal-nav-link {% if nav == 'documents_rediges' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="document" only %}
     Documents rédigés
 </a>
 <a href="{% url 'accounts:signature' %}" class="portal-nav-link {% if nav == 'signature' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="pen" only %}
     Ma signature
 </a>
 
 <p class="portal-nav-group">Administration</p>
 <a href="{% url 'administration:utilisateurs' %}" class="portal-nav-link {% if nav == 'utilisateurs' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="users" only %}
     Utilisateurs
 </a>
 <a href="{% url 'administration:tableurs' %}" class="portal-nav-link {% if nav == 'tableurs' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="table" only %}
     Imports et exports
 </a>
 <a href="/django-admin/" class="portal-nav-link">
+    {% include "partials/nav_icon.html" with name="settings" only %}
     Django Admin (avancé)
 </a>
 <a href="{% url 'accounts:profil' %}" class="portal-nav-link {% if nav == 'profil' %}active{% endif %}">
+    {% include "partials/nav_icon.html" with name="profile" only %}
     Mon profil
 </a>
 
