@@ -88,7 +88,10 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
         try:
             return actualite.contenu_structure.contenu
         except ContenuActualite.DoesNotExist:
-            return [("texte", actualite.body)] if actualite.body else []
+            if not actualite.body:
+                return []
+            stream_block = ContenuActualite._meta.get_field("contenu").stream_block
+            return stream_block.to_python([{"type": "texte", "value": actualite.body}])
 
     def _valeurs_initiales(self, actualite):
         if actualite is None:
