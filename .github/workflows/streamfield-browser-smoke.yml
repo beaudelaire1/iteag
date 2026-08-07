@@ -1,8 +1,25 @@
 name: StreamField browser smoke
 
 on:
+  pull_request:
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/apps/core/templatetags/socle_wagtail.py"
+      - "src/apps/website/editorial.py"
+      - "src/apps/website/formulaires_actualites.py"
+      - "src/apps/website/vues_actualites.py"
+      - "src/templates/website/actualites/formulaire.html"
+      - ".github/workflows/streamfield-browser-smoke.yml"
   push:
-    branches: [fix/actualite-streamfield-runtime-officiel]
+    branches: [main]
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/apps/core/templatetags/socle_wagtail.py"
+      - "src/apps/website/editorial.py"
+      - "src/apps/website/formulaires_actualites.py"
+      - "src/apps/website/vues_actualites.py"
+      - "src/templates/website/actualites/formulaire.html"
+      - ".github/workflows/streamfield-browser-smoke.yml"
 
 permissions:
   contents: read
