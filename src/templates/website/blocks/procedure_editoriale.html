@@ -1,0 +1,16 @@
+{% load wagtailcore_tags %}
+<section class="my-8" aria-label="{% if value.titre %}{{ value.titre }}{% else %}Procédure{% endif %}">
+    {% if value.titre %}<h2 class="text-xl font-bold mb-5" style="color: var(--color-navy-900);">{{ value.titre }}</h2>{% endif %}
+    <ol class="space-y-5">
+        {% for etape in value.etapes %}
+        <li class="flex gap-4">
+            <span class="shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold"
+                  style="background: var(--color-navy-800); color: white;">{{ forloop.counter }}</span>
+            <div class="min-w-0 pt-0.5">
+                <h3 class="font-semibold" style="color: var(--color-navy-900);">{{ etape.titre }}</h3>
+                <div class="contenu-riche mt-1 text-sm" style="color: var(--color-warm-700);">{{ etape.description|richtext }}</div>
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+</section>
