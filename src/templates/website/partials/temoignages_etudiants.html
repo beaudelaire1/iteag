@@ -1,0 +1,23 @@
+{% if temoignages_etudiants %}
+<section class="section" style="background: var(--color-warm-100);">
+    <div class="container-wide">
+        <div class="text-center mb-12 reveal">
+            <p class="overline mb-3">Témoignages</p>
+            <h2>Paroles d'étudiants</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-motion-stagger>
+            {% for item in temoignages_etudiants %}
+            <article class="card-elevated reveal">
+                <blockquote class="leading-relaxed mb-5" style="color: var(--color-warm-700);">
+                    <p>« {{ item.texte }} »</p>
+                </blockquote>
+                <div class="pt-5 border-t" style="border-color: var(--color-warm-200);">
+                    <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ item.nom_affiche }}</p>
+                    {% if item.promotion %}<p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ item.promotion }}</p>{% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
