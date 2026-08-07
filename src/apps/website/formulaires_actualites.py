@@ -2,11 +2,13 @@
 
 from django import forms
 
+from apps.core.editeur_riche import StreamFieldPortail
 from apps.core.formulaires import FormulaireITEAG
 from apps.core.services.redaction import assainir, en_texte
 from apps.website.models_publications import ContenuActualite
 
 INPUT = "form-input"
+CHAMP_CONTENU = ContenuActualite._meta.get_field("contenu")
 
 
 class ActualiteForm(FormulaireITEAG):
@@ -27,12 +29,13 @@ class ActualiteForm(FormulaireITEAG):
         help_text="Deux ou trois phrases, affichées dans la liste des actualités et par les moteurs.",
         widget=forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Deux ou trois phrases…"}),
     )
-    contenu = ContenuActualite._meta.get_field("contenu").formfield(
+    contenu = CHAMP_CONTENU.formfield(
         label="Contenu de l'actualité",
         help_text=(
             "Ajoutez uniquement les blocs utiles : texte, tableau, procédure, chiffres clés, "
             "graphique simple, citation ou encadré."
         ),
+        widget=StreamFieldPortail(CHAMP_CONTENU.stream_block),
     )
     # Compatibilité avec les anciennes requêtes/tests. Ce champ n'est jamais
     # montré dans la nouvelle interface ; s'il arrive encore, il devient un
