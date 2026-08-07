@@ -64,9 +64,7 @@ def candidature_suivi(request, token):
     for demande in dossier.demandes_pieces.prefetch_related("pieces").all():
         pieces = list(demande.pieces.all())
         a_transmettre = [
-            piece
-            for piece in pieces
-            if piece.statut in (PieceDemandee.Statut.DEMANDEE, PieceDemandee.Statut.REFUSEE)
+            piece for piece in pieces if piece.statut in (PieceDemandee.Statut.DEMANDEE, PieceDemandee.Statut.REFUSEE)
         ]
         demandes.append({"demande": demande, "pieces": pieces, "a_transmettre": a_transmettre})
     return render(

@@ -53,10 +53,7 @@ class DemanderPiecesView(StaffRoleRequiredMixin, FormView):
     def form_valid(self, form):
         message_commun = form.cleaned_data.get("precisions", "").strip()
         date_limite = form.cleaned_data.get("date_limite")
-        existantes = {
-            libelle.casefold()
-            for libelle in self.dossier.pieces_demandees.values_list("libelle", flat=True)
-        }
+        existantes = {libelle.casefold() for libelle in self.dossier.pieces_demandees.values_list("libelle", flat=True)}
         libelles = [libelle for libelle in form.libelles() if libelle.casefold() not in existantes]
 
         if not libelles:
@@ -108,12 +105,7 @@ class PieceDecisionView(StaffRoleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        demande = (
-            DemandePieces.objects.select_related("dossier")
-            .prefetch_related("pieces")
-            .filter(pk=pk)
-            .first()
-        )
+        demande = DemandePieces.objects.select_related("dossier").prefetch_related("pieces").filter(pk=pk).first()
         if demande is not None:
             return self._traiter_demande(request, demande)
 

@@ -81,14 +81,11 @@ def envoyer_demande_de_pieces(demande):
     dossier = demande.dossier
     pieces = list(demande.pieces.all())
     liste = "\n".join(
-        f"  - {piece.libelle}" + (f"\n      {piece.precisions}" if piece.precisions else "")
-        for piece in pieces
+        f"  - {piece.libelle}" + (f"\n      {piece.precisions}" if piece.precisions else "") for piece in pieces
     )
     message_commun = f"Message du secrétariat :\n{demande.message}\n\n" if demande.message.strip() else ""
     echeance = (
-        f"Ces documents sont attendus avant le {demande.date_limite:%d/%m/%Y}.\n\n"
-        if demande.date_limite
-        else ""
+        f"Ces documents sont attendus avant le {demande.date_limite:%d/%m/%Y}.\n\n" if demande.date_limite else ""
     )
     envoyer_notification_email(
         sujet="Pièces à fournir pour votre dossier",
@@ -135,8 +132,7 @@ def envoyer_decision_pieces(demande, validees, refusees):
         blocs.append("Documents validés :\n" + "\n".join(f"  - {piece.libelle}" for piece in validees))
     if refusees:
         blocs.append(
-            "Documents à refournir :\n"
-            + "\n".join(f"  - {piece.libelle} : {piece.motif_refus}" for piece in refusees)
+            "Documents à refournir :\n" + "\n".join(f"  - {piece.libelle} : {piece.motif_refus}" for piece in refusees)
         )
     conclusion = (
         "Déposez ensemble les documents à corriger depuis votre page de suivi."

@@ -160,10 +160,7 @@ def pour_demande_inscription(demande, *, utilisateur=None) -> Reglement:
         etudiant=demande.etudiant,
         utilisateur=porteur,
         email=adresse,
-        libelle=(
-            f"Inscription — {demande.cours_session.cours.titre} "
-            f"({demande.cours_session.session.nom})"
-        ),
+        libelle=(f"Inscription — {demande.cours_session.cours.titre} ({demande.cours_session.session.nom})"),
         montant_ttc=demande.montant_du,
         taux_tva=taux_tva,
     )

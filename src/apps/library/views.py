@@ -296,9 +296,7 @@ class AnnulerReservationView(LoginRequiredMixin, View):
     def post(self, request, pk):
         emprunt = Emprunt.objects.filter(pk=pk, emprunteur=request.user, statut=Emprunt.Statut.RESERVE).first()
         if not emprunt:
-            emprunt = get_object_or_404(
-                Emprunt, notice_id=pk, emprunteur=request.user, statut=Emprunt.Statut.RESERVE
-            )
+            emprunt = get_object_or_404(Emprunt, notice_id=pk, emprunteur=request.user, statut=Emprunt.Statut.RESERVE)
 
         try:
             notice = services.annuler_reservation(emprunt, request.user)

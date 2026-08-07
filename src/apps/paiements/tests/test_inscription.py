@@ -63,9 +63,7 @@ def test_bouton_payer_ouvre_le_checkout_de_la_bonne_demande(client, demande_insc
         )
     )
 
-    association = ReglementInscription.objects.select_related("reglement").get(
-        demande=demande_inscription
-    )
+    association = ReglementInscription.objects.select_related("reglement").get(demande=demande_inscription)
     assert reponse.status_code == 302
     assert reponse.url == reverse(
         "paiements:checkout",

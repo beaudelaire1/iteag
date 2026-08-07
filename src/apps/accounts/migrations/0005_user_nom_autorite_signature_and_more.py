@@ -4,20 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0004_user_signature'),
+        ("accounts", "0004_user_signature"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='nom_autorite_signature',
-            field=models.CharField(blank=True, help_text="Nom du signataire ou de l'autorité apparaissant au bas des documents (ex: Jean DUPONT, Secrétariat ITEAG).", max_length=150, verbose_name="Nom de l'autorité / du signataire"),
+            model_name="user",
+            name="nom_autorite_signature",
+            field=models.CharField(
+                blank=True,
+                help_text="Nom du signataire ou de l'autorité apparaissant au bas des documents (ex: Jean DUPONT, Secrétariat ITEAG).",
+                max_length=150,
+                verbose_name="Nom de l'autorité / du signataire",
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='titre_qualite_signature',
-            field=models.CharField(blank=True, help_text='Titre officiel apparaissant sur les documents (ex: Le secrétariat, Le Directeur, Le Secrétaire Général).', max_length=150, verbose_name='Titre / Qualité du signataire'),
+            model_name="user",
+            name="titre_qualite_signature",
+            field=models.CharField(
+                blank=True,
+                help_text="Titre officiel apparaissant sur les documents (ex: Le secrétariat, Le Directeur, Le Secrétaire Général).",
+                max_length=150,
+                verbose_name="Titre / Qualité du signataire",
+            ),
         ),
     ]

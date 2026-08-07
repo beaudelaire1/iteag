@@ -18,9 +18,7 @@ def refuser_publication_qcm_incomplet(sender, instance: Devoir, **kwargs):
         return
 
     if not instance.pk:
-        raise ValidationError(
-            "Enregistrez d'abord le questionnaire en brouillon avant de le publier."
-        )
+        raise ValidationError("Enregistrez d'abord le questionnaire en brouillon avant de le publier.")
 
     # Import tardif pour éviter une dépendance circulaire pendant le chargement
     # des modèles. À ce stade, l'application Django est complètement initialisée.

@@ -44,9 +44,7 @@ def synchroniser_depuis_checkout(reglement: Reglement, session_checkout) -> Regl
 
     if reglement.statut != Reglement.Statut.PAYE:
         reglement.statut = Reglement.Statut.PAYE
-        reglement.intention_stripe = (
-            _valeur(session_checkout, "payment_intent", "") or reglement.intention_stripe
-        )
+        reglement.intention_stripe = _valeur(session_checkout, "payment_intent", "") or reglement.intention_stripe
         reglement.date_paiement = reglement.date_paiement or timezone.now()
         reglement.save(
             update_fields=[

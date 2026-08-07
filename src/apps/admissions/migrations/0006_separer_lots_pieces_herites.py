@@ -61,9 +61,7 @@ def separer_lots_herites(apps, schema_editor):
                     ),
                 )
 
-            PieceDemandee.objects.filter(pk__in=[piece.pk for piece in pieces_du_groupe]).update(
-                demande_id=cible.pk
-            )
+            PieceDemandee.objects.filter(pk__in=[piece.pk for piece in pieces_du_groupe]).update(demande_id=cible.pk)
 
 
 class Migration(migrations.Migration):

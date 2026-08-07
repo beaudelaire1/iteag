@@ -18,10 +18,7 @@ def synchroniser_statut_demande(demande: DemandePieces) -> DemandePieces:
         nouveau_statut = DemandePieces.Statut.A_VERIFIER
     elif PieceDemandee.Statut.REFUSEE in statuts:
         nouveau_statut = DemandePieces.Statut.A_CORRIGER
-    elif any(
-        piece.obligatoire and piece.statut == PieceDemandee.Statut.DEMANDEE
-        for piece in pieces
-    ):
+    elif any(piece.obligatoire and piece.statut == PieceDemandee.Statut.DEMANDEE for piece in pieces):
         nouveau_statut = DemandePieces.Statut.A_FOURNIR
     else:
         nouveau_statut = DemandePieces.Statut.VALIDEE

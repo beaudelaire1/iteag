@@ -159,11 +159,7 @@ def valider_retrait(emprunt: Emprunt) -> Emprunt:
 @transaction.atomic
 def restituer_ouvrage(emprunt: Emprunt, *, commentaire: str = "") -> Emprunt:
     """Enregistre le retour, remet l'ouvrage en rayon et sanctionne le retard."""
-    emprunt = (
-        Emprunt.objects.select_for_update()
-        .select_related("notice", "emprunteur")
-        .get(pk=emprunt.pk)
-    )
+    emprunt = Emprunt.objects.select_for_update().select_related("notice", "emprunteur").get(pk=emprunt.pk)
     if emprunt.statut == Emprunt.Statut.RENDU:
         return emprunt
 

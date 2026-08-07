@@ -95,10 +95,7 @@ class SuccesView(View):
 
     def get(self, request, pk):
         reglement = _reglement_visible(request, pk)
-        session_id = (
-            request.GET.get("session_id", "").strip()
-            or reglement.session_stripe
-        )
+        session_id = request.GET.get("session_id", "").strip() or reglement.session_stripe
 
         if not reglement.est_paye and session_id:
             try:

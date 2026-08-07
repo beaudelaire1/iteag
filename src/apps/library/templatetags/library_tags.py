@@ -17,8 +17,12 @@ def etat_bibliotheque(utilisateur):
 @register.simple_tag
 def suspensions_actives():
     aujourdhui = timezone.localdate()
-    return SuspensionBibliotheque.objects.filter(
-        levee_le__isnull=True,
-        date_debut__lte=aujourdhui,
-        date_fin__gte=aujourdhui,
-    ).select_related("emprunteur", "emprunt", "emprunt__notice").order_by("-date_fin")
+    return (
+        SuspensionBibliotheque.objects.filter(
+            levee_le__isnull=True,
+            date_debut__lte=aujourdhui,
+            date_fin__gte=aujourdhui,
+        )
+        .select_related("emprunteur", "emprunt", "emprunt__notice")
+        .order_by("-date_fin")
+    )

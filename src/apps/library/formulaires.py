@@ -76,10 +76,8 @@ class EmpruntForm(FormulaireModeleITEAG):
         if not self.instance.pk:
             self.fields["notice"].queryset = NoticeBibliographique.objects.filter(disponible=True)
         self.fields["emprunteur"].queryset = User.objects.all().order_by("last_name", "first_name", "username")
-        self.fields["emprunteur"].label_from_instance = (
-            lambda obj: f"{obj.get_full_name()} ({obj.email})"
-            if obj.get_full_name()
-            else f"{obj.username} ({obj.email})"
+        self.fields["emprunteur"].label_from_instance = lambda obj: (
+            f"{obj.get_full_name()} ({obj.email})" if obj.get_full_name() else f"{obj.username} ({obj.email})"
         )
 
     def clean(self):
@@ -97,9 +95,8 @@ class EmpruntForm(FormulaireModeleITEAG):
                 Emprunt.Statut.EN_COURS,
                 Emprunt.Statut.EN_RETARD,
             }
-            verifier = (
-                original.emprunteur_id != emprunteur.pk
-                or (original.statut not in statuts_actifs and statut in statuts_actifs)
+            verifier = original.emprunteur_id != emprunteur.pk or (
+                original.statut not in statuts_actifs and statut in statuts_actifs
             )
 
         if not verifier:

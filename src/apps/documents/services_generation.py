@@ -39,25 +39,14 @@ def obtenir_signature_secretariat_data_uri() -> tuple[str, str, str]:
 
     User = get_user_model()
     secretaire = (
-        User.objects.filter(role="secretariat", signature__isnull=False)
-        .exclude(signature="")
-        .order_by("-id")
-        .first()
+        User.objects.filter(role="secretariat", signature__isnull=False).exclude(signature="").order_by("-id").first()
     )
     if not secretaire:
         secretaire = (
-            User.objects.filter(role="admin", signature__isnull=False)
-            .exclude(signature="")
-            .order_by("-id")
-            .first()
+            User.objects.filter(role="admin", signature__isnull=False).exclude(signature="").order_by("-id").first()
         )
     if not secretaire:
-        secretaire = (
-            User.objects.filter(signature__isnull=False)
-            .exclude(signature="")
-            .order_by("-id")
-            .first()
-        )
+        secretaire = User.objects.filter(signature__isnull=False).exclude(signature="").order_by("-id").first()
 
     if not secretaire:
         return "", "", ""
@@ -115,9 +104,8 @@ def fabriquer_document_redige(document: DocumentRedige) -> tuple[bytes, str]:
         or (redacteur.get_full_name() if redacteur else "")
         or (redacteur.username if redacteur else "")
     )
-    signataire_qualite_effectif = (
-        document.signataire_qualite
-        or (redacteur.titre_qualite_signature if redacteur and redacteur.titre_qualite_signature else "")
+    signataire_qualite_effectif = document.signataire_qualite or (
+        redacteur.titre_qualite_signature if redacteur and redacteur.titre_qualite_signature else ""
     )
 
     if not signature_pdf:

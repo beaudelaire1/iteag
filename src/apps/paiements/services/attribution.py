@@ -53,9 +53,7 @@ def _delivrer_module(reglement: Reglement, *, acteur=None) -> None:
     from apps.elearning.services import octroi
 
     if reglement.etudiant is None:
-        raise ContrepartieImpossible(
-            f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant."
-        )
+        raise ContrepartieImpossible(f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant.")
     octroi.octroyer(
         reglement.etudiant,
         reglement.module,
@@ -83,9 +81,7 @@ def _delivrer_frais(reglement: Reglement, *, acteur=None) -> None:
     from apps.academics.models import Paiement
 
     if reglement.etudiant is None:
-        raise ContrepartieImpossible(
-            f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant."
-        )
+        raise ContrepartieImpossible(f"Le règlement « {reglement.libelle} » n'est rattaché à aucun dossier étudiant.")
 
     association = _association_inscription(reglement)
     session = association.demande.cours_session.session if association else None
@@ -178,10 +174,7 @@ def _retirer_frais(reglement: Reglement, *, motif: str, acteur=None) -> None:
         return
 
     demande = association.demande
-    if (
-        demande.statut == DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE
-        and demande.paiement_id == paiement.pk
-    ):
+    if demande.statut == DemandeInscriptionCours.Statut.PAIEMENT_ATTENTE and demande.paiement_id == paiement.pk:
         demande.paiement = None
         demande.reference_paiement = ""
         demande.save(

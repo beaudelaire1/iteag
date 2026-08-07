@@ -64,9 +64,7 @@ class SeanceCours(TimeStampedModel):
         if self.cours_session_id and self.date:
             session = self.cours_session.session
             if not session.date_debut <= self.date <= session.date_fin:
-                raise ValidationError(
-                    {"date": "La séance doit être comprise dans les dates de la session académique."}
-                )
+                raise ValidationError({"date": "La séance doit être comprise dans les dates de la session académique."})
 
 
 class Presence(TimeStampedModel):
@@ -138,9 +136,7 @@ class Presence(TimeStampedModel):
                 etudiant=self.etudiant,
             ).exists()
             if not inscrit:
-                raise ValidationError(
-                    {"etudiant": "Cet étudiant n'est pas inscrit à ce cours de session."}
-                )
+                raise ValidationError({"etudiant": "Cet étudiant n'est pas inscrit à ce cours de session."})
 
 
 class HistoriquePresence(TimeStampedModel):
@@ -167,9 +163,7 @@ class HistoriquePresence(TimeStampedModel):
         verbose_name = "Correction de présence"
         verbose_name_plural = "Corrections de présence"
         ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["presence", "-created_at"], name="academics_h_presenc_f6b852_idx")
-        ]
+        indexes = [models.Index(fields=["presence", "-created_at"], name="academics_h_presenc_f6b852_idx")]
 
     def __str__(self):
         return f"{self.presence_id} : {self.ancien_statut} → {self.nouveau_statut}"

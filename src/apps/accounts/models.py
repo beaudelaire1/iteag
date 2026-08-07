@@ -45,8 +45,7 @@ class User(AbstractUser):
         blank=True,
         verbose_name="Titre / Qualité du signataire",
         help_text=(
-            "Titre officiel apparaissant sur les documents "
-            "(ex: Le secrétariat, Le Directeur, Le Secrétaire Général)."
+            "Titre officiel apparaissant sur les documents (ex: Le secrétariat, Le Directeur, Le Secrétaire Général)."
         ),
     )
     nom_autorite_signature = models.CharField(
@@ -54,8 +53,7 @@ class User(AbstractUser):
         blank=True,
         verbose_name="Nom de l'autorité / du signataire",
         help_text=(
-            "Nom du signataire ou de l'autorité apparaissant au bas des documents "
-            "(ex: Jean DUPONT, Secrétariat ITEAG)."
+            "Nom du signataire ou de l'autorité apparaissant au bas des documents (ex: Jean DUPONT, Secrétariat ITEAG)."
         ),
     )
     adresse = models.CharField(max_length=250, blank=True, verbose_name="Adresse")

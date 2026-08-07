@@ -11,9 +11,7 @@ class SeanceCoursForm(forms.ModelForm):
             "date": forms.DateInput(attrs={"type": "date", "class": "form-input"}),
             "heure_debut": forms.TimeInput(attrs={"type": "time", "class": "form-input"}),
             "heure_fin": forms.TimeInput(attrs={"type": "time", "class": "form-input"}),
-            "libelle": forms.TextInput(
-                attrs={"class": "form-input", "placeholder": "Ex. Cours du matin"}
-            ),
+            "libelle": forms.TextInput(attrs={"class": "form-input", "placeholder": "Ex. Cours du matin"}),
         }
 
     def __init__(self, *args, cours_session, **kwargs):
@@ -25,9 +23,7 @@ class SeanceCoursForm(forms.ModelForm):
         date = self.cleaned_data["date"]
         session = self.cours_session.session
         if not session.date_debut <= date <= session.date_fin:
-            raise forms.ValidationError(
-                "La séance doit être comprise dans les dates de la session académique."
-            )
+            raise forms.ValidationError("La séance doit être comprise dans les dates de la session académique.")
         return date
 
     def clean(self):
