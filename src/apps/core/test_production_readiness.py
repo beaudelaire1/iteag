@@ -1,6 +1,6 @@
-import pytest
 from django.core.management import CommandError, call_command
 from django.test import override_settings
+import pytest
 
 from apps.core.services.production import anomalies_configuration_production
 
