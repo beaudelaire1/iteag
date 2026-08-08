@@ -94,7 +94,7 @@
 
 .tippy-box[data-theme="dropdown"] .w-combobox__menu {
     box-sizing: border-box;
-    max-height: min(320px, 52vh);
+    max-height: min(300px, 50vh);
     padding: 6px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -205,6 +205,6 @@
     }
 
     .tippy-box[data-theme="dropdown"] .w-combobox__menu {
-        max-height: min(280px, 48vh);
+        max-height: min(260px, 46vh);
     }
 }
