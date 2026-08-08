@@ -44,9 +44,7 @@ def test_footer_utilise_les_slugs_de_reference():
     assert "/formations/parcours/parcours-bachelor-flte/" not in footer
 
 
-@override_settings(
-    ALLOWED_HOSTS=["iteag-preprod.137.74.169.188.sslip.io", "iteag.org", "www.iteag.org"]
-)
+@override_settings(ALLOWED_HOSTS=["iteag-preprod.137.74.169.188.sslip.io", "iteag.org", "www.iteag.org"])
 def test_preproduction_est_non_indexable(client):
     reponse = client.get(
         "/robots.txt",
