@@ -7,13 +7,14 @@ revérifié à chaque demande (ADR-001, ADR-005).
 """
 
 import json
+import re
 import uuid
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
-from django.http import FileResponse, Http404, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.decorators.csrf import csrf_protect
@@ -35,6 +36,8 @@ from apps.elearning.services import progression as service_progression
 from apps.elearning.services.acces import journaliser_acces, verifier_acces
 
 TTL_LECTURE = 300
+PLAGE_OCTETS = re.compile(r"^bytes=(\d*)-(\d*)$")
+TAILLE_BLOC_VIDEO = 64 * 1024
 
 
 def acces_integral_module(utilisateur, module) -> bool:
@@ -439,23 +442,99 @@ class RessourceTelechargementView(View):
         return FileResponse(contenu, as_attachment=True, filename=ressource.nom_fichier)
 
 
+def _plage_demandee(entete: str, taille: int) -> tuple[int, int] | None:
+    """Traduit une requête HTTP Range simple en bornes inclusives.
+
+    Les navigateurs vidéo n'ont besoin que d'une plage à la fois. Les requêtes
+    multiparties sont refusées plutôt que simulées : annoncer une prise en
+    charge partielle puis renvoyer le fichier entier est précisément ce qui
+    faisait monopoliser un worker Gunicorn pendant les sauts dans la vidéo.
+    """
+    correspondance = PLAGE_OCTETS.fullmatch(entete.strip())
+    if correspondance is None or taille <= 0:
+        return None
+
+    debut_brut, fin_brut = correspondance.groups()
+    if not debut_brut and not fin_brut:
+        return None
+
+    if not debut_brut:
+        longueur = int(fin_brut)
+        if longueur <= 0:
+            return None
+        debut = max(0, taille - longueur)
+        return debut, taille - 1
+
+    debut = int(debut_brut)
+    if debut >= taille:
+        return None
+
+    fin = int(fin_brut) if fin_brut else taille - 1
+    if fin < debut:
+        return None
+    return debut, min(fin, taille - 1)
+
+
+def _iterer_plage(fichier, debut: int, longueur: int):
+    """Lit uniquement la plage demandée et ferme le descripteur à la fin."""
+    restant = longueur
+    try:
+        fichier.seek(debut)
+        while restant > 0:
+            bloc = fichier.read(min(TAILLE_BLOC_VIDEO, restant))
+            if not bloc:
+                break
+            restant -= len(bloc)
+            yield bloc
+    finally:
+        fichier.close()
+
+
 class FichierVideoView(View):
     """
-    Sert un fichier vidéo à partir d'un jeton signé — stockage local seulement.
+    Sert une ancienne vidéo locale à partir d'un jeton signé.
 
-    En production, le fichier est servi directement par le stockage objet via
-    une adresse présignée : cette vue n'est jamais sollicitée.
+    Ce chemin n'est qu'un filet de compatibilité : les nouvelles vidéos sont
+    diffusées par Bunny Stream. Il implémente néanmoins HTTP Range correctement
+    pour que lecture et recherche dans la timeline ne forcent jamais Gunicorn à
+    renvoyer le MP4 complet à chaque déplacement.
     """
 
     def get(self, request, jeton):
-        # Compatibilité de lecture uniquement pour les anciennes références
-        # locales. Aucun écran ne permet désormais d'en créer de nouvelles.
         stockage = LocalStockageVideo()
         cle = LocalStockageVideo.cle_depuis_jeton(jeton, ttl=TTL_LECTURE)
         if cle is None or not stockage.existe(cle):
             raise Http404
 
-        reponse = FileResponse(stockage.ouvrir(cle), content_type="video/mp4")
+        fichier = stockage.ouvrir(cle)
+        taille = fichier.size
+        entete_range = request.headers.get("Range", "").strip()
+
+        if not entete_range:
+            reponse = FileResponse(fichier, content_type="video/mp4")
+            reponse["Content-Length"] = str(taille)
+            reponse["Accept-Ranges"] = "bytes"
+            reponse["Cache-Control"] = "private, max-age=0, no-store"
+            return reponse
+
+        plage = _plage_demandee(entete_range, taille)
+        if plage is None:
+            fichier.close()
+            reponse = StreamingHttpResponse(status=416)
+            reponse["Content-Range"] = f"bytes */{taille}"
+            reponse["Accept-Ranges"] = "bytes"
+            reponse["Cache-Control"] = "private, max-age=0, no-store"
+            return reponse
+
+        debut, fin = plage
+        longueur = fin - debut + 1
+        reponse = StreamingHttpResponse(
+            _iterer_plage(fichier, debut, longueur),
+            status=206,
+            content_type="video/mp4",
+        )
+        reponse["Content-Length"] = str(longueur)
+        reponse["Content-Range"] = f"bytes {debut}-{fin}/{taille}"
         reponse["Accept-Ranges"] = "bytes"
         reponse["Cache-Control"] = "private, max-age=0, no-store"
         return reponse
