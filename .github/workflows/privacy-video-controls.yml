@@ -8,6 +8,8 @@ on:
       - "src/apps/website/urls.py"
       - "src/apps/website/sitemaps.py"
       - "src/apps/website/test_cookies.py"
+      - "src/apps/elearning/views.py"
+      - "src/apps/elearning/tests/test_fichier_video_range.py"
       - "src/apps/elearning/tests/test_lecteur_video_ui.py"
       - "src/static/js/consentement-cookies.js"
       - "src/static/js/lecteur-video.js"
@@ -21,6 +23,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "src/apps/elearning/views.py"
+      - "src/apps/elearning/tests/test_fichier_video_range.py"
       - "src/static/js/consentement-cookies.js"
       - "src/static/js/lecteur-video.js"
       - "src/templates/partials/bandeau_cookies.html"
@@ -65,6 +69,7 @@ jobs:
           pytest
           apps/website/test_cookies.py
           apps/website/test_politique_donnees.py
+          apps/elearning/tests/test_fichier_video_range.py
           apps/elearning/tests/test_lecteur_video_ui.py
           apps/elearning/tests/test_vues.py
           -q
