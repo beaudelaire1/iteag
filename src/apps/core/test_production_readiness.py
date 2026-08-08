@@ -50,15 +50,26 @@ CONFIGURATION_PRODUCTION = {
     "ELEARNING_DIFFUSION_VIDEO": "bunny",
     "BUNNY_ZONE_DIFFUSION": "https://video.example.test",
     "BUNNY_CLE_SIGNATURE": "video-secret",
-    "DATABASES": {"default": {"ENGINE": "django.db.backends.postgresql"}},
     "CACHES": {"default": {"BACKEND": "django_redis.cache.RedisCache"}},
     "CELERY_BROKER_URL": "redis://redis:6379/1",
     "CELERY_RESULT_BACKEND": "redis://redis:6379/2",
 }
 
 
+@pytest.fixture
+def moteur_postgresql(settings, monkeypatch):
+    """Exerce le garde-fou PostgreSQL sans override_settings(DATABASES).
+
+    Django avertit volontairement quand un test remplace DATABASES. Ici aucune
+    connexion n'est ouverte : le contrat ne lit que le nom du backend. Modifier
+    l'entrée du dictionnaire en place évite ce faux warning et pytest la restaure
+    après le test.
+    """
+    monkeypatch.setitem(settings.DATABASES["default"], "ENGINE", "django.db.backends.postgresql")
+
+
 @override_settings(**CONFIGURATION_PRODUCTION)
-def test_configuration_complete_est_prete():
+def test_configuration_complete_est_prete(moteur_postgresql):
     assert anomalies_configuration_production() == []
 
 
@@ -70,7 +81,7 @@ def test_configuration_complete_est_prete():
         "SENTRY_DSN": "",
     }
 )
-def test_les_replis_de_developpement_sont_refuses():
+def test_les_replis_de_developpement_sont_refuses(moteur_postgresql):
     anomalies = anomalies_configuration_production()
 
     assert any("EMAIL_BACKEND" in anomalie for anomalie in anomalies)
@@ -87,7 +98,7 @@ def test_les_replis_de_developpement_sont_refuses():
         "CSRF_TRUSTED_ORIGINS": [],
     }
 )
-def test_une_origine_non_securisee_est_refusee():
+def test_une_origine_non_securisee_est_refusee(moteur_postgresql):
     anomalies = anomalies_configuration_production()
 
     assert any("HTTPS" in anomalie for anomalie in anomalies)
@@ -102,7 +113,7 @@ def test_une_origine_non_securisee_est_refusee():
         "STRIPE_CLE_SECRETE": "sk_test_123",
     }
 )
-def test_les_cles_stripe_de_test_sont_refusees():
+def test_les_cles_stripe_de_test_sont_refusees(moteur_postgresql):
     anomalies = anomalies_configuration_production()
 
     assert any("STRIPE_CLE_PUBLIABLE" in anomalie and "pk_live_" in anomalie for anomalie in anomalies)
@@ -110,7 +121,7 @@ def test_les_cles_stripe_de_test_sont_refusees():
 
 
 @override_settings(**CONFIGURATION_PRODUCTION)
-def test_la_commande_reussit_sur_une_configuration_complete(capsys):
+def test_la_commande_reussit_sur_une_configuration_complete(capsys, moteur_postgresql):
     call_command("verifier_production")
     assert "Configuration production : OK" in capsys.readouterr().out
 
@@ -124,7 +135,7 @@ def test_la_commande_reussit_sur_une_configuration_complete(capsys):
         ("STRIPE_SECRET_WEBHOOK", ""),
     ],
 )
-def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, nom, valeur):
+def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, moteur_postgresql, nom, valeur):
     for cle, config in CONFIGURATION_PRODUCTION.items():
         setattr(settings, cle, config)
     setattr(settings, nom, valeur)
