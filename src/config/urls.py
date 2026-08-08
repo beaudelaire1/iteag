@@ -136,6 +136,8 @@ if settings.DEBUG:
 
     # Browser reload
     if "django_browser_reload" in settings.INSTALLED_APPS:
+        import django_browser_reload
+
         urlpatterns = [path("__reload__/", include(django_browser_reload.urls))] + urlpatterns
 
 # ──────────────────────────────────────────────
