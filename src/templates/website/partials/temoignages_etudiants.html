@@ -1,48 +1,5 @@
 {% if temoignages_etudiants %}
-<style>
-.testimonial-toggle {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-.testimonial-text-box.is-clamped {
-    max-height: 140px;
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-}
-.testimonial-toggle:checked ~ .testimonial-body .testimonial-text-box.is-clamped {
-    max-height: 2500px;
-}
-.testimonial-toggle:checked ~ .testimonial-body .testimonial-fade-overlay {
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-.testimonial-toggle:focus-visible ~ .testimonial-body .btn-toggle-read-more {
-    outline: 2px solid var(--color-forest-700);
-    outline-offset: 3px;
-}
-.btn-toggle-read-more .toggle-less {
-    display: none;
-}
-.testimonial-toggle:checked ~ .testimonial-body .btn-toggle-read-more .toggle-more {
-    display: none;
-}
-.testimonial-toggle:checked ~ .testimonial-body .btn-toggle-read-more .toggle-less {
-    display: inline;
-}
-.testimonial-toggle:checked ~ .testimonial-body .btn-toggle-read-more svg {
-    transform: rotate(180deg);
-}
-</style>
-
-<section class="section" style="background: var(--color-warm-100);">
+<section id="temoignages" class="section" style="background: var(--color-warm-100);">
     <div class="container-wide">
         <div class="text-center mb-12 reveal">
             <p class="overline mb-3">Témoignages</p>
@@ -51,44 +8,27 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch" data-motion-stagger>
             {% for item in temoignages_etudiants %}
             {% with text_plain=item.texte|striptags %}
-            <article class="card-elevated reveal flex flex-col justify-between h-full relative testimonial-card" style="min-height: 280px;">
-                {% if text_plain|length > 140 %}
-                <input type="checkbox"
-                       class="testimonial-toggle"
-                       id="temoignage-toggle-{{ item.pk }}-{{ forloop.counter }}"
-                       aria-controls="temoignage-text-{{ item.pk }}-{{ forloop.counter }}">
-                {% endif %}
+            <article class="card-elevated reveal flex flex-col h-full relative testimonial-card" style="min-height: 280px;">
+                <div class="flex-1 flex flex-col mb-5">
+                    <span aria-hidden="true" class="text-3xl leading-none block mb-2" style="color: var(--color-gold-500);">“</span>
+                    <p class="text-sm leading-relaxed" style="color: var(--color-warm-700);">
+                        {{ text_plain|truncatechars:220 }}
+                    </p>
 
-                <div class="testimonial-body flex-1 flex flex-col mb-4">
-                    <span aria-hidden="true" class="text-3xl leading-none block mb-1" style="color: var(--color-gold-500);">“</span>
-
-                    <div class="testimonial-content-wrapper relative flex-1">
-                        <div id="temoignage-text-{{ item.pk }}-{{ forloop.counter }}"
-                             class="testimonial-text-box prose max-w-none text-sm leading-relaxed {% if text_plain|length > 140 %}is-clamped{% endif %}"
-                             style="color: var(--color-warm-700);">
-                            {{ item.texte|safe }}
-                        </div>
-                        {% if text_plain|length > 140 %}
-                        <div class="testimonial-fade-overlay absolute bottom-0 left-0 right-0 h-12 pointer-events-none transition-opacity duration-300"
-                             style="background: linear-gradient(to bottom, rgba(255,255,255,0), #ffffff); opacity: 1;">
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    {% if text_plain|length > 140 %}
-                    <label for="temoignage-toggle-{{ item.pk }}-{{ forloop.counter }}"
-                           class="btn-toggle-read-more text-xs font-semibold mt-3 self-start inline-flex items-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-full transition-all duration-200"
-                           style="color: var(--color-forest-700); background: var(--color-warm-200, #eceae1); border: 1px solid var(--color-warm-300, #e0ddd0);">
-                        <span class="toggle-more">Voir plus</span>
-                        <span class="toggle-less">Voir moins</span>
-                        <svg class="w-3.5 h-3.5 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </label>
+                    {% if text_plain|length > 220 %}
+                    <p class="mt-5">
+                        <a href="{% url 'website:temoignage_public' item.pk %}"
+                           class="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-75"
+                           style="color: var(--color-forest-700);"
+                           aria-label="Lire le témoignage complet de {{ item.nom_affiche }}">
+                            Lire le témoignage
+                            <span aria-hidden="true">→</span>
+                        </a>
+                    </p>
                     {% endif %}
                 </div>
 
-                <div class="pt-4 border-t flex items-center gap-3 mt-auto" style="border-color: var(--color-warm-200);">
+                <footer class="pt-4 border-t flex items-center gap-3 mt-auto" style="border-color: var(--color-warm-200);">
                     {% if item.photo %}
                     <img src="{{ item.photo.url }}" alt="Photo de {{ item.nom_affiche }}"
                          class="h-11 w-11 rounded-full object-cover flex-shrink-0" loading="lazy">
@@ -101,7 +41,7 @@
                         <p class="text-sm font-semibold truncate" style="color: var(--color-navy-900);">{{ item.nom_affiche }}</p>
                         {% if item.promotion %}<p class="text-xs mt-0.5 text-ellipsis overflow-hidden" style="color: var(--color-warm-500);">{{ item.promotion }}</p>{% endif %}
                     </div>
-                </div>
+                </footer>
             </article>
             {% endwith %}
             {% endfor %}

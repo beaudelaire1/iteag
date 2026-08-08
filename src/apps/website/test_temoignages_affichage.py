@@ -10,14 +10,14 @@ def _gabarit() -> str:
     return chemin.read_text(encoding="utf-8")
 
 
-def test_voir_plus_ne_depend_plus_de_javascript():
+def test_un_temoignage_long_quitte_la_grille_pour_une_page_dediee():
     gabarit = _gabarit()
 
-    assert 'type="checkbox"' in gabarit
-    assert 'class="testimonial-toggle"' in gabarit
-    assert 'class="btn-toggle-read-more' in gabarit
-    assert "testimonial-toggle:checked" in gabarit
-    assert "Voir plus" in gabarit
-    assert "Voir moins" in gabarit
-    assert "addEventListener('click'" not in gabarit
-    assert "DOMContentLoaded" not in gabarit
+    assert 'id="temoignages"' in gabarit
+    assert "truncatechars:220" in gabarit
+    assert "website:temoignage_public" in gabarit
+    assert "Lire le témoignage" in gabarit
+    assert "Voir plus" not in gabarit
+    assert "Voir moins" not in gabarit
+    assert 'type="checkbox"' not in gabarit
+    assert "testimonial-toggle" not in gabarit
