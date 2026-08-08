@@ -68,6 +68,7 @@ def test_styles_streamfield_restent_isoles_du_portail():
     assert any("/css/streamfield-draftail-portail.css" in url for url in ressources)
     assert any("/css/streamfield-picker-portail.css" in url for url in ressources)
     assert any("/css/typed-table-portail.css" in url for url in ressources)
+    assert any("/css/streamfield-ux-portail.css" in url for url in ressources)
     assert not any("wagtailadmin/css/core.css" in url for url in ressources)
     assert 'class="streamfield-portail"' in gabarit
 
@@ -85,6 +86,7 @@ def test_draftail_streamfield_est_ancre_au_bloc():
 
 def test_picker_streamfield_est_une_liste_stable_hors_core_admin():
     styles = _lire("static/css/streamfield-picker-portail.css")
+    ux = _lire("static/css/streamfield-ux-portail.css")
 
     assert '[data-tippy-root]' in styles
     assert '.tippy-box[data-theme="dropdown"]' in styles
@@ -92,6 +94,10 @@ def test_picker_streamfield_est_une_liste_stable_hors_core_admin():
     assert "grid-template-columns: minmax(0, 1fr)" in styles
     assert ".w-combobox__option-preview" in styles
     assert "max-height:" in styles
+    assert '[data-tippy-root]:has(.w-combobox-container)' in ux
+    assert "position: fixed !important" in ux
+    assert "transform: none !important" in ux
+    assert ".w-combobox__option-text" in ux
 
 
 def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():
@@ -101,17 +107,25 @@ def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():
     assert isinstance(texte, RichTextBlock)
     assert texte.required is False
     assert list(texte.features) == FONCTIONNALITES_CELLULE_TABLEAU
+    assert "bold" in texte.features
+    assert "underline" in texte.features
+    assert "align-center" in texte.features
+    assert "link" in texte.features
     assert texte.meta.template == "website/blocks/texte_cellule_tableau.html"
 
 
 def test_tableau_portail_a_des_commandes_et_menus_explicites():
     styles = _lire("static/css/typed-table-portail.css")
+    ux = _lire("static/css/streamfield-ux-portail.css")
 
     assert ".typed-table-block__wrapper" in styles
     assert "ul.add-column-menu" in styles
     assert 'content: "Ajouter une ligne"' in styles
     assert ".typed-table-block .Draftail-Editor--focus .Draftail-Toolbar" in styles
     assert "min-height: 5.25rem !important" in styles
+    assert ".typed-table-block .Draftail-Toolbar" in ux
+    assert "display: flex !important" in ux
+    assert "position: sticky !important" in ux
 
 
 def test_le_portail_ne_reimplemente_plus_blockcontroller():
@@ -122,6 +136,16 @@ def test_le_portail_ne_reimplemente_plus_blockcontroller():
 
 def test_le_vocabulaire_structure_reste_complet_dans_le_widget():
     widget = ActualiteForm().fields["contenu"].widget
-    noms = set(widget.block_def.child_blocks)
+    noms = list(widget.block_def.child_blocks)
 
-    assert noms == {"texte", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}
+    assert noms == [
+        "texte",
+        "important",
+        "tableau",
+        "procedure",
+        "chiffres_cles",
+        "graphique",
+        "citation",
+        "encadre",
+    ]
+    assert widget.block_def.child_blocks["important"].meta.label == "Important"

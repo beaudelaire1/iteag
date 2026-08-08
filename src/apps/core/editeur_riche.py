@@ -44,7 +44,7 @@ FONCTIONNALITES_EDITEUR_PORTAIL = (
     "link",
 )
 
-VERSION_ASSETS_EDITEUR = "6"
+VERSION_ASSETS_EDITEUR = "7"
 
 
 def _asset_iteag(chemin: str) -> str:
@@ -77,6 +77,7 @@ class StreamFieldPortail(BlockWidget):
                 _asset_iteag("css/streamfield-draftail-portail.css"),
                 _asset_iteag("css/streamfield-picker-portail.css"),
                 _asset_iteag("css/typed-table-portail.css"),
+                _asset_iteag("css/streamfield-ux-portail.css"),
             ]
         )
         return forms.Media(

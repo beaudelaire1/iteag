@@ -1,17 +1,44 @@
 {% if temoignages_etudiants %}
 <style>
+.testimonial-toggle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 .testimonial-text-box.is-clamped {
     max-height: 140px;
     overflow: hidden;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
 }
-.testimonial-card.is-expanded .testimonial-text-box.is-clamped {
-    max-height: 2500px !important;
+.testimonial-toggle:checked ~ .testimonial-body .testimonial-text-box.is-clamped {
+    max-height: 2500px;
 }
-.testimonial-card.is-expanded .testimonial-fade-overlay {
+.testimonial-toggle:checked ~ .testimonial-body .testimonial-fade-overlay {
     opacity: 0 !important;
     pointer-events: none !important;
+}
+.testimonial-toggle:focus-visible ~ .testimonial-body .btn-toggle-read-more {
+    outline: 2px solid var(--color-forest-700);
+    outline-offset: 3px;
+}
+.btn-toggle-read-more .toggle-less {
+    display: none;
+}
+.testimonial-toggle:checked ~ .testimonial-body .btn-toggle-read-more .toggle-more {
+    display: none;
+}
+.testimonial-toggle:checked ~ .testimonial-body .btn-toggle-read-more .toggle-less {
+    display: inline;
+}
+.testimonial-toggle:checked ~ .testimonial-body .btn-toggle-read-more svg {
+    transform: rotate(180deg);
 }
 </style>
 
@@ -25,11 +52,19 @@
             {% for item in temoignages_etudiants %}
             {% with text_plain=item.texte|striptags %}
             <article class="card-elevated reveal flex flex-col justify-between h-full relative testimonial-card" style="min-height: 280px;">
-                <div class="flex-1 flex flex-col mb-4">
+                {% if text_plain|length > 140 %}
+                <input type="checkbox"
+                       class="testimonial-toggle"
+                       id="temoignage-toggle-{{ item.pk }}-{{ forloop.counter }}"
+                       aria-controls="temoignage-text-{{ item.pk }}-{{ forloop.counter }}">
+                {% endif %}
+
+                <div class="testimonial-body flex-1 flex flex-col mb-4">
                     <span aria-hidden="true" class="text-3xl leading-none block mb-1" style="color: var(--color-gold-500);">“</span>
-                    
+
                     <div class="testimonial-content-wrapper relative flex-1">
-                        <div class="testimonial-text-box prose max-w-none text-sm leading-relaxed {% if text_plain|length > 140 %}is-clamped{% endif %}"
+                        <div id="temoignage-text-{{ item.pk }}-{{ forloop.counter }}"
+                             class="testimonial-text-box prose max-w-none text-sm leading-relaxed {% if text_plain|length > 140 %}is-clamped{% endif %}"
                              style="color: var(--color-warm-700);">
                             {{ item.texte|safe }}
                         </div>
@@ -41,15 +76,15 @@
                     </div>
 
                     {% if text_plain|length > 140 %}
-                    <button type="button" 
-                            class="btn-toggle-read-more text-xs font-semibold mt-3 self-start inline-flex items-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-full transition-all duration-200"
-                            style="color: var(--color-forest-700); background: var(--color-warm-200, #eceae1); border: 1px solid var(--color-warm-300, #e0ddd0);"
-                            aria-expanded="false">
-                        <span class="toggle-text">Voir plus</span>
-                        <svg class="w-3.5 h-3.5 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <label for="temoignage-toggle-{{ item.pk }}-{{ forloop.counter }}"
+                           class="btn-toggle-read-more text-xs font-semibold mt-3 self-start inline-flex items-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-full transition-all duration-200"
+                           style="color: var(--color-forest-700); background: var(--color-warm-200, #eceae1); border: 1px solid var(--color-warm-300, #e0ddd0);">
+                        <span class="toggle-more">Voir plus</span>
+                        <span class="toggle-less">Voir moins</span>
+                        <svg class="w-3.5 h-3.5 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
-                    </button>
+                    </label>
                     {% endif %}
                 </div>
 
@@ -73,37 +108,4 @@
         </div>
     </div>
 </section>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const cards = document.querySelectorAll('.testimonial-card');
-    cards.forEach(card => {
-        const btn = card.querySelector('.btn-toggle-read-more');
-        const overlay = card.querySelector('.testimonial-fade-overlay');
-        const toggleText = btn ? btn.querySelector('.toggle-text') : null;
-        const icon = btn ? btn.querySelector('svg') : null;
-
-        if (!btn) return;
-
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const isExpanded = card.classList.contains('is-expanded');
-
-            if (isExpanded) {
-                card.classList.remove('is-expanded');
-                btn.setAttribute('aria-expanded', 'false');
-                if (toggleText) toggleText.textContent = 'Voir plus';
-                if (overlay) overlay.style.opacity = '1';
-                if (icon) icon.style.transform = 'rotate(0deg)';
-            } else {
-                card.classList.add('is-expanded');
-                btn.setAttribute('aria-expanded', 'true');
-                if (toggleText) toggleText.textContent = 'Voir moins';
-                if (overlay) overlay.style.opacity = '0';
-                if (icon) icon.style.transform = 'rotate(180deg)';
-            }
-        });
-    });
-});
-</script>
 {% endif %}
