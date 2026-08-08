@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags %}
+{% load wagtailcore_tags duree %}
 
 {% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ page.accroche|default:page.search_description }}{% endblock %}
@@ -59,7 +59,7 @@
                 <p class="mt-auto pt-4 border-t text-xs"
                    style="border-color: var(--color-warm-100); color: var(--color-warm-500);">
                     {% if module.responsable %}{{ module.responsable.nom_complet }} · {% endif %}
-                    {{ module.duree_minutes }} min
+                    {{ module.duree_totale_secondes|duree_humaine }}
                 </p>
             </article>
             {% endfor %}

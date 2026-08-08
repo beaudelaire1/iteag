@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load duree %}
 
 {% block title %}{{ module.titre }} — E-Learning — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ module.description|truncatewords:30 }}{% endblock %}
@@ -82,7 +83,7 @@
                         {% if module.duree_totale_secondes %}
                         <div class="flex justify-between">
                             <dt class="text-warm-500">Durée</dt>
-                            <dd class="font-medium text-navy-900">{{ module.duree_minutes }} min</dd>
+                            <dd class="font-medium text-navy-900">{{ module.duree_totale_secondes|duree_humaine }}</dd>
                         </div>
                         {% endif %}
                         {% if module.responsable %}
@@ -236,7 +237,7 @@
                     </span>
                     <span class="flex items-center gap-4 shrink-0">
                         {% if lecon.duree_secondes %}
-                        <span class="text-xs text-warm-400">{{ lecon.duree_secondes|divisibleby:60|yesno:"," }}{{ lecon.duree_secondes }}s</span>
+                        <span class="text-xs text-warm-400">{{ lecon.duree_secondes|duree_humaine }}</span>
                         {% endif %}
                         {% if acces_integral or lecon.apercu_gratuit %}
                         <a href="{% url 'elearning:lecon_detail' module.slug lecon.slug %}"
