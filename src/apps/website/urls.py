@@ -10,6 +10,12 @@ urlpatterns = [
     # ── Articles de recherche — lecture publique ──
     path("articles/", vues_articles.ArticlesPublicsView.as_view(), name="articles"),
     path("articles/<slug:slug>/", vues_articles.ArticlePublicView.as_view(), name="article_detail"),
+    # ── Témoignages — lecture publique ──
+    path(
+        "temoignages/<int:pk>/",
+        vues_temoignages.TemoignagePublicView.as_view(),
+        name="temoignage_public",
+    ),
     # ── Rédaction, côté enseignant ──
     path("espace-enseignant/articles/", vues_articles.MesArticlesView.as_view(), name="mes_articles"),
     path(
