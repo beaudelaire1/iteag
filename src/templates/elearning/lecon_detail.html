@@ -50,7 +50,7 @@
                      data-position-reprise="{{ position_reprise }}"
                      data-intervalle="{{ intervalle_signal }}">
                     <div class="relative">
-                        <video data-video controls preload="metadata" playsinline
+                        <video data-video controls controlslist="nodownload" preload="metadata" playsinline
                                class="w-full aspect-video bg-black"
                                {% if lecon.video.poster %}poster="{{ lecon.video.poster.url }}"{% endif %}>
                             {% for piste in sous_titres %}
@@ -192,7 +192,6 @@
                             <div class="progress-bar-fill" data-progression-barre
                                  style="width: {{ inscription.progression_percent }}%"></div>
                         </div>
-                    </div>
                     {% endif %}
 
                     <nav aria-label="Leçons du module">
