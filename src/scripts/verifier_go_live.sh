@@ -6,7 +6,7 @@
 #
 # Dépendance côté hôte : Docker Compose uniquement. Les requêtes réseau et le
 # parsing JSON sont exécutés depuis le conteneur web afin de ne pas supposer la
-# présence de curl ou Python sur le serveur.
+# présence de curl, grep ou Python sur le serveur.
 
 set -eu
 
@@ -62,7 +62,7 @@ assert payload.get("cache") is True, payload
 ' "$GO_LIVE_BASE_URL"
 
 etape "Worker + Beat Celery"
-compose exec -T worker celery -A config inspect ping --timeout=5 | grep -q pong
+compose exec -T worker sh -c 'celery -A config inspect ping --timeout=5 | grep -q pong'
 compose exec -T web python manage.py verifier_heartbeat_celery --max-age 180
 
 etape "Sauvegarde PostgreSQL réellement présente sur R2"
