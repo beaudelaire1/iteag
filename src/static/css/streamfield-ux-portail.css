@@ -1,0 +1,115 @@
+/* Ajustements UX du StreamField public : un sélecteur prévisible et un tableau
+   dont les commandes restent visibles pendant la saisie. */
+
+/* Le picker Wagtail est normalement ancré au petit bouton +. Dans le portail,
+   cela le fait changer de place à chaque insertion et parfois sortir de la zone
+   visible. On conserve le composant officiel, mais on l'affiche comme un
+   panneau fixe et stable. :has() évite de toucher aux autres tooltips Tippy. */
+[data-tippy-root]:has(.w-combobox-container) {
+    position: fixed !important;
+    top: 5.75rem !important;
+    right: 1rem !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: min(30rem, calc(100vw - 2rem)) !important;
+    max-width: calc(100vw - 2rem) !important;
+    transform: none !important;
+    z-index: 12000 !important;
+}
+
+[data-tippy-root]:has(.w-combobox-container) .tippy-box[data-theme="dropdown"],
+[data-tippy-root]:has(.w-combobox-container) .w-combobox-container {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+[data-tippy-root]:has(.w-combobox-container) .w-combobox__menu {
+    max-height: calc(100vh - 13rem) !important;
+}
+
+/* Les libellés doivent rester lisibles : pas de troncature sur un vocabulaire
+   aussi court que Texte, Important, Tableau, Procédure, etc. */
+[data-tippy-root]:has(.w-combobox-container) .w-combobox__option-text {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+}
+
+/* Le tableau garde ses commandes de ligne visibles pendant le défilement
+   horizontal. Cela évite de chercher les boutons après plusieurs colonnes. */
+.streamfield-portail .typed-table-block th.control-cell,
+.streamfield-portail .typed-table-block td.control-cell {
+    position: sticky !important;
+    inset-inline-start: 0;
+    z-index: 8;
+    background: #fbfaf7 !important;
+}
+
+.streamfield-portail .typed-table-block tbody tr:hover td:not(.control-cell) {
+    background: #fffdf8;
+}
+
+/* Le formatage d'une cellule texte ne doit jamais dépendre d'un état de focus
+   interne à Draftail : la barre est toujours visible et reste compacte. */
+.streamfield-portail .typed-table-block .Draftail-Toolbar {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 0.15rem;
+    min-height: 2.35rem;
+    padding: 0.3rem 0.35rem;
+    overflow: visible;
+    border-bottom: 1px solid #e3ded5;
+    background: #f8f6f1;
+}
+
+.streamfield-portail .typed-table-block .Draftail-ToolbarButton {
+    flex: 0 0 auto;
+}
+
+.streamfield-portail .typed-table-block .Draftail-Editor {
+    min-width: 14rem;
+    overflow: hidden;
+    border: 1px solid #d9d4ca;
+    background: #fff;
+}
+
+.streamfield-portail .typed-table-block .Draftail-Editor--focus {
+    border-color: #315f55;
+    box-shadow: 0 0 0 3px rgb(49 95 85 / 10%);
+}
+
+.streamfield-portail .typed-table-block .public-DraftEditor-content {
+    min-height: 4.5rem !important;
+}
+
+/* Les menus de type de colonne restent au-dessus du tableau et ne sont pas
+   rognés par une cellule voisine. */
+.streamfield-portail .typed-table-block ul.add-column-menu {
+    z-index: 500 !important;
+    min-width: 15rem;
+}
+
+.streamfield-portail .typed-table-block ul.add-column-menu .button {
+    min-height: 2.5rem;
+    font-size: 0.82rem;
+}
+
+@media (max-width: 48rem) {
+    [data-tippy-root]:has(.w-combobox-container) {
+        top: auto !important;
+        right: 0.75rem !important;
+        bottom: 0.75rem !important;
+        left: 0.75rem !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
+    [data-tippy-root]:has(.w-combobox-container) .w-combobox__menu {
+        max-height: 52vh !important;
+    }
+
+    .streamfield-portail .typed-table-block thead th,
+    .streamfield-portail .typed-table-block tbody td:not(.control-cell) {
+        min-width: 14rem;
+    }
+}
