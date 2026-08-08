@@ -39,10 +39,15 @@ class Command(BaseCommand):
         finally:
             # Nettoyage de dernier recours si l'échec survient entre l'écriture
             # et la suppression normale. Une erreur de nettoyage ne doit pas
-            # masquer la cause initiale du contrôle.
+            # masquer la cause initiale du contrôle, mais elle doit rester visible.
             if enregistre:
                 try:
                     if default_storage.exists(enregistre):
                         default_storage.delete(enregistre)
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as erreur_nettoyage:  # noqa: BLE001
+                    self.stderr.write(
+                        self.style.WARNING(
+                            f"ATTENTION — impossible de nettoyer l'objet de contrôle {enregistre!r} : "
+                            f"{erreur_nettoyage}"
+                        )
+                    )
