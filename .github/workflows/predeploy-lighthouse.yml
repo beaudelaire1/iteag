@@ -1,0 +1,102 @@
+name: Predeploy Lighthouse
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: predeploy-lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Lighthouse mobile
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/predeploy-go-readiness'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Auditer les pages clés
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lighthouse
+          declare -A pages=(
+            [accueil]="/"
+            [formations]="/formations/"
+            [candidature]="/admissions/candidature/"
+            [connexion]="/connexion/"
+          )
+
+          for nom in accueil formations candidature connexion; do
+            url="${BASE_URL}${pages[$nom]}"
+            echo "=== Lighthouse: ${nom} — ${url} ==="
+            npx --yes lighthouse@13.4.1 "$url" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-gpu" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="/tmp/lighthouse/${nom}.json"
+          done
+
+      - name: Contrôler les scores et métriques
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY'
+          import json
+          from pathlib import Path
+
+          echecs = []
+          for chemin in sorted(Path("/tmp/lighthouse").glob("*.json")):
+              data = json.loads(chemin.read_text())
+              cats = data["categories"]
+              audits = data["audits"]
+              scores = {
+                  "performance": cats["performance"]["score"],
+                  "accessibilite": cats["accessibility"]["score"],
+                  "bonnes_pratiques": cats["best-practices"]["score"],
+                  "seo": cats["seo"]["score"],
+              }
+              lcp = audits.get("largest-contentful-paint", {}).get("numericValue")
+              cls = audits.get("cumulative-layout-shift", {}).get("numericValue")
+              tbt = audits.get("total-blocking-time", {}).get("numericValue")
+              fcp = audits.get("first-contentful-paint", {}).get("numericValue")
+
+              print(f"\n{chemin.stem.upper()}")
+              for nom, score in scores.items():
+                  print(f"  {nom:18}: {score * 100:.0f}")
+              print(f"  FCP               : {fcp:.0f} ms" if fcp is not None else "  FCP               : n/a")
+              print(f"  LCP               : {lcp:.0f} ms" if lcp is not None else "  LCP               : n/a")
+              print(f"  TBT               : {tbt:.0f} ms" if tbt is not None else "  TBT               : n/a")
+              print(f"  CLS               : {cls:.3f}" if cls is not None else "  CLS               : n/a")
+
+              if scores["accessibilite"] < 0.95:
+                  echecs.append(f"{chemin.stem}: accessibilité {scores['accessibilite']:.2f} < 0.95")
+              if scores["bonnes_pratiques"] < 0.95:
+                  echecs.append(f"{chemin.stem}: bonnes pratiques {scores['bonnes_pratiques']:.2f} < 0.95")
+              if scores["seo"] < 0.95:
+                  echecs.append(f"{chemin.stem}: SEO {scores['seo']:.2f} < 0.95")
+              # La performance de labo varie davantage avec le runner et la
+              # distance réseau. Le seuil bloque une vraie dégradation sans
+              # prétendre remplacer des RUM/Core Web Vitals de terrain.
+              if scores["performance"] < 0.70:
+                  echecs.append(f"{chemin.stem}: performance {scores['performance']:.2f} < 0.70")
+              if cls is not None and cls > 0.10:
+                  echecs.append(f"{chemin.stem}: CLS {cls:.3f} > 0.10")
+
+          if echecs:
+              print("\nÉCHECS:")
+              for echec in echecs:
+                  print(f"- {echec}")
+              raise SystemExit(1)
+          PY
