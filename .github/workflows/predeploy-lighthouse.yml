@@ -29,8 +29,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          html="$(curl --silent --show-error --max-time 20 "${BASE_URL}/connexion/")"
-          printf '%s' "$html" | grep --ignore-case --quiet --extended-regexp '<meta[^>]+name=["'"']robots["'"'][^>]+content=["'"'][^"'"']*noindex'
+          python - "$BASE_URL" <<'PY'
+          from html.parser import HTMLParser
+          import sys
+          from urllib.parse import urljoin
+          from urllib.request import Request, urlopen
+
+          class RobotsParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.robots = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag != "meta":
+                      return
+                  data = {str(cle).lower(): valeur for cle, valeur in attrs if cle}
+                  if (data.get("name") or "").lower() == "robots":
+                      self.robots.append((data.get("content") or "").lower())
+
+          url = urljoin(sys.argv[1].rstrip("/") + "/", "connexion/")
+          req = Request(url, headers={"User-Agent": "ITEAG-Predeploy-Audit/1.0"})
+          with urlopen(req, timeout=20) as rep:
+              html = rep.read().decode("utf-8", errors="replace")
+
+          parser = RobotsParser()
+          parser.feed(html)
+          assert any("noindex" in contenu for contenu in parser.robots), parser.robots
+          print(f"Connexion volontairement noindex: {parser.robots}")
+          PY
 
       - name: Auditer les pages clés
         shell: bash
@@ -87,7 +113,7 @@ jobs:
               print(f"  TBT               : {tbt:.0f} ms" if tbt is not None else "  TBT               : n/a")
               print(f"  CLS               : {cls:.3f}" if cls is not None else "  CLS               : n/a")
 
-              for categorie in ("accessibility", "best-practices", "seo"):
+              for categorie in ("performance", "accessibility", "best-practices", "seo"):
                   non_conformes = []
                   for reference in cats[categorie].get("auditRefs", []):
                       audit = audits.get(reference["id"], {})
