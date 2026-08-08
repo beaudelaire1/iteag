@@ -19,13 +19,34 @@ from apps.website.models import (
     TexteEditorialBlock,
 )
 
-FONCTIONNALITES_CELLULE_TABLEAU = ["bold", "italic", "underline", "ol", "ul", "link"]
+FONCTIONNALITES_CELLULE_TABLEAU = [
+    "bold",
+    "italic",
+    "underline",
+    "strikethrough",
+    "superscript",
+    "subscript",
+    "code",
+    "ol",
+    "ul",
+    "link",
+    "align-left",
+    "align-center",
+    "align-right",
+]
 
 
 class TableauEditorialBlock(TypedTableBlock):
-    """Tableau éditorial simple avec mise en forme légère dans les cellules."""
+    """Tableau éditorial avec cellules texte réellement formatables."""
 
     def __init__(self, **kwargs):
+        kwargs.setdefault(
+            "help_text",
+            (
+                "Ajoutez d'abord les colonnes, puis les lignes. Pour du texte, choisissez "
+                "« Texte formaté » : la barre de mise en forme reste visible dans chaque cellule."
+            ),
+        )
         super().__init__(
             [
                 (
@@ -47,6 +68,32 @@ class TableauEditorialBlock(TypedTableBlock):
         icon = "table"
         label = "Tableau"
         template = "website/blocks/tableau_editorial.html"
+
+
+class ImportantEditorialBlock(blocks.StructBlock):
+    """Information à faire ressortir sans obliger à configurer un encadré."""
+
+    titre = blocks.CharBlock(required=False, max_length=140, label="Titre")
+    contenu = TexteEditorialBlock(
+        features=[
+            "bold",
+            "italic",
+            "underline",
+            "strikethrough",
+            "ol",
+            "ul",
+            "link",
+            "align-left",
+            "align-center",
+            "align-right",
+        ],
+        label="Contenu important",
+    )
+
+    class Meta:
+        icon = "warning"
+        label = "Important"
+        template = "website/blocks/important_editorial.html"
 
 
 class EtapeEditorialeBlock(blocks.StructBlock):
@@ -126,9 +173,10 @@ class GraphiqueSimpleEditorialBlock(blocks.StructBlock):
 
 
 class CorpsActualiteBlock(blocks.StreamBlock):
-    """Les seules formes nécessaires à une actualité ITEAG."""
+    """Les formes éditoriales directement disponibles dans le bouton d'ajout."""
 
     texte = TexteEditorialBlock()
+    important = ImportantEditorialBlock()
     tableau = TableauEditorialBlock(required=False)
     procedure = ProcedureEditorialBlock()
     chiffres_cles = ChiffresClesEditorialBlock()
