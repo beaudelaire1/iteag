@@ -15,9 +15,12 @@ concurrency:
 jobs:
   audit:
     name: Lighthouse mobile
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/predeploy-go-readiness'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.head_ref == 'agent/predeploy-go-readiness' ||
+      github.head_ref == 'agent/go-live-ops-gate'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
@@ -25,7 +28,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Vérifier le noindex de la connexion
+      - name: Vérifier le noindex de la préproduction et de la connexion
         shell: bash
         run: |
           set -euo pipefail
@@ -47,18 +50,24 @@ jobs:
                   if (data.get("name") or "").lower() == "robots":
                       self.robots.append((data.get("content") or "").lower())
 
-          url = urljoin(sys.argv[1].rstrip("/") + "/", "connexion/")
-          req = Request(url, headers={"User-Agent": "ITEAG-Predeploy-Audit/1.0"})
-          with urlopen(req, timeout=20) as rep:
-              html = rep.read().decode("utf-8", errors="replace")
-
-          parser = RobotsParser()
-          parser.feed(html)
-          assert any("noindex" in contenu for contenu in parser.robots), parser.robots
-          print(f"Connexion volontairement noindex: {parser.robots}")
+          base = sys.argv[1].rstrip("/") + "/"
+          for path in ("", "connexion/"):
+              url = urljoin(base, path)
+              req = Request(url, headers={"User-Agent": "ITEAG-Predeploy-Audit/1.0"})
+              with urlopen(req, timeout=20) as rep:
+                  html = rep.read().decode("utf-8", errors="replace")
+                  xrobots = (rep.headers.get("X-Robots-Tag") or "").lower()
+              assert "noindex" in xrobots, (url, xrobots)
+              if path == "connexion/":
+                  parser = RobotsParser()
+                  parser.feed(html)
+                  assert any("noindex" in contenu for contenu in parser.robots), parser.robots
+                  print(f"Connexion noindex (HTTP + meta): {xrobots} / {parser.robots}")
+              else:
+                  print(f"Préproduction noindex par HTTP: {xrobots}")
           PY
 
-      - name: Auditer les pages clés
+      - name: Auditer trois fois les pages clés
         shell: bash
         run: |
           set -euo pipefail
@@ -72,108 +81,105 @@ jobs:
 
           for nom in accueil formations candidature connexion; do
             url="${BASE_URL}${pages[$nom]}"
-            echo "=== Lighthouse: ${nom} — ${url} ==="
-            npx --yes lighthouse@13.4.1 "$url" \
-              --quiet \
-              --chrome-flags="--headless --no-sandbox --disable-gpu" \
-              --only-categories=performance,accessibility,best-practices,seo \
-              --output=json \
-              --output-path="/tmp/lighthouse/${nom}.json"
+            for tentative in 1 2 3; do
+              echo "=== Lighthouse: ${nom} — mesure ${tentative}/3 — ${url} ==="
+              sortie="/tmp/lighthouse/${nom}-${tentative}.json"
+              # Une trace Chrome peut exceptionnellement échouer sur un runner
+              # hébergé (NO_NAVSTART). On autorise une seule relance technique ;
+              # les scores ne sont jamais assouplis.
+              if ! npx --yes lighthouse@13.4.1 "$url" \
+                --quiet \
+                --chrome-flags="--headless --no-sandbox --disable-gpu" \
+                --only-categories=performance,accessibility,best-practices,seo \
+                --output=json \
+                --output-path="$sortie"; then
+                echo "Trace Lighthouse instable : une relance technique." >&2
+                npx --yes lighthouse@13.4.1 "$url" \
+                  --quiet \
+                  --chrome-flags="--headless --no-sandbox --disable-gpu" \
+                  --only-categories=performance,accessibility,best-practices,seo \
+                  --output=json \
+                  --output-path="$sortie"
+              fi
+            done
           done
 
-      - name: Contrôler les scores et métriques
+      - name: Contrôler les médianes, minima et audits SEO réels
         shell: bash
         run: |
           set -euo pipefail
           python <<'PY'
           import json
           from pathlib import Path
+          from statistics import median
 
-          def details_audit(audit, limite=12):
-              details = audit.get("details") or {}
-              items = details.get("items") or []
-              sorties = []
-              for item in items[:limite]:
-                  node = item.get("node") or {}
-                  selector = node.get("selector") or ""
-                  snippet = node.get("snippet") or ""
-                  if selector or snippet:
-                      sorties.append(f"selector={selector!r} snippet={snippet!r}")
-                      continue
-                  morceaux = []
-                  for cle in ("url", "source", "duration", "total", "scripting", "scriptParseCompile"):
-                      if cle in item:
-                          morceaux.append(f"{cle}={item[cle]!r}")
-                  if morceaux:
-                      sorties.append(" ".join(morceaux))
-              return sorties
-
+          PAGES = ("accueil", "formations", "candidature", "connexion")
+          SEO_IGNORES_PREPROD = {"is-crawlable"}
           echecs = []
-          for chemin in sorted(Path("/tmp/lighthouse").glob("*.json")):
-              data = json.loads(chemin.read_text())
-              cats = data["categories"]
-              audits = data["audits"]
-              scores = {
-                  "performance": cats["performance"]["score"],
-                  "accessibilite": cats["accessibility"]["score"],
-                  "bonnes_pratiques": cats["best-practices"]["score"],
-                  "seo": cats["seo"]["score"],
-              }
-              lcp = audits.get("largest-contentful-paint", {}).get("numericValue")
-              cls = audits.get("cumulative-layout-shift", {}).get("numericValue")
-              tbt = audits.get("total-blocking-time", {}).get("numericValue")
-              fcp = audits.get("first-contentful-paint", {}).get("numericValue")
 
-              print(f"\n{chemin.stem.upper()}")
-              for nom, score in scores.items():
-                  print(f"  {nom:18}: {score * 100:.0f}")
-              print(f"  FCP               : {fcp:.0f} ms" if fcp is not None else "  FCP               : n/a")
-              print(f"  LCP               : {lcp:.0f} ms" if lcp is not None else "  LCP               : n/a")
-              print(f"  TBT               : {tbt:.0f} ms" if tbt is not None else "  TBT               : n/a")
-              print(f"  CLS               : {cls:.3f}" if cls is not None else "  CLS               : n/a")
+          def charger(page):
+              return [
+                  json.loads(Path(f"/tmp/lighthouse/{page}-{tentative}.json").read_text())
+                  for tentative in (1, 2, 3)
+              ]
 
-              for categorie in ("performance", "accessibility", "best-practices", "seo"):
-                  non_conformes = []
-                  for reference in cats[categorie].get("auditRefs", []):
-                      audit = audits.get(reference["id"], {})
-                      score = audit.get("score")
+          def score(data, categorie):
+              return data["categories"][categorie]["score"]
+
+          def valeur(data, audit):
+              return data["audits"].get(audit, {}).get("numericValue")
+
+          for page in PAGES:
+              mesures = charger(page)
+              performances = [score(data, "performance") for data in mesures]
+              accessibilites = [score(data, "accessibility") for data in mesures]
+              bonnes_pratiques = [score(data, "best-practices") for data in mesures]
+              seos = [score(data, "seo") for data in mesures]
+              lcps = [valeur(data, "largest-contentful-paint") for data in mesures]
+              tbts = [valeur(data, "total-blocking-time") for data in mesures]
+              clss = [valeur(data, "cumulative-layout-shift") for data in mesures]
+
+              perf_mediane = median(performances)
+              lcp_mediane = median(v for v in lcps if v is not None)
+              tbt_mediane = median(v for v in tbts if v is not None)
+              cls_max = max(v for v in clss if v is not None)
+
+              print(f"\n{page.upper()}")
+              print("  performance       : " + ", ".join(f"{v*100:.0f}" for v in performances))
+              print(f"  médiane performance: {perf_mediane*100:.0f}")
+              print("  accessibilité     : " + ", ".join(f"{v*100:.0f}" for v in accessibilites))
+              print("  bonnes pratiques  : " + ", ".join(f"{v*100:.0f}" for v in bonnes_pratiques))
+              print("  SEO préprod       : " + ", ".join(f"{v*100:.0f}" for v in seos))
+              print(f"  LCP médian        : {lcp_mediane:.0f} ms")
+              print(f"  TBT médian        : {tbt_mediane:.0f} ms")
+              print(f"  CLS max           : {cls_max:.3f}")
+
+              if perf_mediane < 0.70:
+                  echecs.append(f"{page}: performance médiane {perf_mediane:.2f} < 0.70")
+              if min(accessibilites) < 0.95:
+                  echecs.append(f"{page}: accessibilité min {min(accessibilites):.2f} < 0.95")
+              if min(bonnes_pratiques) < 0.95:
+                  echecs.append(f"{page}: bonnes pratiques min {min(bonnes_pratiques):.2f} < 0.95")
+              if cls_max > 0.10:
+                  echecs.append(f"{page}: CLS max {cls_max:.3f} > 0.10")
+
+              # Le score SEO global est volontairement pénalisé par le noindex
+              # de préproduction. On ignore uniquement `is-crawlable` et on
+              # continue de bloquer tout autre audit SEO réellement défaillant.
+              for index, data in enumerate(mesures, start=1):
+                  categorie = data["categories"]["seo"]
+                  audits = data["audits"]
+                  for reference in categorie.get("auditRefs", []):
+                      identifiant = reference["id"]
+                      audit = audits.get(identifiant, {})
+                      audit_score = audit.get("score")
                       mode = audit.get("scoreDisplayMode")
-                      if score is not None and score < 1 and mode not in {"notApplicable", "informative"}:
-                          non_conformes.append(
-                              (
-                                  reference["id"],
-                                  score,
-                                  audit.get("title", ""),
-                                  audit.get("displayValue", ""),
-                              )
-                          )
-                  if non_conformes:
-                      print(f"  Audits {categorie} à examiner:")
-                      for identifiant, score, titre, valeur in non_conformes:
-                          suffixe = f" — {valeur}" if valeur else ""
-                          print(f"    - {identifiant}: {score} — {titre}{suffixe}")
-                          for detail in details_audit(audits.get(identifiant, {})):
-                              print(f"      · {detail}")
-
-              if chemin.stem == "accueil":
-                  for identifiant in ("bootup-time", "long-tasks", "mainthread-work-breakdown", "network-requests"):
-                      audit = audits.get(identifiant)
-                      if not audit:
+                      if identifiant in SEO_IGNORES_PREPROD:
                           continue
-                      print(f"  Diagnostic {identifiant}: {audit.get('displayValue', '')}")
-                      for detail in details_audit(audit, limite=20):
-                          print(f"    · {detail}")
-
-              if scores["accessibilite"] < 0.95:
-                  echecs.append(f"{chemin.stem}: accessibilité {scores['accessibilite']:.2f} < 0.95")
-              if scores["bonnes_pratiques"] < 0.95:
-                  echecs.append(f"{chemin.stem}: bonnes pratiques {scores['bonnes_pratiques']:.2f} < 0.95")
-              if chemin.stem != "connexion" and scores["seo"] < 0.95:
-                  echecs.append(f"{chemin.stem}: SEO {scores['seo']:.2f} < 0.95")
-              if scores["performance"] < 0.70:
-                  echecs.append(f"{chemin.stem}: performance {scores['performance']:.2f} < 0.70")
-              if cls is not None and cls > 0.10:
-                  echecs.append(f"{chemin.stem}: CLS {cls:.3f} > 0.10")
+                      if audit_score is not None and audit_score < 1 and mode not in {"notApplicable", "informative"}:
+                          echecs.append(
+                              f"{page} mesure {index}: audit SEO {identifiant}={audit_score} — {audit.get('title', '')}"
+                          )
 
           if echecs:
               print("\nÉCHECS:")

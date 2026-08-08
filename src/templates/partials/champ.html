@@ -11,7 +11,14 @@ gabarit ne doit pas être le seul rempart contre un champ non stylisé.
 Les identifiants `_helptext` et `_error` suivent les conventions de Django 5.2.
 BoundField les reprend dans `aria-describedby` : l'aide et l'erreur restent donc
 liées au contrôle quand un lecteur d'écran revient sur le champ.
+
+Un champ caché reste rendu dans le DOM mais n'a ni label, ni aide, ni conteneur
+visuel. C'est notamment indispensable pour les honeypots anti-spam : révéler
+leur nom à l'utilisateur dégrade l'UX et trahit inutilement le mécanisme.
 {% endcomment %}
+{% if field.is_hidden %}
+{{ field }}
+{% else %}
 <div class="champ{% if field.errors %} champ--invalide{% endif %}">
     {% if field.field.widget.input_type == 'checkbox' %}
     <label class="flex items-start gap-2.5 cursor-pointer" for="{{ field.id_for_label }}">
@@ -42,3 +49,4 @@ liées au contrôle quand un lecteur d'écran revient sur le champ.
     </div>
     {% endif %}
 </div>
+{% endif %}
