@@ -64,6 +64,17 @@ urlpatterns = [
     path("formations/cours/<int:pk>/modifier/", views_academics.CourseUpdateView.as_view(), name="course_update"),
     path("cours-session/<int:pk>/emargement.pdf", views.EmargementPDFView.as_view(), name="emargement_pdf"),
     path(
+        "cours-session/<int:pk>/presences/",
+        views_academics.SaisiePresenceView.as_view(),
+        name="cours_session_presences",
+    ),
+    path(
+        "sessions/<int:pk>/pv-deliberation.pdf",
+        views_academics.PVDeliberationPDFView.as_view(),
+        name="session_pv_deliberation_pdf",
+    ),
+
+    path(
         "formations/cours/<int:pk>/supprimer/",
         views_academics.CourseDeleteView.as_view(),
         name="course_delete",

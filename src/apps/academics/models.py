@@ -653,3 +653,53 @@ class PropositionEnseignement(TimeStampedModel):
 # les modèles académiques historiques afin que les relations inverses
 # d’assiduité existent avant la construction des requêtes ORM.
 from apps.academics.models_assiduite import HistoriquePresence, Presence, SeanceCours  # noqa: E402, F401
+
+class PresenceEtudiant(TimeStampedModel):
+    """Bilan d'assiduité d'un étudiant à un cours de session."""
+
+    class Statut(models.TextChoices):
+        PRESENT = "present", "Présent"
+        RETARD = "retard", "En retard"
+        ABSENT_JUSTIFIE = "absent_justifie", "Absent (justifié)"
+        ABSENT_NON_JUSTIFIE = "absent_non_justifie", "Absent (non justifié)"
+
+    cours_session = models.ForeignKey(
+        CoursDeSession,
+        on_delete=models.CASCADE,
+        related_name="presences_etudiants",
+    )
+    etudiant = models.ForeignKey(
+        ProfilEtudiant,
+        on_delete=models.CASCADE,
+        related_name="presences_etudiants",
+    )
+    statut = models.CharField(
+        max_length=20,
+        choices=Statut.choices,
+        default=Statut.PRESENT,
+    )
+    commentaire = models.TextField(blank=True, verbose_name="Remarque / justificatif")
+    saisi_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="presences_etudiants_saisies",
+    )
+
+    class Meta:
+        verbose_name = "Présence / Assiduité"
+        verbose_name_plural = "Présences / Assiduités"
+        ordering = ["etudiant__utilisateur__last_name", "etudiant__utilisateur__first_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cours_session", "etudiant"],
+                name="presence_unique_par_cours_session_etudiant",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.etudiant} — {self.cours_session} : {self.get_statut_display()}"
+
+
+

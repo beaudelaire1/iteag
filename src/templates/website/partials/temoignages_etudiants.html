@@ -5,21 +5,45 @@
             <p class="overline mb-3">Témoignages</p>
             <h2>Paroles d'étudiants</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-motion-stagger>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch" data-motion-stagger>
             {% for item in temoignages_etudiants %}
-            <article class="card-elevated reveal">
-                <blockquote class="leading-relaxed mb-5" style="color: var(--color-warm-700);">
-                    <span aria-hidden="true" class="text-3xl leading-none" style="color: var(--color-gold-500);">“</span>
-                    <div class="mt-2 prose max-w-none">{{ item.texte|safe }}</div>
-                </blockquote>
-                <div class="pt-5 border-t flex items-center gap-3" style="border-color: var(--color-warm-200);">
+            <article class="card-elevated reveal flex flex-col justify-between h-full relative" style="min-height: 280px;">
+                <div class="flex-1 flex flex-col mb-4">
+                    <span aria-hidden="true" class="text-3xl leading-none block mb-1" style="color: var(--color-gold-500);">“</span>
+                    
+                    <div class="testimonial-content-wrapper relative flex-1">
+                        <div class="testimonial-text prose max-w-none text-sm leading-relaxed overflow-hidden transition-all duration-300"
+                             style="color: var(--color-warm-700); max-height: 160px;">
+                            {{ item.texte|safe }}
+                        </div>
+                        <div class="testimonial-fade-overlay absolute bottom-0 left-0 right-0 h-10 pointer-events-none transition-opacity duration-300"
+                             style="background: linear-gradient(to bottom, rgba(255,255,255,0), #ffffff);">
+                        </div>
+                    </div>
+
+                    <button type="button" 
+                            class="btn-toggle-read-more text-xs font-semibold mt-3 self-start inline-flex items-center gap-1.5 cursor-pointer py-1 px-3 rounded-full transition-all duration-200"
+                            style="color: var(--color-forest-700); background: var(--color-warm-200, #eceae1); border: 1px solid var(--color-warm-300, #e0ddd0); display: none;"
+                            aria-expanded="false">
+                        <span class="toggle-text">Lire la suite</span>
+                        <svg class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="pt-4 border-t flex items-center gap-3 mt-auto" style="border-color: var(--color-warm-200);">
                     {% if item.photo %}
                     <img src="{{ item.photo.url }}" alt="Photo de {{ item.nom_affiche }}"
-                         class="h-12 w-12 rounded-full object-cover" loading="lazy">
+                         class="h-11 w-11 rounded-full object-cover flex-shrink-0" loading="lazy">
+                    {% else %}
+                    <div class="h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background: var(--color-forest-700);">
+                        {{ item.nom_affiche|slice:":1" }}
+                    </div>
                     {% endif %}
-                    <div>
-                        <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ item.nom_affiche }}</p>
-                        {% if item.promotion %}<p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ item.promotion }}</p>{% endif %}
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold truncate" style="color: var(--color-navy-900);">{{ item.nom_affiche }}</p>
+                        {% if item.promotion %}<p class="text-xs mt-0.5 text-ellipsis overflow-hidden" style="color: var(--color-warm-500);">{{ item.promotion }}</p>{% endif %}
                     </div>
                 </div>
             </article>
@@ -27,4 +51,55 @@
         </div>
     </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const testimonialCards = document.querySelectorAll('article.card-elevated');
+    testimonialCards.forEach(card => {
+        const textContainer = card.querySelector('.testimonial-text');
+        const overlay = card.querySelector('.testimonial-fade-overlay');
+        const btn = card.querySelector('.btn-toggle-read-more');
+
+        if (!textContainer || !btn) return;
+
+        // Verify if content overflows max-height
+        const checkOverflow = () => {
+            const isOverflowing = textContainer.scrollHeight > 165;
+            if (isOverflowing) {
+                btn.style.display = 'inline-flex';
+                if (overlay) overlay.style.opacity = '1';
+            } else {
+                btn.style.display = 'none';
+                if (overlay) overlay.style.opacity = '0';
+                textContainer.style.maxHeight = 'none';
+            }
+        };
+
+        checkOverflow();
+        window.addEventListener('resize', checkOverflow);
+
+        btn.addEventListener('click', function () {
+            const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+            const toggleText = btn.querySelector('.toggle-text');
+            const icon = btn.querySelector('svg');
+
+            if (isExpanded) {
+                // Collapse text
+                textContainer.style.maxHeight = '160px';
+                btn.setAttribute('aria-expanded', 'false');
+                if (toggleText) toggleText.textContent = 'Lire la suite';
+                if (overlay) overlay.style.opacity = '1';
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            } else {
+                // Expand text
+                textContainer.style.maxHeight = textContainer.scrollHeight + 'px';
+                btn.setAttribute('aria-expanded', 'true');
+                if (toggleText) toggleText.textContent = 'Réduire';
+                if (overlay) overlay.style.opacity = '0';
+                if (icon) icon.style.transform = 'rotate(180deg)';
+            }
+        });
+    });
+});
+</script>
 {% endif %}

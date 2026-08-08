@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Procès-Verbal de Délibération — {{ session.nom }}</title>
+    <meta name="author" content="ITEAG">
+    <meta name="description" content="Procès-Verbal officiel de délibération de session ITEAG">
+    <meta name="generator" content="Plateforme ITEAG — WeasyPrint">
+    <meta name="dcterms.created" content="{{ date_edition|date:'c' }}">
+    <style>
+        {% include "partials/pdf_polices.html" %}
+        {% include "documents/pdf/_charte_institutionnelle.css" %}
+
+        @page {
+            size: A4 landscape;
+            margin: 12mm 15mm 15mm;
+            @bottom-left {
+                content: "ITEAG · Procès-Verbal officiel de délibération de session";
+                color: #73807a;
+                font-family: "Inter", sans-serif;
+                font-size: 7pt;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " / " counter(pages);
+                color: #73807a;
+                font-family: "Inter", sans-serif;
+                font-size: 7pt;
+            }
+        }
+
+        .header-pv {
+            border-bottom: 0.5mm solid #17372f;
+            padding-bottom: 3mm;
+            margin-bottom: 4mm;
+        }
+        .header-pv h1 {
+            font-family: "Playfair Display", serif;
+            font-size: 16pt;
+            color: #17372f;
+            margin: 0 0 1mm 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .header-pv p {
+            font-family: "Inter", sans-serif;
+            font-size: 8.5pt;
+            color: #4a5550;
+            margin: 0;
+        }
+
+        .meta-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 4mm;
+            background: #f7f9f8;
+            border: 0.2mm solid #d0d7d4;
+            border-radius: 1.5mm;
+            padding: 2mm 3mm;
+        }
+        .meta-row {
+            display: table-row;
+        }
+        .meta-cell {
+            display: table-cell;
+            font-family: "Inter", sans-serif;
+            font-size: 8pt;
+            padding: 1mm 2mm;
+        }
+        .meta-label {
+            font-weight: 700;
+            color: #17372f;
+        }
+
+        .table-pv {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: "Inter", sans-serif;
+            font-size: 8pt;
+            margin-top: 2mm;
+        }
+        .table-pv th {
+            background-color: #17372f;
+            color: #ffffff;
+            font-weight: 600;
+            text-align: left;
+            padding: 2mm 2.5mm;
+            border: 0.2mm solid #17372f;
+        }
+        .table-pv td {
+            padding: 2mm 2.5mm;
+            border: 0.2mm solid #cfd6d3;
+            vertical-align: middle;
+        }
+        .table-pv tr:nth-child(even) {
+            background-color: #fbfcfb;
+        }
+
+        .badge-admis {
+            color: #065f46;
+            font-weight: 700;
+        }
+        .badge-ajourne {
+            color: #991b1b;
+            font-weight: 700;
+        }
+
+        .signatures-section {
+            margin-top: 8mm;
+            display: table;
+            width: 100%;
+            page-break-inside: avoid;
+        }
+        .signature-col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            font-family: "Inter", sans-serif;
+            font-size: 8.5pt;
+        }
+        .signature-box {
+            border: 0.2mm dashed #9ca3af;
+            height: 22mm;
+            margin-top: 2mm;
+            border-radius: 1mm;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-pv">
+        <h1>Institut de Théologie Évangélique des Antilles et de la Guyane</h1>
+        <p><strong>Procès-Verbal de Délibération du Jury de Session Académique</strong> — Année {{ session.annee_academique }}</p>
+    </div>
+
+    <div class="meta-grid">
+        <div class="meta-row">
+            <div class="meta-cell"><span class="meta-label">Session :</span> {{ session.nom }} ({{ session.get_periode_display }})</div>
+            <div class="meta-cell"><span class="meta-label">Dates :</span> Du {{ session.date_debut|date:"d/m/Y" }} au {{ session.date_fin|date:"d/m/Y" }}</div>
+            <div class="meta-cell"><span class="meta-label">Édition :</span> {{ date_edition|date:"d/m/Y H:i" }}</div>
+            <div class="meta-cell"><span class="meta-label">Opérateur :</span> {{ signataire.get_full_name|default:signataire.username }}</div>
+        </div>
+    </div>
+
+    {% if etudiants %}
+    <table class="table-pv">
+        <thead>
+            <tr>
+                <th style="width: 22%;">Étudiant (N° Matricule)</th>
+                <th style="width: 23%;">Parcours</th>
+                <th style="width: 35%;">Cours suivis &amp; Notes (/20)</th>
+                <th style="width: 10%; text-align: center;">ECTS Validés</th>
+                <th style="width: 10%; text-align: center;">Décision Jury</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in etudiants %}
+            <tr>
+                <td>
+                    <strong>{{ item.profil.utilisateur.get_full_name }}</strong><br>
+                    <span style="font-size: 7.5pt; color: #6b7280;">Matricule : {{ item.profil.numero_etudiant }}</span>
+                </td>
+                <td>{{ item.profil.parcours.nom }}</td>
+                <td>
+                    <ul style="margin: 0; padding-left: 3mm; list-style-type: square;">
+                        {% for cn in item.cours_notes %}
+                        <li>
+                            {{ cn.cours.titre }} : 
+                            {% if cn.note is not None %}
+                                <strong>{{ cn.note|floatformat:2 }}/20</strong>
+                            {% else %}
+                                <em>{{ cn.statut }}</em>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td style="text-align: center;">
+                    <strong>{{ item.total_ects_session }} ECTS</strong>
+                </td>
+                <td style="text-align: center;">
+                    {% if item.reussite %}
+                        <span class="badge-admis">ADMIS</span>
+                    {% else %}
+                        <span class="badge-ajourne">AJOURNÉ</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="font-family: 'Inter', sans-serif; font-size: 9pt; font-style: italic; color: #6b7280;">Aucune inscription enregistrée pour cette session académique.</p>
+    {% endif %}
+
+    <div class="signatures-section">
+        <div class="signature-col" style="padding-right: 5mm;">
+            <p><strong>Le Secrétaire de Séance / Enseignant référent :</strong></p>
+            <div class="signature-box"></div>
+        </div>
+        <div class="signature-col" style="padding-left: 5mm;">
+            <p><strong>Le Directeur de l'ITEAG / Président du Jury :</strong></p>
+            <div class="signature-box"></div>
+        </div>
+    </div>
+
+</body>
+</html>

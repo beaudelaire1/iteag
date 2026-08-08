@@ -5,9 +5,11 @@ from pathlib import Path
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
-from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.http import FileResponse, Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.utils.text import slugify
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
@@ -16,7 +18,9 @@ from apps.academics.models import (
     CoursDeSession,
     CreditECTS,
     DemandeInscriptionCours,
+    InscriptionSession,
     Paiement,
+    PresenceEtudiant,
     ProfilEtudiant,
     Promotion,
     SessionAcademique,
@@ -1242,3 +1246,142 @@ class VAEDeleteView(StaffRoleRequiredMixin, DeleteView):
         )
         messages.success(self.request, "Dossier VAE supprimé.")
         return super().form_valid(form)
+
+
+class SaisiePresenceView(StaffRoleRequiredMixin, View):
+    """Saisie de l'assiduité / des présences pour un cours de session."""
+
+    template_name = "administration/academics/saisie_presence.html"
+
+    def get(self, request, pk):
+        cours_session = get_object_or_404(
+            CoursDeSession.objects.select_related("cours", "session", "enseignant"), pk=pk
+        )
+        inscriptions = cours_session.inscriptions.select_related(
+            "etudiant__utilisateur", "etudiant__parcours"
+        ).order_by("etudiant__utilisateur__last_name", "etudiant__utilisateur__first_name")
+
+        presences_existantes = {
+            p.etudiant_id: p
+            for p in PresenceEtudiant.objects.filter(cours_session=cours_session)
+        }
+
+        liste_etudiants = []
+        for insc in inscriptions:
+            p = presences_existantes.get(insc.etudiant_id)
+            liste_etudiants.append(
+                {
+                    "etudiant": insc.etudiant,
+                    "statut": p.statut if p else PresenceEtudiant.Statut.PRESENT,
+                    "commentaire": p.commentaire if p else "",
+                }
+            )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "cours_session": cours_session,
+                "liste_etudiants": liste_etudiants,
+                "statut_choices": PresenceEtudiant.Statut.choices,
+                "total_inscrits": inscriptions.count(),
+                "nav": "sessions",
+            },
+        )
+
+    def post(self, request, pk):
+        cours_session = get_object_or_404(CoursDeSession, pk=pk)
+        inscriptions = cours_session.inscriptions.select_related("etudiant")
+
+        for insc in inscriptions:
+            et_id = insc.etudiant_id
+            statut = request.POST.get(f"statut_{et_id}")
+            commentaire = request.POST.get(f"commentaire_{et_id}", "").strip()
+
+            if statut in dict(PresenceEtudiant.Statut.choices):
+                PresenceEtudiant.objects.update_or_create(
+                    cours_session=cours_session,
+                    etudiant_id=et_id,
+                    defaults={
+                        "statut": statut,
+                        "commentaire": commentaire,
+                        "saisi_par": request.user,
+                    },
+                )
+
+        journaliser(
+            "modification",
+            request=request,
+            objet=cours_session,
+            objet_libelle=f"Saisie d'assiduité pour le cours : {cours_session}",
+        )
+        messages.success(request, "L'assiduité des étudiants a été enregistrée avec succès.")
+        return redirect(reverse("administration:cours_session_presences", kwargs={"pk": pk}))
+
+
+class PVDeliberationPDFView(StaffRoleRequiredMixin, View):
+    """Génération du Procès-Verbal (PV) de délibération de session académique."""
+
+    template_name = "administration/pdf/pv_deliberation.html"
+
+    def get(self, request, pk):
+        session = get_object_or_404(SessionAcademique, pk=pk)
+        cours_sessions = session.cours_de_session.select_related("cours", "enseignant").order_by("cours__titre")
+
+        inscriptions = (
+            InscriptionSession.objects.filter(cours_session__session=session)
+            .select_related("etudiant__utilisateur", "etudiant__parcours", "cours_session__cours")
+            .order_by("etudiant__utilisateur__last_name", "etudiant__utilisateur__first_name")
+        )
+
+        from apps.lms.models import Evaluation
+
+        etudiants_dict = {}
+        for insc in inscriptions:
+            et_id = insc.etudiant_id
+            if et_id not in etudiants_dict:
+                etudiants_dict[et_id] = {
+                    "profil": insc.etudiant,
+                    "cours_notes": [],
+                    "total_ects_session": 0,
+                    "reussite": True,
+                }
+
+            eval_obj = Evaluation.objects.filter(
+                etudiant=insc.etudiant, cours_session=insc.cours_session
+            ).first()
+
+            note_valeur = eval_obj.note if (eval_obj and eval_obj.note is not None) else None
+            statut_eval = eval_obj.get_statut_display() if eval_obj else "Non noté"
+            ects = eval_obj.ects_valides if eval_obj else 0
+
+            if note_valeur is not None and note_valeur < 10:
+                etudiants_dict[et_id]["reussite"] = False
+
+            etudiants_dict[et_id]["cours_notes"].append(
+                {
+                    "cours": insc.cours_session.cours,
+                    "note": note_valeur,
+                    "statut": statut_eval,
+                    "ects": ects,
+                }
+            )
+            etudiants_dict[et_id]["total_ects_session"] += ects
+
+        contexte = {
+            "session": session,
+            "cours_sessions": cours_sessions,
+            "etudiants": list(etudiants_dict.values()),
+            "date_edition": timezone.now(),
+            "signataire": request.user,
+        }
+
+        filename = f"pv-deliberation-{slugify(session.nom)}-{session.annee_academique}.pdf"
+        from apps.core.services.pdf import contexte_marque, rendre_pdf
+
+        pdf_bytes = rendre_pdf(self.template_name, contexte_marque(**contexte))
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
+
