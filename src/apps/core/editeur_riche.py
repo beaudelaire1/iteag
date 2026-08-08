@@ -44,7 +44,7 @@ FONCTIONNALITES_EDITEUR_PORTAIL = (
     "link",
 )
 
-VERSION_ASSETS_EDITEUR = "5"
+VERSION_ASSETS_EDITEUR = "6"
 
 
 def _asset_iteag(chemin: str) -> str:
@@ -63,7 +63,7 @@ class StreamFieldPortail(BlockWidget):
 
     ``core.css`` n'est volontairement pas importé : il contient les resets et
     styles d'éléments globaux de l'administration Wagtail. Le portail fournit
-    à la place une feuille locale, limitée à ``.streamfield-portail``.
+    à la place des feuilles ciblées sur les composants réellement utilisés.
     """
 
     @cached_property
@@ -75,6 +75,8 @@ class StreamFieldPortail(BlockWidget):
             [
                 _asset_iteag("css/streamfield-portail.css"),
                 _asset_iteag("css/streamfield-draftail-portail.css"),
+                _asset_iteag("css/streamfield-picker-portail.css"),
+                _asset_iteag("css/typed-table-portail.css"),
             ]
         )
         return forms.Media(
