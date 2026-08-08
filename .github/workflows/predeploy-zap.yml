@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 15
     env:
       TARGET: https://iteag-preprod.137.74.169.188.sslip.io
+      ZAP_IMAGE: ghcr.io/zaproxy/zaproxy@sha256:781a2bdaea47324e7bab583e2263f21d257b0aee61ed51521a5be45f5f5081ef
     steps:
       - name: Scanner passivement la surface publique
         shell: bash
@@ -30,7 +31,7 @@ jobs:
           set +e
           docker run --rm \
             -v "$RUNNER_TEMP/zap:/zap/wrk/:rw" \
-            -t ghcr.io/zaproxy/zaproxy:stable \
+            -t "$ZAP_IMAGE" \
             zap-baseline.py \
             -t "$TARGET" \
             -T 5 \
