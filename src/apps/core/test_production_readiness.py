@@ -4,7 +4,6 @@ from django.test import override_settings
 
 from apps.core.services.production import anomalies_configuration_production
 
-
 CONFIGURATION_PRODUCTION = {
     "DEBUG": False,
     "SECRET_KEY": "production-secret-" + "x" * 64,
