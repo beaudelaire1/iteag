@@ -17,56 +17,91 @@ jobs:
     name: Captures desktop et mobile
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/go-live-ops-gate'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
-      - name: Capturer les pages publiques clés
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Installer le pilote navigateur léger
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/visual-node"
+          npm install --prefix "$RUNNER_TEMP/visual-node" --no-audit --no-fund puppeteer-core@24.16.0
+
+      - name: Capturer les pages après choix essentiels uniquement
+        shell: bash
+        env:
+          NODE_PATH: ${{ runner.temp }}/visual-node/node_modules
+        run: |
+          set -euo pipefail
           mkdir -p "$RUNNER_TEMP/captures/desktop" "$RUNNER_TEMP/captures/mobile"
+          cat > "$RUNNER_TEMP/capture.mjs" <<'JS'
+          import puppeteer from "puppeteer-core";
+          import path from "node:path";
 
-          declare -A pages=(
-            [accueil]="/"
-            [formations]="/formations/"
-            [candidature]="/admissions/candidature/"
-            [connexion]="/connexion/"
-            [bibliotheque]="/bibliotheque/"
-            [boutique]="/boutique/"
-          )
+          const base = process.env.BASE_URL.replace(/\/$/, "");
+          const root = process.env.RUNNER_TEMP;
+          const pages = {
+            accueil: "/",
+            formations: "/formations/",
+            candidature: "/admissions/candidature/",
+            connexion: "/connexion/",
+            bibliotheque: "/bibliotheque/",
+            boutique: "/boutique/",
+          };
 
-          for nom in accueil formations candidature connexion bibliotheque boutique; do
-            url="${BASE_URL}${pages[$nom]}"
-            google-chrome \
-              --headless=new \
-              --no-sandbox \
-              --disable-gpu \
-              --hide-scrollbars \
-              --force-device-scale-factor=1 \
-              --window-size=1440,1400 \
-              --virtual-time-budget=2500 \
-              --screenshot="$RUNNER_TEMP/captures/desktop/${nom}.png" \
-              "$url"
+          const browser = await puppeteer.launch({
+            executablePath: "/usr/bin/google-chrome",
+            headless: true,
+            args: ["--no-sandbox", "--disable-gpu"],
+          });
 
-            google-chrome \
-              --headless=new \
-              --no-sandbox \
-              --disable-gpu \
-              --hide-scrollbars \
-              --force-device-scale-factor=1 \
-              --window-size=390,844 \
-              --virtual-time-budget=2500 \
-              --screenshot="$RUNNER_TEMP/captures/mobile/${nom}.png" \
-              "$url"
-          done
+          async function capturer(mode, viewport) {
+            const page = await browser.newPage();
+            await page.setViewport(viewport);
+            await page.setCookie({
+              name: "iteag_cookie_consent",
+              value: "essential",
+              url: `${base}/`,
+              secure: true,
+              sameSite: "Lax",
+            });
 
+            for (const [nom, chemin] of Object.entries(pages)) {
+              const url = `${base}${chemin}`;
+              const response = await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+              if (!response || response.status() !== 200) {
+                throw new Error(`${url} -> ${response?.status() ?? "aucune réponse"}`);
+              }
+              await page.evaluate(async () => {
+                if (document.fonts?.ready) await document.fonts.ready;
+                window.scrollTo(0, 0);
+              });
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              await page.screenshot({
+                path: path.join(root, "captures", mode, `${nom}.png`),
+                fullPage: true,
+              });
+            }
+            await page.close();
+          }
+
+          await capturer("desktop", { width: 1440, height: 1000, deviceScaleFactor: 1 });
+          await capturer("mobile", { width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+          await browser.close();
+          JS
+
+          node "$RUNNER_TEMP/capture.mjs"
           test "$(find "$RUNNER_TEMP/captures" -name '*.png' -size +10k | wc -l)" -eq 12
 
       - name: Publier les captures
         uses: actions/upload-artifact@v4
         with:
-          name: iteag-preprod-captures
+          name: iteag-preprod-captures-sans-bandeau
           path: ${{ runner.temp }}/captures
           if-no-files-found: error
           retention-days: 7
