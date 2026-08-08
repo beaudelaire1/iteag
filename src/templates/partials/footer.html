@@ -109,12 +109,22 @@
         </div>
 
         {# Barre basse #}
-        <div class="mt-12 pt-6 border-t border-navy-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="mt-12 pt-6 border-t border-navy-800 flex flex-col lg:flex-row items-center justify-between gap-4">
             <p class="text-xs text-warm-600">&copy; {% now "Y" %} {{ SITE_NAME }}. Tous droits réservés.</p>
-            <a href="{% url 'website:politique_donnees' %}"
-               class="text-xs text-warm-500 hover:text-gold-400 transition-colors duration-200">
-                Protection des données
-            </a>
+            <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
+                <a href="{% url 'website:politique_donnees' %}"
+                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                    Protection des données
+                </a>
+                <a href="{% url 'website:politique_cookies' %}"
+                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                    Politique des cookies
+                </a>
+                <button type="button" data-cookie-settings
+                        class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                    Gérer les cookies
+                </button>
+            </div>
             <p class="text-xs text-warm-600">
                 Conçu par <a href="https://www.traitdunion.it" target="_blank" rel="noopener noreferrer" class="font-medium text-warm-500 hover:text-gold-400 transition-colors duration-200">Trait&nbsp;d'Union&nbsp;Studio</a>
             </p>

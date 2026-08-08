@@ -1,0 +1,31 @@
+<div data-cookie-banner hidden
+     class="hidden fixed inset-x-0 bottom-0 z-[70] px-4 pb-4 sm:px-6 sm:pb-6"
+     role="dialog" aria-modal="false" aria-labelledby="cookie-banner-title" aria-describedby="cookie-banner-description">
+    <div class="mx-auto max-w-5xl overflow-hidden rounded-lg border border-warm-200 bg-white shadow-2xl">
+        <div class="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div class="max-w-3xl">
+                <p class="overline mb-2">Confidentialité</p>
+                <h2 id="cookie-banner-title" class="text-lg font-semibold text-navy-900">Vos préférences, sans suivi publicitaire</h2>
+                <p id="cookie-banner-description" class="mt-2 text-sm leading-6 text-warm-600">
+                    L'ITEAG utilise des cookies indispensables à la session et à la sécurité. Avec votre accord,
+                    une préférence locale peut aussi mémoriser certains réglages d'interface, notamment la qualité vidéo choisie.
+                    Aucun outil publicitaire ni mesure d'audience n'est actuellement activé.
+                </p>
+                <a href="{% url 'website:politique_cookies' %}"
+                   class="mt-3 inline-flex text-sm font-medium text-navy-700 underline underline-offset-4 hover:text-gold-600">
+                    Consulter la politique des cookies
+                </a>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                <button type="button" data-cookie-choice="essential"
+                        class="btn-ghost justify-center whitespace-nowrap">
+                    Essentiels uniquement
+                </button>
+                <button type="button" data-cookie-choice="preferences"
+                        class="btn-primary justify-center whitespace-nowrap">
+                    Accepter les préférences
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

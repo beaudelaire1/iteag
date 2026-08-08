@@ -1,0 +1,75 @@
+name: Privacy and video controls
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/apps/website/views.py"
+      - "src/apps/website/urls.py"
+      - "src/apps/website/sitemaps.py"
+      - "src/apps/website/test_cookies.py"
+      - "src/apps/elearning/views.py"
+      - "src/apps/elearning/tests/test_fichier_video_range.py"
+      - "src/apps/elearning/tests/test_lecteur_video_ui.py"
+      - "src/static/js/consentement-cookies.js"
+      - "src/static/js/lecteur-video.js"
+      - "src/templates/base.html"
+      - "src/templates/partials/bandeau_cookies.html"
+      - "src/templates/partials/footer.html"
+      - "src/templates/website/politique_cookies.html"
+      - "src/templates/website/politique_donnees.html"
+      - "src/templates/elearning/lecon_detail.html"
+      - ".github/workflows/privacy-video-controls.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/apps/elearning/views.py"
+      - "src/apps/elearning/tests/test_fichier_video_range.py"
+      - "src/static/js/consentement-cookies.js"
+      - "src/static/js/lecteur-video.js"
+      - "src/templates/partials/bandeau_cookies.html"
+      - "src/templates/website/politique_cookies.html"
+      - "src/templates/elearning/lecon_detail.html"
+      - ".github/workflows/privacy-video-controls.yml"
+
+permissions:
+  contents: read
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install --require-hashes -r requirements/dev.lock
+      - run: npm ci --no-audit --no-fund
+      - name: Vérifier la syntaxe JavaScript
+        run: |
+          node --check static/js/consentement-cookies.js
+          node --check static/js/lecteur-video.js
+      - name: Construire les ressources frontend
+        run: npm run build
+      - name: Vérifier Django et les migrations
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Tester confidentialité et lecteur vidéo
+        run: >-
+          pytest
+          apps/website/test_cookies.py
+          apps/website/test_politique_donnees.py
+          apps/elearning/tests/test_fichier_video_range.py
+          apps/elearning/tests/test_lecteur_video_ui.py
+          apps/elearning/tests/test_vues.py
+          -q

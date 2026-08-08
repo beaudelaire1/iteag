@@ -25,6 +25,7 @@ class PagesPubliquesSitemap(Sitemap):
     def items(self):
         return (
             "website:politique_donnees",
+            "website:politique_cookies",
             "formations:parcours_list",
             "formations:professeur_list",
             "elearning:catalogue",

@@ -84,12 +84,15 @@
     </main>
 
     {% include "partials/footer.html" %}
+    {% include "partials/bandeau_cookies.html" %}
 
     {# Jeton CSRF — exploité par HTMX #}
     {% csrf_token %}
 
     {# HTMX auto-hébergé avec les autres ressources du projet. #}
     <script src="{% static 'js/htmx.min.js' %}"></script>
+    {# Préférences de confidentialité disponibles avant les scripts fonctionnels. #}
+    <script src="{% static 'js/consentement-cookies.js' %}?v={{ ASSET_VERSION }}" defer></script>
     {# Le correctif a11y doit s'enregistrer avant le gestionnaire d'ancres global. #}
     <script src="{% static 'js/accessibilite.js' %}?v={{ ASSET_VERSION }}" defer></script>
     {# ITEAG global JS — scroll reveal, counters, HTMX handlers #}

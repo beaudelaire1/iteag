@@ -27,9 +27,8 @@
                 {% endcomment %}
                 {% if lecon.video.mode_lecture == "iframe" %}
                 {% comment %}
-                    Fournisseur public lu dans un cadre tiers. Le modèle
-                    interdit ce cas sur un module protégé : s'il apparaît ici,
-                    c'est que la leçon est en accès libre.
+                    Fournisseur public conservé pour les anciens tests. Les vidéos
+                    de formation en production sont diffusées par Bunny Stream.
                 {% endcomment %}
                 <div class="bg-navy-950 rounded overflow-hidden shadow-elevated">
                     <iframe src="{{ lecture_publique.url }}"
@@ -44,37 +43,63 @@
                     Cette vidéo est hébergée par un service externe : la progression n'y est pas mesurée.
                 </p>
                 {% else %}
-                <div class="relative bg-navy-950 rounded overflow-hidden shadow-elevated"
+                <div class="overflow-hidden rounded bg-navy-950 shadow-elevated"
                      data-lecteur-video
                      data-url-lecture="{% url 'elearning:lecon_playback' module.slug lecon.slug %}"
                      data-url-progression="{% url 'elearning:lecon_progression' module.slug lecon.slug %}"
                      data-position-reprise="{{ position_reprise }}"
                      data-intervalle="{{ intervalle_signal }}">
+                    <div class="relative">
+                        <video data-video controls controlslist="nodownload" preload="metadata" playsinline
+                               class="w-full aspect-video bg-black"
+                               {% if lecon.video.poster %}poster="{{ lecon.video.poster.url }}"{% endif %}>
+                            {% for piste in sous_titres %}
+                            <track kind="subtitles" src="{{ piste.fichier_vtt.url }}"
+                                   srclang="{{ piste.langue }}" label="{{ piste.libelle }}"
+                                   {% if piste.par_defaut %}default{% endif %}>
+                            {% endfor %}
+                            Votre navigateur ne peut pas lire cette vidéo.
+                        </video>
 
-                    <video data-video controls preload="metadata" playsinline
-                           class="w-full aspect-video bg-black"
-                           {% if lecon.video.poster %}poster="{{ lecon.video.poster.url }}"{% endif %}>
-                        {% for piste in sous_titres %}
-                        <track kind="subtitles" src="{{ piste.fichier_vtt.url }}"
-                               srclang="{{ piste.langue }}" label="{{ piste.libelle }}"
-                               {% if piste.par_defaut %}default{% endif %}>
-                        {% endfor %}
-                        Votre navigateur ne peut pas lire cette vidéo.
-                    </video>
+                        <button type="button"
+                                data-demarrer-video
+                                class="absolute inset-0 flex items-center justify-center bg-black/20 text-white transition hover:bg-black/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+                                aria-label="Lire la vidéo « {{ lecon.titre }} »">
+                            <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gold-500 shadow-lg" aria-hidden="true">
+                                <svg class="h-7 w-7 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
 
-                    <button type="button"
-                            data-demarrer-video
-                            class="absolute inset-0 flex items-center justify-center bg-black/20 text-white transition hover:bg-black/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
-                            aria-label="Lire la vidéo « {{ lecon.titre }} »">
-                        <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gold-500 shadow-lg" aria-hidden="true">
-                            <svg class="h-7 w-7 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                        </span>
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-3 sm:px-4"
+                         data-controles-video aria-label="Contrôles complémentaires de la vidéo">
+                        <button type="button" data-saut-video="-10" disabled
+                                class="inline-flex min-h-10 items-center gap-2 rounded border border-white/15 px-3 text-sm font-medium text-white transition hover:border-gold-400 hover:text-gold-300 disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label="Reculer de 10 secondes">
+                            <span aria-hidden="true">↶</span>
+                            <span>10 s</span>
+                        </button>
+                        <button type="button" data-saut-video="10" disabled
+                                class="inline-flex min-h-10 items-center gap-2 rounded border border-white/15 px-3 text-sm font-medium text-white transition hover:border-gold-400 hover:text-gold-300 disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label="Avancer de 10 secondes">
+                            <span>10 s</span>
+                            <span aria-hidden="true">↷</span>
+                        </button>
+
+                        <div class="ml-auto flex min-w-[13rem] items-center justify-end gap-2">
+                            <label for="qualite-video" class="text-xs font-medium uppercase tracking-wider text-warm-400">Qualité</label>
+                            <select id="qualite-video" data-qualite-video disabled
+                                    class="min-h-10 rounded border border-white/15 bg-navy-900 px-3 text-sm text-white outline-none transition focus:border-gold-400 disabled:cursor-not-allowed disabled:opacity-50">
+                                <option value="-1">Auto</option>
+                            </select>
+                        </div>
+                        <span data-qualite-active class="w-full text-right text-xs text-warm-500" aria-live="polite"></span>
+                    </div>
 
                     <p data-lecteur-message
-                       class="hidden px-4 py-3 text-sm text-white bg-navy-800"
+                       class="hidden border-t border-white/10 px-4 py-3 text-sm text-white bg-navy-800"
                        role="status" aria-live="polite"></p>
                 </div>
                 {% endif %}
@@ -216,5 +241,5 @@
 {% if lecon.video.mode_lecture == "hls" %}
 <script src="{% static 'js/vendor/hls.min.js' %}" defer></script>
 {% endif %}
-<script src="{% static 'js/lecteur-video.js' %}" defer></script>
+<script src="{% static 'js/lecteur-video.js' %}?v={{ ASSET_VERSION }}" defer></script>
 {% endblock %}
