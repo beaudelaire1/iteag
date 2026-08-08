@@ -14,6 +14,14 @@ DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"  # noqa: F405
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)  # noqa: F405
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 
+# django-treebeard 5.3 signale que les managers actuels de Wagtail devront
+# évoluer avant Treebeard 6. Wagtail 7.4 LTS supporte officiellement Treebeard
+# 4.8–5.x et le verrou de production reste en 5.x : ce warning tiers n'est donc
+# pas une anomalie de la release actuelle. On ne neutralise que son identifiant
+# précis afin que `check --deploy --fail-level WARNING` reste strict sur tous
+# les autres avertissements. À retirer lors d'un futur passage à Treebeard 6.
+SILENCED_SYSTEM_CHECKS = ["treebeard.E001"]
+
 # ──────────────────────────────────────────────
 # Security — production hardened
 # ──────────────────────────────────────────────
