@@ -11,6 +11,7 @@
   const DUREE_SECONDES = 60 * 60 * 24 * 180;
   const CHOIX_ESSENTIEL = "essential";
   const CHOIX_PREFERENCES = "preferences";
+  const CLES_PREFERENCES_LOCALES = ["iteag_video_quality"];
 
   function lireCookie(nom) {
     const prefixe = `${nom}=`;
@@ -26,8 +27,17 @@
     return [CHOIX_ESSENTIEL, CHOIX_PREFERENCES].includes(valeur) ? valeur : "";
   }
 
+  function supprimerPreferencesLocales() {
+    try {
+      CLES_PREFERENCES_LOCALES.forEach((cle) => localStorage.removeItem(cle));
+    } catch (_erreur) {
+      /* Le navigateur peut interdire le stockage local ; rien à nettoyer. */
+    }
+  }
+
   function ecrireChoix(choix) {
     if (![CHOIX_ESSENTIEL, CHOIX_PREFERENCES].includes(choix)) return;
+    if (choix === CHOIX_ESSENTIEL) supprimerPreferencesLocales();
     const secure = location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `${NOM_COOKIE}=${encodeURIComponent(choix)}; Max-Age=${DUREE_SECONDES}; Path=/; SameSite=Lax${secure}`;
     window.dispatchEvent(new CustomEvent("iteag:consent-changed", { detail: { choice: choix } }));
