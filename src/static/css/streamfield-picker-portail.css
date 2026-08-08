@@ -94,7 +94,10 @@
 
 .tippy-box[data-theme="dropdown"] .w-combobox__menu {
     box-sizing: border-box;
-    max-height: min(300px, 50vh);
+    /* Le panneau complet doit rester dans un viewport de faible hauteur.
+       34vh garde une marge réelle autour du point d'insertion à 1000×760,
+       tout en laissant cinq choix environ visibles avant le défilement. */
+    max-height: min(250px, 34vh);
     padding: 6px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -205,6 +208,6 @@
     }
 
     .tippy-box[data-theme="dropdown"] .w-combobox__menu {
-        max-height: min(260px, 46vh);
+        max-height: min(220px, 38vh);
     }
 }
