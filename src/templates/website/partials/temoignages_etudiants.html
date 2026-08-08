@@ -23,7 +23,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch" data-motion-stagger>
             {% for item in temoignages_etudiants %}
-            {% with text_plain=item.texte|strip_tags %}
+            {% with text_plain=item.texte|striptags %}
             {% with is_long=text_plain|length > 140 %}
             <article class="card-elevated reveal flex flex-col justify-between h-full relative testimonial-card" style="min-height: 280px;">
                 <div class="flex-1 flex flex-col mb-4">
