@@ -1,0 +1,72 @@
+name: Predeploy visual review
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: predeploy-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  captures:
+    name: Captures desktop et mobile
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/go-live-ops-gate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
+    steps:
+      - name: Capturer les pages publiques clés
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/captures/desktop" "$RUNNER_TEMP/captures/mobile"
+
+          declare -A pages=(
+            [accueil]="/"
+            [formations]="/formations/"
+            [candidature]="/admissions/candidature/"
+            [connexion]="/connexion/"
+            [bibliotheque]="/bibliotheque/"
+            [boutique]="/boutique/"
+          )
+
+          for nom in accueil formations candidature connexion bibliotheque boutique; do
+            url="${BASE_URL}${pages[$nom]}"
+            google-chrome \
+              --headless=new \
+              --no-sandbox \
+              --disable-gpu \
+              --hide-scrollbars \
+              --force-device-scale-factor=1 \
+              --window-size=1440,1400 \
+              --virtual-time-budget=2500 \
+              --screenshot="$RUNNER_TEMP/captures/desktop/${nom}.png" \
+              "$url"
+
+            google-chrome \
+              --headless=new \
+              --no-sandbox \
+              --disable-gpu \
+              --hide-scrollbars \
+              --force-device-scale-factor=1 \
+              --window-size=390,844 \
+              --virtual-time-budget=2500 \
+              --screenshot="$RUNNER_TEMP/captures/mobile/${nom}.png" \
+              "$url"
+          done
+
+          test "$(find "$RUNNER_TEMP/captures" -name '*.png' -size +10k | wc -l)" -eq 12
+
+      - name: Publier les captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: iteag-preprod-captures
+          path: ${{ runner.temp }}/captures
+          if-no-files-found: error
+          retention-days: 7
