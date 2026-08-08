@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "22"
@@ -18,6 +22,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: src
@@ -35,7 +40,7 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
-    needs: lint
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: src
@@ -84,7 +89,7 @@ jobs:
   build:
     name: Build & production checks
     runs-on: ubuntu-latest
-    needs: lint
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: src
@@ -110,20 +115,25 @@ jobs:
       - name: Collecte des statiques (manifeste)
         env:
           DJANGO_SETTINGS_MODULE: config.settings.prod
-          DJANGO_SECRET_KEY: ci-collectstatic-key-not-for-production
+          DJANGO_SECRET_KEY: ci-collectstatic-key-not-for-runtime-0123456789abcdefghijklmnopqrstuvwxyz
           DJANGO_ALLOWED_HOSTS: localhost
         run: python manage.py collectstatic --noinput --clear
       - name: Vérifier la configuration de déploiement Django
         env:
           DJANGO_SETTINGS_MODULE: config.settings.prod
-          DJANGO_SECRET_KEY: ci-deploy-check-key-not-for-production
+          DJANGO_SECRET_KEY: ci-deploy-check-key-not-for-runtime-0123456789abcdefghijklmnopqrstuvwxyz
           DJANGO_ALLOWED_HOSTS: localhost
           DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
+          SITE_URL: https://localhost
+          WAGTAILADMIN_BASE_URL: https://localhost
           AWS_ACCESS_KEY_ID: ci-r2-access
           AWS_SECRET_ACCESS_KEY: ci-r2-secret
           AWS_STORAGE_BUCKET_NAME: ci-media
           AWS_S3_ENDPOINT_URL: https://example.invalid
-        run: python manage.py check --deploy --fail-level ERROR
+          STRIPE_CLE_PUBLIABLE: pk_live_ci_placeholder
+          STRIPE_CLE_SECRETE: sk_live_ci_placeholder
+          STRIPE_SECRET_WEBHOOK: whsec_ci_placeholder
+        run: python manage.py check --deploy --fail-level WARNING
       - name: Vérifier le fichier Compose de production
         env:
           DJANGO_SECRET_KEY: ci-compose-secret
@@ -133,6 +143,8 @@ jobs:
           WAGTAILADMIN_BASE_URL: https://localhost
           POSTGRES_PASSWORD: ci-postgres-secret
         run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Construire l'image web de production
+        run: docker build -f Dockerfile.prod -t iteag-web-ci .
       - name: Construire et éprouver l'image de sauvegarde PostgreSQL
         run: |
           docker build -f Dockerfile.backup -t iteag-backup-ci .
@@ -143,7 +155,7 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: lint
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: src
