@@ -113,6 +113,15 @@ jobs:
             <script>
               const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+              async function attendreJusqua(condition, delai = 1200) {
+                const debut = performance.now();
+                while (performance.now() - debut < delai) {
+                  if (condition()) return true;
+                  await attendre(25);
+                }
+                return false;
+              }
+
               function pickerVisible() {
                 return Array.from(document.querySelectorAll('[data-tippy-root]')).find((root) => {
                   const box = root.querySelector('.tippy-box[data-theme="dropdown"]');
@@ -176,9 +185,10 @@ jobs:
 
               async function ouvrirEtMesurer(bouton, alignement = 'center') {
                 bouton.scrollIntoView({block: alignement, inline: 'nearest'});
-                await attendre(120);
+                await attendre(100);
                 bouton.click();
-                await attendre(280);
+                const ouvert = await attendreJusqua(() => pickerVisible() !== null);
+                await attendre(120);
 
                 const echantillons = [];
                 for (let i = 0; i < 8; i += 1) {
@@ -188,11 +198,14 @@ jobs:
 
                 const derniere = echantillons[echantillons.length - 1];
                 const jitter = stabilite(echantillons);
-                if (bouton.getAttribute('aria-expanded') === 'true') bouton.click();
-                await attendre(140);
+                bouton.click();
+                const ferme = await attendreJusqua(() => pickerVisible() === null);
+                await attendre(80);
 
                 return {
                   ...derniere,
+                  opened: ouvert,
+                  closed: ferme,
                   jitter,
                   stable: jitter <= 1.5,
                 };
@@ -218,6 +231,8 @@ jobs:
                   buttonCount: boutons.length,
                   cycles,
                   bottomMetrics: basPage,
+                  allCyclesOpened: cycles.every((item) => item.opened),
+                  allCyclesClosed: cycles.every((item) => item.closed),
                   allCyclesVisible: cycles.every((item) => item.visible),
                   allCyclesStable: cycles.every((item) => item.stable),
                   allCyclesCompact: cycles.every((item) => item.compact),
@@ -225,6 +240,8 @@ jobs:
                   allCyclesSearchCompact: cycles.every((item) => item.searchCompact),
                   allCyclesScrollable: cycles.every((item) => item.scrollable),
                   allCyclesOptionsReadable: cycles.every((item) => item.optionsReadable),
+                  bottomOpened: basPage.opened,
+                  bottomClosed: basPage.closed,
                   bottomVisible: basPage.visible,
                   bottomStable: basPage.stable,
                   bottomCompact: basPage.compact,
@@ -267,13 +284,15 @@ jobs:
             NAME="$3"
             OUT="/tmp/iteag-picker-${NAME}.html"
             "$CHROME" --headless=new --no-sandbox --disable-gpu --force-device-scale-factor=1 \
-              --window-size="${WIDTH},${HEIGHT}" --virtual-time-budget=9000 --dump-dom \
+              --window-size="${WIDTH},${HEIGHT}" --virtual-time-budget=11000 --dump-dom \
               http://127.0.0.1:8766/index.html > "$OUT"
 
             echo "--- ${NAME} ${WIDTH}x${HEIGHT} ---"
             grep -o '<pre id="iteag-picker-stability">[^<]*' "$OUT" || true
             grep -q '"errors":\[\]' "$OUT"
             grep -q '"rootFontSize":"24px"' "$OUT"
+            grep -q '"allCyclesOpened":true' "$OUT"
+            grep -q '"allCyclesClosed":true' "$OUT"
             grep -q '"allCyclesVisible":true' "$OUT"
             grep -q '"allCyclesStable":true' "$OUT"
             grep -q '"allCyclesCompact":true' "$OUT"
@@ -281,6 +300,8 @@ jobs:
             grep -q '"allCyclesSearchCompact":true' "$OUT"
             grep -q '"allCyclesScrollable":true' "$OUT"
             grep -q '"allCyclesOptionsReadable":true' "$OUT"
+            grep -q '"bottomOpened":true' "$OUT"
+            grep -q '"bottomClosed":true' "$OUT"
             grep -q '"bottomVisible":true' "$OUT"
             grep -q '"bottomStable":true' "$OUT"
             grep -q '"bottomCompact":true' "$OUT"
