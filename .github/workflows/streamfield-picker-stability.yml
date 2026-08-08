@@ -174,8 +174,8 @@ jobs:
                 );
               }
 
-              async function ouvrirEtMesurer(bouton) {
-                bouton.scrollIntoView({block: 'center', inline: 'nearest'});
+              async function ouvrirEtMesurer(bouton, alignement = 'center') {
+                bouton.scrollIntoView({block: alignement, inline: 'nearest'});
                 await attendre(120);
                 bouton.click();
                 await attendre(280);
@@ -209,9 +209,7 @@ jobs:
                   cycles.push(await ouvrirEtMesurer(premier));
                 }
 
-                dernier.scrollIntoView({block: 'end', inline: 'nearest'});
-                await attendre(180);
-                const basPage = await ouvrirEtMesurer(dernier);
+                const basPage = await ouvrirEtMesurer(dernier, 'end');
 
                 const resultat = {
                   errors: window.__iteagErrors,
