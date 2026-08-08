@@ -44,7 +44,7 @@ FONCTIONNALITES_EDITEUR_PORTAIL = (
     "link",
 )
 
-VERSION_ASSETS_EDITEUR = "9"
+VERSION_ASSETS_EDITEUR = "10"
 
 
 def _asset_iteag(chemin: str) -> str:
@@ -86,6 +86,7 @@ class StreamFieldPortail(BlockWidget):
                 *prerequis,
                 *media_blocs._js,
                 _asset_iteag("js/streamfield-draftail-portail.js"),
+                _asset_iteag("js/streamfield-picker-portail.js"),
             ],
         )
 
