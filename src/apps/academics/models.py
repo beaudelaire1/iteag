@@ -701,4 +701,3 @@ class PresenceEtudiant(TimeStampedModel):
 
     def __str__(self):
         return f"{self.etudiant} — {self.cours_session} : {self.get_statut_display()}"
-
