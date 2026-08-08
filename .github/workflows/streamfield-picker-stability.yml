@@ -8,6 +8,7 @@ on:
       - "src/apps/website/test_streamfield_portail.py"
       - "src/static/css/streamfield-picker-portail.css"
       - "src/static/css/streamfield-ux-portail.css"
+      - "src/static/js/streamfield-picker-portail.js"
       - ".github/workflows/streamfield-picker-stability.yml"
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - "src/apps/core/editeur_riche.py"
       - "src/static/css/streamfield-picker-portail.css"
       - "src/static/css/streamfield-ux-portail.css"
+      - "src/static/js/streamfield-picker-portail.js"
       - ".github/workflows/streamfield-picker-stability.yml"
 
 permissions:
@@ -124,6 +126,7 @@ jobs:
 
               function mesurer() {
                 const root = pickerVisible();
+                const box = root ? root.querySelector('.tippy-box[data-theme="dropdown"]') : null;
                 const combo = root ? root.querySelector('.w-combobox-container') : null;
                 const menu = root ? root.querySelector('.w-combobox__menu') : null;
                 const search = root ? root.querySelector('[role="combobox"]') : null;
@@ -141,6 +144,7 @@ jobs:
                   rootHeight: rootRect ? rootRect.height : 0,
                   width: comboRect ? comboRect.width : 0,
                   height: comboRect ? comboRect.height : 0,
+                  placement: box ? box.getAttribute('data-placement') : '',
                   visible: !!(comboRect && comboRect.width >= 300 && comboRect.height >= 180),
                   inViewport: !!(
                     rootRect && rootRect.left >= -2 && rootRect.top >= -2 &&
@@ -215,6 +219,7 @@ jobs:
                   rootFontSize: window.getComputedStyle(document.documentElement).fontSize,
                   buttonCount: boutons.length,
                   cycles,
+                  bottomMetrics: basPage,
                   allCyclesVisible: cycles.every((item) => item.visible),
                   allCyclesStable: cycles.every((item) => item.stable),
                   allCyclesCompact: cycles.every((item) => item.compact),
