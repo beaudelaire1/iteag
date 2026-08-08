@@ -29,7 +29,7 @@ jobs:
             / \
             /presentation/ \
             /formations/ \
-            /candidature/ \
+            /admissions/candidature/ \
             /connexion/ \
             /bibliotheque/ \
             /boutique/ \
@@ -38,7 +38,7 @@ jobs:
             /healthz
           do
             code="$(curl --silent --show-error --max-time 20 --output /tmp/iteag-body --write-out '%{http_code}' "${BASE_URL}${path}")"
-            printf '%-24s %s\n' "$path" "$code"
+            printf '%-28s %s\n' "$path" "$code"
             test "$code" = "200"
           done
 
