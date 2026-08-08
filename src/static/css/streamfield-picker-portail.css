@@ -25,7 +25,9 @@
     font-size: 0.875rem;
     line-height: 1.4;
     outline: 0;
-    transition-property: transform, visibility, opacity;
+    /* Popper déplace le root avec transform. Animer transform ici donne
+       visuellement l'impression que le menu tremble pendant un recalcul. */
+    transition-property: visibility, opacity;
 }
 
 .tippy-box[data-theme="dropdown"][data-animation="fade"][data-state="hidden"] {
