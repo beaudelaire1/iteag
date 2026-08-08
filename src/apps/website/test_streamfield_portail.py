@@ -53,10 +53,11 @@ def test_runtime_officiel_precede_les_adaptateurs_streamfield():
     blocs = _position(ressources, "/telepath/blocks.js")
     draftail = _position(ressources, "/draftail.js")
     barre_portail = _position(ressources, "/js/streamfield-draftail-portail.js")
+    picker_portail = _position(ressources, "/js/streamfield-picker-portail.js")
 
     assert core < vendor < widgets
     assert core < vendor < blocs
-    assert vendor < draftail < barre_portail
+    assert vendor < draftail < barre_portail < picker_portail
 
 
 def test_styles_streamfield_restent_isoles_du_portail():
@@ -84,7 +85,7 @@ def test_draftail_streamfield_est_ancre_au_bloc():
     assert "localStorage" not in script
 
 
-def test_picker_streamfield_est_une_liste_stable_hors_core_admin():
+def test_picker_streamfield_est_compact_et_independant_de_la_typographie():
     styles = _lire("static/css/streamfield-picker-portail.css")
     ux = _lire("static/css/streamfield-ux-portail.css")
 
@@ -93,14 +94,31 @@ def test_picker_streamfield_est_une_liste_stable_hors_core_admin():
     assert ".w-combobox__menu" in styles
     assert "grid-template-columns: minmax(0, 1fr)" in styles
     assert ".w-combobox__option-preview" in styles
-    assert "max-height:" in styles
+    assert "width: min(420px, calc(100vw - 24px))" in styles
+    assert "max-height: min(250px, 34vh)" in styles
+    assert "min-height: 42px" in styles
     assert "transition-property: visibility, opacity" in styles
     assert "transition-property: transform" not in styles
-    assert "[data-tippy-root]:has(.w-combobox-container)" in ux
+    assert "width: min(30rem" not in styles
+    assert "width: min(32rem" not in styles
+    assert "[data-tippy-root]:has(.w-combobox-container)" not in ux
     assert "position: fixed !important" not in ux
     assert "transform: none !important" not in ux
-    assert "top: 5.75rem !important" not in ux
-    assert ".w-combobox__option-text" in ux
+    assert ".w-combobox__option-text" in styles
+
+
+def test_picker_adapte_le_tippy_officiel_sans_reimplementer_le_composant():
+    script = _lire("static/js/streamfield-picker-portail.js")
+
+    assert "bouton._tippy" in script
+    assert "instance.setProps" in script
+    assert "placement: 'auto'" in script
+    assert "allowedAutoPlacements: ['top', 'bottom']" in script
+    assert "preventOverflow" in script
+    assert "boundary: 'viewport'" in script
+    assert "MutationObserver" in script
+    assert "position: fixed" not in script
+    assert "style.transform" not in script
 
 
 def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():

@@ -1,35 +1,6 @@
-/* Ajustements UX du StreamField public : un sélecteur prévisible et un tableau
-   dont les commandes restent visibles pendant la saisie. */
-
-/*
- * Le picker est positionné par Popper/Tippy à partir du bouton + qui l'a ouvert.
- * Ne jamais forcer ici position/top/right/left/transform : Popper écrit ces
- * propriétés en ligne et les écraser crée une boucle de recalcul géométrique
- * visible sous forme de tremblement. Cette couche ne gère que les dimensions
- * et l'apparence du panneau.
- */
-[data-tippy-root]:has(.w-combobox-container) {
-    max-width: calc(100vw - 1rem) !important;
-    z-index: 12000 !important;
-}
-
-[data-tippy-root]:has(.w-combobox-container) .tippy-box[data-theme="dropdown"],
-[data-tippy-root]:has(.w-combobox-container) .w-combobox-container {
-    width: min(30rem, calc(100vw - 2rem)) !important;
-    max-width: calc(100vw - 2rem) !important;
-}
-
-[data-tippy-root]:has(.w-combobox-container) .w-combobox__menu {
-    max-height: min(27rem, 58vh) !important;
-}
-
-/* Les libellés doivent rester lisibles : pas de troncature sur un vocabulaire
-   aussi court que Texte, Important, Tableau, Procédure, etc. */
-[data-tippy-root]:has(.w-combobox-container) .w-combobox__option-text {
-    overflow: visible !important;
-    white-space: normal !important;
-    text-overflow: clip !important;
-}
+/* Ajustements UX du StreamField public : le picker est entièrement stylé dans
+   streamfield-picker-portail.css. Cette feuille ne touche plus à sa géométrie
+   afin de conserver une seule source de vérité pour le composant. */
 
 /* Le tableau garde ses commandes de ligne visibles pendant le défilement
    horizontal. Cela évite de chercher les boutons après plusieurs colonnes. */
@@ -91,16 +62,6 @@
 }
 
 @media (max-width: 48rem) {
-    [data-tippy-root]:has(.w-combobox-container) .tippy-box[data-theme="dropdown"],
-    [data-tippy-root]:has(.w-combobox-container) .w-combobox-container {
-        width: calc(100vw - 1.5rem) !important;
-        max-width: calc(100vw - 1.5rem) !important;
-    }
-
-    [data-tippy-root]:has(.w-combobox-container) .w-combobox__menu {
-        max-height: 52vh !important;
-    }
-
     .streamfield-portail .typed-table-block thead th,
     .streamfield-portail .typed-table-block tbody td:not(.control-cell) {
         min-width: 14rem;

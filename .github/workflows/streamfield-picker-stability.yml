@@ -1,0 +1,150 @@
+name: StreamField picker stability
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/apps/website/test_streamfield_portail.py"
+      - "src/static/css/streamfield-picker-portail.css"
+      - "src/static/css/streamfield-ux-portail.css"
+      - "src/static/js/streamfield-picker-portail.js"
+      - ".github/workflows/streamfield-picker-stability.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/static/css/streamfield-picker-portail.css"
+      - "src/static/css/streamfield-ux-portail.css"
+      - "src/static/js/streamfield-picker-portail.js"
+      - ".github/workflows/streamfield-picker-stability.yml"
+
+permissions:
+  contents: read
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+
+jobs:
+  picker-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install --require-hashes -r requirements/dev.lock
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: python manage.py collectstatic --noinput
+      - name: Vérifier le contrat du composant
+        run: pytest apps/website/test_streamfield_portail.py -q
+      - name: Construire le scénario navigateur
+        run: |
+          python - <<'PY'
+          import django
+          from pathlib import Path
+
+          django.setup()
+
+          from django.core.management import call_command
+          from django.template import RequestContext, Template
+          from django.test import RequestFactory
+          from apps.website.formulaires_actualites import ActualiteForm
+
+          call_command("migrate", interactive=False, verbosity=0)
+          request = RequestFactory().get("/")
+          request.csp_nonce = "picker-stability"
+          widget = ActualiteForm().fields["contenu"].widget
+          contenu = widget.block_def.to_python([
+              {"type": "texte", "value": "<p>Bloc de contrôle.</p>"},
+          ])
+          form = ActualiteForm(initial={"contenu": contenu})
+
+          template = Template(r"""
+          <!doctype html><html><head>{% load socle_wagtail %}<meta charset="UTF-8">
+          <style>
+            html{font-size:24px}body{max-width:1200px;margin:0 auto;padding:24px;font-family:Arial,sans-serif}
+            .before{height:120px}.after{height:900px}
+          </style>
+          <script>
+            window.__errors=[];
+            addEventListener('error',e=>window.__errors.push(String(e.message||e.error||'error')));
+            addEventListener('unhandledrejection',e=>window.__errors.push('promise:'+String(e.reason)));
+          </script>
+          {{ form.media.css }}{% wagtail_configuration_portail %}{{ form.media.js }}
+          </head><body>{% wagtail_icones_portail %}<div class="before"></div>
+          <div class="streamfield-portail">{{ form.contenu }}</div><div class="after"></div>
+          <script>
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          async function waitFor(fn,timeout=1500){const start=performance.now();while(performance.now()-start<timeout){if(fn())return true;await sleep(25)}return false}
+          function visibleRoot(){return [...document.querySelectorAll('[data-tippy-root]')].find(root=>{const box=root.querySelector('.tippy-box[data-theme="dropdown"]');const combo=root.querySelector('.w-combobox-container');if(!box||!combo||box.getAttribute('data-state')==='hidden')return false;const r=combo.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(box).visibility!=='hidden'})||null}
+          function measure(){
+            const root=visibleRoot(),box=root?.querySelector('.tippy-box[data-theme="dropdown"]'),combo=root?.querySelector('.w-combobox-container'),menu=root?.querySelector('.w-combobox__menu'),search=root?.querySelector('[role="combobox"]'),options=root?[...root.querySelectorAll('.w-combobox__option')]:[];
+            const rr=root?.getBoundingClientRect(),cr=combo?.getBoundingClientRect(),sr=search?.getBoundingClientRect(),ms=menu?getComputedStyle(menu):null,ors=options.map(o=>o.getBoundingClientRect());
+            return {x:rr?.x??-999,y:rr?.y??-999,rw:rr?.width??0,rh:rr?.height??0,width:cr?.width??0,height:cr?.height??0,placement:box?.getAttribute('data-placement')||'',visible:!!(cr&&cr.width>=300&&cr.height>=180),inViewport:!!(rr&&rr.left>=-2&&rr.top>=-2&&rr.right<=innerWidth+2&&rr.bottom<=innerHeight+2),compact:!!(cr&&cr.width<=440&&cr.height<=420),searchCompact:!!(sr&&sr.height>=36&&sr.height<=48),scrollable:!!(ms&&['auto','scroll'].includes(ms.overflowY)),optionsReadable:ors.length===8&&ors.every(r=>r.height>=40&&r.height<=50&&r.width>=Math.min(300,innerWidth-48))};
+          }
+          function jitter(samples){const keys=['x','y','rw','rh'];return Math.max(...keys.map(k=>{const v=samples.map(s=>s[k]);return Math.max(...v)-Math.min(...v)}))}
+          async function cycle(button,align='center'){
+            button.scrollIntoView({block:align,inline:'nearest'});await sleep(100);button.click();const instance=button._tippy;
+            const opened=await waitFor(()=>instance?.state?.isVisible&&visibleRoot());await sleep(120);
+            const samples=[];for(let i=0;i<8;i++){samples.push(measure());await sleep(50)}
+            const last=samples.at(-1),j=jitter(samples);if(instance?.state?.isVisible)instance.hide();const closed=await waitFor(()=>!instance?.state?.isVisible);await sleep(80);
+            return {...last,opened,closed,jitter:j,stable:j<=1.5};
+          }
+          (async()=>{
+            await sleep(1200);const buttons=[...document.querySelectorAll('.c-sf-add-button')],first=buttons[0],last=buttons.at(-1),cycles=[];
+            for(let i=0;i<3;i++)cycles.push(await cycle(first));
+            const bottom=await cycle(last,'end');
+            const result={errors:window.__errors,viewport:{width:innerWidth,height:innerHeight},rootFontSize:getComputedStyle(document.documentElement).fontSize,cycles,bottomMetrics:bottom,allOpened:cycles.every(x=>x.opened),allClosed:cycles.every(x=>x.closed),allVisible:cycles.every(x=>x.visible),allStable:cycles.every(x=>x.stable),allCompact:cycles.every(x=>x.compact),allInViewport:cycles.every(x=>x.inViewport),allSearchCompact:cycles.every(x=>x.searchCompact),allScrollable:cycles.every(x=>x.scrollable),allOptionsReadable:cycles.every(x=>x.optionsReadable),bottomOpened:bottom.opened,bottomClosed:bottom.closed,bottomVisible:bottom.visible,bottomStable:bottom.stable,bottomCompact:bottom.compact,bottomInViewport:bottom.inViewport,bottomOptionsReadable:bottom.optionsReadable};
+            const pre=document.createElement('pre');pre.id='iteag-picker-stability';pre.textContent=JSON.stringify(result);document.body.appendChild(pre);
+          })();
+          </script></body></html>
+          """)
+          html = template.render(RequestContext(request, {"form": form}))
+          root = Path("/tmp/iteag-picker-stability")
+          root.mkdir(parents=True, exist_ok=True)
+          (root / "index.html").write_text(html, encoding="utf-8")
+          static = root / "static"
+          if static.exists() or static.is_symlink():
+              static.unlink()
+          static.symlink_to(Path.cwd() / "staticfiles", target_is_directory=True)
+          PY
+      - name: Tester desktop, capture utilisateur et mobile
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          cd /tmp/iteag-picker-stability
+          python -m http.server 8766 >/tmp/iteag-picker-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 1
+
+          run_case() {
+            WIDTH="$1"; HEIGHT="$2"; NAME="$3"; OUT="/tmp/iteag-picker-${NAME}.html"
+            "$CHROME" --headless=new --no-sandbox --disable-gpu --force-device-scale-factor=1 \
+              --window-size="${WIDTH},${HEIGHT}" --virtual-time-budget=12000 --dump-dom \
+              http://127.0.0.1:8766/index.html > "$OUT"
+            echo "--- ${NAME} ${WIDTH}x${HEIGHT} ---"
+            grep -o '<pre id="iteag-picker-stability">[^<]*' "$OUT" || true
+            for expected in \
+              '"errors":[]' '"rootFontSize":"24px"' \
+              '"allOpened":true' '"allClosed":true' '"allVisible":true' \
+              '"allStable":true' '"allCompact":true' '"allInViewport":true' \
+              '"allSearchCompact":true' '"allScrollable":true' '"allOptionsReadable":true' \
+              '"bottomOpened":true' '"bottomClosed":true' '"bottomVisible":true' \
+              '"bottomStable":true' '"bottomCompact":true' '"bottomInViewport":true' \
+              '"bottomOptionsReadable":true'; do
+              grep -Fq "$expected" "$OUT"
+            done
+          }
+
+          run_case 1280 900 desktop
+          run_case 1000 760 capture-utilisateur
+          run_case 390 844 mobile
