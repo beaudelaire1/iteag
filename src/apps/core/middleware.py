@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from csp.middleware import CSPMiddleware
 from django.conf import settings
+from django.utils.cache import patch_cache_control
 
 if TYPE_CHECKING:
     from csp.middleware import PolicyParts
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 
 PREFIXE_ADMIN_DJANGO = "/django-admin/"
 HOTES_INDEXABLES = frozenset({"iteag.org", "www.iteag.org"})
+PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), usb=()"
 
 # La liste remplace entièrement « script-src » sur ce préfixe. Elle reste
 # fermée aux origines tierces : seul le site lui-même peut fournir du script.
@@ -21,15 +23,19 @@ SCRIPT_SRC_ADMIN_DJANGO = ["'self'", "'unsafe-inline'"]
 
 
 class CSPAvecAdminDjango(CSPMiddleware):
-    """Applique la politique CSP et les garde-fous SEO d'environnement.
+    """Applique la politique CSP et les garde-fous HTTP transverses.
 
     Jazzmin écrit certaines initialisations directement dans ses pages. On
     limite donc l'assouplissement CSP à /django-admin/, déjà réservé au
     personnel et protégé par le second facteur ; le reste du site conserve la
     politique stricte.
 
-    Le même middleware voit toutes les réponses et connaît l'hôte réellement
-    demandé. Toute origine autre que les deux domaines publics reçoit donc un
+    La politique interdit aussi tout embarquement de l'application via
+    ``frame-ancestors 'none'``. C'est la défense CSP moderne qui complète
+    ``X-Frame-Options: DENY`` sans toucher aux iframes que l'application charge
+    elle-même via ``frame-src`` (Stripe, Turnstile).
+
+    Toute origine autre que les deux domaines publics reçoit enfin un
     X-Robots-Tag bloquant l'indexation : une préproduction sslip.io ne peut pas
     être indexée par oubli de configuration du proxy.
     """
@@ -41,16 +47,33 @@ class CSPAvecAdminDjango(CSPMiddleware):
         report_only: bool = False,
     ) -> PolicyParts:
         parties = super().get_policy_parts(request=request, response=response, report_only=report_only)
-        if not request.path_info.startswith(PREFIXE_ADMIN_DJANGO):
-            return parties
         remplacements = dict(parties.replace or {})
-        # Une vue qui aurait déjà exprimé sa propre exigence reste prioritaire.
-        remplacements.setdefault("script-src", SCRIPT_SRC_ADMIN_DJANGO)
+        remplacements.setdefault("frame-ancestors", ["'none'"])
+        if request.path_info.startswith(PREFIXE_ADMIN_DJANGO):
+            # Une vue qui aurait déjà exprimé sa propre exigence reste prioritaire.
+            remplacements.setdefault("script-src", SCRIPT_SRC_ADMIN_DJANGO)
         parties.replace = remplacements
         return parties
 
     def process_response(self, request: HttpRequest, response: HttpResponseBase) -> HttpResponseBase:
         response = super().process_response(request, response)
+        response.headers["Permissions-Policy"] = PERMISSIONS_POLICY
+
+        # Le HTML authentifié contient des éléments propres à la session
+        # (identité, rôle, notifications, liens d'espace). Même si aucun cache
+        # applicatif de page n'est utilisé, on interdit explicitement à un proxy
+        # partagé de conserver cette réponse et de la resservir à un autre
+        # utilisateur.
+        utilisateur = getattr(request, "user", None)
+        if utilisateur is not None and utilisateur.is_authenticated:
+            patch_cache_control(
+                response,
+                private=True,
+                no_cache=True,
+                no_store=True,
+                must_revalidate=True,
+            )
+
         hote = request.get_host().split(":", 1)[0].lower()
         if hote not in HOTES_INDEXABLES:
             response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
