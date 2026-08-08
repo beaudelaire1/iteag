@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase
 
 PREFIXE_ADMIN_DJANGO = "/django-admin/"
+HOTES_INDEXABLES = frozenset({"iteag.org", "www.iteag.org"})
 
 # La liste remplace entièrement « script-src » sur ce préfixe. Elle reste
 # fermée aux origines tierces : seul le site lui-même peut fournir du script.
@@ -20,12 +21,17 @@ SCRIPT_SRC_ADMIN_DJANGO = ["'self'", "'unsafe-inline'"]
 
 
 class CSPAvecAdminDjango(CSPMiddleware):
-    """Applique la politique du site, sauf sur l'administration Django.
+    """Applique la politique CSP et les garde-fous SEO d'environnement.
 
     Jazzmin écrit certaines initialisations directement dans ses pages. On
     limite donc l'assouplissement CSP à /django-admin/, déjà réservé au
     personnel et protégé par le second facteur ; le reste du site conserve la
     politique stricte.
+
+    Le même middleware voit toutes les réponses et connaît l'hôte réellement
+    demandé. Toute origine autre que les deux domaines publics reçoit donc un
+    X-Robots-Tag bloquant l'indexation : une préproduction sslip.io ne peut pas
+    être indexée par oubli de configuration du proxy.
     """
 
     def get_policy_parts(
@@ -42,6 +48,13 @@ class CSPAvecAdminDjango(CSPMiddleware):
         remplacements.setdefault("script-src", SCRIPT_SRC_ADMIN_DJANGO)
         parties.replace = remplacements
         return parties
+
+    def process_response(self, request: HttpRequest, response: HttpResponseBase) -> HttpResponseBase:
+        response = super().process_response(request, response)
+        hote = request.get_host().split(":", 1)[0].lower()
+        if hote not in HOTES_INDEXABLES:
+            response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+        return response
 
 
 class RafraichissementSessionMiddleware:
