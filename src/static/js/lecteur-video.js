@@ -1,13 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   ITEAG — Lecteur vidéo sécurisé
-   Aucune adresse de fichier n'est présente dans la page : elle est
-   demandée au serveur, qui revérifie le droit et délivre une adresse
-   signée à durée de vie courte (ADR-001, ADR-005).
-
-   Deux modes arrivent ici : « fichier » (adresse directe) et « hls »
-   (manifeste segmenté, lu par hls.js auto-hébergé). Le mode « iframe »
-   ne passe pas par ce script : il ne concerne que du contenu public,
-   sans mesure de progression — le cadre tiers ne nous en donne pas.
+   ITEAG — Lecteur vidéo sécurisé et propriétaire
+   Bunny fournit le HLS, le CDN et les renditions. L'interface, les droits,
+   la progression et l'expérience de lecture restent pilotés par ITEAG.
    ═══════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -17,11 +11,34 @@
   if (!conteneur) return;
 
   const video = conteneur.querySelector("[data-video]");
+  const stage = conteneur.querySelector("[data-video-stage]");
   const zoneMessage = conteneur.querySelector("[data-lecteur-message]");
   const boutonDemarrer = conteneur.querySelector("[data-demarrer-video]");
+  const boutonLecture = conteneur.querySelector("[data-video-toggle-play]");
+  const iconeLecture = conteneur.querySelector("[data-play-icon]");
+  const iconePause = conteneur.querySelector("[data-pause-icon]");
   const boutonsSaut = [...conteneur.querySelectorAll("[data-saut-video]")];
+  const timeline = conteneur.querySelector("[data-video-timeline]");
+  const tempsCourant = conteneur.querySelector("[data-video-current]");
+  const tempsTotal = conteneur.querySelector("[data-video-duration]");
+  const boutonMuet = conteneur.querySelector("[data-video-mute]");
+  const iconeVolume = conteneur.querySelector("[data-volume-icon]");
+  const iconeMuet = conteneur.querySelector("[data-muted-icon]");
+  const volume = conteneur.querySelector("[data-video-volume]");
+  const selectVitesse = conteneur.querySelector("[data-vitesse-video]");
+  const selectSousTitres = conteneur.querySelector("[data-sous-titres-video]");
   const selectQualite = conteneur.querySelector("[data-qualite-video]");
   const qualiteActive = conteneur.querySelector("[data-qualite-active]");
+  const boutonPip = conteneur.querySelector("[data-video-pip]");
+  const boutonPleinEcran = conteneur.querySelector("[data-video-fullscreen]");
+  const chargement = conteneur.querySelector("[data-video-loading]");
+  const reprise = conteneur.querySelector("[data-reprise-video]");
+  const repriseTemps = conteneur.querySelector("[data-reprise-temps]");
+  const fin = conteneur.querySelector("[data-video-end]");
+  const lienSuivant = conteneur.querySelector("[data-lecon-suivante]");
+  const finCopie = conteneur.querySelector("[data-video-end-copy]");
+  const boutonRejouer = conteneur.querySelector("[data-rejouer-video]");
+
   const urlLecture = conteneur.dataset.urlLecture;
   const urlProgression = conteneur.dataset.urlProgression;
   const positionReprise = parseInt(conteneur.dataset.positionReprise, 10) || 0;
@@ -29,6 +46,8 @@
 
   const CLE_QUALITE = "iteag_video_quality";
   const DUREE_PREFERENCE_MS = 180 * 24 * 60 * 60 * 1000;
+  const REPRISES_MAX = 3;
+  const DELAI_REPRISE_MS = 1000;
 
   let adresseObtenue = false;
   let expireLe = 0;
@@ -36,43 +55,9 @@
   let minuteur = null;
   let hls = null;
   let qualiteSession = "auto";
-
-  /* ── Budget de reprises ──
-     Une erreur de lecture signifie le plus souvent un jeton périmé, et
-     redemander une adresse est la bonne réponse. Mais si l'échec est
-     structurel — source illisible, vidéo absente chez le fournisseur — la
-     nouvelle adresse échoue identiquement, et la reprise se rappelle
-     elle-même : on a mesuré une demande toutes les 3 ms, l'onglet figé et la
-     table d'audit qui se remplit à vue d'œil. Un serveur ne doit jamais
-     pouvoir être martelé par sa propre page.
-
-     D'où trois verrous : un plafond, un délai croissant, et un compteur remis
-     à zéro dès qu'une lecture repart pour de bon. */
-  const REPRISES_MAX = 3;
-  const DELAI_REPRISE_MS = 1000;
+  let positionDemandee = positionReprise;
   let reprises = 0;
   let repriseEnCours = false;
-
-  function reprendreApresErreur() {
-    if (repriseEnCours) return;
-    if (reprises >= REPRISES_MAX) {
-      afficherMessage("La lecture de cette vidéo a échoué. Rechargez la page ou signalez-le au secrétariat.");
-      montrerBouton();
-      return;
-    }
-    repriseEnCours = true;
-    const attente = DELAI_REPRISE_MS * 2 ** reprises;
-    reprises += 1;
-    adresseObtenue = false;
-    setTimeout(async () => {
-      repriseEnCours = false;
-      if (await preparerLecture()) {
-        video.play().catch(() => montrerBouton());
-      } else {
-        montrerBouton();
-      }
-    }, attente);
-  }
 
   function jetonCsrf() {
     const champ = document.querySelector("[name=csrfmiddlewaretoken]");
@@ -81,34 +66,77 @@
     return cookie ? cookie[1] : "";
   }
 
+  function formaterTemps(secondes) {
+    const total = Math.max(0, Math.floor(Number(secondes) || 0));
+    const heures = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const reste = total % 60;
+    if (heures) return `${heures}:${String(minutes).padStart(2, "0")}:${String(reste).padStart(2, "0")}`;
+    return `${minutes}:${String(reste).padStart(2, "0")}`;
+  }
+
   function afficherMessage(texte) {
     if (!zoneMessage) return;
     zoneMessage.textContent = texte;
     zoneMessage.hidden = false;
-    zoneMessage.classList.remove("hidden");
   }
 
   function masquerMessage() {
-    if (!zoneMessage) return;
-    zoneMessage.hidden = true;
-    zoneMessage.classList.add("hidden");
+    if (zoneMessage) zoneMessage.hidden = true;
+  }
+
+  function afficherChargement(actif) {
+    if (chargement) chargement.hidden = !actif;
   }
 
   function montrerBouton() {
-    if (!boutonDemarrer) return;
+    if (!boutonDemarrer || !video.paused || !fin?.hidden === false) return;
     boutonDemarrer.hidden = false;
-    boutonDemarrer.classList.remove("hidden");
     boutonDemarrer.disabled = false;
   }
 
   function masquerBouton() {
     if (!boutonDemarrer) return;
     boutonDemarrer.hidden = true;
-    boutonDemarrer.classList.add("hidden");
     boutonDemarrer.disabled = false;
   }
 
-  /* ── Préférence facultative de qualité ── */
+  function mettreAJourLecture() {
+    const enLecture = !video.paused && !video.ended;
+    if (iconeLecture) iconeLecture.hidden = enLecture;
+    if (iconePause) iconePause.hidden = !enLecture;
+    if (boutonLecture) boutonLecture.setAttribute("aria-label", enLecture ? "Mettre en pause" : "Lire la vidéo");
+  }
+
+  function mettreAJourVolume() {
+    const muet = video.muted || video.volume === 0;
+    if (iconeVolume) iconeVolume.hidden = muet;
+    if (iconeMuet) iconeMuet.hidden = !muet;
+    if (boutonMuet) boutonMuet.setAttribute("aria-label", muet ? "Rétablir le son" : "Couper le son");
+    if (volume && document.activeElement !== volume) volume.value = String(muet ? 0 : video.volume);
+  }
+
+  function mettreAJourTemps() {
+    if (tempsCourant) tempsCourant.textContent = formaterTemps(video.currentTime);
+    if (tempsTotal) tempsTotal.textContent = formaterTemps(video.duration);
+    if (timeline && Number.isFinite(video.duration) && video.duration > 0 && document.activeElement !== timeline) {
+      timeline.value = String(video.currentTime);
+    }
+  }
+
+  function activerNavigation() {
+    const actif = Number.isFinite(video.duration) && video.duration > 0;
+    boutonsSaut.forEach((bouton) => {
+      bouton.disabled = !actif;
+    });
+    if (timeline) {
+      timeline.disabled = !actif;
+      timeline.max = actif ? String(video.duration) : "1000";
+    }
+    mettreAJourTemps();
+  }
+
+  /* ── Préférence facultative : qualité HLS ── */
   function preferencesAutorisees() {
     return window.ITEAGConsent?.allows("preferences") === true;
   }
@@ -117,7 +145,7 @@
     try {
       localStorage.removeItem(CLE_QUALITE);
     } catch (_erreur) {
-      /* Le stockage peut être bloqué par le navigateur : la lecture continue. */
+      /* Le stockage facultatif ne doit jamais bloquer la lecture. */
     }
   }
 
@@ -150,7 +178,7 @@
         JSON.stringify({ qualite, expireLe: Date.now() + DUREE_PREFERENCE_MS })
       );
     } catch (_erreur) {
-      /* Une préférence non enregistrée ne doit jamais bloquer la vidéo. */
+      /* Une préférence non mémorisée ne dégrade pas la vidéo. */
     }
   }
 
@@ -163,30 +191,7 @@
     if (!preferencesAutorisees()) supprimerPreferenceQualite();
   });
 
-  /* ── Contrôles complémentaires ── */
-  function activerSauts() {
-    const actif = Number.isFinite(video.duration) && video.duration > 0;
-    boutonsSaut.forEach((bouton) => {
-      bouton.disabled = !actif;
-    });
-  }
-
-  function sauter(secondes) {
-    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-    const cible = Math.min(video.duration, Math.max(0, video.currentTime + secondes));
-    video.currentTime = cible;
-  }
-
-  boutonsSaut.forEach((bouton) => {
-    bouton.addEventListener("click", () => {
-      const secondes = Number(bouton.dataset.sautVideo || 0);
-      if (Number.isFinite(secondes)) sauter(secondes);
-    });
-  });
-
-  video.addEventListener("loadedmetadata", activerSauts);
-  video.addEventListener("durationchange", activerSauts);
-
+  /* ── Qualité Bunny/HLS ── */
   function afficherEtatQualite(texte) {
     if (qualiteActive) qualiteActive.textContent = texte;
   }
@@ -237,7 +242,6 @@
   function configurerQualites() {
     if (!selectQualite || !hls) return;
     selectQualite.innerHTML = "";
-
     const auto = document.createElement("option");
     auto.value = "-1";
     auto.textContent = "Auto";
@@ -275,7 +279,47 @@
     });
   }
 
-  /* ── Demande d'une adresse de lecture ── */
+  /* ── Sous-titres ── */
+  function configurerSousTitres() {
+    if (!selectSousTitres) return;
+    const pistes = [...video.textTracks];
+    selectSousTitres.innerHTML = "";
+
+    const aucune = document.createElement("option");
+    aucune.value = "-1";
+    aucune.textContent = "CC · désactivés";
+    selectSousTitres.append(aucune);
+
+    const pistesHtml = [...video.querySelectorAll("track[kind='subtitles'], track[kind='captions']")];
+    let indexDefaut = -1;
+    pistes.forEach((piste, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = piste.label || piste.language || `Piste ${index + 1}`;
+      selectSousTitres.append(option);
+      piste.mode = "disabled";
+      if (pistesHtml[index]?.default) indexDefaut = index;
+    });
+
+    selectSousTitres.disabled = pistes.length === 0;
+    if (indexDefaut >= 0) {
+      pistes[indexDefaut].mode = "showing";
+      selectSousTitres.value = String(indexDefaut);
+    } else {
+      selectSousTitres.value = "-1";
+    }
+  }
+
+  if (selectSousTitres) {
+    selectSousTitres.addEventListener("change", () => {
+      const index = Number(selectSousTitres.value);
+      [...video.textTracks].forEach((piste, pisteIndex) => {
+        piste.mode = pisteIndex === index ? "showing" : "disabled";
+      });
+    });
+  }
+
+  /* ── Adresse de lecture protégée ── */
   async function obtenirAdresse() {
     let reponse;
     try {
@@ -296,26 +340,11 @@
     }
 
     const donnees = await reponse.json();
-    // On renouvelle un peu avant l'échéance pour éviter une coupure en pleine lecture.
-    expireLe = Date.now() + (donnees.expire_dans - 30) * 1000;
+    expireLe = Date.now() + Math.max(0, donnees.expire_dans - 30) * 1000;
     masquerMessage();
     return { url: donnees.url, mode: donnees.mode || "fichier" };
   }
 
-  /* ── Rattachement de la source selon le mode ── */
-
-  // Safari lit le HLS nativement : lui imposer hls.js dégraderait la lecture
-  // et couperait l'AirPlay. Encore faut-il reconnaître Safari.
-  //
-  // `canPlayType("application/vnd.apple.mpegurl")` ne le fait plus : Chrome y
-  // répond « maybe » alors qu'il est incapable de lire un manifeste HLS. Sur
-  // cette seule réponse, le lecteur collait l'adresse dans `video.src`,
-  // n'utilisait jamais hls.js, et échouait en MediaError 4 — sur Chrome et
-  // Edge, donc sur l'essentiel du public, donc sur tout le contenu Bunny.
-  //
-  // `webkitCurrentPlaybackTargetIsWireless` est propre à WebKit et c'est
-  // précisément la propriété AirPlay que l'on cherche à préserver : le test
-  // porte enfin sur ce qui motive l'exception.
   function hlsNatif() {
     return "webkitCurrentPlaybackTargetIsWireless" in video && video.canPlayType("application/vnd.apple.mpegurl") !== "";
   }
@@ -323,109 +352,130 @@
   function attacherHls(adresse) {
     if (hlsNatif()) {
       video.src = adresse;
+      video.load();
       desactiverQualite("Auto · navigateur");
-      return true;
+      return Promise.resolve(true);
     }
+
     if (typeof Hls === "undefined" || !Hls.isSupported()) {
-      // Dernier recours : un navigateur sans MSE qui prétend lire le HLS vaut
-      // mieux qu'un refus sec.
       if (video.canPlayType("application/vnd.apple.mpegurl") !== "") {
         video.src = adresse;
+        video.load();
         desactiverQualite("Auto · navigateur");
-        return true;
+        return Promise.resolve(true);
       }
       afficherMessage("Votre navigateur ne permet pas la lecture de cette vidéo.");
-      return false;
+      return Promise.resolve(false);
     }
+
     if (hls) hls.destroy();
-    hls = new Hls({
-      lowLatencyMode: false,
-      // Un flux HLS n'est pas un fichier : après le manifeste, le lecteur
-      // demande les segments un par un. Le jeton Bunny est volontairement
-      // placé dans le chemin du manifeste : les adresses relatives des
-      // segments en héritent sans réécriture dans le navigateur.
+    hls = new Hls({ lowLatencyMode: false });
+
+    return new Promise((resolve) => {
+      let initialise = false;
+      const conclure = (valeur) => {
+        if (initialise) return;
+        initialise = true;
+        resolve(valeur);
+      };
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        configurerQualites();
+        conclure(true);
+      });
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_evenement, donnees) => {
+        const niveau = hls.levels[donnees.level];
+        if (!niveau?.height) return;
+        afficherEtatQualite(hls.autoLevelEnabled ? `Auto · ${niveau.height}p` : `${niveau.height}p · sélection manuelle`);
+      });
+      hls.on(Hls.Events.ERROR, (_evenement, donnees) => {
+        if (!donnees.fatal) return;
+        if (!initialise) {
+          conclure(false);
+          afficherMessage("La vidéo n'a pas pu être préparée. Réessayez.");
+          return;
+        }
+        if (donnees.type === Hls.ErrorTypes.NETWORK_ERROR) reprendreApresErreur();
+        else {
+          adresseObtenue = false;
+          afficherMessage("La lecture a été interrompue. Rechargez la page.");
+        }
+      });
+      hls.loadSource(adresse);
+      hls.attachMedia(video);
     });
-    hls.loadSource(adresse);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, configurerQualites);
-    hls.on(Hls.Events.LEVEL_SWITCHED, (_evenement, donnees) => {
-      const niveau = hls.levels[donnees.level];
-      if (!niveau?.height) return;
-      if (hls.autoLevelEnabled) {
-        afficherEtatQualite(`Auto · ${niveau.height}p`);
-      } else {
-        afficherEtatQualite(`${niveau.height}p · sélection manuelle`);
-      }
-    });
-    hls.on(Hls.Events.ERROR, (_evenement, donnees) => {
-      if (!donnees.fatal) return;
-      // Une erreur réseau fatale signifie le plus souvent un jeton périmé :
-      // on redemande une adresse plutôt que d'afficher un échec.
-      if (donnees.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        reprendreApresErreur();
-      } else {
-        adresseObtenue = false;
-        afficherMessage("La lecture a été interrompue. Rechargez la page.");
-      }
-    });
-    return true;
+  }
+
+  function appliquerPositionDemandee() {
+    if (positionDemandee <= 0 || !Number.isFinite(video.duration)) return;
+    video.currentTime = Math.min(positionDemandee, Math.max(0, video.duration - 0.25));
   }
 
   async function preparerLecture() {
     if (adresseObtenue && Date.now() < expireLe) return true;
 
-    const positionCourante = video.currentTime || positionReprise;
+    afficherChargement(true);
     const lecture = await obtenirAdresse();
-    if (!lecture) return false;
+    if (!lecture) {
+      afficherChargement(false);
+      return false;
+    }
 
+    let attachee = true;
     if (lecture.mode === "hls") {
-      if (!attacherHls(lecture.url)) return false;
+      attachee = await attacherHls(lecture.url);
     } else {
       video.src = lecture.url;
+      video.load();
       desactiverQualite("Qualité source");
     }
+    if (!attachee) {
+      afficherChargement(false);
+      return false;
+    }
+
     adresseObtenue = true;
     masquerBouton();
-
-    if (positionCourante > 0) {
-      video.addEventListener(
-        "loadedmetadata",
-        () => {
-          video.currentTime = positionCourante;
-        },
-        { once: true }
-      );
-    }
+    if (video.readyState >= 1) appliquerPositionDemandee();
+    else video.addEventListener("loadedmetadata", appliquerPositionDemandee, { once: true });
     return true;
   }
 
   async function lancerLecture() {
+    if (fin) fin.hidden = true;
     if (boutonDemarrer) boutonDemarrer.disabled = true;
-    if (await preparerLecture()) {
-      video.play().then(demarrerSignaux).catch(() => montrerBouton());
-    } else {
+    if (!(await preparerLecture())) {
+      montrerBouton();
+      return;
+    }
+    try {
+      await video.play();
+      demarrerSignaux();
+    } catch (_erreur) {
+      afficherChargement(false);
       montrerBouton();
     }
   }
 
-  /* ── Signal de progression ── */
+  async function basculerLecture() {
+    if (video.paused || video.ended) await lancerLecture();
+    else video.pause();
+  }
+
+  /* ── Progression ── */
   function envoyerSignal(force) {
+    if (!adresseObtenue) return;
     const maintenant = Date.now();
-    const delta = Math.round((maintenant - dernierSignal) / 1000);
+    const ecoule = dernierSignal ? (maintenant - dernierSignal) / 1000 : 0;
+    const delta = Math.round(ecoule * Math.max(0.25, video.playbackRate || 1));
     if (!force && delta < 1) return;
     dernierSignal = maintenant;
 
     fetch(urlProgression, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": jetonCsrf(),
-      },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": jetonCsrf() },
       credentials: "same-origin",
-      body: JSON.stringify({
-        position: Math.round(video.currentTime || 0),
-        delta: delta,
-      }),
+      body: JSON.stringify({ position: Math.round(video.currentTime || 0), delta }),
     })
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
@@ -436,7 +486,7 @@
         if (barre) barre.style.width = donnees.pourcentage_module + "%";
       })
       .catch(() => {
-        /* Un signal perdu n'interrompt pas la lecture. */
+        /* Un signal perdu n'interrompt jamais la vidéo. */
       });
   }
 
@@ -454,50 +504,189 @@
     minuteur = null;
   }
 
-  /* ── Branchements ── */
-
-  // La première demande de lecture déclenche l'obtention de l'adresse.
-  video.addEventListener("play", async (evenement) => {
-    if (adresseObtenue && Date.now() < expireLe) {
-      demarrerSignaux();
+  function reprendreApresErreur() {
+    if (repriseEnCours) return;
+    if (reprises >= REPRISES_MAX) {
+      afficherChargement(false);
+      afficherMessage("La lecture de cette vidéo a échoué. Rechargez la page ou signalez-le au secrétariat.");
+      montrerBouton();
       return;
     }
-    evenement.preventDefault();
-    video.pause();
-    if (await preparerLecture()) {
-      video.play().then(demarrerSignaux).catch(() => {});
-    } else {
-      montrerBouton();
-    }
-  });
-
-  // Un élément <video> sans source ne déclenche pas toujours « play » depuis
-  // ses contrôles natifs. Ce bouton est donc le point d'entrée fiable : il
-  // obtient d'abord l'adresse protégée, puis lance le lecteur.
-  if (boutonDemarrer) {
-    boutonDemarrer.addEventListener("click", lancerLecture);
+    repriseEnCours = true;
+    const attente = DELAI_REPRISE_MS * 2 ** reprises;
+    reprises += 1;
+    positionDemandee = video.currentTime || positionDemandee;
+    adresseObtenue = false;
+    setTimeout(async () => {
+      repriseEnCours = false;
+      await lancerLecture();
+    }, attente);
   }
 
+  /* ── Contrôles ITEAG ── */
+  boutonsSaut.forEach((bouton) => {
+    bouton.addEventListener("click", () => {
+      if (!Number.isFinite(video.duration)) return;
+      const secondes = Number(bouton.dataset.sautVideo || 0);
+      video.currentTime = Math.min(video.duration, Math.max(0, video.currentTime + secondes));
+    });
+  });
+
+  if (timeline) {
+    timeline.addEventListener("input", () => {
+      if (!Number.isFinite(video.duration)) return;
+      video.currentTime = Math.min(video.duration, Math.max(0, Number(timeline.value)));
+      mettreAJourTemps();
+    });
+  }
+
+  if (boutonLecture) boutonLecture.addEventListener("click", basculerLecture);
+  if (boutonDemarrer) boutonDemarrer.addEventListener("click", lancerLecture);
+  video.addEventListener("click", basculerLecture);
+  video.addEventListener("contextmenu", (evenement) => evenement.preventDefault());
+
+  if (boutonMuet) {
+    boutonMuet.addEventListener("click", () => {
+      video.muted = !video.muted;
+      mettreAJourVolume();
+    });
+  }
+
+  if (volume) {
+    volume.addEventListener("input", () => {
+      video.volume = Number(volume.value);
+      video.muted = video.volume === 0;
+      mettreAJourVolume();
+    });
+  }
+
+  if (selectVitesse) {
+    selectVitesse.addEventListener("change", () => {
+      if (!video.paused) envoyerSignal(true);
+      video.playbackRate = Number(selectVitesse.value) || 1;
+      dernierSignal = Date.now();
+    });
+  }
+
+  if (boutonPip && document.pictureInPictureEnabled && video.requestPictureInPicture) {
+    boutonPip.hidden = false;
+    boutonPip.addEventListener("click", async () => {
+      try {
+        if (document.pictureInPictureElement) await document.exitPictureInPicture();
+        else await video.requestPictureInPicture();
+      } catch (_erreur) {
+        /* Certains navigateurs bloquent PiP selon leur politique locale. */
+      }
+    });
+  }
+
+  async function basculerPleinEcran() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (conteneur.requestFullscreen) await conteneur.requestFullscreen();
+      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    } catch (_erreur) {
+      /* Le plein écran peut être refusé hors geste utilisateur. */
+    }
+  }
+
+  if (boutonPleinEcran) boutonPleinEcran.addEventListener("click", basculerPleinEcran);
+
+  /* ── Reprise et fin de leçon ── */
+  if (reprise) {
+    masquerBouton();
+    if (repriseTemps) repriseTemps.textContent = formaterTemps(positionReprise);
+    reprise.querySelectorAll("[data-reprise-action]").forEach((bouton) => {
+      bouton.addEventListener("click", async () => {
+        positionDemandee = bouton.dataset.repriseAction === "restart" ? 0 : positionReprise;
+        reprise.hidden = true;
+        await lancerLecture();
+      });
+    });
+  }
+
+  function trouverLeconSuivante() {
+    const liens = [...document.querySelectorAll('nav[aria-label="Leçons du module"] a.portal-nav-link')];
+    const index = liens.findIndex((lien) => lien.getAttribute("aria-current") === "page");
+    if (index < 0 || index >= liens.length - 1) return null;
+    const suivant = liens[index + 1];
+    const verrouillee = [...suivant.querySelectorAll(".sr-only")].some((element) =>
+      element.textContent.toLowerCase().includes("verrouillée")
+    );
+    return verrouillee ? null : suivant;
+  }
+
+  function afficherFin() {
+    if (!fin) return;
+    const suivant = trouverLeconSuivante();
+    if (lienSuivant && suivant) {
+      const titre = suivant.querySelector(".truncate")?.textContent.trim() || "Leçon suivante";
+      lienSuivant.href = suivant.href;
+      lienSuivant.textContent = `Continuer · ${titre}`;
+      lienSuivant.hidden = false;
+      if (finCopie) finCopie.textContent = "Votre progression a été enregistrée. Vous pouvez continuer le module.";
+    } else if (lienSuivant) {
+      lienSuivant.hidden = true;
+    }
+    fin.hidden = false;
+  }
+
+  if (boutonRejouer) {
+    boutonRejouer.addEventListener("click", async () => {
+      if (fin) fin.hidden = true;
+      positionDemandee = 0;
+      if (Number.isFinite(video.duration)) video.currentTime = 0;
+      await lancerLecture();
+    });
+  }
+
+  /* ── Événements média ── */
+  video.addEventListener("loadedmetadata", () => {
+    activerNavigation();
+    configurerSousTitres();
+  });
+  video.addEventListener("durationchange", activerNavigation);
+  video.addEventListener("timeupdate", mettreAJourTemps);
+  video.addEventListener("volumechange", mettreAJourVolume);
+
+  video.addEventListener("play", () => {
+    masquerBouton();
+    mettreAJourLecture();
+    demarrerSignaux();
+  });
+  video.addEventListener("playing", () => {
+    reprises = 0;
+    afficherChargement(false);
+    masquerBouton();
+    mettreAJourLecture();
+  });
   video.addEventListener("pause", () => {
-    if (!adresseObtenue) return;
+    mettreAJourLecture();
+    if (!adresseObtenue || video.ended) return;
     envoyerSignal(true);
     arreterSignaux();
   });
-
   video.addEventListener("ended", () => {
     envoyerSignal(true);
     arreterSignaux();
-    montrerBouton();
+    afficherChargement(false);
+    masquerBouton();
+    mettreAJourLecture();
+    afficherFin();
   });
 
-  // Une adresse expirée provoque une erreur réseau : on en redemande une.
+  ["loadstart", "waiting", "stalled", "seeking"].forEach((nom) => {
+    video.addEventListener(nom, () => {
+      if (adresseObtenue || nom === "loadstart") afficherChargement(true);
+    });
+  });
+  ["canplay", "seeked"].forEach((nom) => video.addEventListener(nom, () => afficherChargement(false)));
+
   video.addEventListener("error", () => {
     if (!adresseObtenue) return;
-    // `MEDIA_ERR_SRC_NOT_SUPPORTED` ne dit pas « adresse périmée » mais « je ne
-    // sais pas lire ce format ». Une adresse neuve ne changerait rien : c'est
-    // exactement l'échec qui bouclait à l'infini.
     if (video.error && video.error.code === 4) {
       adresseObtenue = false;
+      afficherChargement(false);
       afficherMessage("Le format de cette vidéo n'est pas lisible par votre navigateur.");
       montrerBouton();
       return;
@@ -505,13 +694,35 @@
     reprendreApresErreur();
   });
 
-  // Une lecture qui repart pour de bon solde le budget de reprises : la panne
-  // suivante, éventuelle, repart d'un compteur neuf.
-  video.addEventListener("playing", () => {
-    reprises = 0;
+  /* ── Raccourcis clavier, uniquement quand le lecteur a le focus ── */
+  conteneur.addEventListener("keydown", async (evenement) => {
+    const cible = evenement.target;
+    if (cible instanceof HTMLInputElement || cible instanceof HTMLSelectElement || cible instanceof HTMLButtonElement || cible instanceof HTMLAnchorElement) return;
+
+    const touche = evenement.key.toLowerCase();
+    if (touche === " " || touche === "k") {
+      evenement.preventDefault();
+      await basculerLecture();
+    } else if (touche === "arrowleft") {
+      evenement.preventDefault();
+      if (Number.isFinite(video.duration)) video.currentTime = Math.max(0, video.currentTime - 10);
+    } else if (touche === "arrowright") {
+      evenement.preventDefault();
+      if (Number.isFinite(video.duration)) video.currentTime = Math.min(video.duration, video.currentTime + 10);
+    } else if (touche === "m") {
+      evenement.preventDefault();
+      video.muted = !video.muted;
+    } else if (touche === "f") {
+      evenement.preventDefault();
+      await basculerPleinEcran();
+    }
   });
 
-  // Dernier signal avant de quitter la page, pour ne pas perdre la position.
+  configurerSousTitres();
+  mettreAJourLecture();
+  mettreAJourVolume();
+  mettreAJourTemps();
+
   window.addEventListener("pagehide", () => {
     if (adresseObtenue) envoyerSignal(true);
   });
