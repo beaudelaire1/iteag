@@ -39,9 +39,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/captures/desktop" "$RUNNER_TEMP/captures/mobile"
-          cat > "$RUNNER_TEMP/capture.mjs" <<'JS'
-          import puppeteer from "puppeteer-core";
-          import path from "node:path";
+          cat > "$RUNNER_TEMP/capture.cjs" <<'JS'
+          const puppeteer = require("puppeteer-core");
+          const path = require("node:path");
 
           const base = process.env.BASE_URL.replace(/\/$/, "");
           const root = process.env.RUNNER_TEMP;
@@ -54,48 +54,53 @@ jobs:
             boutique: "/boutique/",
           };
 
-          const browser = await puppeteer.launch({
-            executablePath: "/usr/bin/google-chrome",
-            headless: true,
-            args: ["--no-sandbox", "--disable-gpu"],
-          });
-
-          async function capturer(mode, viewport) {
-            const page = await browser.newPage();
-            await page.setViewport(viewport);
-            await page.setCookie({
-              name: "iteag_cookie_consent",
-              value: "essential",
-              url: `${base}/`,
-              secure: true,
-              sameSite: "Lax",
+          (async () => {
+            const browser = await puppeteer.launch({
+              executablePath: "/usr/bin/google-chrome",
+              headless: true,
+              args: ["--no-sandbox", "--disable-gpu"],
             });
 
-            for (const [nom, chemin] of Object.entries(pages)) {
-              const url = `${base}${chemin}`;
-              const response = await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-              if (!response || response.status() !== 200) {
-                throw new Error(`${url} -> ${response?.status() ?? "aucune réponse"}`);
-              }
-              await page.evaluate(async () => {
-                if (document.fonts?.ready) await document.fonts.ready;
-                window.scrollTo(0, 0);
+            async function capturer(mode, viewport) {
+              const page = await browser.newPage();
+              await page.setViewport(viewport);
+              await page.setCookie({
+                name: "iteag_cookie_consent",
+                value: "essential",
+                url: `${base}/`,
+                secure: true,
+                sameSite: "Lax",
               });
-              await new Promise((resolve) => setTimeout(resolve, 500));
-              await page.screenshot({
-                path: path.join(root, "captures", mode, `${nom}.png`),
-                fullPage: true,
-              });
-            }
-            await page.close();
-          }
 
-          await capturer("desktop", { width: 1440, height: 1000, deviceScaleFactor: 1 });
-          await capturer("mobile", { width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-          await browser.close();
+              for (const [nom, chemin] of Object.entries(pages)) {
+                const url = `${base}${chemin}`;
+                const response = await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+                if (!response || response.status() !== 200) {
+                  throw new Error(`${url} -> ${response?.status() ?? "aucune réponse"}`);
+                }
+                await page.evaluate(async () => {
+                  if (document.fonts?.ready) await document.fonts.ready;
+                  window.scrollTo(0, 0);
+                });
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                await page.screenshot({
+                  path: path.join(root, "captures", mode, `${nom}.png`),
+                  fullPage: true,
+                });
+              }
+              await page.close();
+            }
+
+            await capturer("desktop", { width: 1440, height: 1000, deviceScaleFactor: 1 });
+            await capturer("mobile", { width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+            await browser.close();
+          })().catch((erreur) => {
+            console.error(erreur);
+            process.exit(1);
+          });
           JS
 
-          node "$RUNNER_TEMP/capture.mjs"
+          node "$RUNNER_TEMP/capture.cjs"
           test "$(find "$RUNNER_TEMP/captures" -name '*.png' -size +10k | wc -l)" -eq 12
 
       - name: Publier les captures
