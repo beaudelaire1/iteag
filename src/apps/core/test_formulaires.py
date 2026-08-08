@@ -16,6 +16,7 @@ import inspect
 import pkgutil
 
 import pytest
+from bs4 import BeautifulSoup
 from django import forms
 
 from apps.core.formulaires import CLASSE_PAR_DEFAUT, INVISIBLES, classe_attendue
@@ -106,6 +107,19 @@ class TestLeChampRefuseSeVoit:
         reponse = client.post(reverse("admissions:candidature_form"), {"nom": ""})
         assert reponse.status_code == 200
         assert "champ--invalide" in reponse.content.decode()
+
+    def test_l_erreur_reste_liee_au_champ_pour_un_lecteur_d_ecran(self, client):
+        from django.urls import reverse
+
+        reponse = client.post(reverse("admissions:candidature_form"), {"nom": ""})
+        document = BeautifulSoup(reponse.content, "html.parser")
+        champ = document.find(id="id_nom")
+        erreur = document.find(id="id_nom_error")
+
+        assert champ is not None
+        assert erreur is not None
+        assert champ.get("aria-invalid") == "true"
+        assert "id_nom_error" in champ.get("aria-describedby", "").split()
 
     def test_un_formulaire_valide_n_affiche_aucune_erreur(self, client):
         from django.urls import reverse
