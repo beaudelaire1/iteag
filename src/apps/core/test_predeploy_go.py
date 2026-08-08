@@ -53,11 +53,14 @@ def test_footer_garde_une_hierarchie_de_titres_et_un_contraste_lisibles():
     assert 'class="text-xs text-warm-600"' not in footer
 
 
-def test_composants_de_petit_texte_chargent_les_corrections_de_contraste():
-    base = (RACINE / "templates" / "base.html").read_text(encoding="utf-8")
-    css = (RACINE / "static" / "css" / "accessibilite-couleurs.css").read_text(encoding="utf-8")
+def test_composants_de_petit_texte_passent_par_le_pipeline_css():
+    production = (RACINE / "assets" / "css" / "production.css").read_text(encoding="utf-8")
+    css = (RACINE / "assets" / "css" / "accessibilite-couleurs.css").read_text(encoding="utf-8")
+    package = (RACINE / "package.json").read_text(encoding="utf-8")
 
-    assert "css/accessibilite-couleurs.css" in base
+    assert '@import "./input.css";' in production
+    assert '@import "./accessibilite-couleurs.css";' in production
+    assert "assets/css/production.css" in package
     assert ".overline" in css and "--color-gold-700" in css
     assert ".stat-label" in css and "--color-warm-600" in css
 
