@@ -11,7 +11,6 @@
   if (!conteneur) return;
 
   const video = conteneur.querySelector("[data-video]");
-  const stage = conteneur.querySelector("[data-video-stage]");
   const zoneMessage = conteneur.querySelector("[data-lecteur-message]");
   const boutonDemarrer = conteneur.querySelector("[data-demarrer-video]");
   const boutonLecture = conteneur.querySelector("[data-video-toggle-play]");
@@ -90,7 +89,7 @@
   }
 
   function montrerBouton() {
-    if (!boutonDemarrer || !video.paused || !fin?.hidden === false) return;
+    if (!boutonDemarrer || !video.paused || (fin && !fin.hidden)) return;
     boutonDemarrer.hidden = false;
     boutonDemarrer.disabled = false;
   }
@@ -413,6 +412,7 @@
 
   async function preparerLecture() {
     if (adresseObtenue && Date.now() < expireLe) return true;
+    if (adresseObtenue && Number.isFinite(video.currentTime)) positionDemandee = video.currentTime;
 
     afficherChargement(true);
     const lecture = await obtenirAdresse();
