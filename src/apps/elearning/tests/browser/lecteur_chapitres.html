@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/static/css/lecteur-video.css">
+  <link rel="stylesheet" href="/static/css/lecteur-video-chapitres.css">
+</head>
+<body style="margin:40px;background:#fefaeF">
+  <div class="iteag-player" data-lecteur-video
+       data-url-lecture="/fake/lecture/"
+       data-url-metadata="/apps/elearning/tests/browser/metadata_chapitres.json">
+    <div class="iteag-player__stage">
+      <video data-video class="iteag-player__video"></video>
+    </div>
+    <div class="iteag-player__controls">
+      <input type="range" min="0" max="600" value="0" class="iteag-player__timeline" data-video-timeline>
+    </div>
+  </div>
+
+  <script>
+    const video = document.querySelector('[data-video]');
+    Object.defineProperty(video, 'duration', {value: 600, configurable: true});
+    Object.defineProperty(video, 'videoWidth', {value: 1920, configurable: true});
+    Object.defineProperty(video, 'videoHeight', {value: 1080, configurable: true});
+  </script>
+  <script src="/static/js/lecteur-video-chapitres.js"></script>
+  <script>
+    setTimeout(() => {
+      const timeline = document.querySelector('[data-video-timeline]');
+      const rect = timeline.getBoundingClientRect();
+      timeline.dispatchEvent(new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: rect.left + rect.width * 0.45,
+        clientY: rect.top + 2,
+      }));
+      setTimeout(() => {
+        const diagnostic = document.createElement('pre');
+        diagnostic.id = 'diagnostic-chapitres';
+        const preview = document.querySelector('.iteag-player__seek-preview');
+        diagnostic.textContent = JSON.stringify({
+          shell: !!document.querySelector('.iteag-player__timeline-shell'),
+          markers: document.querySelectorAll('[data-video-chapter-marker]').length,
+          previewVisible: !!preview && !preview.hidden,
+          previewTime: document.querySelector('[data-seek-time]')?.textContent || '',
+          previewChapter: document.querySelector('[data-seek-chapter]')?.textContent || '',
+        });
+        document.body.appendChild(diagnostic);
+      }, 250);
+    }, 500);
+  </script>
+</body>
+</html>
