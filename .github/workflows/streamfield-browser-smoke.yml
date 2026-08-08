@@ -57,6 +57,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: python manage.py collectstatic --noinput
+      - name: Vérifier les tests ciblés du StreamField
+        run: pytest apps/website/test_streamfield_portail.py -q
+      - name: Vérifier les migrations
+        run: python manage.py makemigrations --check --dry-run
       - name: Construire une page avec le vrai BlockWidget
         run: |
           python - <<'PY'
