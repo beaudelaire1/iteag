@@ -64,10 +64,7 @@ def chapitres_video(identifiant_video: str) -> list[dict]:
     if memorise is not None:
         return memorise
 
-    url = (
-        "https://video.bunnycdn.com/library/"
-        f"{quote(bibliotheque, safe='')}/videos/{quote(identifiant, safe='')}"
-    )
+    url = f"https://video.bunnycdn.com/library/{quote(bibliotheque, safe='')}/videos/{quote(identifiant, safe='')}"
     # Le schéma et le domaine sont constants ; seules les deux composantes du
     # chemin sont échappées. Ruff ne peut pas le déduire à travers Request().
     requete = Request(  # noqa: S310
