@@ -65,7 +65,7 @@
     <div class="container-wide">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center" data-motion-stagger>
             <div class="reveal">
-                <p class="stat-number text-white" data-counter="3" data-counter-suffix="">3</p>
+                <p class="stat-number text-white" data-counter="4" data-counter-suffix="">4</p>
                 <p class="stat-label" style="color: var(--color-navy-200);">Parcours de formation</p>
             </div>
             <div class="reveal">
@@ -124,7 +124,7 @@
             <article class="card reveal">
                 <span class="badge badge-gold mb-4">Diplôme ITEAG</span>
                 <h3 class="text-lg mb-3" style="color: var(--color-navy-900);">Parcours diplômant</h3>
-                <p class="text-sm leading-relaxed" style="color: var(--color-warm-600);">Formation complète en théologie évangélique sanctionnée par un diplôme reconnu.</p>
+                <p class="text-sm leading-relaxed" style="color: var(--color-warm-600);">Formation complète en théologie évangélique sanctionnée par le diplôme de l'ITEAG.</p>
             </article>
             <article class="card reveal">
                 <span class="badge badge-gold mb-4">Bachelor</span>
@@ -181,9 +181,9 @@
                     <a href="{{ prof.get_absolute_url }}" class="stretched-link">{{ prof.nom_complet }}</a>
                 </h3>
                 {% if prof.specialite %}
-                <p class="text-xs" style="color: var(--color-warm-500);">{{ prof.specialite }}</p>
+                <p class="text-xs" style="color: var(--color-warm-600);">{{ prof.specialite }}</p>
                 {% elif prof.disciplines.all %}
-                <p class="text-xs" style="color: var(--color-warm-500);">
+                <p class="text-xs" style="color: var(--color-warm-600);">
                     {% for discipline in prof.disciplines.all %}{{ discipline.nom }}{% if not forloop.last %} · {% endif %}{% endfor %}
                 </p>
                 {% endif %}
@@ -208,7 +208,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
             {% for news in latest_news %}
             <article class="card relative group reveal">
-                <time class="text-xs font-medium uppercase tracking-wider" style="color: var(--color-warm-500);" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
+                <time class="text-xs font-medium uppercase tracking-wider" style="color: var(--color-warm-600);" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
                 <h3 class="text-lg mt-3 mb-3" style="color: var(--color-navy-900);">{{ news.title }}</h3>
                 {% if news.excerpt %}
                 <p class="text-sm leading-relaxed line-clamp-3" style="color: var(--color-warm-600);">{{ news.excerpt }}</p>
@@ -326,7 +326,7 @@
                         {% endif %}
                         <div>
                             <p class="text-sm font-semibold" style="color: var(--color-navy-900);">{{ item.nom }}</p>
-                            {% if item.role %}<p class="text-xs" style="color: var(--color-warm-500);">{{ item.role }}</p>{% endif %}
+                            {% if item.role %}<p class="text-xs" style="color: var(--color-warm-600);">{{ item.role }}</p>{% endif %}
                         </div>
                     </div>
                 </article>
@@ -371,6 +371,14 @@
                 </details>
                 {% endfor %}
             </div>
+        </div>
+    </section>
+
+    {# Blocs éditoriaux génériques : texte, image, citation, encadré, document… #}
+    {% else %}
+    <section class="section">
+        <div class="container-wide">
+            {% include_block block %}
         </div>
     </section>
     {% endif %}

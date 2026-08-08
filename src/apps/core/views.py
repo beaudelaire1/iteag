@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import ListView
 
@@ -97,6 +98,19 @@ class NotificationToutSupprimerView(LoginRequiredMixin, View):
 # ──────────────────────────────────────────────
 
 
+def _retour_newsletter(request) -> str:
+    """N'autorise le retour qu'à l'intérieur de l'origine courante."""
+
+    propose = request.POST.get("suivant") or "/"
+    if url_has_allowed_host_and_scheme(
+        propose,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return propose
+    return "/"
+
+
 class NewsletterInscriptionView(View):
     """Inscription avec double consentement.
 
@@ -106,7 +120,7 @@ class NewsletterInscriptionView(View):
 
     def post(self, request):
         formulaire = NewsletterForm(request.POST)
-        retour = request.POST.get("suivant") or "/"
+        retour = _retour_newsletter(request)
 
         if not formulaire.is_valid():
             messages.error(request, "Merci de saisir une adresse email valide.")

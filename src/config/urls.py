@@ -37,7 +37,29 @@ sitemaps = {
     "boutique": LivresBoutiqueSitemap,
 }
 
+# Compatibilité passive avec quelques anciennes adresses publiques. Ce bloc ne
+# pilote pas le go-live : la release est validée sur la nouvelle application et
+# sa préproduction. Les redirections restent néanmoins utiles pour ne pas casser
+# des liens historiques déjà partagés.
+URLS_PUBLIQUES_HISTORIQUES = {
+    "presentation": "/presentation/",
+    "education": "/formations/",
+    "diploma": "/formations/parcours/diplomant-iteag/",
+    "educationinministry": "/formations/parcours/iteag-pro/",
+    "enroll": "/admissions/candidature/",
+    "formations/parcours/parcours-diplomant-iteag/": "/formations/parcours/diplomant-iteag/",
+    "formations/parcours/parcours-bachelor-flte/": "/formations/parcours/bachelor-flte/",
+}
+
 urlpatterns = [
+    *[
+        path(
+            ancienne_url,
+            RedirectView.as_view(url=nouvelle_url, permanent=True, query_string=True),
+            name=f"ancienne_url_publique_{index}",
+        )
+        for index, (ancienne_url, nouvelle_url) in enumerate(URLS_PUBLIQUES_HISTORIQUES.items())
+    ],
     # Django admin
     path("django-admin/", admin.site.urls),
     # SEO
@@ -81,11 +103,6 @@ urlpatterns = [
         ),
         name="ancienne_url_elearning",
     ),
-    # « espace-enseignant/ » avait été amputé de ses cinq premières lettres en
-    # même temps qu'on ajoutait les questionnaires (12a8e78), sans que personne
-    # ne l'ait voulu ni remarqué : le préfixe est devenu « gnant/ ». Les liens
-    # posés entre-temps méritent d'aboutir plutôt que de tomber en 404, d'où
-    # cette redirection — la même mécanique que pour l'ancienne URL e-learning.
     re_path(
         r"^gnant/(?P<chemin>.*)$",
         RedirectView.as_view(
@@ -103,19 +120,15 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-    # Debug toolbar
     if "debug_toolbar" in settings.INSTALLED_APPS:
         import debug_toolbar
 
         urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
 
-    # Browser reload
     if "django_browser_reload" in settings.INSTALLED_APPS:
-        urlpatterns = [path("__reload__/", include("django_browser_reload.urls"))] + urlpatterns
+        import django_browser_reload
 
-# ──────────────────────────────────────────────
-# Gestionnaires d'erreur — pages à la charte, sans détail technique
-# ──────────────────────────────────────────────
+        urlpatterns = [path("__reload__/", include(django_browser_reload.urls))] + urlpatterns
 
 handler400 = "apps.core.views.erreur_400"
 handler403 = "apps.core.views.erreur_403"

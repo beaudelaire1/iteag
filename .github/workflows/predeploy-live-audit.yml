@@ -1,0 +1,222 @@
+name: Predeploy live audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: predeploy-live-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preproduction:
+    name: Preproduction HTTPS smoke
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/predeploy-go-readiness'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
+    steps:
+      - name: Vérifier les pages publiques critiques
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in \
+            / \
+            /presentation/ \
+            /formations/ \
+            /admissions/candidature/ \
+            /connexion/ \
+            /bibliotheque/ \
+            /boutique/ \
+            /robots.txt \
+            /sitemap.xml \
+            /healthz
+          do
+            code="$(curl --silent --show-error --max-time 20 --output /tmp/iteag-body --write-out '%{http_code}' "${BASE_URL}${path}")"
+            printf '%-28s %s\n' "$path" "$code"
+            test "$code" = "200"
+          done
+
+      - name: Vérifier la sonde applicative
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(curl --silent --show-error --max-time 20 "${BASE_URL}/healthz")"
+          echo "$body"
+          python - "$body" <<'PY'
+          import json
+          import sys
+
+          payload = json.loads(sys.argv[1])
+          assert payload.get("statut") == "ok", payload
+          assert payload.get("base") is True, payload
+          assert payload.get("cache") is True, payload
+          PY
+
+      - name: Vérifier les en-têtes de sécurité réels
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --max-time 20 --dump-header /tmp/iteag-headers --output /dev/null "${BASE_URL}/"
+          cat /tmp/iteag-headers
+          for header in \
+            '^strict-transport-security:' \
+            '^content-security-policy:' \
+            '^permissions-policy:' \
+            '^x-content-type-options:' \
+            '^x-frame-options:' \
+            '^referrer-policy:' \
+            '^x-robots-tag:'
+          do
+            grep --ignore-case --quiet --extended-regexp "$header" /tmp/iteag-headers
+          done
+          grep --ignore-case --quiet --extended-regexp '^strict-transport-security:.*max-age=31536000' /tmp/iteag-headers
+          grep --ignore-case --quiet --extended-regexp '^x-frame-options: DENY' /tmp/iteag-headers
+          grep --ignore-case --quiet --extended-regexp '^content-security-policy:.*frame-ancestors '\''none'\''' /tmp/iteag-headers
+          grep --ignore-case --quiet --extended-regexp '^permissions-policy:.*camera=\(\).*microphone=\(\).*geolocation=\(\).*usb=\(\)' /tmp/iteag-headers
+          grep --ignore-case --quiet --extended-regexp '^x-robots-tag:.*noindex' /tmp/iteag-headers
+
+      - name: Auditer les liens internes publics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$BASE_URL" <<'PY'
+          from html.parser import HTMLParser
+          import sys
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import urldefrag, urljoin, urlparse
+          from urllib.request import Request, urlopen
+
+          base = sys.argv[1].rstrip("/") + "/"
+          origin = urlparse(base).netloc
+          entrees = [
+              base,
+              urljoin(base, "presentation/"),
+              urljoin(base, "formations/"),
+              urljoin(base, "admissions/candidature/"),
+              urljoin(base, "bibliotheque/"),
+              urljoin(base, "boutique/"),
+          ]
+
+          class Liens(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.hrefs = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag != "a":
+                      return
+                  href = dict(attrs).get("href")
+                  if href:
+                      self.hrefs.append(href)
+
+          def ouvrir(url):
+              requete = Request(url, headers={"User-Agent": "ITEAG-Predeploy-Audit/1.0"})
+              try:
+                  with urlopen(requete, timeout=20) as reponse:
+                      return reponse.status, reponse.geturl(), reponse.read()
+              except HTTPError as exc:
+                  return exc.code, exc.geturl(), exc.read()
+              except URLError as exc:
+                  raise SystemExit(f"Connexion impossible vers {url}: {exc}") from exc
+
+          urls = set(entrees)
+          for entree in entrees:
+              code, _, corps = ouvrir(entree)
+              if code != 200:
+                  raise SystemExit(f"Page source {entree} -> {code}")
+              parseur = Liens()
+              parseur.feed(corps.decode("utf-8", errors="replace"))
+              for href in parseur.hrefs:
+                  if href.startswith(("mailto:", "tel:", "javascript:", "#")):
+                      continue
+                  url = urldefrag(urljoin(entree, href))[0]
+                  analyse = urlparse(url)
+                  if analyse.netloc != origin:
+                      continue
+                  if analyse.path.startswith(("/static/", "/media/")):
+                      continue
+                  urls.add(url)
+
+          echecs = []
+          for url in sorted(urls):
+              code, finale, _ = ouvrir(url)
+              print(f"{code:3} {url} -> {finale}" if finale != url else f"{code:3} {url}")
+              if code == 404 or code >= 500:
+                  echecs.append((url, code))
+
+          if echecs:
+              raise SystemExit(f"Liens publics cassés: {echecs}")
+          print(f"{len(urls)} URL internes contrôlées sans 404/5xx.")
+          PY
+
+      - name: Vérifier sitemap et métadonnées essentielles
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$BASE_URL" <<'PY'
+          from html.parser import HTMLParser
+          import sys
+          from urllib.parse import urljoin
+          from urllib.request import Request, urlopen
+          from xml.etree import ElementTree
+
+          base = sys.argv[1].rstrip("/") + "/"
+
+          class Meta(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.title = ""
+                  self.h1 = 0
+                  self.canonical = ""
+                  self.description = ""
+                  self._title = False
+
+              def handle_starttag(self, tag, attrs):
+                  data = dict(attrs)
+                  if tag == "h1":
+                      self.h1 += 1
+                  elif tag == "link" and data.get("rel") == "canonical":
+                      self.canonical = data.get("href", "")
+                  elif tag == "meta" and data.get("name") == "description":
+                      self.description = data.get("content", "")
+                  elif tag == "title":
+                      self._title = True
+
+              def handle_endtag(self, tag):
+                  if tag == "title":
+                      self._title = False
+
+              def handle_data(self, data):
+                  if self._title:
+                      self.title += data
+
+          def lire(url):
+              req = Request(url, headers={"User-Agent": "ITEAG-Predeploy-Audit/1.0"})
+              with urlopen(req, timeout=20) as rep:
+                  return rep.status, rep.read()
+
+          code, xml = lire(urljoin(base, "sitemap.xml"))
+          assert code == 200
+          racine = ElementTree.fromstring(xml)
+          lieux = [elt.text for elt in racine.iter() if elt.tag.endswith("loc") and elt.text]
+          assert lieux, "Sitemap vide"
+          print(f"Sitemap: {len(lieux)} URL déclarées")
+
+          for path in ("", "presentation/", "formations/", "admissions/candidature/"):
+              url = urljoin(base, path)
+              code, html = lire(url)
+              assert code == 200
+              meta = Meta()
+              meta.feed(html.decode("utf-8", errors="replace"))
+              assert meta.title.strip(), f"title absent: {url}"
+              assert meta.h1 == 1, f"nombre de H1={meta.h1}: {url}"
+              assert meta.description.strip(), f"meta description absente: {url}"
+              assert meta.canonical.startswith("https://"), f"canonical invalide: {url}: {meta.canonical}"
+              print(f"OK meta: {url} | H1={meta.h1} | canonical={meta.canonical}")
+          PY
