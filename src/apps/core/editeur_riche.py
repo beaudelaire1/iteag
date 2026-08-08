@@ -44,7 +44,7 @@ FONCTIONNALITES_EDITEUR_PORTAIL = (
     "link",
 )
 
-VERSION_ASSETS_EDITEUR = "4"
+VERSION_ASSETS_EDITEUR = "5"
 
 
 def _asset_iteag(chemin: str) -> str:
@@ -71,8 +71,20 @@ class StreamFieldPortail(BlockWidget):
         media_blocs = super().media
         prerequis = [versioned_static(chemin) for chemin in SOCLE]
         css = {medium: list(urls) for medium, urls in media_blocs._css.items()}
-        css.setdefault("all", []).append(_asset_iteag("css/streamfield-portail.css"))
-        return forms.Media(css=css, js=[*prerequis, *media_blocs._js])
+        css.setdefault("all", []).extend(
+            [
+                _asset_iteag("css/streamfield-portail.css"),
+                _asset_iteag("css/streamfield-draftail-portail.css"),
+            ]
+        )
+        return forms.Media(
+            css=css,
+            js=[
+                *prerequis,
+                *media_blocs._js,
+                _asset_iteag("js/streamfield-draftail-portail.js"),
+            ],
+        )
 
 
 class DraftailPortail(DraftailRichTextArea):

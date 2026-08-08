@@ -9,6 +9,8 @@ on:
       - "src/apps/website/formulaires_actualites.py"
       - "src/apps/website/vues_actualites.py"
       - "src/static/css/streamfield-portail.css"
+      - "src/static/css/streamfield-draftail-portail.css"
+      - "src/static/js/streamfield-draftail-portail.js"
       - "src/templates/website/actualites/formulaire.html"
       - ".github/workflows/streamfield-browser-smoke.yml"
   push:
@@ -20,6 +22,8 @@ on:
       - "src/apps/website/formulaires_actualites.py"
       - "src/apps/website/vues_actualites.py"
       - "src/static/css/streamfield-portail.css"
+      - "src/static/css/streamfield-draftail-portail.css"
+      - "src/static/js/streamfield-draftail-portail.js"
       - "src/templates/website/actualites/formulaire.html"
       - ".github/workflows/streamfield-browser-smoke.yml"
 
@@ -83,14 +87,32 @@ jobs:
           <script>
           setTimeout(function () {
             var editor = document.querySelector('.Draftail-Editor');
-            var wrapper = document.querySelector('.Draftail-editorWrapper') || editor;
-            var editorRect = wrapper ? wrapper.getBoundingClientRect() : null;
-            var editorStyle = wrapper ? window.getComputedStyle(wrapper) : null;
+            var wrapper = document.querySelector('.Draftail-Editor__wrapper') || editor;
+            var editorRect = editor ? editor.getBoundingClientRect() : null;
+            var wrapperRect = wrapper ? wrapper.getBoundingClientRect() : null;
+            var editorStyle = editor ? window.getComputedStyle(editor) : null;
             var visible = !!(
-              wrapper && editorRect && editorRect.width > 100 && editorRect.height > 40 &&
+              editor && editorRect && editorRect.width > 100 && editorRect.height > 40 &&
               editorStyle.display !== 'none' && editorStyle.visibility !== 'hidden' &&
               editorStyle.opacity !== '0'
             );
+            var toolbar = document.querySelector('.Draftail-Toolbar');
+            var pin = document.querySelector('.Draftail-ToolbarButton--pin');
+            var blockToolbar = document.querySelector('.Draftail-BlockToolbar');
+            var toolbarRect = toolbar ? toolbar.getBoundingClientRect() : null;
+            var toolbarStyle = toolbar ? window.getComputedStyle(toolbar) : null;
+            var pinStyle = pin ? window.getComputedStyle(pin) : null;
+            var blockToolbarStyle = blockToolbar ? window.getComputedStyle(blockToolbar) : null;
+            var toolbarAnchored = !!(
+              toolbar && toolbarRect && toolbarStyle && editorRect &&
+              toolbarStyle.position === 'static' &&
+              toolbarRect.width > 100 && toolbarRect.width <= editorRect.width + 2 &&
+              toolbarRect.height >= 24 && toolbarRect.height <= 90 &&
+              toolbarRect.top >= editorRect.top - 2 && toolbarRect.bottom <= editorRect.bottom + 2
+            );
+            var pinHidden = !pin || (pinStyle && pinStyle.display === 'none');
+            var blockToolbarHidden = !blockToolbar || (blockToolbarStyle && blockToolbarStyle.display === 'none');
+            var editorHeightSane = !!(editorRect && editorRect.height >= 120 && editorRect.height <= 360);
             var panelIcon = document.querySelector('.w-panel__toggle .w-panel__icon');
             var actionButton = document.querySelector('.w-panel__controls .button');
             var heading = document.querySelector('.w-panel__heading');
@@ -118,8 +140,16 @@ jobs:
               count: !!document.querySelector('input[name="contenu-count"]'),
               draftail: !!editor,
               visible: visible,
+              wrapperWidth: wrapperRect ? Math.round(wrapperRect.width) : 0,
               editorWidth: editorRect ? Math.round(editorRect.width) : 0,
               editorHeight: editorRect ? Math.round(editorRect.height) : 0,
+              editorHeightSane: editorHeightSane,
+              toolbarAnchored: toolbarAnchored,
+              toolbarPosition: toolbarStyle ? toolbarStyle.position : '',
+              toolbarWidth: toolbarRect ? Math.round(toolbarRect.width) : 0,
+              toolbarHeight: toolbarRect ? Math.round(toolbarRect.height) : 0,
+              pinHidden: pinHidden,
+              blockToolbarHidden: blockToolbarHidden,
               controlsCompact: controlsCompact,
               iconWidth: iconRect ? Math.round(iconRect.width) : 0,
               iconHeight: iconRect ? Math.round(iconRect.height) : 0,
@@ -165,6 +195,10 @@ jobs:
           grep -q '"count":true' /tmp/iteag-streamfield-dom.html
           grep -q '"draftail":true' /tmp/iteag-streamfield-dom.html
           grep -q '"visible":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"editorHeightSane":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"toolbarAnchored":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"pinHidden":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"blockToolbarHidden":true' /tmp/iteag-streamfield-dom.html
           grep -q '"controlsCompact":true' /tmp/iteag-streamfield-dom.html
           grep -q '"headingSane":true' /tmp/iteag-streamfield-dom.html
           grep -q '"anchorsHidden":true' /tmp/iteag-streamfield-dom.html

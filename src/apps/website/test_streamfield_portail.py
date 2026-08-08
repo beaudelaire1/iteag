@@ -51,10 +51,11 @@ def test_runtime_officiel_precede_les_adaptateurs_streamfield():
     widgets = _position(ressources, "/telepath/widgets.js")
     blocs = _position(ressources, "/telepath/blocks.js")
     draftail = _position(ressources, "/draftail.js")
+    barre_portail = _position(ressources, "/js/streamfield-draftail-portail.js")
 
     assert core < vendor < widgets
     assert core < vendor < blocs
-    assert vendor < draftail
+    assert vendor < draftail < barre_portail
 
 
 def test_styles_streamfield_restent_isoles_du_portail():
@@ -63,8 +64,20 @@ def test_styles_streamfield_restent_isoles_du_portail():
     gabarit = _lire("templates/website/actualites/formulaire.html")
 
     assert any("/css/streamfield-portail.css" in url for url in ressources)
+    assert any("/css/streamfield-draftail-portail.css" in url for url in ressources)
     assert not any("wagtailadmin/css/core.css" in url for url in ressources)
     assert 'class="streamfield-portail"' in gabarit
+
+
+def test_draftail_streamfield_est_ancre_au_bloc():
+    styles = _lire("static/css/streamfield-draftail-portail.css")
+    script = _lire("static/js/streamfield-draftail-portail.js")
+
+    assert "position: static !important" in styles
+    assert ".Draftail-ToolbarButton--pin" in styles
+    assert ".Draftail-BlockToolbar" in styles
+    assert 'detail: { toolbar: "sticky" }' in script
+    assert "localStorage" not in script
 
 
 def test_le_portail_ne_reimplemente_plus_blockcontroller():
