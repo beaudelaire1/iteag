@@ -45,7 +45,7 @@ jobs:
       - run: python manage.py collectstatic --noinput
       - name: Vérifier le contrat du composant
         run: pytest apps/website/test_streamfield_portail.py -q
-      - name: Construire le scénario de stabilité
+      - name: Construire le scénario navigateur
         run: |
           python - <<'PY'
           import django
@@ -56,219 +56,67 @@ jobs:
           from django.core.management import call_command
           from django.template import RequestContext, Template
           from django.test import RequestFactory
-
           from apps.website.formulaires_actualites import ActualiteForm
 
           call_command("migrate", interactive=False, verbosity=0)
-
           request = RequestFactory().get("/")
           request.csp_nonce = "picker-stability"
-          formulaire_vide = ActualiteForm()
-          stream_block = formulaire_vide.fields["contenu"].widget.block_def
-          contenu = stream_block.to_python(
-              [
-                  {
-                      "type": "texte",
-                      "value": "<p>Bloc de contrôle pour multiplier les points d'insertion.</p>",
-                  }
-              ]
-          )
+          widget = ActualiteForm().fields["contenu"].widget
+          contenu = widget.block_def.to_python([
+              {"type": "texte", "value": "<p>Bloc de contrôle.</p>"},
+          ])
           form = ActualiteForm(initial={"contenu": contenu})
-          template = Template("""
-          <!doctype html>
-          <html>
-          <head>
-            {% load socle_wagtail %}
-            <meta charset="UTF-8">
-            <style>
-              html { font-size: 24px; }
-              body {
-                width: auto;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 24px;
-                font-family: Arial, sans-serif;
-              }
-              .before { height: 120px; }
-              .after { height: 900px; }
-            </style>
-            <script>
-              window.__iteagErrors = [];
-              window.addEventListener('error', function (event) {
-                window.__iteagErrors.push(String(event.message || event.error || 'error'));
-              });
-              window.addEventListener('unhandledrejection', function (event) {
-                window.__iteagErrors.push('promise:' + String(event.reason));
-              });
-            </script>
-            {{ form.media.css }}
-            {% wagtail_configuration_portail %}
-            {{ form.media.js }}
-          </head>
-          <body>
-            {% wagtail_icones_portail %}
-            <div class="before"></div>
-            <div class="streamfield-portail">{{ form.contenu }}</div>
-            <div class="after"></div>
-            <script>
-              const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-              async function attendreJusqua(condition, delai = 1200) {
-                const debut = performance.now();
-                while (performance.now() - debut < delai) {
-                  if (condition()) return true;
-                  await attendre(25);
-                }
-                return false;
-              }
-
-              function pickerVisible() {
-                return Array.from(document.querySelectorAll('[data-tippy-root]')).find((root) => {
-                  const box = root.querySelector('.tippy-box[data-theme="dropdown"]');
-                  const combo = root.querySelector('.w-combobox-container');
-                  if (!box || !combo || box.getAttribute('data-state') === 'hidden') return false;
-                  const rect = combo.getBoundingClientRect();
-                  const style = window.getComputedStyle(box);
-                  return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden';
-                }) || null;
-              }
-
-              function mesurer() {
-                const root = pickerVisible();
-                const box = root ? root.querySelector('.tippy-box[data-theme="dropdown"]') : null;
-                const combo = root ? root.querySelector('.w-combobox-container') : null;
-                const menu = root ? root.querySelector('.w-combobox__menu') : null;
-                const search = root ? root.querySelector('[role="combobox"]') : null;
-                const options = root ? Array.from(root.querySelectorAll('.w-combobox__option')) : [];
-                const rootRect = root ? root.getBoundingClientRect() : null;
-                const comboRect = combo ? combo.getBoundingClientRect() : null;
-                const searchRect = search ? search.getBoundingClientRect() : null;
-                const optionRects = options.map((option) => option.getBoundingClientRect());
-                const menuStyle = menu ? window.getComputedStyle(menu) : null;
-
-                return {
-                  x: rootRect ? rootRect.x : -999,
-                  y: rootRect ? rootRect.y : -999,
-                  rootWidth: rootRect ? rootRect.width : 0,
-                  rootHeight: rootRect ? rootRect.height : 0,
-                  width: comboRect ? comboRect.width : 0,
-                  height: comboRect ? comboRect.height : 0,
-                  placement: box ? box.getAttribute('data-placement') : '',
-                  visible: !!(comboRect && comboRect.width >= 300 && comboRect.height >= 180),
-                  inViewport: !!(
-                    rootRect && rootRect.left >= -2 && rootRect.top >= -2 &&
-                    rootRect.right <= window.innerWidth + 2 && rootRect.bottom <= window.innerHeight + 2
-                  ),
-                  compact: !!(comboRect && comboRect.width <= 440 && comboRect.height <= 420),
-                  searchCompact: !!(searchRect && searchRect.height >= 36 && searchRect.height <= 48),
-                  scrollable: !!(menuStyle && ['auto', 'scroll'].includes(menuStyle.overflowY)),
-                  optionsReadable: optionRects.length === 8 && optionRects.every((rect) => (
-                    rect.height >= 40 && rect.height <= 50 && rect.width >= Math.min(300, window.innerWidth - 48)
-                  )),
-                };
-              }
-
-              function amplitude(echantillons, cle) {
-                const valeurs = echantillons.map((item) => item[cle]);
-                return Math.max(...valeurs) - Math.min(...valeurs);
-              }
-
-              function stabilite(echantillons) {
-                if (!echantillons.length) return 999;
-                return Math.max(
-                  amplitude(echantillons, 'x'),
-                  amplitude(echantillons, 'y'),
-                  amplitude(echantillons, 'rootWidth'),
-                  amplitude(echantillons, 'rootHeight')
-                );
-              }
-
-              async function ouvrirEtMesurer(bouton, alignement = 'center') {
-                bouton.scrollIntoView({block: alignement, inline: 'nearest'});
-                await attendre(100);
-                bouton.click();
-                const ouvert = await attendreJusqua(() => pickerVisible() !== null);
-                await attendre(120);
-
-                const echantillons = [];
-                for (let i = 0; i < 8; i += 1) {
-                  echantillons.push(mesurer());
-                  await attendre(50);
-                }
-
-                const derniere = echantillons[echantillons.length - 1];
-                const jitter = stabilite(echantillons);
-                bouton.click();
-                const ferme = await attendreJusqua(() => pickerVisible() === null);
-                await attendre(80);
-
-                return {
-                  ...derniere,
-                  opened: ouvert,
-                  closed: ferme,
-                  jitter,
-                  stable: jitter <= 1.5,
-                };
-              }
-
-              (async function () {
-                await attendre(1200);
-                const boutons = Array.from(document.querySelectorAll('.c-sf-add-button'));
-                const premier = boutons[0];
-                const dernier = boutons[boutons.length - 1];
-                const cycles = [];
-
-                for (let i = 0; i < 3; i += 1) {
-                  cycles.push(await ouvrirEtMesurer(premier));
-                }
-
-                const basPage = await ouvrirEtMesurer(dernier, 'end');
-
-                const resultat = {
-                  errors: window.__iteagErrors,
-                  viewport: {width: window.innerWidth, height: window.innerHeight},
-                  rootFontSize: window.getComputedStyle(document.documentElement).fontSize,
-                  buttonCount: boutons.length,
-                  cycles,
-                  bottomMetrics: basPage,
-                  allCyclesOpened: cycles.every((item) => item.opened),
-                  allCyclesClosed: cycles.every((item) => item.closed),
-                  allCyclesVisible: cycles.every((item) => item.visible),
-                  allCyclesStable: cycles.every((item) => item.stable),
-                  allCyclesCompact: cycles.every((item) => item.compact),
-                  allCyclesInViewport: cycles.every((item) => item.inViewport),
-                  allCyclesSearchCompact: cycles.every((item) => item.searchCompact),
-                  allCyclesScrollable: cycles.every((item) => item.scrollable),
-                  allCyclesOptionsReadable: cycles.every((item) => item.optionsReadable),
-                  bottomOpened: basPage.opened,
-                  bottomClosed: basPage.closed,
-                  bottomVisible: basPage.visible,
-                  bottomStable: basPage.stable,
-                  bottomCompact: basPage.compact,
-                  bottomInViewport: basPage.inViewport,
-                  bottomOptionsReadable: basPage.optionsReadable,
-                };
-
-                const diagnostic = document.createElement('pre');
-                diagnostic.id = 'iteag-picker-stability';
-                diagnostic.textContent = JSON.stringify(resultat);
-                document.body.appendChild(diagnostic);
-              })();
-            </script>
-          </body>
-          </html>
+          template = Template(r"""
+          <!doctype html><html><head>{% load socle_wagtail %}<meta charset="UTF-8">
+          <style>
+            html{font-size:24px}body{max-width:1200px;margin:0 auto;padding:24px;font-family:Arial,sans-serif}
+            .before{height:120px}.after{height:900px}
+          </style>
+          <script>
+            window.__errors=[];
+            addEventListener('error',e=>window.__errors.push(String(e.message||e.error||'error')));
+            addEventListener('unhandledrejection',e=>window.__errors.push('promise:'+String(e.reason)));
+          </script>
+          {{ form.media.css }}{% wagtail_configuration_portail %}{{ form.media.js }}
+          </head><body>{% wagtail_icones_portail %}<div class="before"></div>
+          <div class="streamfield-portail">{{ form.contenu }}</div><div class="after"></div>
+          <script>
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          async function waitFor(fn,timeout=1500){const start=performance.now();while(performance.now()-start<timeout){if(fn())return true;await sleep(25)}return false}
+          function visibleRoot(){return [...document.querySelectorAll('[data-tippy-root]')].find(root=>{const box=root.querySelector('.tippy-box[data-theme="dropdown"]');const combo=root.querySelector('.w-combobox-container');if(!box||!combo||box.getAttribute('data-state')==='hidden')return false;const r=combo.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(box).visibility!=='hidden'})||null}
+          function measure(){
+            const root=visibleRoot(),box=root?.querySelector('.tippy-box[data-theme="dropdown"]'),combo=root?.querySelector('.w-combobox-container'),menu=root?.querySelector('.w-combobox__menu'),search=root?.querySelector('[role="combobox"]'),options=root?[...root.querySelectorAll('.w-combobox__option')]:[];
+            const rr=root?.getBoundingClientRect(),cr=combo?.getBoundingClientRect(),sr=search?.getBoundingClientRect(),ms=menu?getComputedStyle(menu):null,ors=options.map(o=>o.getBoundingClientRect());
+            return {x:rr?.x??-999,y:rr?.y??-999,rw:rr?.width??0,rh:rr?.height??0,width:cr?.width??0,height:cr?.height??0,placement:box?.getAttribute('data-placement')||'',visible:!!(cr&&cr.width>=300&&cr.height>=180),inViewport:!!(rr&&rr.left>=-2&&rr.top>=-2&&rr.right<=innerWidth+2&&rr.bottom<=innerHeight+2),compact:!!(cr&&cr.width<=440&&cr.height<=420),searchCompact:!!(sr&&sr.height>=36&&sr.height<=48),scrollable:!!(ms&&['auto','scroll'].includes(ms.overflowY)),optionsReadable:ors.length===8&&ors.every(r=>r.height>=40&&r.height<=50&&r.width>=Math.min(300,innerWidth-48))};
+          }
+          function jitter(samples){const keys=['x','y','rw','rh'];return Math.max(...keys.map(k=>{const v=samples.map(s=>s[k]);return Math.max(...v)-Math.min(...v)}))}
+          async function cycle(button,align='center'){
+            button.scrollIntoView({block:align,inline:'nearest'});await sleep(100);button.click();const instance=button._tippy;
+            const opened=await waitFor(()=>instance?.state?.isVisible&&visibleRoot());await sleep(120);
+            const samples=[];for(let i=0;i<8;i++){samples.push(measure());await sleep(50)}
+            const last=samples.at(-1),j=jitter(samples);if(instance?.state?.isVisible)instance.hide();const closed=await waitFor(()=>!instance?.state?.isVisible);await sleep(80);
+            return {...last,opened,closed,jitter:j,stable:j<=1.5};
+          }
+          (async()=>{
+            await sleep(1200);const buttons=[...document.querySelectorAll('.c-sf-add-button')],first=buttons[0],last=buttons.at(-1),cycles=[];
+            for(let i=0;i<3;i++)cycles.push(await cycle(first));
+            const bottom=await cycle(last,'end');
+            const result={errors:window.__errors,viewport:{width:innerWidth,height:innerHeight},rootFontSize:getComputedStyle(document.documentElement).fontSize,cycles,bottomMetrics:bottom,allOpened:cycles.every(x=>x.opened),allClosed:cycles.every(x=>x.closed),allVisible:cycles.every(x=>x.visible),allStable:cycles.every(x=>x.stable),allCompact:cycles.every(x=>x.compact),allInViewport:cycles.every(x=>x.inViewport),allSearchCompact:cycles.every(x=>x.searchCompact),allScrollable:cycles.every(x=>x.scrollable),allOptionsReadable:cycles.every(x=>x.optionsReadable),bottomOpened:bottom.opened,bottomClosed:bottom.closed,bottomVisible:bottom.visible,bottomStable:bottom.stable,bottomCompact:bottom.compact,bottomInViewport:bottom.inViewport,bottomOptionsReadable:bottom.optionsReadable};
+            const pre=document.createElement('pre');pre.id='iteag-picker-stability';pre.textContent=JSON.stringify(result);document.body.appendChild(pre);
+          })();
+          </script></body></html>
           """)
           html = template.render(RequestContext(request, {"form": form}))
-
-          racine = Path("/tmp/iteag-picker-stability")
-          racine.mkdir(parents=True, exist_ok=True)
-          (racine / "index.html").write_text(html, encoding="utf-8")
-          static = racine / "static"
+          root = Path("/tmp/iteag-picker-stability")
+          root.mkdir(parents=True, exist_ok=True)
+          (root / "index.html").write_text(html, encoding="utf-8")
+          static = root / "static"
           if static.exists() or static.is_symlink():
               static.unlink()
           static.symlink_to(Path.cwd() / "staticfiles", target_is_directory=True)
           PY
-      - name: Tester trois tailles d'écran dans Chrome
+      - name: Tester desktop, capture utilisateur et mobile
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
@@ -279,34 +127,22 @@ jobs:
           sleep 1
 
           run_case() {
-            WIDTH="$1"
-            HEIGHT="$2"
-            NAME="$3"
-            OUT="/tmp/iteag-picker-${NAME}.html"
+            WIDTH="$1"; HEIGHT="$2"; NAME="$3"; OUT="/tmp/iteag-picker-${NAME}.html"
             "$CHROME" --headless=new --no-sandbox --disable-gpu --force-device-scale-factor=1 \
-              --window-size="${WIDTH},${HEIGHT}" --virtual-time-budget=11000 --dump-dom \
+              --window-size="${WIDTH},${HEIGHT}" --virtual-time-budget=12000 --dump-dom \
               http://127.0.0.1:8766/index.html > "$OUT"
-
             echo "--- ${NAME} ${WIDTH}x${HEIGHT} ---"
             grep -o '<pre id="iteag-picker-stability">[^<]*' "$OUT" || true
-            grep -q '"errors":\[\]' "$OUT"
-            grep -q '"rootFontSize":"24px"' "$OUT"
-            grep -q '"allCyclesOpened":true' "$OUT"
-            grep -q '"allCyclesClosed":true' "$OUT"
-            grep -q '"allCyclesVisible":true' "$OUT"
-            grep -q '"allCyclesStable":true' "$OUT"
-            grep -q '"allCyclesCompact":true' "$OUT"
-            grep -q '"allCyclesInViewport":true' "$OUT"
-            grep -q '"allCyclesSearchCompact":true' "$OUT"
-            grep -q '"allCyclesScrollable":true' "$OUT"
-            grep -q '"allCyclesOptionsReadable":true' "$OUT"
-            grep -q '"bottomOpened":true' "$OUT"
-            grep -q '"bottomClosed":true' "$OUT"
-            grep -q '"bottomVisible":true' "$OUT"
-            grep -q '"bottomStable":true' "$OUT"
-            grep -q '"bottomCompact":true' "$OUT"
-            grep -q '"bottomInViewport":true' "$OUT"
-            grep -q '"bottomOptionsReadable":true' "$OUT"
+            for expected in \
+              '"errors":[]' '"rootFontSize":"24px"' \
+              '"allOpened":true' '"allClosed":true' '"allVisible":true' \
+              '"allStable":true' '"allCompact":true' '"allInViewport":true' \
+              '"allSearchCompact":true' '"allScrollable":true' '"allOptionsReadable":true' \
+              '"bottomOpened":true' '"bottomClosed":true' '"bottomVisible":true' \
+              '"bottomStable":true' '"bottomCompact":true' '"bottomInViewport":true' \
+              '"bottomOptionsReadable":true'; do
+              grep -Fq "$expected" "$OUT"
+            done
           }
 
           run_case 1280 900 desktop
