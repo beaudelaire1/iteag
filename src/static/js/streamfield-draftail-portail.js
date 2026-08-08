@@ -11,8 +11,8 @@
         }
 
         // Wagtail synchronise officiellement les InlineToolbar via cet
-        // événement. On l'utilise plutôt que de modifier localStorage : le
-        // choix du portail ne pollue ainsi pas la préférence du back-office.
+        // événement. On l'utilise sans modifier la préférence persistante :
+        // le choix du portail ne pollue ainsi pas le back-office.
         document.dispatchEvent(
             new CustomEvent(EVENEMENT, {
                 detail: { toolbar: "sticky" },
