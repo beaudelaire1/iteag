@@ -93,7 +93,6 @@ jobs:
               args: ["--no-sandbox", "--disable-gpu"],
             });
 
-            // Clavier : le lien d'évitement est la première cible et fonctionne.
             let page = await ouvrir(browser, "/", { width: 1440, height: 900, deviceScaleFactor: 1 });
             await page.keyboard.press("Tab");
             const premierFocus = await page.evaluate(() => ({
@@ -106,7 +105,6 @@ jobs:
             verifier((await page.evaluate(() => location.hash)) === "#main-content", "Accueil: lien d'évitement inopérant");
             await page.close();
 
-            // Mobile : ouverture, attribut ARIA, fermeture au clavier.
             page = await ouvrir(browser, "/", { width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
             await page.click("[data-nav-toggle]");
             let etatMenu = await page.evaluate(() => ({
@@ -123,7 +121,6 @@ jobs:
             verifier(etatMenu.expanded === "false" && etatMenu.hidden === true, `Menu mobile non refermé par Escape ${JSON.stringify(etatMenu)}`);
             await page.close();
 
-            // Connexion : labels et bascule d'affichage du mot de passe.
             page = await ouvrir(browser, "/connexion/", { width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
             await verifierLabels(page, "Connexion");
             verifier((await page.$("[data-password-toggle]")) !== null, "Connexion: bouton afficher/masquer absent");
@@ -135,14 +132,10 @@ jobs:
             verifier(motDePasse.type === "text" && motDePasse.pressed === "true", `Connexion: bascule mot de passe défaillante ${JSON.stringify(motDePasse)}`);
             await page.close();
 
-            // Candidature : tous les champs visibles sont étiquetés. Le honeypot
-            // est volontairement laissé au test Django tant que la correction de
-            // cette PR n'est pas encore déployée sur la préproduction.
             page = await ouvrir(browser, "/admissions/candidature/", { width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
             await verifierLabels(page, "Candidature");
             await page.close();
 
-            // Une 404 doit rester une 404 de présentation, jamais une erreur 500.
             page = await browser.newPage();
             const reponse404 = await page.goto(`${base}/__audit-page-inexistante__`, { waitUntil: "networkidle2", timeout: 30000 });
             verifier(reponse404 && reponse404.status() === 404, `Page inexistante: HTTP ${reponse404?.status()}`);
@@ -164,4 +157,3 @@ jobs:
           JS
 
           node "$RUNNER_TEMP/interactions.cjs"
-JS
