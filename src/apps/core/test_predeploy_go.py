@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from django.template.loader import get_template
 from django.test import override_settings
 from django.urls import reverse
 
@@ -42,6 +43,32 @@ def test_footer_utilise_les_slugs_de_reference():
     assert "/formations/parcours/bachelor-flte/" in footer
     assert "/formations/parcours/parcours-diplomant-iteag/" not in footer
     assert "/formations/parcours/parcours-bachelor-flte/" not in footer
+
+
+def test_footer_garde_une_hierarchie_de_titres_et_un_contraste_lisibles():
+    footer = (RACINE / "templates" / "partials" / "footer.html").read_text(encoding="utf-8")
+
+    assert '<h3 class="overline-light' not in footer
+    assert footer.count('<h2 class="overline-light') == 3
+    assert 'class="text-xs text-warm-600"' not in footer
+
+
+def test_composants_de_petit_texte_chargent_les_corrections_de_contraste():
+    base = (RACINE / "templates" / "base.html").read_text(encoding="utf-8")
+    css = (RACINE / "static" / "css" / "accessibilite-couleurs.css").read_text(encoding="utf-8")
+
+    assert "css/accessibilite-couleurs.css" in base
+    assert ".overline" in css and "--color-gold-700" in css
+    assert ".stat-label" in css and "--color-warm-600" in css
+
+
+def test_accueil_rend_les_blocs_editoriaux_generiques():
+    template = (RACINE / "templates" / "website" / "home_page.html").read_text(encoding="utf-8")
+
+    assert "{% include_block block %}" in template
+    # Vérifie également que la syntaxe Django/Wagtail reste compilable après
+    # l'ajout du fallback générique.
+    assert get_template("website/home_page.html") is not None
 
 
 @override_settings(ALLOWED_HOSTS=["iteag-preprod.137.74.169.188.sslip.io", "iteag.org", "www.iteag.org"])
