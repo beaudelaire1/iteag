@@ -17,6 +17,7 @@ def test_lecteur_affiche_sauts_et_qualite(client, utilisateur_etudiant, lecon, a
     client.force_login(utilisateur_etudiant)
     contenu = client.get(url_lecon(lecon)).content.decode("utf-8")
 
+    assert 'controlslist="nodownload"' in contenu
     assert 'data-saut-video="-10"' in contenu
     assert 'data-saut-video="10"' in contenu
     assert "Reculer de 10 secondes" in contenu
