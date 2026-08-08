@@ -94,7 +94,7 @@ def test_picker_streamfield_est_compact_et_independant_de_la_typographie():
     assert "grid-template-columns: minmax(0, 1fr)" in styles
     assert ".w-combobox__option-preview" in styles
     assert "width: min(420px, calc(100vw - 24px))" in styles
-    assert "max-height: min(320px, 52vh)" in styles
+    assert "max-height: min(300px, 50vh)" in styles
     assert "min-height: 42px" in styles
     assert "transition-property: visibility, opacity" in styles
     assert "transition-property: transform" not in styles
