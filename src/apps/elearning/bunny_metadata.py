@@ -68,7 +68,9 @@ def chapitres_video(identifiant_video: str) -> list[dict]:
         "https://video.bunnycdn.com/library/"
         f"{quote(bibliotheque, safe='')}/videos/{quote(identifiant, safe='')}"
     )
-    requete = Request(
+    # Le schéma et le domaine sont constants ; seules les deux composantes du
+    # chemin sont échappées. Ruff ne peut pas le déduire à travers Request().
+    requete = Request(  # noqa: S310
         url,
         headers={
             "AccessKey": cle_api,
@@ -78,7 +80,7 @@ def chapitres_video(identifiant_video: str) -> list[dict]:
     )
 
     try:
-        with urlopen(requete, timeout=TIMEOUT_BUNNY_SECONDES) as reponse:  # noqa: S310 — domaine Bunny fixé ci-dessus
+        with urlopen(requete, timeout=TIMEOUT_BUNNY_SECONDES) as reponse:  # noqa: S310
             charge = json.loads(reponse.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, OSError):
         logger.warning("Métadonnées Bunny indisponibles pour la vidéo %s", identifiant, exc_info=True)
