@@ -73,7 +73,6 @@ urlpatterns = [
         views_academics.PVDeliberationPDFView.as_view(),
         name="session_pv_deliberation_pdf",
     ),
-
     path(
         "formations/cours/<int:pk>/supprimer/",
         views_academics.CourseDeleteView.as_view(),

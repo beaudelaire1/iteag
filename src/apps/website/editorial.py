@@ -3,7 +3,7 @@
 Le but n'est pas de transformer l'éditeur en tableur ou en outil de dataviz.
 Une actualité doit simplement pouvoir porter les formes d'information que
 l'ancien site utilisait déjà : texte, tableau, procédure, chiffres, graphique
-simple, citation et encadré. L'image à la une reste le mécanisme d'illustration
+simple, information importante, citation et encadré. L'image à la une reste le mécanisme d'illustration
 existant, afin de ne pas réintroduire toute la médiathèque Wagtail dans le
 portail de gestion.
 """

@@ -1261,10 +1261,7 @@ class SaisiePresenceView(StaffRoleRequiredMixin, View):
             "etudiant__utilisateur", "etudiant__parcours"
         ).order_by("etudiant__utilisateur__last_name", "etudiant__utilisateur__first_name")
 
-        presences_existantes = {
-            p.etudiant_id: p
-            for p in PresenceEtudiant.objects.filter(cours_session=cours_session)
-        }
+        presences_existantes = {p.etudiant_id: p for p in PresenceEtudiant.objects.filter(cours_session=cours_session)}
 
         liste_etudiants = []
         for insc in inscriptions:
@@ -1347,9 +1344,7 @@ class PVDeliberationPDFView(StaffRoleRequiredMixin, View):
                     "reussite": True,
                 }
 
-            eval_obj = Evaluation.objects.filter(
-                etudiant=insc.etudiant, cours_session=insc.cours_session
-            ).first()
+            eval_obj = Evaluation.objects.filter(etudiant=insc.etudiant, cours_session=insc.cours_session).first()
 
             note_valeur = eval_obj.note if (eval_obj and eval_obj.note is not None) else None
             statut_eval = eval_obj.get_statut_display() if eval_obj else "Non noté"
@@ -1384,4 +1379,3 @@ class PVDeliberationPDFView(StaffRoleRequiredMixin, View):
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{filename}"'
         return response
-

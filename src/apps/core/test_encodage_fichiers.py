@@ -1,5 +1,5 @@
 """
-Aucune lecture de fichier texte sans encodage explicite.
+Aucune lecture ou écriture de fichier texte sans encodage explicite.
 
 Le défaut, remonté depuis un poste Windows :
 
@@ -7,21 +7,22 @@ Le défaut, remonté depuis un poste Windows :
     in position 24182: character maps to <undefined>
 
 Sans argument `encoding`, Python emploie l'encodage local. Il vaut UTF-8 sous
-Linux et macOS, **cp1252 sous Windows** — où la lecture échoue au premier
-caractère hors ASCII. Ce projet est en français : ses gabarits, sa feuille de
-style et ses contenus en sont pleins.
+Linux et macOS, mais peut être cp1252 sous Windows. Ce projet contient du texte
+français : une lecture implicite peut donc fonctionner en CI et planter sur un
+poste de développement.
 
-La conséquence est qu'un tel défaut est **invisible ici** comme en intégration
-continue, tous deux sous Linux. Seul le poste d'un collègue le révèle, et il
-le révèle par un plantage, pas par un avertissement.
+Une première garde parcourait le code ligne par ligne. Elle produisait un faux
+positif dès qu'un appel correct était écrit sur plusieurs lignes :
 
-La règle `PLW1514` en attrape une partie, mais pas les appels dont le chemin
-vient d'une variable typée par un retour de fonction — c'est précisément la
-forme qui a planté. D'où cette vérification textuelle, qui ne dépend d'aucune
-inférence de type.
+    chemin.read_text(
+        encoding="utf-8"
+    )
+
+Le contrôle repose désormais sur l'AST Python : il examine l'appel complet,
+indépendamment de sa mise en forme.
 """
 
-import re
+import ast
 from pathlib import Path
 
 import pytest
@@ -30,14 +31,6 @@ RACINE = Path(__file__).resolve().parents[2]
 
 # Répertoires parcourus : le code que nous écrivons, pas celui des dépendances.
 SOURCES = ["apps", "config", "conftest.py"]
-
-# Appels qui lisent ou écrivent du texte et acceptent un `encoding`.
-APPELS = re.compile(r"\.(?:read_text|write_text)\s*\(")
-
-# `open()` en mode binaire n'a pas d'encodage : le repérer pour ne pas le
-# signaler à tort.
-OUVERTURE_TEXTE = re.compile(r"(?<![\w.])open\s*\(")
-MODE_BINAIRE = re.compile(r"""["'][rwax]*b[rwax+]*["']""")
 
 
 def fichiers_python() -> list[Path]:
@@ -53,17 +46,55 @@ def fichiers_python() -> list[Path]:
     return sorted(f for f in trouves if f.name != Path(__file__).name)
 
 
-def _sans_encodage(ligne: str) -> bool:
-    """La ligne ouvre-t-elle un fichier texte sans le dire ?"""
-    if "encoding=" in ligne or ligne.lstrip().startswith("#"):
+def _mot_cle(appel: ast.Call, nom: str) -> ast.keyword | None:
+    return next((mot for mot in appel.keywords if mot.arg == nom), None)
+
+
+def _valeur_chaine(noeud: ast.AST | None) -> str | None:
+    if isinstance(noeud, ast.Constant) and isinstance(noeud.value, str):
+        return noeud.value
+    return None
+
+
+def _appel_texte_sans_encodage(appel: ast.Call) -> bool:
+    """Un appel de fichier texte connu omet-il son encodage ?"""
+    fonction = appel.func
+
+    if isinstance(fonction, ast.Attribute) and fonction.attr in {"read_text", "write_text"}:
+        if _mot_cle(appel, "encoding") is not None:
+            return False
+        # Path.read_text(encoding, errors) : l'encodage est le premier argument.
+        if fonction.attr == "read_text":
+            return len(appel.args) < 1
+        # Path.write_text(data, encoding, errors, newline) : le premier argument
+        # est le contenu ; l'encodage est le second.
+        return len(appel.args) < 2
+
+    if not isinstance(fonction, ast.Name) or fonction.id != "open":
         return False
-    if APPELS.search(ligne):
-        return True
-    if OUVERTURE_TEXTE.search(ligne) and not MODE_BINAIRE.search(ligne):
-        # `default_storage.open()` et les fichiers de Django ne prennent pas
-        # d'encodage : ce sont des objets de stockage, pas des chemins.
-        return not re.search(r"(?:storage|fichier|document|pdf|fitz|Image)\.open\s*\(", ligne)
-    return False
+
+    mode_noeud = appel.args[1] if len(appel.args) >= 2 else None
+    mode_kw = _mot_cle(appel, "mode")
+    if mode_kw is not None:
+        mode_noeud = mode_kw.value
+    mode = _valeur_chaine(mode_noeud) or "r"
+    if "b" in mode:
+        return False
+
+    if _mot_cle(appel, "encoding") is not None:
+        return False
+    # Signature de open : file, mode, buffering, encoding, ...
+    if len(appel.args) >= 4:
+        return False
+    return True
+
+
+def lignes_sans_encodage(source: str) -> list[int]:
+    """Lignes des appels de fichier texte sans encodage explicite."""
+    arbre = ast.parse(source)
+    return sorted(
+        noeud.lineno for noeud in ast.walk(arbre) if isinstance(noeud, ast.Call) and _appel_texte_sans_encodage(noeud)
+    )
 
 
 FICHIERS = fichiers_python()
@@ -76,13 +107,14 @@ def test_le_recensement_trouve_bien_des_fichiers():
 
 @pytest.mark.parametrize("fichier", FICHIERS, ids=lambda f: str(f.relative_to(RACINE)))
 def test_aucune_lecture_de_texte_sans_encodage(fichier):
+    source = fichier.read_text(encoding="utf-8")
+    lignes = source.splitlines()
     fautifs = [
-        f"  {fichier.relative_to(RACINE)}:{numero} → {ligne.strip()}"
-        for numero, ligne in enumerate(fichier.read_text(encoding="utf-8").splitlines(), 1)
-        if _sans_encodage(ligne)
+        f"  {fichier.relative_to(RACINE)}:{numero} → {lignes[numero - 1].strip()}"
+        for numero in lignes_sans_encodage(source)
     ]
     assert not fautifs, (
-        "Lecture de fichier texte sans encodage explicite — plantera sous Windows :\n"
+        "Lecture ou écriture de fichier texte sans encodage explicite — peut planter sous Windows :\n"
         + "\n".join(fautifs)
         + '\n\nAjoutez encoding="utf-8".'
     )
@@ -92,26 +124,28 @@ class TestLaGardeElleMeme:
     """Une garde qui ne mord pas est pire qu'aucune garde : elle rassure à tort."""
 
     @pytest.mark.parametrize(
-        "ligne",
+        "source",
         [
-            "    texte = chemin.read_text()",
-            "    chemin.write_text(contenu)",
-            '    with open("fichier.txt") as f:',
-            "    return Path(nom).read_text()",
+            "texte = chemin.read_text()",
+            "chemin.write_text(contenu)",
+            'with open("fichier.txt") as fichier:\n    texte = fichier.read()',
+            "texte = Path(nom).read_text()",
         ],
     )
-    def test_elle_repere_les_formes_fautives(self, ligne):
-        assert _sans_encodage(ligne)
+    def test_elle_repere_les_formes_fautives(self, source):
+        assert lignes_sans_encodage(source)
 
     @pytest.mark.parametrize(
-        "ligne",
+        "source",
         [
-            '    texte = chemin.read_text(encoding="utf-8")',
-            '    chemin.write_text(contenu, encoding="utf-8")',
-            '    with open("fichier.bin", "rb") as f:',
-            '    with default_storage.open(cle, "rb") as f:',
-            "    donnees = json.loads(contenu)",
+            'texte = chemin.read_text(encoding="utf-8")',
+            'chemin.write_text(contenu, encoding="utf-8")',
+            'with open("fichier.bin", "rb") as fichier:\n    donnees = fichier.read()',
+            'with default_storage.open(cle, "rb") as fichier:\n    donnees = fichier.read()',
+            'texte = chemin.read_text(\n    encoding="utf-8"\n)',
+            'with open(\n    "fichier.txt",\n    encoding="utf-8",\n) as fichier:\n    texte = fichier.read()',
+            "donnees = json.loads(contenu)",
         ],
     )
-    def test_elle_laisse_passer_les_formes_correctes(self, ligne):
-        assert not _sans_encodage(ligne)
+    def test_elle_laisse_passer_les_formes_correctes(self, source):
+        assert not lignes_sans_encodage(source)

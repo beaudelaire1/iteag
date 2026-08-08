@@ -31,15 +31,58 @@ x-application: &application
     CELERY_RESULT_BACKEND: "redis://redis:6379/2"
     CELERY_TASK_ALWAYS_EAGER: "False"
 
-    EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
-    CLOUDFLARE_TURNSTILE_ENABLED: ${CLOUDFLARE_TURNSTILE_ENABLED:-False}
+    # Aucun backend de développement n'est accepté silencieusement dans la
+    # pile de production : une notification non envoyée est une panne métier.
+    EMAIL_BACKEND: ${EMAIL_BACKEND:?EMAIL_BACKEND doit être défini}
+    DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?DEFAULT_FROM_EMAIL doit être défini}
+    SERVER_EMAIL: ${SERVER_EMAIL:?SERVER_EMAIL doit être défini}
+    EMAIL_HOST: ${EMAIL_HOST:?EMAIL_HOST doit être défini}
+    EMAIL_PORT: ${EMAIL_PORT:-587}
+    EMAIL_HOST_USER: ${EMAIL_HOST_USER:?EMAIL_HOST_USER doit être défini}
+    EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:?EMAIL_HOST_PASSWORD doit être défini}
+    EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+    EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
+    EMAIL_TIMEOUT: ${EMAIL_TIMEOUT:-10}
 
-    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-    AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-iteag-media}
-    AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-}
+    # Protection des formulaires publics : les clés sont obligatoires dans la
+    # stack de production et `verifier_production` refuse explicitement False.
+    CLOUDFLARE_TURNSTILE_ENABLED: ${CLOUDFLARE_TURNSTILE_ENABLED:?CLOUDFLARE_TURNSTILE_ENABLED doit être défini}
+    CLOUDFLARE_TURNSTILE_SITE_KEY: ${CLOUDFLARE_TURNSTILE_SITE_KEY:?CLOUDFLARE_TURNSTILE_SITE_KEY doit être défini}
+    CLOUDFLARE_TURNSTILE_SECRET_KEY: ${CLOUDFLARE_TURNSTILE_SECRET_KEY:?CLOUDFLARE_TURNSTILE_SECRET_KEY doit être défini}
+    CLOUDFLARE_TURNSTILE_TIMEOUT: ${CLOUDFLARE_TURNSTILE_TIMEOUT:-5}
+
+    # Médias privés Cloudflare R2.
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID doit être défini}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY doit être défini}
+    AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:?AWS_STORAGE_BUCKET_NAME doit être défini}
+    AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:?AWS_S3_ENDPOINT_URL doit être défini}
     AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-auto}
     AWS_S3_ADDRESSING_STYLE: ${AWS_S3_ADDRESSING_STYLE:-path}
+    AWS_QUERYSTRING_EXPIRE: ${AWS_QUERYSTRING_EXPIRE:-3600}
+
+    # Observabilité : une production sans remontée d'exception ne doit pas être
+    # considérée comme prête.
+    SENTRY_DSN: ${SENTRY_DSN:?SENTRY_DSN doit être défini}
+    SENTRY_SEND_DEFAULT_PII: ${SENTRY_SEND_DEFAULT_PII:-False}
+    SENTRY_ENABLE_LOGS: ${SENTRY_ENABLE_LOGS:-True}
+    SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+    SENTRY_PROFILE_SESSION_SAMPLE_RATE: ${SENTRY_PROFILE_SESSION_SAMPLE_RATE:-0.0}
+    SENTRY_PROFILE_LIFECYCLE: ${SENTRY_PROFILE_LIFECYCLE:-trace}
+
+    # Paiement en ligne réellement exploitable dès l'ouverture.
+    STRIPE_CLE_PUBLIABLE: ${STRIPE_CLE_PUBLIABLE:?STRIPE_CLE_PUBLIABLE doit être défini}
+    STRIPE_CLE_SECRETE: ${STRIPE_CLE_SECRETE:?STRIPE_CLE_SECRETE doit être défini}
+    STRIPE_SECRET_WEBHOOK: ${STRIPE_SECRET_WEBHOOK:?STRIPE_SECRET_WEBHOOK doit être défini}
+    STRIPE_DEVISE: ${STRIPE_DEVISE:-EUR}
+
+    # Diffusion vidéo protégée.
+    ELEARNING_DIFFUSION_VIDEO: ${ELEARNING_DIFFUSION_VIDEO:-bunny}
+    ELEARNING_DIFFUSION_PUBLIQUE: ${ELEARNING_DIFFUSION_PUBLIQUE:-youtube,vimeo}
+    BUNNY_ZONE_DIFFUSION: ${BUNNY_ZONE_DIFFUSION:?BUNNY_ZONE_DIFFUSION doit être défini}
+    BUNNY_CLE_SIGNATURE: ${BUNNY_CLE_SIGNATURE:?BUNNY_CLE_SIGNATURE doit être défini}
+    BUNNY_STREAM_LIBRARY_ID: ${BUNNY_STREAM_LIBRARY_ID:?BUNNY_STREAM_LIBRARY_ID doit être défini}
+    BUNNY_STREAM_API_KEY: ${BUNNY_STREAM_API_KEY:?BUNNY_STREAM_API_KEY doit être défini}
+    BUNNY_LIER_ADRESSE_IP: ${BUNNY_LIER_ADRESSE_IP:-False}
 
   restart: unless-stopped
 
@@ -75,10 +118,8 @@ services:
 
   # Sauvegarde indépendante du volume postgres_data : pg_dump se connecte à
   # PostgreSQL puis le dump quitte immédiatement le serveur vers un bucket R2
-  # dédié. BACKUP_ENABLED reste faux tant que les identifiants n'ont pas été
-  # ajoutés dans Coolify, afin qu'un déploiement du code ne casse pas la prod.
-  # Le premier dump attend la fin des migrations pour ne jamais courir en
-  # parallèle d'une modification de schéma.
+  # dédié. Une production ouverte au public doit disposer de ces identifiants :
+  # la sauvegarde n'est plus un composant optionnel de cette stack.
   backup:
     build:
       context: .
@@ -95,16 +136,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-iteag}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini}
 
-      BACKUP_ENABLED: ${BACKUP_ENABLED:-false}
-      BACKUP_R2_ENDPOINT_URL: ${BACKUP_R2_ENDPOINT_URL:-}
-      BACKUP_R2_ACCESS_KEY_ID: ${BACKUP_R2_ACCESS_KEY_ID:-}
-      BACKUP_R2_SECRET_ACCESS_KEY: ${BACKUP_R2_SECRET_ACCESS_KEY:-}
+      BACKUP_ENABLED: ${BACKUP_ENABLED:-true}
+      BACKUP_R2_ENDPOINT_URL: ${BACKUP_R2_ENDPOINT_URL:?BACKUP_R2_ENDPOINT_URL doit être défini}
+      BACKUP_R2_ACCESS_KEY_ID: ${BACKUP_R2_ACCESS_KEY_ID:?BACKUP_R2_ACCESS_KEY_ID doit être défini}
+      BACKUP_R2_SECRET_ACCESS_KEY: ${BACKUP_R2_SECRET_ACCESS_KEY:?BACKUP_R2_SECRET_ACCESS_KEY doit être défini}
       BACKUP_R2_BUCKET: ${BACKUP_R2_BUCKET:-iteag-backups}
       BACKUP_R2_REGION: ${BACKUP_R2_REGION:-auto}
       BACKUP_R2_PREFIX: ${BACKUP_R2_PREFIX:-postgres}
 
       # 03:00 en Guyane. Une sauvegarde est également lancée au démarrage du
-      # conteneur après activation, ce qui valide le compte R2 au déploiement.
+      # conteneur, ce qui valide le compte R2 pendant le déploiement.
       BACKUP_TIMEZONE: ${BACKUP_TIMEZONE:-America/Cayenne}
       BACKUP_HOUR_LOCAL: ${BACKUP_HOUR_LOCAL:-3}
       BACKUP_MINUTE_LOCAL: ${BACKUP_MINUTE_LOCAL:-0}

@@ -46,11 +46,11 @@ jobs:
       run:
         working-directory: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: pip install --require-hashes -r requirements/dev.lock
@@ -60,7 +60,7 @@ jobs:
       - name: Vérifier les tests ciblés du StreamField
         run: pytest apps/website/test_streamfield_portail.py -q
       - name: Vérifier les migrations
-        run: python manage.py makemigrations --check --dry-run
+        run: python manage.py makemigrations --check --dry-run --skip-checks
       - name: Construire une page avec le vrai BlockWidget
         run: |
           python - <<'PY'

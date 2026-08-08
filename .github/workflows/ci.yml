@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "22"
@@ -18,12 +22,13 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       # Même version que le verrou de développement : la CI ne change pas de
@@ -35,7 +40,7 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
-    needs: lint
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: src
@@ -54,14 +59,14 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: src/requirements/dev.lock
       - run: pip install --require-hashes -r requirements/dev.lock
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -79,23 +84,70 @@ jobs:
         env:
           DATABASE_URL: postgres://iteag:iteag_test@localhost:5432/iteag_test
           DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
-        run: python manage.py makemigrations --check --dry-run
+        # Les checks applicatifs ont leur propre gate stricte dans le job build.
+        # Ici on vérifie uniquement qu'aucune migration n'est oubliée.
+        run: python manage.py makemigrations --check --dry-run --skip-checks
 
   build:
     name: Build & production checks
     runs-on: ubuntu-latest
-    needs: lint
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: src
+    # Jeu de valeurs factices mais structurellement complet. Aucun appel réseau
+    # n'est effectué : il permet d'éprouver exactement le contrat de la stack
+    # sans affaiblir docker-compose.prod.yml pour les besoins de la CI.
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ci-production-key-not-for-runtime-0123456789abcdefghijklmnopqrstuvwxyz
+      DJANGO_ALLOWED_HOSTS: localhost
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
+      SITE_URL: https://localhost
+      WAGTAILADMIN_BASE_URL: https://localhost
+      POSTGRES_PASSWORD: ci-postgres-secret
+      DATABASE_URL: postgresql://iteag:ci-postgres-secret@localhost:5432/iteag
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      DEFAULT_FROM_EMAIL: secretariat@iteag.org
+      SERVER_EMAIL: errors@iteag.org
+      EMAIL_HOST: smtp.example.invalid
+      EMAIL_PORT: "587"
+      EMAIL_HOST_USER: ci-user
+      EMAIL_HOST_PASSWORD: ci-password
+      EMAIL_USE_TLS: "True"
+      EMAIL_USE_SSL: "False"
+      CLOUDFLARE_TURNSTILE_ENABLED: "True"
+      CLOUDFLARE_TURNSTILE_SITE_KEY: ci-site-key
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ci-secret-key
+      AWS_ACCESS_KEY_ID: ci-r2-access
+      AWS_SECRET_ACCESS_KEY: ci-r2-secret
+      AWS_STORAGE_BUCKET_NAME: ci-media
+      AWS_S3_ENDPOINT_URL: https://example.invalid
+      BACKUP_ENABLED: "true"
+      BACKUP_R2_ENDPOINT_URL: https://backup.example.invalid
+      BACKUP_R2_ACCESS_KEY_ID: ci-backup-access
+      BACKUP_R2_SECRET_ACCESS_KEY: ci-backup-secret
+      BACKUP_R2_BUCKET: ci-backups
+      SENTRY_DSN: https://public@example.invalid/1
+      STRIPE_CLE_PUBLIABLE: pk_live_ci_placeholder
+      STRIPE_CLE_SECRETE: sk_live_ci_placeholder
+      STRIPE_SECRET_WEBHOOK: whsec_ci_placeholder
+      ELEARNING_DIFFUSION_VIDEO: bunny
+      BUNNY_ZONE_DIFFUSION: https://video.example.invalid
+      BUNNY_CLE_SIGNATURE: ci-video-secret
+      BUNNY_STREAM_LIBRARY_ID: "12345"
+      BUNNY_STREAM_API_KEY: ci-bunny-api-key
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: src/package-lock.json
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -108,31 +160,15 @@ jobs:
           test -s static/js/vendor/hls.min.js
       - run: pip install --require-hashes -r requirements/prod.lock
       - name: Collecte des statiques (manifeste)
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.prod
-          DJANGO_SECRET_KEY: ci-collectstatic-key-not-for-production
-          DJANGO_ALLOWED_HOSTS: localhost
         run: python manage.py collectstatic --noinput --clear
       - name: Vérifier la configuration de déploiement Django
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.prod
-          DJANGO_SECRET_KEY: ci-deploy-check-key-not-for-production
-          DJANGO_ALLOWED_HOSTS: localhost
-          DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
-          AWS_ACCESS_KEY_ID: ci-r2-access
-          AWS_SECRET_ACCESS_KEY: ci-r2-secret
-          AWS_STORAGE_BUCKET_NAME: ci-media
-          AWS_S3_ENDPOINT_URL: https://example.invalid
-        run: python manage.py check --deploy --fail-level ERROR
+        run: python manage.py check --deploy --fail-level WARNING
+      - name: Éprouver le contrat de readiness production
+        run: python manage.py verifier_production
       - name: Vérifier le fichier Compose de production
-        env:
-          DJANGO_SECRET_KEY: ci-compose-secret
-          DJANGO_ALLOWED_HOSTS: localhost
-          DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
-          SITE_URL: https://localhost
-          WAGTAILADMIN_BASE_URL: https://localhost
-          POSTGRES_PASSWORD: ci-postgres-secret
         run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Construire l'image web de production
+        run: docker build -f Dockerfile.prod -t iteag-web-ci .
       - name: Construire et éprouver l'image de sauvegarde PostgreSQL
         run: |
           docker build -f Dockerfile.backup -t iteag-backup-ci .
@@ -143,18 +179,18 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: lint
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install pip-audit
       - run: pip-audit -r requirements/prod.lock
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
