@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.template.loader import get_template
 from django.test import override_settings
 from django.urls import reverse
@@ -91,6 +92,22 @@ def test_domaine_public_reste_indexable(client):
 
     assert reponse.status_code == 200
     assert "X-Robots-Tag" not in reponse.headers
+
+
+@pytest.mark.django_db
+def test_reponse_authentifiee_ne_peut_pas_etre_mise_en_cache_partage(client):
+    utilisateur = get_user_model().objects.create_user(
+        username="cache-test",
+        email="cache-test@example.org",
+        password="MotDePasseDeTest123!",
+    )
+    client.force_login(utilisateur)
+
+    reponse = client.get(reverse("core:notifications"))
+    directives = {item.strip().lower() for item in reponse.headers["Cache-Control"].split(",")}
+
+    assert reponse.status_code == 200
+    assert {"private", "no-cache", "no-store", "must-revalidate"} <= directives
 
 
 @pytest.mark.django_db
