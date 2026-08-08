@@ -203,7 +203,7 @@
 
 @media (max-width: 600px) {
     .tippy-box[data-theme="dropdown"] .w-combobox-container {
-        width: calc(100vw - 16px);
+        width: min(420px, calc(100vw - 16px));
         max-width: calc(100vw - 16px);
     }
 
