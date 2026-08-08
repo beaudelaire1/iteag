@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
-from django.views.generic import ListView, TemplateView
+from django.views.generic import DetailView, ListView, TemplateView
 
 from apps.accounts.models import User
 from apps.core.mixins import AdminRoleRequiredMixin, StudentRoleRequiredMixin
@@ -13,6 +13,25 @@ from apps.core.services.notifications import notifier, notifier_plusieurs
 from apps.core.services.redaction import en_texte
 from apps.website.formulaires_temoignages import TemoignageEtudiantForm
 from apps.website.models_publications import TemoignageEtudiant
+
+
+class TemoignagePublicView(DetailView):
+    """Lecture publique d'un témoignage déjà validé par la direction.
+
+    La grille d'accueil ne doit pas devenir une zone de lecture longue : elle
+    présente un extrait stable, puis cette page porte le texte complet dans un
+    espace dédié. Un identifiant connu ne suffit jamais à exposer un brouillon,
+    un refus ou un témoignage dont le consentement a été retiré.
+    """
+
+    template_name = "website/temoignages/detail_public.html"
+    context_object_name = "temoignage"
+
+    def get_queryset(self):
+        return TemoignageEtudiant.objects.filter(
+            statut=TemoignageEtudiant.Statut.PUBLIE,
+            consentement_publication=True,
+        ).select_related("etudiant")
 
 
 class TemoignageEtudiantView(StudentRoleRequiredMixin, TemplateView):
