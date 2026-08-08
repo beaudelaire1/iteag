@@ -654,6 +654,7 @@ class PropositionEnseignement(TimeStampedModel):
 # d’assiduité existent avant la construction des requêtes ORM.
 from apps.academics.models_assiduite import HistoriquePresence, Presence, SeanceCours  # noqa: E402, F401
 
+
 class PresenceEtudiant(TimeStampedModel):
     """Bilan d'assiduité d'un étudiant à un cours de session."""
 
@@ -700,6 +701,4 @@ class PresenceEtudiant(TimeStampedModel):
 
     def __str__(self):
         return f"{self.etudiant} — {self.cours_session} : {self.get_statut_display()}"
-
-
 
