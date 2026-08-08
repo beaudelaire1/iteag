@@ -37,7 +37,32 @@ sitemaps = {
     "boutique": LivresBoutiqueSitemap,
 }
 
+# Migration de l'ancien site public vers la nouvelle arborescence. Ces routes
+# doivent rester avant Wagtail : une URL historiquement indexée doit répondre
+# par une redirection permanente et non être capturée comme une page inconnue.
+# query_string=True conserve les paramètres de campagne et autres marqueurs
+# éventuellement présents dans des liens externes existants.
+URLS_PUBLIQUES_HISTORIQUES = {
+    "presentation": "/presentation/",
+    "education": "/formations/",
+    "diploma": "/formations/parcours/diplomant-iteag/",
+    "educationinministry": "/formations/parcours/iteag-pro/",
+    "enroll": "/candidature/",
+    # Deux slugs ont existé dans le footer de la refonte avant la bascule. Les
+    # conserver en 301 évite qu'un lien partagé pendant la recette devienne mort.
+    "formations/parcours/parcours-diplomant-iteag/": "/formations/parcours/diplomant-iteag/",
+    "formations/parcours/parcours-bachelor-flte/": "/formations/parcours/bachelor-flte/",
+}
+
 urlpatterns = [
+    *[
+        path(
+            ancienne_url,
+            RedirectView.as_view(url=nouvelle_url, permanent=True, query_string=True),
+            name=f"ancienne_url_publique_{index}",
+        )
+        for index, (ancienne_url, nouvelle_url) in enumerate(URLS_PUBLIQUES_HISTORIQUES.items())
+    ],
     # Django admin
     path("django-admin/", admin.site.urls),
     # SEO
@@ -111,7 +136,7 @@ if settings.DEBUG:
 
     # Browser reload
     if "django_browser_reload" in settings.INSTALLED_APPS:
-        urlpatterns = [path("__reload__/", include("django_browser_reload.urls"))] + urlpatterns
+        urlpatterns = [path("__reload__/", include(django_browser_reload.urls))] + urlpatterns
 
 # ──────────────────────────────────────────────
 # Gestionnaires d'erreur — pages à la charte, sans détail technique
