@@ -1,0 +1,290 @@
+name: StreamField picker stability
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/apps/website/test_streamfield_portail.py"
+      - "src/static/css/streamfield-picker-portail.css"
+      - "src/static/css/streamfield-ux-portail.css"
+      - ".github/workflows/streamfield-picker-stability.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/apps/core/editeur_riche.py"
+      - "src/static/css/streamfield-picker-portail.css"
+      - "src/static/css/streamfield-ux-portail.css"
+      - ".github/workflows/streamfield-picker-stability.yml"
+
+permissions:
+  contents: read
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+
+jobs:
+  picker-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install --require-hashes -r requirements/dev.lock
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: python manage.py collectstatic --noinput
+      - name: Vérifier le contrat du composant
+        run: pytest apps/website/test_streamfield_portail.py -q
+      - name: Construire le scénario de stabilité
+        run: |
+          python - <<'PY'
+          import django
+          from pathlib import Path
+
+          django.setup()
+
+          from django.core.management import call_command
+          from django.template import RequestContext, Template
+          from django.test import RequestFactory
+
+          from apps.website.formulaires_actualites import ActualiteForm
+
+          call_command("migrate", interactive=False, verbosity=0)
+
+          request = RequestFactory().get("/")
+          request.csp_nonce = "picker-stability"
+          formulaire_vide = ActualiteForm()
+          stream_block = formulaire_vide.fields["contenu"].widget.block_def
+          contenu = stream_block.to_python(
+              [
+                  {
+                      "type": "texte",
+                      "value": "<p>Bloc de contrôle pour multiplier les points d'insertion.</p>",
+                  }
+              ]
+          )
+          form = ActualiteForm(initial={"contenu": contenu})
+          template = Template("""
+          <!doctype html>
+          <html>
+          <head>
+            {% load socle_wagtail %}
+            <meta charset="UTF-8">
+            <style>
+              html { font-size: 24px; }
+              body {
+                width: auto;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 24px;
+                font-family: Arial, sans-serif;
+              }
+              .before { height: 120px; }
+              .after { height: 900px; }
+            </style>
+            <script>
+              window.__iteagErrors = [];
+              window.addEventListener('error', function (event) {
+                window.__iteagErrors.push(String(event.message || event.error || 'error'));
+              });
+              window.addEventListener('unhandledrejection', function (event) {
+                window.__iteagErrors.push('promise:' + String(event.reason));
+              });
+            </script>
+            {{ form.media.css }}
+            {% wagtail_configuration_portail %}
+            {{ form.media.js }}
+          </head>
+          <body>
+            {% wagtail_icones_portail %}
+            <div class="before"></div>
+            <div class="streamfield-portail">{{ form.contenu }}</div>
+            <div class="after"></div>
+            <script>
+              const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+              function pickerVisible() {
+                return Array.from(document.querySelectorAll('[data-tippy-root]')).find((root) => {
+                  const box = root.querySelector('.tippy-box[data-theme="dropdown"]');
+                  const combo = root.querySelector('.w-combobox-container');
+                  if (!box || !combo || box.getAttribute('data-state') === 'hidden') return false;
+                  const rect = combo.getBoundingClientRect();
+                  const style = window.getComputedStyle(box);
+                  return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden';
+                }) || null;
+              }
+
+              function mesurer() {
+                const root = pickerVisible();
+                const combo = root ? root.querySelector('.w-combobox-container') : null;
+                const menu = root ? root.querySelector('.w-combobox__menu') : null;
+                const search = root ? root.querySelector('[role="combobox"]') : null;
+                const options = root ? Array.from(root.querySelectorAll('.w-combobox__option')) : [];
+                const rootRect = root ? root.getBoundingClientRect() : null;
+                const comboRect = combo ? combo.getBoundingClientRect() : null;
+                const searchRect = search ? search.getBoundingClientRect() : null;
+                const optionRects = options.map((option) => option.getBoundingClientRect());
+                const menuStyle = menu ? window.getComputedStyle(menu) : null;
+
+                return {
+                  x: rootRect ? rootRect.x : -999,
+                  y: rootRect ? rootRect.y : -999,
+                  rootWidth: rootRect ? rootRect.width : 0,
+                  rootHeight: rootRect ? rootRect.height : 0,
+                  width: comboRect ? comboRect.width : 0,
+                  height: comboRect ? comboRect.height : 0,
+                  visible: !!(comboRect && comboRect.width >= 300 && comboRect.height >= 180),
+                  inViewport: !!(
+                    rootRect && rootRect.left >= -2 && rootRect.top >= -2 &&
+                    rootRect.right <= window.innerWidth + 2 && rootRect.bottom <= window.innerHeight + 2
+                  ),
+                  compact: !!(comboRect && comboRect.width <= 440 && comboRect.height <= 420),
+                  searchCompact: !!(searchRect && searchRect.height >= 36 && searchRect.height <= 48),
+                  scrollable: !!(menuStyle && ['auto', 'scroll'].includes(menuStyle.overflowY)),
+                  optionsReadable: optionRects.length === 8 && optionRects.every((rect) => (
+                    rect.height >= 40 && rect.height <= 50 && rect.width >= Math.min(300, window.innerWidth - 48)
+                  )),
+                };
+              }
+
+              function amplitude(echantillons, cle) {
+                const valeurs = echantillons.map((item) => item[cle]);
+                return Math.max(...valeurs) - Math.min(...valeurs);
+              }
+
+              function stabilite(echantillons) {
+                if (!echantillons.length) return 999;
+                return Math.max(
+                  amplitude(echantillons, 'x'),
+                  amplitude(echantillons, 'y'),
+                  amplitude(echantillons, 'rootWidth'),
+                  amplitude(echantillons, 'rootHeight')
+                );
+              }
+
+              async function ouvrirEtMesurer(bouton) {
+                bouton.scrollIntoView({block: 'center', inline: 'nearest'});
+                await attendre(120);
+                bouton.click();
+                await attendre(280);
+
+                const echantillons = [];
+                for (let i = 0; i < 8; i += 1) {
+                  echantillons.push(mesurer());
+                  await attendre(50);
+                }
+
+                const derniere = echantillons[echantillons.length - 1];
+                const jitter = stabilite(echantillons);
+                if (bouton.getAttribute('aria-expanded') === 'true') bouton.click();
+                await attendre(140);
+
+                return {
+                  ...derniere,
+                  jitter,
+                  stable: jitter <= 1.5,
+                };
+              }
+
+              (async function () {
+                await attendre(1200);
+                const boutons = Array.from(document.querySelectorAll('.c-sf-add-button'));
+                const premier = boutons[0];
+                const dernier = boutons[boutons.length - 1];
+                const cycles = [];
+
+                for (let i = 0; i < 3; i += 1) {
+                  cycles.push(await ouvrirEtMesurer(premier));
+                }
+
+                dernier.scrollIntoView({block: 'end', inline: 'nearest'});
+                await attendre(180);
+                const basPage = await ouvrirEtMesurer(dernier);
+
+                const resultat = {
+                  errors: window.__iteagErrors,
+                  viewport: {width: window.innerWidth, height: window.innerHeight},
+                  rootFontSize: window.getComputedStyle(document.documentElement).fontSize,
+                  buttonCount: boutons.length,
+                  cycles,
+                  allCyclesVisible: cycles.every((item) => item.visible),
+                  allCyclesStable: cycles.every((item) => item.stable),
+                  allCyclesCompact: cycles.every((item) => item.compact),
+                  allCyclesInViewport: cycles.every((item) => item.inViewport),
+                  allCyclesSearchCompact: cycles.every((item) => item.searchCompact),
+                  allCyclesScrollable: cycles.every((item) => item.scrollable),
+                  allCyclesOptionsReadable: cycles.every((item) => item.optionsReadable),
+                  bottomVisible: basPage.visible,
+                  bottomStable: basPage.stable,
+                  bottomCompact: basPage.compact,
+                  bottomInViewport: basPage.inViewport,
+                  bottomOptionsReadable: basPage.optionsReadable,
+                };
+
+                const diagnostic = document.createElement('pre');
+                diagnostic.id = 'iteag-picker-stability';
+                diagnostic.textContent = JSON.stringify(resultat);
+                document.body.appendChild(diagnostic);
+              })();
+            </script>
+          </body>
+          </html>
+          """)
+          html = template.render(RequestContext(request, {"form": form}))
+
+          racine = Path("/tmp/iteag-picker-stability")
+          racine.mkdir(parents=True, exist_ok=True)
+          (racine / "index.html").write_text(html, encoding="utf-8")
+          static = racine / "static"
+          if static.exists() or static.is_symlink():
+              static.unlink()
+          static.symlink_to(Path.cwd() / "staticfiles", target_is_directory=True)
+          PY
+      - name: Tester trois tailles d'écran dans Chrome
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          cd /tmp/iteag-picker-stability
+          python -m http.server 8766 >/tmp/iteag-picker-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 1
+
+          run_case() {
+            WIDTH="$1"
+            HEIGHT="$2"
+            NAME="$3"
+            OUT="/tmp/iteag-picker-${NAME}.html"
+            "$CHROME" --headless=new --no-sandbox --disable-gpu --force-device-scale-factor=1 \
+              --window-size="${WIDTH},${HEIGHT}" --virtual-time-budget=9000 --dump-dom \
+              http://127.0.0.1:8766/index.html > "$OUT"
+
+            echo "--- ${NAME} ${WIDTH}x${HEIGHT} ---"
+            grep -o '<pre id="iteag-picker-stability">[^<]*' "$OUT" || true
+            grep -q '"errors":\[\]' "$OUT"
+            grep -q '"rootFontSize":"24px"' "$OUT"
+            grep -q '"allCyclesVisible":true' "$OUT"
+            grep -q '"allCyclesStable":true' "$OUT"
+            grep -q '"allCyclesCompact":true' "$OUT"
+            grep -q '"allCyclesInViewport":true' "$OUT"
+            grep -q '"allCyclesSearchCompact":true' "$OUT"
+            grep -q '"allCyclesScrollable":true' "$OUT"
+            grep -q '"allCyclesOptionsReadable":true' "$OUT"
+            grep -q '"bottomVisible":true' "$OUT"
+            grep -q '"bottomStable":true' "$OUT"
+            grep -q '"bottomCompact":true' "$OUT"
+            grep -q '"bottomInViewport":true' "$OUT"
+            grep -q '"bottomOptionsReadable":true' "$OUT"
+          }
+
+          run_case 1280 900 desktop
+          run_case 1000 760 capture-utilisateur
+          run_case 390 844 mobile
