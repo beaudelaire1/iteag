@@ -53,10 +53,11 @@ def test_runtime_officiel_precede_les_adaptateurs_streamfield():
     blocs = _position(ressources, "/telepath/blocks.js")
     draftail = _position(ressources, "/draftail.js")
     barre_portail = _position(ressources, "/js/streamfield-draftail-portail.js")
+    picker_portail = _position(ressources, "/js/streamfield-picker-portail.js")
 
     assert core < vendor < widgets
     assert core < vendor < blocs
-    assert vendor < draftail < barre_portail
+    assert vendor < draftail < barre_portail < picker_portail
 
 
 def test_styles_streamfield_restent_isoles_du_portail():
@@ -104,6 +105,20 @@ def test_picker_streamfield_est_compact_et_independant_de_la_typographie():
     assert "position: fixed !important" not in ux
     assert "transform: none !important" not in ux
     assert ".w-combobox__option-text" in styles
+
+
+def test_picker_adapte_le_tippy_officiel_sans_reimplementer_le_composant():
+    script = _lire("static/js/streamfield-picker-portail.js")
+
+    assert "bouton._tippy" in script
+    assert "instance.setProps" in script
+    assert "placement: 'auto'" in script
+    assert "allowedAutoPlacements: ['top', 'bottom']" in script
+    assert "preventOverflow" in script
+    assert "boundary: 'viewport'" in script
+    assert "MutationObserver" in script
+    assert "position: fixed" not in script
+    assert "style.transform" not in script
 
 
 def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():
