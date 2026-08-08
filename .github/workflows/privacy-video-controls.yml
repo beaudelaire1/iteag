@@ -8,30 +8,46 @@ on:
       - "src/apps/website/urls.py"
       - "src/apps/website/sitemaps.py"
       - "src/apps/website/test_cookies.py"
+      - "src/apps/elearning/bunny_metadata.py"
       - "src/apps/elearning/views.py"
+      - "src/apps/elearning/views_bunny.py"
+      - "src/apps/elearning/urls.py"
+      - "src/apps/elearning/tests/test_bunny_metadata.py"
       - "src/apps/elearning/tests/test_fichier_video_range.py"
       - "src/apps/elearning/tests/test_lecteur_video_ui.py"
+      - "src/apps/elearning/tests/browser/**"
       - "src/static/css/lecteur-video.css"
+      - "src/static/css/lecteur-video-chapitres.css"
       - "src/static/js/consentement-cookies.js"
       - "src/static/js/lecteur-video.js"
+      - "src/static/js/lecteur-video-chapitres.js"
       - "src/templates/base.html"
       - "src/templates/partials/bandeau_cookies.html"
       - "src/templates/partials/footer.html"
       - "src/templates/website/politique_cookies.html"
       - "src/templates/website/politique_donnees.html"
       - "src/templates/elearning/lecon_detail.html"
+      - "src/templates/elearning/lecon_detail_enrichi.html"
       - ".github/workflows/privacy-video-controls.yml"
   push:
     branches: [main]
     paths:
+      - "src/apps/elearning/bunny_metadata.py"
       - "src/apps/elearning/views.py"
+      - "src/apps/elearning/views_bunny.py"
+      - "src/apps/elearning/urls.py"
+      - "src/apps/elearning/tests/test_bunny_metadata.py"
       - "src/apps/elearning/tests/test_fichier_video_range.py"
+      - "src/apps/elearning/tests/browser/**"
       - "src/static/css/lecteur-video.css"
+      - "src/static/css/lecteur-video-chapitres.css"
       - "src/static/js/consentement-cookies.js"
       - "src/static/js/lecteur-video.js"
+      - "src/static/js/lecteur-video-chapitres.js"
       - "src/templates/partials/bandeau_cookies.html"
       - "src/templates/website/politique_cookies.html"
       - "src/templates/elearning/lecon_detail.html"
+      - "src/templates/elearning/lecon_detail_enrichi.html"
       - ".github/workflows/privacy-video-controls.yml"
 
 permissions:
@@ -60,6 +76,7 @@ jobs:
         run: |
           node --check static/js/consentement-cookies.js
           node --check static/js/lecteur-video.js
+          node --check static/js/lecteur-video-chapitres.js
       - name: Construire les ressources frontend
         run: npm run build
       - name: Vérifier Django et les migrations
@@ -71,7 +88,28 @@ jobs:
           pytest
           apps/website/test_cookies.py
           apps/website/test_politique_donnees.py
+          apps/elearning/tests/test_bunny_metadata.py
           apps/elearning/tests/test_fichier_video_range.py
           apps/elearning/tests/test_lecteur_video_ui.py
           apps/elearning/tests/test_vues.py
           -q
+      - name: Vérifier chapitres et aperçu dans Chrome
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          python -m http.server 8766 >/tmp/iteag-video-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 1
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --window-size=1100,800 \
+            --virtual-time-budget=3000 --dump-dom \
+            http://127.0.0.1:8766/apps/elearning/tests/browser/lecteur_chapitres.html \
+            > /tmp/iteag-video-dom.html
+
+          echo '--- Diagnostic lecteur ---'
+          grep -o '<pre id="diagnostic-chapitres">[^<]*' /tmp/iteag-video-dom.html || true
+          grep -q '"shell":true' /tmp/iteag-video-dom.html
+          grep -q '"markers":2' /tmp/iteag-video-dom.html
+          grep -q '"previewVisible":true' /tmp/iteag-video-dom.html
+          grep -q '"previewTime":"4:30"' /tmp/iteag-video-dom.html
+          grep -q '"previewChapter":"Cadre biblique"' /tmp/iteag-video-dom.html

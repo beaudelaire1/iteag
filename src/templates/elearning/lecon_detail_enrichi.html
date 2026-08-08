@@ -1,0 +1,12 @@
+{% extends "elearning/lecon_detail.html" %}
+{% load static %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/lecteur-video-chapitres.css' %}?v={{ ASSET_VERSION }}">
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/lecteur-video-chapitres.js' %}?v={{ ASSET_VERSION }}" defer></script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_enseignant
+from . import views, views_bunny, views_enseignant
 
 app_name = "elearning"
 
@@ -104,12 +104,21 @@ urlpatterns = [
         views.DemandeAccesModuleView.as_view(),
         name="module_demander_acces",
     ),
-    path("<slug:slug>/<slug:lecon_slug>/", views.LeconDetailView.as_view(), name="lecon_detail"),
+    path(
+        "<slug:slug>/<slug:lecon_slug>/",
+        views.LeconDetailView.as_view(template_name="elearning/lecon_detail_enrichi.html"),
+        name="lecon_detail",
+    ),
     path(
         "<slug:slug>/<slug:lecon_slug>/ressources/<int:pk>/",
         views.RessourceTelechargementView.as_view(),
         name="ressource_telecharger",
     ),
     path("<slug:slug>/<slug:lecon_slug>/lecture/", views.playback_url, name="lecon_playback"),
+    path(
+        "<slug:slug>/<slug:lecon_slug>/metadata/",
+        views_bunny.VideoMetadataView.as_view(),
+        name="lecon_metadata",
+    ),
     path("<slug:slug>/<slug:lecon_slug>/progression/", views.ProgressionView.as_view(), name="lecon_progression"),
 ]

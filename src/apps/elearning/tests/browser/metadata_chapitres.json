@@ -1,0 +1,9 @@
+{
+  "chapitres": [
+    {"titre": "Introduction", "debut": 0, "fin": 120},
+    {"titre": "Cadre biblique", "debut": 120, "fin": 360},
+    {"titre": "Mise en pratique", "debut": 360, "fin": 600}
+  ],
+  "seek_url_prefix": "/apps/elearning/tests/browser/seek/",
+  "intervalle_apercu": 2
+}

@@ -33,6 +33,8 @@ def test_lecteur_affiche_une_interface_iteag_complete(client, utilisateur_etudia
     assert "data-video-loading" in contenu
     assert "data-video-end" in contenu
     assert "css/lecteur-video.css" in contenu
+    assert "css/lecteur-video-chapitres.css" in contenu
+    assert "js/lecteur-video-chapitres.js" in contenu
 
 
 def test_script_pilote_les_resolutions_hls_et_la_preference():
@@ -61,6 +63,16 @@ def test_script_pilote_navigation_vitesse_sous_titres_et_modes_ecran():
     assert "trouverLeconSuivante" in script
     assert "afficherChargement" in script
     assert "video.currentTime" in script
+
+
+def test_script_chapitres_utilise_les_sprites_seek_bunny():
+    script = (Path(settings.BASE_DIR) / "static" / "js" / "lecteur-video-chapitres.js").read_text(encoding="utf-8")
+
+    assert "videoChapterMarker" in script
+    assert "feuilleIndex = Math.floor(imageIndex / 36)" in script
+    assert "cellule = imageIndex % 36" in script
+    assert "`${prefixeSeek}_${feuilleIndex}.jpg`" in script
+    assert 'replace(/\\/lecture\\/?$/, "/metadata/")' in script
 
 
 def test_progression_tient_compte_de_la_vitesse_de_lecture():
