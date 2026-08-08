@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Politique des cookies — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Politique des cookies et technologies de stockage utilisées par l'ITEAG : cookies nécessaires, préférences facultatives et diffusion vidéo Bunny.net.{% endblock %}
+
+{% block content %}
+<article class="py-16 lg:py-24">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-12 hero-entrance">
+            <p class="overline mb-3">Vie privée</p>
+            <h1 class="hero-el hero-el-1 text-4xl font-bold tracking-tight text-navy-900">Politique des cookies</h1>
+            <p class="hero-el hero-el-2 mt-5 max-w-3xl text-lg leading-relaxed text-warm-600">
+                Cette page décrit les cookies et stockages locaux utilisés par l'ITEAG, leur rôle et la manière de modifier votre choix.
+            </p>
+            <p class="hero-el hero-el-3 mt-4 text-sm text-warm-500">Version du 8 août 2026.</p>
+            <hr class="divider-gold mt-7">
+        </header>
+
+        <div class="contenu-riche prose prose-lg max-w-none reveal">
+            <h2>1. Ce que nous utilisons réellement</h2>
+            <p>
+                L'ITEAG n'utilise actuellement aucun cookie publicitaire et aucun outil de mesure d'audience.
+                Les cookies strictement nécessaires servent à sécuriser la plateforme, maintenir une session et mémoriser
+                votre choix relatif aux préférences facultatives.
+            </p>
+
+            <h2>2. Cookies strictement nécessaires</h2>
+            <p>Ces éléments sont nécessaires au fonctionnement ou à la sécurité du service et ne peuvent pas être désactivés depuis le bandeau.</p>
+            <ul>
+                <li><strong>sessionid</strong> : maintient la session d'un utilisateur connecté ;</li>
+                <li><strong>csrftoken</strong> : protège les formulaires et actions contre les requêtes frauduleuses ;</li>
+                <li><strong>iteag_cookie_consent</strong> : mémorise pendant environ six mois si vous avez choisi les seuls éléments essentiels ou autorisé les préférences facultatives.</li>
+            </ul>
+            <p>
+                D'autres cookies techniques peuvent être créés par Django lorsqu'une fonctionnalité de sécurité ou de session l'exige.
+                Ils ne sont pas utilisés pour la publicité ni pour suivre votre navigation sur d'autres sites.
+            </p>
+
+            <h2>3. Préférences facultatives</h2>
+            <p>
+                Si vous choisissez « Accepter les préférences », le navigateur peut conserver localement certains réglages de confort.
+                Le lecteur vidéo peut notamment mémoriser la qualité que vous avez sélectionnée afin de la proposer à nouveau lors d'une prochaine lecture.
+            </p>
+            <p>
+                Cette préférence est stockée dans le navigateur sous la clé <strong>iteag_video_quality</strong>. Si vous choisissez
+                « Essentiels uniquement », ce réglage n'est pas conservé entre les visites et une préférence déjà enregistrée est supprimée.
+            </p>
+
+            <h2>4. Vidéos de formation et Bunny.net</h2>
+            <p>
+                Les vidéos de formation sont diffusées par <strong>Bunny.net</strong> sous forme de flux HLS protégés. L'adresse de lecture
+                n'est demandée qu'au moment où l'utilisateur lance la vidéo. Le navigateur contacte alors l'infrastructure de diffusion de Bunny.net
+                pour recevoir le manifeste et les segments vidéo nécessaires à la lecture.
+            </p>
+            <p>
+                Cette diffusion fait partie du service demandé lorsque vous regardez une leçon. Elle n'est pas utilisée par l'ITEAG pour de la
+                publicité comportementale. Les informations techniques nécessaires à la livraison du flux, notamment l'adresse IP et les caractéristiques
+                de la requête réseau, peuvent être traitées par le fournisseur dans le cadre de la diffusion et de la sécurité du service.
+            </p>
+
+            <h2>5. Mesure d'audience et publicité</h2>
+            <p>
+                Aucun outil de mesure d'audience, aucune régie publicitaire et aucun pixel de suivi marketing n'est actuellement chargé sur le site.
+                Si un tel service devait être ajouté, il devrait être documenté ici et bloqué tant que le consentement requis n'a pas été donné.
+            </p>
+
+            <h2>6. Modifier votre choix</h2>
+            <p>
+                Vous pouvez rouvrir le bandeau à tout moment grâce au lien « Gérer les cookies » présent dans le pied de page.
+                Choisir « Essentiels uniquement » retire l'autorisation de mémoriser les préférences facultatives.
+            </p>
+            <p>
+                Vous pouvez également supprimer les cookies ou le stockage local depuis les réglages de votre navigateur. Le bandeau sera alors présenté à nouveau.
+            </p>
+
+            <h2>7. Données personnelles</h2>
+            <p>
+                Pour les traitements de données au-delà des cookies et stockages du navigateur, consultez la
+                <a href="{% url 'website:politique_donnees' %}">politique de protection des données personnelles</a>.
+            </p>
+        </div>
+    </div>
+</article>
+{% endblock %}
