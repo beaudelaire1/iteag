@@ -17,7 +17,7 @@ RACINE = Path(__file__).resolve().parents[2]
         ("/education", "/formations/"),
         ("/diploma", "/formations/parcours/diplomant-iteag/"),
         ("/educationinministry", "/formations/parcours/iteag-pro/"),
-        ("/enroll", "/candidature/"),
+        ("/enroll", "/admissions/candidature/"),
         (
             "/formations/parcours/parcours-diplomant-iteag/",
             "/formations/parcours/diplomant-iteag/",
