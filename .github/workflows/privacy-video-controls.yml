@@ -11,6 +11,7 @@ on:
       - "src/apps/elearning/views.py"
       - "src/apps/elearning/tests/test_fichier_video_range.py"
       - "src/apps/elearning/tests/test_lecteur_video_ui.py"
+      - "src/static/css/lecteur-video.css"
       - "src/static/js/consentement-cookies.js"
       - "src/static/js/lecteur-video.js"
       - "src/templates/base.html"
@@ -25,6 +26,7 @@ on:
     paths:
       - "src/apps/elearning/views.py"
       - "src/apps/elearning/tests/test_fichier_video_range.py"
+      - "src/static/css/lecteur-video.css"
       - "src/static/js/consentement-cookies.js"
       - "src/static/js/lecteur-video.js"
       - "src/templates/partials/bandeau_cookies.html"
