@@ -63,11 +63,11 @@ jobs:
       run:
         working-directory: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: pip install --require-hashes -r requirements/dev.lock
@@ -82,7 +82,7 @@ jobs:
       - name: Vérifier Django et les migrations
         run: |
           python manage.py check
-          python manage.py makemigrations --check --dry-run
+          python manage.py makemigrations --check --dry-run --skip-checks
       - name: Tester confidentialité et lecteur vidéo
         run: >-
           pytest
