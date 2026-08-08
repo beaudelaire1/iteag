@@ -16,13 +16,24 @@ from wagtail.contrib.typed_table_block.blocks import TypedTableBlock
 from apps.website.models import CitationEditorialeBlock, EncadreEditorialBlock, TexteEditorialBlock
 
 
+FONCTIONNALITES_CELLULE_TABLEAU = ["bold", "italic", "underline", "ol", "ul", "link"]
+
+
 class TableauEditorialBlock(TypedTableBlock):
-    """Petit tableau sémantique, sans embarquer un tableur complet."""
+    """Tableau éditorial simple avec mise en forme légère dans les cellules."""
 
     def __init__(self, **kwargs):
         super().__init__(
             [
-                ("texte", blocks.CharBlock(label="Texte")),
+                (
+                    "texte",
+                    blocks.RichTextBlock(
+                        label="Texte formaté",
+                        required=False,
+                        features=FONCTIONNALITES_CELLULE_TABLEAU,
+                        template="website/blocks/texte_cellule_tableau.html",
+                    ),
+                ),
                 ("nombre", blocks.DecimalBlock(label="Nombre", required=False)),
                 ("date", blocks.DateBlock(label="Date", required=False)),
             ],
