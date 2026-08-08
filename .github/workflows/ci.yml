@@ -134,6 +134,36 @@ jobs:
           STRIPE_CLE_SECRETE: sk_live_ci_placeholder
           STRIPE_SECRET_WEBHOOK: whsec_ci_placeholder
         run: python manage.py check --deploy --fail-level WARNING
+      - name: Éprouver le contrat de readiness production
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_SECRET_KEY: ci-readiness-key-not-for-runtime-0123456789abcdefghijklmnopqrstuvwxyz
+          DJANGO_ALLOWED_HOSTS: localhost
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
+          SITE_URL: https://localhost
+          WAGTAILADMIN_BASE_URL: https://localhost
+          DATABASE_URL: postgresql://iteag:ci@localhost:5432/iteag
+          REDIS_URL: redis://redis:6379/0
+          CELERY_BROKER_URL: redis://redis:6379/1
+          CELERY_RESULT_BACKEND: redis://redis:6379/2
+          EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+          EMAIL_HOST: smtp.example.invalid
+          EMAIL_HOST_USER: ci-user
+          EMAIL_HOST_PASSWORD: ci-password
+          DEFAULT_FROM_EMAIL: secretariat@iteag.org
+          SERVER_EMAIL: errors@iteag.org
+          CLOUDFLARE_TURNSTILE_ENABLED: "True"
+          CLOUDFLARE_TURNSTILE_SITE_KEY: ci-site-key
+          CLOUDFLARE_TURNSTILE_SECRET_KEY: ci-secret-key
+          AWS_ACCESS_KEY_ID: ci-r2-access
+          AWS_SECRET_ACCESS_KEY: ci-r2-secret
+          AWS_STORAGE_BUCKET_NAME: ci-media
+          AWS_S3_ENDPOINT_URL: https://example.invalid
+          SENTRY_DSN: https://public@example.invalid/1
+          ELEARNING_DIFFUSION_VIDEO: bunny
+          BUNNY_ZONE_DIFFUSION: https://video.example.invalid
+          BUNNY_CLE_SIGNATURE: ci-video-secret
+        run: python manage.py verifier_production
       - name: Vérifier le fichier Compose de production
         env:
           DJANGO_SECRET_KEY: ci-compose-secret
