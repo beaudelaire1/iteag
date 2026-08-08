@@ -25,6 +25,13 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Vérifier le noindex de la connexion
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(curl --silent --show-error --max-time 20 "${BASE_URL}/connexion/")"
+          printf '%s' "$html" | grep --ignore-case --quiet --extended-regexp '<meta[^>]+name=["'"']robots["'"'][^>]+content=["'"'][^"'"']*noindex'
+
       - name: Auditer les pages clés
         shell: bash
         run: |
@@ -84,7 +91,10 @@ jobs:
                   echecs.append(f"{chemin.stem}: accessibilité {scores['accessibilite']:.2f} < 0.95")
               if scores["bonnes_pratiques"] < 0.95:
                   echecs.append(f"{chemin.stem}: bonnes pratiques {scores['bonnes_pratiques']:.2f} < 0.95")
-              if scores["seo"] < 0.95:
+              # Les pages publiques doivent être indexables. La connexion est
+              # volontairement noindex : Lighthouse pénalise ce choix de sécurité
+              # dans son score SEO, ce qui n'est pas une régression.
+              if chemin.stem != "connexion" and scores["seo"] < 0.95:
                   echecs.append(f"{chemin.stem}: SEO {scores['seo']:.2f} < 0.95")
               # La performance de labo varie davantage avec le runner et la
               # distance réseau. Le seuil bloque une vraie dégradation sans
