@@ -104,7 +104,11 @@ urlpatterns = [
         views.DemandeAccesModuleView.as_view(),
         name="module_demander_acces",
     ),
-    path("<slug:slug>/<slug:lecon_slug>/", views.LeconDetailView.as_view(), name="lecon_detail"),
+    path(
+        "<slug:slug>/<slug:lecon_slug>/",
+        views.LeconDetailView.as_view(template_name="elearning/lecon_detail_enrichi.html"),
+        name="lecon_detail",
+    ),
     path(
         "<slug:slug>/<slug:lecon_slug>/ressources/<int:pk>/",
         views.RessourceTelechargementView.as_view(),
