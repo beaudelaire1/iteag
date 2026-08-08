@@ -12,12 +12,12 @@
 {% block portal_header %}
 <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
     <div>
-        <nav class="flex text-xs mb-2 text-gray-500 gap-2">
+        <nav class="flex text-xs mb-2 text-warm-500 gap-2">
             <a href="{% url 'administration:sessions' %}" class="hover:underline">Sessions</a>
             <span>/</span>
             <a href="{% url 'administration:course_offerings' %}" class="hover:underline">Offre de cours</a>
             <span>/</span>
-            <span class="text-gray-800 font-medium">Assiduité</span>
+            <span class="text-warm-800 font-medium">Assiduité</span>
         </nav>
         <h1 style="font-size: clamp(1.4rem, 2.5vw, 1.8rem);">Bilan d'assiduité &amp; Présences</h1>
         <p class="text-sm mt-1" style="color: var(--color-warm-500);">
@@ -40,7 +40,7 @@
     <div class="card-elevated p-0 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm border-collapse">
-                <thead class="bg-warm-100 text-gray-700 uppercase text-xs border-b border-gray-200" style="background: var(--color-warm-100, #f8f6f0);">
+                <thead class="bg-warm-100 text-warm-700 uppercase text-xs border-b border-warm-200" style="background: var(--color-warm-100, #f8f6f0);">
                     <tr>
                         <th class="py-3 px-4 font-semibold">Étudiant</th>
                         <th class="py-3 px-4 font-semibold">Parcours</th>
@@ -48,25 +48,25 @@
                         <th class="py-3 px-4 font-semibold">Remarques / Justificatif</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-warm-100">
                     {% for item in liste_etudiants %}
-                    <tr class="hover:bg-gray-50/80 transition-colors">
-                        <td class="py-3 px-4 font-medium text-gray-900">
+                    <tr class="hover:bg-warm-50/80 transition-colors">
+                        <td class="py-3 px-4 font-medium text-warm-900">
                             <div class="flex items-center gap-3">
                                 {% if item.etudiant.utilisateur.photo %}
-                                <img src="{{ item.etudiant.utilisateur.photo.url }}" alt="" class="h-9 w-9 rounded-full object-cover border border-gray-200">
+                                <img src="{{ item.etudiant.utilisateur.photo.url }}" alt="" class="h-9 w-9 rounded-full object-cover border border-warm-200">
                                 {% else %}
                                 <div class="h-9 w-9 rounded-full bg-navy-100 text-navy-800 flex items-center justify-center font-bold text-xs" style="background: var(--color-navy-100, #e0e7ff); color: var(--color-navy-800, #1e3a8a);">
                                     {{ item.etudiant.utilisateur.initiales }}
                                 </div>
                                 {% endif %}
                                 <div>
-                                    <div class="font-semibold text-gray-900">{{ item.etudiant.utilisateur.get_full_name }}</div>
-                                    <div class="text-xs text-gray-500">N° {{ item.etudiant.numero_etudiant }}</div>
+                                    <div class="font-semibold text-warm-900">{{ item.etudiant.utilisateur.get_full_name }}</div>
+                                    <div class="text-xs text-warm-500">N° {{ item.etudiant.numero_etudiant }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3 px-4 text-gray-600">
+                        <td class="py-3 px-4 text-warm-600">
                             <span class="badge badge-secondary text-xs">{{ item.etudiant.parcours.nom }}</span>
                         </td>
                         <td class="py-3 px-4">
@@ -93,8 +93,8 @@
     {% else %}
     <div class="card-elevated text-center py-12">
         <div class="text-4xl mb-3">👥</div>
-        <h3 class="text-lg font-medium text-gray-800">Aucun étudiant inscrit à ce cours</h3>
-        <p class="text-sm text-gray-500 mt-1 mb-4">Aucune inscription validée ou enregistrée pour ce cours de session.</p>
+        <h3 class="text-lg font-medium text-warm-800">Aucun étudiant inscrit à ce cours</h3>
+        <p class="text-sm text-warm-500 mt-1 mb-4">Aucune inscription validée ou enregistrée pour ce cours de session.</p>
         <a href="{% url 'administration:course_offerings' %}" class="btn-secondary text-sm">Retour aux cours</a>
     </div>
     {% endif %}
