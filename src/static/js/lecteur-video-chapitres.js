@@ -24,7 +24,6 @@
 
   const marqueurs = document.createElement("div");
   marqueurs.className = "iteag-player__chapter-markers";
-  marqueurs.setAttribute("aria-hidden", "true");
   shell.append(marqueurs);
 
   const apercu = document.createElement("div");
