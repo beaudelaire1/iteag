@@ -54,6 +54,22 @@ jobs:
             boutique: "/boutique/",
           };
 
+          async function reveillerSections(page) {
+            await page.evaluate(async () => {
+              const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+              const pas = Math.max(300, Math.floor(window.innerHeight * 0.7));
+              const bas = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+              for (let y = 0; y <= bas; y += pas) {
+                window.scrollTo(0, y);
+                await attendre(70);
+              }
+              window.scrollTo(0, bas);
+              await attendre(250);
+              window.scrollTo(0, 0);
+              await attendre(250);
+            });
+          }
+
           (async () => {
             const browser = await puppeteer.launch({
               executablePath: "/usr/bin/google-chrome",
@@ -80,9 +96,8 @@ jobs:
                 }
                 await page.evaluate(async () => {
                   if (document.fonts?.ready) await document.fonts.ready;
-                  window.scrollTo(0, 0);
                 });
-                await new Promise((resolve) => setTimeout(resolve, 500));
+                await reveillerSections(page);
                 await page.screenshot({
                   path: path.join(root, "captures", mode, `${nom}.png`),
                   fullPage: true,
