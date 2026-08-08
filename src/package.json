@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "css:build": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/main.css --minify",
-    "css:watch": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/main.css --watch",
+    "css:build": "npx @tailwindcss/cli -i ./assets/css/production.css -o ./static/css/main.css --minify",
+    "css:watch": "npx @tailwindcss/cli -i ./assets/css/production.css -o ./static/css/main.css --watch",
     "vendor:build": "node scripts/copier-vendor.mjs",
     "build": "npm run vendor:build && npm run css:build"
   },
