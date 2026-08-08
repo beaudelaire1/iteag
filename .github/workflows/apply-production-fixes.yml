@@ -28,117 +28,26 @@ jobs:
           def remplacer(path, ancien, nouveau):
               fichier = Path(path)
               contenu = fichier.read_text(encoding="utf-8")
-              if ancien not in contenu:
-                  raise SystemExit(f"Ancre introuvable dans {path}: {ancien[:100]!r}")
               if contenu.count(ancien) != 1:
-                  raise SystemExit(f"Ancre non unique dans {path}: {contenu.count(ancien)} occurrences")
+                  raise SystemExit(f"Ancre attendue une fois dans {path}, trouvée {contenu.count(ancien)} fois")
               fichier.write_text(contenu.replace(ancien, nouveau), encoding="utf-8")
 
-          remplacer(
-              "src/apps/website/editorial.py",
-              "simple, citation et encadré. L'image à la une reste le mécanisme d'illustration",
-              "simple, information importante, citation et encadré. L'image à la une reste le mécanisme d'illustration",
-          )
+          remplacer("src/apps/website/editorial.py", "simple, citation et encadré. L'image à la une reste le mécanisme d'illustration", "simple, information importante, citation et encadré. L'image à la une reste le mécanisme d'illustration")
+          remplacer("src/apps/website/test_actualites.py", 'assert noms == {"texte", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}', 'assert noms == {"texte", "important", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}')
 
-          remplacer(
-              "src/apps/website/test_actualites.py",
-              'assert noms == {"texte", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}',
-              'assert noms == {"texte", "important", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}',
-          )
+          ancien_temoignage = "    def test_le_rendu_public_conserve_la_mise_en_forme_validee(self, etudiant, admin):\n        TemoignageEtudiant.objects.create(\n            etudiant=etudiant,\n            nom_affiche=\"Maya Jean\",\n            texte=\"<p>Une expérience <strong>solide</strong> et <em>exigeante</em>.</p>\",\n            consentement_publication=True,\n            statut=TemoignageEtudiant.Statut.PUBLIE,\n            valide_le=timezone.now(),\n            valide_par=admin,\n        )\n        html = _rendu_public()\n        assert \"<strong>solide</strong>\" in html\n        assert \"<em>exigeante</em>\" in html\n"
+          nouveau_temoignage = "    def test_l_extrait_public_reste_du_texte_simple(self, etudiant, admin):\n        TemoignageEtudiant.objects.create(\n            etudiant=etudiant,\n            nom_affiche=\"Maya Jean\",\n            texte=\"<p>Une expérience <strong>solide</strong> et <em>exigeante</em>.</p>\",\n            consentement_publication=True,\n            statut=TemoignageEtudiant.Statut.PUBLIE,\n            valide_le=timezone.now(),\n            valide_par=admin,\n        )\n        html = _rendu_public()\n        assert \"solide\" in html\n        assert \"exigeante\" in html\n        assert \"<strong>solide</strong>\" not in html\n        assert \"<em>exigeante</em>\" not in html\n"
+          remplacer("src/apps/website/test_temoignages.py", ancien_temoignage, nouveau_temoignage)
 
-          remplacer(
-              "src/apps/website/test_temoignages.py",
-              '''    def test_le_rendu_public_conserve_la_mise_en_forme_validee(self, etudiant, admin):
-        TemoignageEtudiant.objects.create(
-            etudiant=etudiant,
-            nom_affiche="Maya Jean",
-            texte="<p>Une expérience <strong>solide</strong> et <em>exigeante</em>.</p>",
-            consentement_publication=True,
-            statut=TemoignageEtudiant.Statut.PUBLIE,
-            valide_le=timezone.now(),
-            valide_par=admin,
-        )
-        html = _rendu_public()
-        assert "<strong>solide</strong>" in html
-        assert "<em>exigeante</em>" in html
-''',
-              '''    def test_l_extrait_public_reste_du_texte_simple(self, etudiant, admin):
-        TemoignageEtudiant.objects.create(
-            etudiant=etudiant,
-            nom_affiche="Maya Jean",
-            texte="<p>Une expérience <strong>solide</strong> et <em>exigeante</em>.</p>",
-            consentement_publication=True,
-            statut=TemoignageEtudiant.Statut.PUBLIE,
-            valide_le=timezone.now(),
-            valide_par=admin,
-        )
-        html = _rendu_public()
-        assert "solide" in html
-        assert "exigeante" in html
-        assert "<strong>solide</strong>" not in html
-        assert "<em>exigeante</em>" not in html
-''',
-          )
+          remplacer("src/apps/core/test_fumee_detail.py", "from apps.website.models_publications import Article, ImageArticle", "from apps.website.models_publications import Article, ImageArticle, TemoignageEtudiant")
 
-          remplacer(
-              "src/apps/core/test_fumee_detail.py",
-              "from apps.website.models_publications import Article, ImageArticle",
-              "from apps.website.models_publications import Article, ImageArticle, TemoignageEtudiant",
-          )
+          ancien_publication = "    monde[\"illustration\"] = ImageArticle.objects.create(\n        article=monde[\"article\"], fichier=SimpleUploadedFile(\"figure.png\", b\"figure\"), legende=\"Figure 1\"\n    )\n\n    # Une actualité vit dans l'arbre Wagtail"
+          nouveau_publication = "    monde[\"illustration\"] = ImageArticle.objects.create(\n        article=monde[\"article\"], fichier=SimpleUploadedFile(\"figure.png\", b\"figure\"), legende=\"Figure 1\"\n    )\n    monde[\"temoignage\"] = TemoignageEtudiant.objects.create(\n        nom_affiche=\"Maya Jean\",\n        promotion=\"Promotion détail\",\n        texte=\"<p>Un témoignage public de contrôle.</p>\",\n        consentement_publication=True,\n        statut=TemoignageEtudiant.Statut.PUBLIE,\n        valide_le=timezone.now(),\n        valide_par=monde[ADMIN],\n    )\n\n    # Une actualité vit dans l'arbre Wagtail"
+          remplacer("src/apps/core/test_fumee_detail.py", ancien_publication, nouveau_publication)
 
-          remplacer(
-              "src/apps/core/test_fumee_detail.py",
-              '''    monde["illustration"] = ImageArticle.objects.create(
-        article=monde["article"], fichier=SimpleUploadedFile("figure.png", b"figure"), legende="Figure 1"
-    )
-
-    # Une actualité vit dans l'arbre Wagtail''',
-              '''    monde["illustration"] = ImageArticle.objects.create(
-        article=monde["article"], fichier=SimpleUploadedFile("figure.png", b"figure"), legende="Figure 1"
-    )
-    monde["temoignage"] = TemoignageEtudiant.objects.create(
-        nom_affiche="Maya Jean",
-        promotion="Promotion détail",
-        texte="<p>Un témoignage public de contrôle.</p>",
-        consentement_publication=True,
-        statut=TemoignageEtudiant.Statut.PUBLIE,
-        valide_le=timezone.now(),
-        valide_par=monde[ADMIN],
-    )
-
-    # Une actualité vit dans l'arbre Wagtail''',
-          )
-
-          remplacer(
-              "src/apps/core/test_fumee_detail.py",
-              '''    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
-    "administration:assiduite_cours":''',
-              '''    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
-    "administration:cours_session_presences": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
-    "administration:session_pv_deliberation_pdf": (SECRETARIAT, lambda m: {"pk": m["session"].pk}),
-    "administration:assiduite_cours":''',
-          )
-
-          remplacer(
-              "src/apps/core/test_fumee_detail.py",
-              '''    "elearning:lecon_progression": (
-        ETUDIANT,''',
-              '''    "elearning:lecon_metadata": (
-        ETUDIANT,
-        lambda m: {"slug": m["module_prive"].slug, "lecon_slug": m["lecon_privee"].slug},
-    ),
-    "elearning:lecon_progression": (
-        ETUDIANT,''',
-          )
-
-          remplacer(
-              "src/apps/core/test_fumee_detail.py",
-              '''    "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
-    # ── Documents rédigés ──''',
-              '''    "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
-    "website:temoignage_public": (PUBLIC, lambda m: {"pk": m["temoignage"].pk}),
-    # ── Documents rédigés ──''',
-          )
+          remplacer("src/apps/core/test_fumee_detail.py", '    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),\n    "administration:assiduite_cours":', '    "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),\n    "administration:cours_session_presences": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),\n    "administration:session_pv_deliberation_pdf": (SECRETARIAT, lambda m: {"pk": m["session"].pk}),\n    "administration:assiduite_cours":')
+          remplacer("src/apps/core/test_fumee_detail.py", '    "elearning:lecon_progression": (\n        ETUDIANT,', '    "elearning:lecon_metadata": (\n        ETUDIANT,\n        lambda m: {"slug": m["module_prive"].slug, "lecon_slug": m["lecon_privee"].slug},\n    ),\n    "elearning:lecon_progression": (\n        ETUDIANT,')
+          remplacer("src/apps/core/test_fumee_detail.py", '    "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),\n    # ── Documents rédigés ──', '    "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),\n    "website:temoignage_public": (PUBLIC, lambda m: {"pk": m["temoignage"].pk}),\n    # ── Documents rédigés ──')
           PY
       - name: Vérifier le diff et committer
         run: |
