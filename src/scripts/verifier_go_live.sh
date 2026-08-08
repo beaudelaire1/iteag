@@ -3,6 +3,10 @@
 # Il ne modifie aucune donnée métier. La seule écriture durable potentielle est
 # l'envoi des emails de contrôle ; les objets R2 et la base de restauration sont
 # créés puis supprimés pendant le test.
+#
+# Dépendance côté hôte : Docker Compose uniquement. Les requêtes réseau et le
+# parsing JSON sont exécutés depuis le conteneur web afin de ne pas supposer la
+# présence de curl ou Python sur le serveur.
 
 set -eu
 
@@ -41,17 +45,21 @@ etape "Contrat Django de production"
 compose exec -T web python manage.py verifier_production
 
 etape "Healthcheck HTTP public"
-HEALTH="$(curl --fail --silent --show-error --max-time 20 "${GO_LIVE_BASE_URL%/}/healthz")"
-printf '%s\n' "$HEALTH"
-python3 - "$HEALTH" <<'PY'
+compose exec -T web python -c '
 import json
 import sys
+import urllib.request
 
-payload = json.loads(sys.argv[1])
+url = sys.argv[1].rstrip("/") + "/healthz"
+request = urllib.request.Request(url, headers={"User-Agent": "ITEAG-go-live/1.0"})
+with urllib.request.urlopen(request, timeout=20) as response:
+    assert response.status == 200, response.status
+    payload = json.load(response)
+print(payload)
 assert payload.get("statut") == "ok", payload
 assert payload.get("base") is True, payload
 assert payload.get("cache") is True, payload
-PY
+' "$GO_LIVE_BASE_URL"
 
 etape "Worker + Beat Celery"
 compose exec -T worker celery -A config inspect ping --timeout=5 | grep -q pong
