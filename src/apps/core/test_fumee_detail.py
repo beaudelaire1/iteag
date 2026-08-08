@@ -74,7 +74,7 @@ from apps.lms.models import (
 )
 from apps.paiements.models import Reglement
 from apps.website.models import NewsIndexPage, NewsPage
-from apps.website.models_publications import Article, ImageArticle
+from apps.website.models_publications import Article, ImageArticle, TemoignageEtudiant
 
 ADMIN, SECRETARIAT = User.Role.ADMIN, User.Role.SECRETARIAT
 ENSEIGNANT, ETUDIANT = User.Role.ENSEIGNANT, User.Role.ETUDIANT
@@ -370,6 +370,15 @@ def univers(db, settings, tmp_path):
     monde["illustration"] = ImageArticle.objects.create(
         article=monde["article"], fichier=SimpleUploadedFile("figure.png", b"figure"), legende="Figure 1"
     )
+    monde["temoignage"] = TemoignageEtudiant.objects.create(
+        nom_affiche="Maya Jean",
+        promotion="Promotion détail",
+        texte="<p>Un témoignage public de contrôle.</p>",
+        consentement_publication=True,
+        statut=TemoignageEtudiant.Statut.PUBLIE,
+        valide_le=timezone.now(),
+        valide_par=monde[ADMIN],
+    )
 
     # Une actualité vit dans l'arbre Wagtail : elle a besoin de son index, qui
     # a besoin de la racine créée par les migrations. « add_child » ne vérifie
@@ -425,6 +434,8 @@ FABRIQUES = {
     "administration:course_offering_update": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
     "administration:course_offering_delete": (ADMIN, lambda m: {"pk": m["cours_session"].pk}),
     "administration:emargement_pdf": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
+    "administration:cours_session_presences": (SECRETARIAT, lambda m: {"pk": m["cours_session"].pk}),
+    "administration:session_pv_deliberation_pdf": (SECRETARIAT, lambda m: {"pk": m["session"].pk}),
     "administration:assiduite_cours": (ENSEIGNANT, lambda m: {"pk": m["cours_session"].pk}),
     "administration:assiduite_feuille": (ENSEIGNANT, lambda m: {"pk": m["seance_assiduite"].pk}),
     "administration:enrollment_request_detail": (SECRETARIAT, lambda m: {"pk": m["demande"].pk}),
@@ -509,6 +520,10 @@ FABRIQUES = {
         lambda m: {"slug": m["module_prive"].slug, "lecon_slug": m["lecon_privee"].slug},
     ),
     "elearning:lecon_playback": (
+        ETUDIANT,
+        lambda m: {"slug": m["module_prive"].slug, "lecon_slug": m["lecon_privee"].slug},
+    ),
+    "elearning:lecon_metadata": (
         ETUDIANT,
         lambda m: {"slug": m["module_prive"].slug, "lecon_slug": m["lecon_privee"].slug},
     ),
@@ -622,6 +637,7 @@ FABRIQUES = {
     # ── Actualités ──
     "website:actualite_edition": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
     "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
+    "website:temoignage_public": (PUBLIC, lambda m: {"pk": m["temoignage"].pk}),
     # ── Documents rédigés ──
     "redaction:document_edition": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
     "redaction:document_decision": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
