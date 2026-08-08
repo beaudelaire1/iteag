@@ -13,8 +13,11 @@ from decimal import Decimal
 from wagtail import blocks
 from wagtail.contrib.typed_table_block.blocks import TypedTableBlock
 
-from apps.website.models import CitationEditorialeBlock, EncadreEditorialBlock, TexteEditorialBlock
-
+from apps.website.models import (
+    CitationEditorialeBlock,
+    EncadreEditorialBlock,
+    TexteEditorialBlock,
+)
 
 FONCTIONNALITES_CELLULE_TABLEAU = ["bold", "italic", "underline", "ol", "ul", "link"]
 
