@@ -7,6 +7,10 @@ sa façon, d'où des formulaires qui ne se ressemblaient pas d'une page à l'aut
 
 La classe du widget est posée par « apps.core.formulaires », pas ici : un
 gabarit ne doit pas être le seul rempart contre un champ non stylisé.
+
+Les identifiants `_helptext` et `_error` suivent les conventions de Django 5.2.
+BoundField les reprend dans `aria-describedby` : l'aide et l'erreur restent donc
+liées au contrôle quand un lecteur d'écran revient sur le champ.
 {% endcomment %}
 <div class="champ{% if field.errors %} champ--invalide{% endif %}">
     {% if field.field.widget.input_type == 'checkbox' %}
@@ -24,13 +28,17 @@ gabarit ne doit pas être le seul rempart contre un champ non stylisé.
     {% endif %}
 
     {% if field.help_text %}
-    <p class="form-aide" id="{{ field.id_for_label }}-aide">{{ field.help_text }}</p>
+    <p class="form-aide" id="{{ field.id_for_label }}_helptext">{{ field.help_text }}</p>
     {% endif %}
 
-    {% for erreur in field.errors %}
-    <p class="form-erreur" role="alert">
-        <svg class="h-4 w-4 shrink-0" style="margin-top: 0.0625rem;" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
-        {{ erreur }}
-    </p>
-    {% endfor %}
+    {% if field.errors %}
+    <div id="{{ field.id_for_label }}_error" role="alert" class="space-y-1">
+        {% for erreur in field.errors %}
+        <p class="form-erreur">
+            <svg class="h-4 w-4 shrink-0" style="margin-top: 0.0625rem;" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+            {{ erreur }}
+        </p>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
