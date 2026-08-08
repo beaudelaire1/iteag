@@ -34,7 +34,7 @@ def test_script_pilote_les_resolutions_hls_et_la_preference():
     assert "hls.currentLevel = index" in script
     assert "iteag_video_quality" in script
     assert 'ITEAGConsent?.allows("preferences")' in script
-    assert "dataSautVideo" in script
+    assert "dataset.sautVideo" in script
     assert "video.currentTime = cible" in script
 
 
