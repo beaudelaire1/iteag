@@ -71,7 +71,7 @@ def test_script_chapitres_utilise_les_sprites_seek_bunny():
     assert "videoChapterMarker" in script
     assert "feuilleIndex = Math.floor(imageIndex / 36)" in script
     assert "cellule = imageIndex % 36" in script
-    assert '`${prefixeSeek}_${feuilleIndex}.jpg`' in script
+    assert "`${prefixeSeek}_${feuilleIndex}.jpg`" in script
     assert 'replace(/\\/lecture\\/?$/, "/metadata/")' in script
 
 
