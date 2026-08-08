@@ -4,8 +4,8 @@ from io import BytesIO
 from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.forms import ValidationError
 
 from apps.admissions.forms import CandidatureForm
 from apps.admissions.formulaires import TAILLE_MAX_PIECE, valider_fichier_piece
