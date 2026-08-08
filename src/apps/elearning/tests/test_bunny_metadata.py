@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.urls import reverse
 
 from apps.elearning import bunny_metadata
+from apps.elearning.csp import directives_video
 from apps.elearning.models import VideoAsset
 
 
@@ -59,6 +60,14 @@ def test_chapitres_bunny_sont_facultatifs_sans_cle_api(monkeypatch):
     monkeypatch.delenv("BUNNY_STREAM_API_KEY", raising=False)
 
     assert bunny_metadata.chapitres_video("video-123") == []
+
+
+def test_csp_video_autorise_les_sprites_bunny(settings):
+    settings.BUNNY_ZONE_DIFFUSION = "https://vz-test.b-cdn.net"
+
+    ajouts, _remplacements = directives_video()
+
+    assert "https://vz-test.b-cdn.net" in ajouts["img-src"]
 
 
 @pytest.mark.django_db
