@@ -88,15 +88,18 @@ def test_picker_streamfield_est_une_liste_stable_hors_core_admin():
     styles = _lire("static/css/streamfield-picker-portail.css")
     ux = _lire("static/css/streamfield-ux-portail.css")
 
-    assert '[data-tippy-root]' in styles
+    assert "[data-tippy-root]" in styles
     assert '.tippy-box[data-theme="dropdown"]' in styles
     assert ".w-combobox__menu" in styles
     assert "grid-template-columns: minmax(0, 1fr)" in styles
     assert ".w-combobox__option-preview" in styles
     assert "max-height:" in styles
-    assert '[data-tippy-root]:has(.w-combobox-container)' in ux
-    assert "position: fixed !important" in ux
-    assert "transform: none !important" in ux
+    assert "transition-property: visibility, opacity" in styles
+    assert "transition-property: transform" not in styles
+    assert "[data-tippy-root]:has(.w-combobox-container)" in ux
+    assert "position: fixed !important" not in ux
+    assert "transform: none !important" not in ux
+    assert "top: 5.75rem !important" not in ux
     assert ".w-combobox__option-text" in ux
 
 
