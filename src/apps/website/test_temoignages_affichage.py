@@ -6,7 +6,8 @@ from django.conf import settings
 
 
 def _gabarit() -> str:
-    return (Path(settings.BASE_DIR) / "templates/website/partials/temoignages_etudiants.html").read_text(encoding="utf-8")
+    chemin = Path(settings.BASE_DIR) / "templates/website/partials/temoignages_etudiants.html"
+    return chemin.read_text(encoding="utf-8")
 
 
 def test_voir_plus_ne_depend_plus_de_javascript():
