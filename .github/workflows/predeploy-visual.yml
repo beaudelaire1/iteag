@@ -17,7 +17,7 @@ jobs:
     name: Captures desktop et mobile
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/go-live-ops-gate'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
@@ -53,21 +53,44 @@ jobs:
             bibliotheque: "/bibliotheque/",
             boutique: "/boutique/",
           };
+          const selecteurAnime = ".reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-fade, .reveal-blur, .text-reveal-line, .border-draw";
 
           async function reveillerSections(page) {
             await page.evaluate(async () => {
               const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-              const pas = Math.max(300, Math.floor(window.innerHeight * 0.7));
+              const pas = 180;
               const bas = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
               for (let y = 0; y <= bas; y += pas) {
                 window.scrollTo(0, y);
-                await attendre(70);
+                await attendre(120);
               }
               window.scrollTo(0, bas);
-              await attendre(250);
+              await attendre(700);
               window.scrollTo(0, 0);
-              await attendre(250);
+              await attendre(500);
             });
+          }
+
+          async function verifierAnimations(page, nom, mode) {
+            const masques = await page.evaluate((selecteur) => {
+              return Array.from(document.querySelectorAll(selecteur))
+                .filter((element) => !element.classList.contains("revealed"))
+                .filter((element) => {
+                  const style = getComputedStyle(element);
+                  const rect = element.getBoundingClientRect();
+                  return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+                })
+                .map((element) => ({
+                  tag: element.tagName,
+                  classes: element.className,
+                  texte: (element.textContent || "").trim().replace(/\s+/g, " ").slice(0, 120),
+                }));
+            }, selecteurAnime);
+
+            if (masques.length) {
+              console.error(`Contenus animés encore masqués — ${mode}/${nom}:`, masques);
+              throw new Error(`${mode}/${nom}: ${masques.length} élément(s) animé(s) n'ont jamais été révélés après un défilement utilisateur simulé.`);
+            }
           }
 
           (async () => {
@@ -98,6 +121,7 @@ jobs:
                   if (document.fonts?.ready) await document.fonts.ready;
                 });
                 await reveillerSections(page);
+                await verifierAnimations(page, nom, mode);
                 await page.screenshot({
                   path: path.join(root, "captures", mode, `${nom}.png`),
                   fullPage: true,
