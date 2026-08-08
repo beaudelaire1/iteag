@@ -41,6 +41,8 @@ def test_socle_charge_le_bandeau_et_son_gestionnaire():
     assert "iteag_cookie_consent" in script
     assert "allows: autorise" in script
     assert "SameSite=Lax" in script
+    assert 'CLES_PREFERENCES_LOCALES = ["iteag_video_quality"]' in script
+    assert "supprimerPreferencesLocales" in script
 
 
 def test_aucun_outil_de_mesure_n_est_annonce_comme_actif():
