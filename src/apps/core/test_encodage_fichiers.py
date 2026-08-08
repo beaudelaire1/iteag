@@ -93,9 +93,7 @@ def lignes_sans_encodage(source: str) -> list[int]:
     """Lignes des appels de fichier texte sans encodage explicite."""
     arbre = ast.parse(source)
     return sorted(
-        noeud.lineno
-        for noeud in ast.walk(arbre)
-        if isinstance(noeud, ast.Call) and _appel_texte_sans_encodage(noeud)
+        noeud.lineno for noeud in ast.walk(arbre) if isinstance(noeud, ast.Call) and _appel_texte_sans_encodage(noeud)
     )
 
 
