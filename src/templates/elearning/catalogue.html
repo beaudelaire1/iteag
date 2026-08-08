@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load duree %}
 
 {% block title %}E-Learning — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}Modules de formation théologique en vidéo, accessibles à distance depuis la Guadeloupe, la Martinique et la Guyane.{% endblock %}
@@ -74,7 +75,7 @@
                     <div><dt class="inline">Enseignant —</dt> <dd class="inline">{{ module.responsable.nom_complet }}</dd></div>
                     {% endif %}
                     {% if module.duree_totale_secondes %}
-                    <div><dt class="inline">Durée —</dt> <dd class="inline">{{ module.duree_minutes }} min</dd></div>
+                    <div><dt class="inline">Durée —</dt> <dd class="inline">{{ module.duree_totale_secondes|duree_humaine }}</dd></div>
                     {% endif %}
                 </dl>
             </article>
