@@ -3,7 +3,8 @@
 Le thème de l'administration Django écrit ses scripts dans la page ; sans
 dérogation, ses écrans sont muets. La dérogation ne vaut que pour ce préfixe :
 si elle débordait sur le site public, une injection de contenu deviendrait
-exécutable. Ces deux tests tiennent les deux bouts.
+exécutable. Ces tests tiennent les deux bouts et verrouillent les en-têtes
+transverses ajoutés avant production.
 """
 
 from __future__ import annotations
@@ -42,3 +43,13 @@ class TestLaDerogationResteCantonnee:
 
         assert "default-src 'self'" in entete
         assert "https://" not in entete.split("script-src")[1].split(";")[0]
+
+    def test_aucune_page_ne_peut_etre_embarquee_dans_une_frame(self, client):
+        entete = client.get("/connexion/").headers["Content-Security-Policy"]
+
+        assert "frame-ancestors 'none'" in entete
+
+    def test_permissions_policy_coupe_les_capacites_navigateur_inutilisees(self, client):
+        entete = client.get("/connexion/").headers["Permissions-Policy"]
+
+        assert entete == "camera=(), microphone=(), geolocation=(), usb=()"
