@@ -267,7 +267,7 @@ class TestPublicationPublique:
         assert "explicitement validé" in html
         assert "attend encore une décision" not in html
 
-    def test_le_rendu_public_conserve_la_mise_en_forme_validee(self, etudiant, admin):
+    def test_l_extrait_public_reste_du_texte_simple(self, etudiant, admin):
         TemoignageEtudiant.objects.create(
             etudiant=etudiant,
             nom_affiche="Maya Jean",
@@ -278,8 +278,10 @@ class TestPublicationPublique:
             valide_par=admin,
         )
         html = _rendu_public()
-        assert "<strong>solide</strong>" in html
-        assert "<em>exigeante</em>" in html
+        assert "solide" in html
+        assert "exigeante" in html
+        assert "<strong>solide</strong>" not in html
+        assert "<em>exigeante</em>" not in html
 
     def test_aucune_section_vide_n_est_affichee(self):
         assert "Paroles d'étudiants" not in _rendu_public()

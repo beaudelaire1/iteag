@@ -99,7 +99,7 @@ class TestPerimetre:
 class TestStructure:
     def test_le_vocabulaire_reste_volontairement_court(self):
         noms = set(CorpsActualiteBlock().child_blocks)
-        assert noms == {"texte", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}
+        assert noms == {"texte", "important", "tableau", "procedure", "chiffres_cles", "graphique", "citation", "encadre"}
 
     def test_l_editeur_du_portail_sert_le_runtime_wagtail_complet(self, client, secretaire, index):
         client.force_login(secretaire)
