@@ -1,0 +1,85 @@
+name: Predeploy live audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: predeploy-live-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preproduction:
+    name: Preproduction HTTPS smoke
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/predeploy-go-readiness'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
+    steps:
+      - name: Vérifier les pages publiques critiques
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in \
+            / \
+            /presentation/ \
+            /formations/ \
+            /candidature/ \
+            /connexion/ \
+            /bibliotheque/ \
+            /boutique/ \
+            /robots.txt \
+            /sitemap.xml \
+            /healthz
+          do
+            code="$(curl --silent --show-error --max-time 20 --output /tmp/iteag-body --write-out '%{http_code}' "${BASE_URL}${path}")"
+            printf '%-24s %s\n' "$path" "$code"
+            test "$code" = "200"
+          done
+
+      - name: Vérifier la sonde applicative
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(curl --silent --show-error --max-time 20 "${BASE_URL}/healthz")"
+          echo "$body"
+          python - "$body" <<'PY'
+          import json
+          import sys
+
+          payload = json.loads(sys.argv[1])
+          assert payload.get("statut") == "ok", payload
+          assert payload.get("base") is True, payload
+          assert payload.get("cache") is True, payload
+          PY
+
+      - name: Vérifier les en-têtes de sécurité réels
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --max-time 20 --dump-header /tmp/iteag-headers --output /dev/null "${BASE_URL}/"
+          cat /tmp/iteag-headers
+          for header in \
+            '^strict-transport-security:' \
+            '^content-security-policy:' \
+            '^x-content-type-options:' \
+            '^x-frame-options:'
+          do
+            grep --ignore-case --quiet --extended-regexp "$header" /tmp/iteag-headers
+          done
+
+      - name: Relever la protection anti-indexation de recette
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --max-time 20 --dump-header /tmp/iteag-headers --output /dev/null "${BASE_URL}/robots.txt"
+          if grep --ignore-case '^x-robots-tag:' /tmp/iteag-headers; then
+            echo 'Préproduction protégée par X-Robots-Tag.'
+          else
+            echo 'X-Robots-Tag absent sur le déploiement actuellement en ligne : le correctif de cette PR devra être redéployé avant le go-live.'
+          fi
