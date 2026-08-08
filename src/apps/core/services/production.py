@@ -57,7 +57,10 @@ def anomalies_configuration_production() -> list[str]:
         "SESSION_COOKIE_SECURE": True,
         "CSRF_COOKIE_SECURE": True,
         "SESSION_COOKIE_HTTPONLY": True,
+        "CSRF_COOKIE_HTTPONLY": True,
         "SECURE_CONTENT_TYPE_NOSNIFF": True,
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": True,
+        "SECURE_HSTS_PRELOAD": True,
     }
     for nom, attendu in protections.items():
         if getattr(settings, nom, None) is not attendu:
@@ -68,12 +71,16 @@ def anomalies_configuration_production() -> list[str]:
 
     if getattr(settings, "X_FRAME_OPTIONS", "").upper() != "DENY":
         anomalies.append("X_FRAME_OPTIONS doit rester à DENY.")
+    if getattr(settings, "SESSION_COOKIE_SAMESITE", None) not in {"Lax", "Strict"}:
+        anomalies.append("SESSION_COOKIE_SAMESITE doit être Lax ou Strict.")
 
     if not getattr(settings, "OTP_ENFORCE", False):
         anomalies.append("DJANGO_OTP_ENFORCE doit être actif.")
     roles_2fa = set(getattr(settings, "ROLES_2FA_OBLIGATOIRE", []))
     if not {"admin", "secretariat"}.issubset(roles_2fa):
         anomalies.append("Le second facteur doit rester obligatoire pour admin et secretariat.")
+    if getattr(settings, "AXES_FAILURE_LIMIT", 0) <= 0 or getattr(settings, "AXES_FAILURE_LIMIT", 0) > 5:
+        anomalies.append("AXES_FAILURE_LIMIT doit limiter les tentatives de connexion à 5 au maximum.")
 
     backend_email = getattr(settings, "EMAIL_BACKEND", "")
     if backend_email != "django.core.mail.backends.smtp.EmailBackend":
@@ -81,6 +88,8 @@ def anomalies_configuration_production() -> list[str]:
     for nom in ("EMAIL_HOST", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "DEFAULT_FROM_EMAIL", "SERVER_EMAIL"):
         if not getattr(settings, nom, ""):
             anomalies.append(f"{nom} doit être renseigné.")
+    if getattr(settings, "EMAIL_USE_TLS", False) and getattr(settings, "EMAIL_USE_SSL", False):
+        anomalies.append("EMAIL_USE_TLS et EMAIL_USE_SSL ne doivent pas être actifs simultanément.")
 
     if not getattr(settings, "CLOUDFLARE_TURNSTILE_ENABLED", False):
         anomalies.append("Cloudflare Turnstile doit être activé sur les formulaires publics.")
@@ -94,9 +103,24 @@ def anomalies_configuration_production() -> list[str]:
     for nom in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_STORAGE_BUCKET_NAME", "AWS_S3_ENDPOINT_URL"):
         if not getattr(settings, nom, ""):
             anomalies.append(f"{nom} doit être renseigné pour le stockage média R2.")
+    if not getattr(settings, "AWS_QUERYSTRING_AUTH", False):
+        anomalies.append("AWS_QUERYSTRING_AUTH doit rester actif pour les médias privés.")
 
     if not getattr(settings, "SENTRY_DSN", ""):
         anomalies.append("SENTRY_DSN doit être renseigné pour l'observabilité production.")
+    if getattr(settings, "SENTRY_SEND_DEFAULT_PII", False):
+        anomalies.append("SENTRY_SEND_DEFAULT_PII doit rester False par défaut en production.")
+
+    stripe = {
+        "STRIPE_CLE_PUBLIABLE": ("pk_live_", getattr(settings, "STRIPE_CLE_PUBLIABLE", "")),
+        "STRIPE_CLE_SECRETE": ("sk_live_", getattr(settings, "STRIPE_CLE_SECRETE", "")),
+        "STRIPE_SECRET_WEBHOOK": ("whsec_", getattr(settings, "STRIPE_SECRET_WEBHOOK", "")),
+    }
+    for nom, (prefixe, valeur) in stripe.items():
+        if not valeur:
+            anomalies.append(f"{nom} doit être renseigné pour le paiement en ligne.")
+        elif not valeur.startswith(prefixe):
+            anomalies.append(f"{nom} doit être une valeur de production commençant par « {prefixe} ».")
 
     if getattr(settings, "ELEARNING_DIFFUSION_VIDEO", "") == "bunny":
         for nom in ("BUNNY_ZONE_DIFFUSION", "BUNNY_CLE_SIGNATURE"):
