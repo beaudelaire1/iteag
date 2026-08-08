@@ -24,8 +24,9 @@ def directives_video() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     Retourne ce qui s'ajoute et ce qui se remplace.
 
     `media-src` et `connect-src` s'ajoutent : le lecteur récupère le manifeste
-    et les segments depuis l'origine du fournisseur, en plus de nos propres
-    ressources. `frame-src` se **remplace**, car la valeur globale est
+    et les segments depuis l'origine du fournisseur. `img-src` ajoute la même
+    origine uniquement sur ces pages pour les sprites de prévisualisation
+    générés par Bunny. `frame-src` se **remplace**, car la valeur globale est
     `'none'` : la spécification CSP veut que `'none'` soit seul, et l'associer
     à une origine donne un comportement qui dépend du navigateur.
     """
@@ -35,6 +36,7 @@ def directives_video() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     ajouts = {
         "media-src": ["'self'", "blob:", *origines],
         "connect-src": ["'self'", *origines],
+        "img-src": [*origines],
     }
     remplacements = {"frame-src": list(origines)}
     return ajouts, remplacements
