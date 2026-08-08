@@ -7,7 +7,14 @@
 
   const video = lecteur.querySelector("[data-video]");
   const timeline = lecteur.querySelector("[data-video-timeline]");
-  const urlMetadata = lecteur.dataset.urlMetadata;
+
+  function trouverUrlMetadata() {
+    if (lecteur.dataset.urlMetadata) return lecteur.dataset.urlMetadata;
+    const urlLecture = lecteur.dataset.urlLecture || "";
+    return urlLecture.replace(/\/lecture\/?$/, "/metadata/");
+  }
+
+  const urlMetadata = trouverUrlMetadata();
   if (!video || !timeline || !urlMetadata) return;
 
   const shell = document.createElement("div");
