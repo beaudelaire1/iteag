@@ -3,9 +3,10 @@
 from pathlib import Path
 
 from django.conf import settings
-from wagtail.blocks import BlockWidget
+from wagtail.blocks import BlockWidget, RichTextBlock
 
 from apps.core.editeur_riche import StreamFieldPortail
+from apps.website.editorial import FONCTIONNALITES_CELLULE_TABLEAU, TableauEditorialBlock
 from apps.website.formulaires_actualites import ActualiteForm
 
 
@@ -65,6 +66,8 @@ def test_styles_streamfield_restent_isoles_du_portail():
 
     assert any("/css/streamfield-portail.css" in url for url in ressources)
     assert any("/css/streamfield-draftail-portail.css" in url for url in ressources)
+    assert any("/css/streamfield-picker-portail.css" in url for url in ressources)
+    assert any("/css/typed-table-portail.css" in url for url in ressources)
     assert not any("wagtailadmin/css/core.css" in url for url in ressources)
     assert 'class="streamfield-portail"' in gabarit
 
@@ -78,6 +81,37 @@ def test_draftail_streamfield_est_ancre_au_bloc():
     assert ".Draftail-BlockToolbar" in styles
     assert 'detail: { toolbar: "sticky" }' in script
     assert "localStorage" not in script
+
+
+def test_picker_streamfield_est_une_liste_stable_hors_core_admin():
+    styles = _lire("static/css/streamfield-picker-portail.css")
+
+    assert '[data-tippy-root]' in styles
+    assert '.tippy-box[data-theme="dropdown"]' in styles
+    assert ".w-combobox__menu" in styles
+    assert "grid-template-columns: minmax(0, 1fr)" in styles
+    assert ".w-combobox__option-preview" in styles
+    assert "max-height:" in styles
+
+
+def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():
+    tableau = TableauEditorialBlock()
+    texte = tableau.child_blocks["texte"]
+
+    assert isinstance(texte, RichTextBlock)
+    assert texte.required is False
+    assert list(texte.features) == FONCTIONNALITES_CELLULE_TABLEAU
+    assert texte.meta.template == "website/blocks/texte_cellule_tableau.html"
+
+
+def test_tableau_portail_a_des_commandes_et_menus_explicites():
+    styles = _lire("static/css/typed-table-portail.css")
+
+    assert ".typed-table-block__wrapper" in styles
+    assert "ul.add-column-menu" in styles
+    assert 'content: "Ajouter une ligne"' in styles
+    assert ".typed-table-block .Draftail-Editor--focus .Draftail-Toolbar" in styles
+    assert "min-height: 5.25rem !important" in styles
 
 
 def test_le_portail_ne_reimplemente_plus_blockcontroller():

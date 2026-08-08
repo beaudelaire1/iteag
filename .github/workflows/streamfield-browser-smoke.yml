@@ -10,8 +10,11 @@ on:
       - "src/apps/website/vues_actualites.py"
       - "src/static/css/streamfield-portail.css"
       - "src/static/css/streamfield-draftail-portail.css"
+      - "src/static/css/streamfield-picker-portail.css"
+      - "src/static/css/typed-table-portail.css"
       - "src/static/js/streamfield-draftail-portail.js"
       - "src/templates/website/actualites/formulaire.html"
+      - "src/templates/website/blocks/texte_cellule_tableau.html"
       - ".github/workflows/streamfield-browser-smoke.yml"
   push:
     branches: [main]
@@ -23,8 +26,11 @@ on:
       - "src/apps/website/vues_actualites.py"
       - "src/static/css/streamfield-portail.css"
       - "src/static/css/streamfield-draftail-portail.css"
+      - "src/static/css/streamfield-picker-portail.css"
+      - "src/static/css/typed-table-portail.css"
       - "src/static/js/streamfield-draftail-portail.js"
       - "src/templates/website/actualites/formulaire.html"
+      - "src/templates/website/blocks/texte_cellule_tableau.html"
       - ".github/workflows/streamfield-browser-smoke.yml"
 
 permissions:
@@ -51,6 +57,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: python manage.py collectstatic --noinput
+      - name: Vérifier les tests ciblés du StreamField
+        run: pytest apps/website/test_streamfield_portail.py -q
+      - name: Vérifier les migrations
+        run: python manage.py makemigrations --check --dry-run
       - name: Construire une page avec le vrai BlockWidget
         run: |
           python - <<'PY'
@@ -63,18 +73,43 @@ jobs:
           from django.template import RequestContext, Template
           from django.test import RequestFactory
           from apps.website.formulaires_actualites import ActualiteForm
-          from apps.website.vues_actualites import ActualiteEditionView
 
           call_command("migrate", interactive=False, verbosity=0)
 
           request = RequestFactory().get("/")
           request.csp_nonce = "browser-smoke"
-          form = ActualiteForm(initial={"contenu": ActualiteEditionView._contenu_initial(None)})
+          formulaire_vide = ActualiteForm()
+          stream_block = formulaire_vide.fields["contenu"].widget.block_def
+          contenu = stream_block.to_python(
+              [
+                  {"type": "texte", "value": "<p>Texte de contrôle</p>"},
+                  {
+                      "type": "tableau",
+                      "value": {
+                          "caption": "Tableau d'exemple",
+                          "columns": [
+                              {"type": "texte", "heading": "Observation"},
+                              {"type": "nombre", "heading": "Valeur"},
+                          ],
+                          "rows": [
+                              {
+                                  "values": [
+                                      "<p><strong>Cellule formatée</strong></p>",
+                                      "12.5",
+                                  ]
+                              }
+                          ],
+                      },
+                  },
+              ]
+          )
+          form = ActualiteForm(initial={"contenu": contenu})
           template = Template("""
           <!doctype html><html><head>{% load socle_wagtail %}<meta charset="UTF-8">
-          <style>body{width:1200px;margin:20px;font-family:Arial,sans-serif}</style>
+          <style>body{width:auto;max-width:1200px;margin:20px auto;padding:0 20px;font-family:Arial,sans-serif}</style>
           <script>
           window.__iteagErrors = [];
+          window.__pickerMetrics = null;
           window.addEventListener('error', function (event) {
             window.__iteagErrors.push(String(event.message || event.error || 'error'));
           });
@@ -86,8 +121,51 @@ jobs:
           </head><body>{% wagtail_icones_portail %}<div class="streamfield-portail">{{ form.contenu }}</div>
           <script>
           setTimeout(function () {
-            var editor = document.querySelector('.Draftail-Editor');
-            var wrapper = document.querySelector('.Draftail-Editor__wrapper') || editor;
+            var add = document.querySelector('.c-sf-add-button');
+            if (add) add.click();
+          }, 1200);
+
+          setTimeout(function () {
+            var root = document.querySelector('[data-tippy-root]');
+            var picker = document.querySelector('.tippy-box[data-theme="dropdown"]');
+            var combo = picker ? picker.querySelector('.w-combobox-container') : null;
+            var menu = picker ? picker.querySelector('.w-combobox__menu') : null;
+            var options = picker ? Array.from(picker.querySelectorAll('.w-combobox__option')) : [];
+            var rootRect = root ? root.getBoundingClientRect() : null;
+            var comboRect = combo ? combo.getBoundingClientRect() : null;
+            var menuStyle = menu ? window.getComputedStyle(menu) : null;
+            var optionRects = options.map(function (option) { return option.getBoundingClientRect(); });
+            window.__pickerMetrics = {
+              visible: !!(comboRect && comboRect.width >= 280 && comboRect.height >= 100),
+              inViewport: !!(
+                rootRect && rootRect.left >= -2 && rootRect.top >= -2 &&
+                rootRect.right <= window.innerWidth + 2 && rootRect.bottom <= window.innerHeight + 2
+              ),
+              width: comboRect ? Math.round(comboRect.width) : 0,
+              scrollable: !!(menuStyle && ['auto', 'scroll'].includes(menuStyle.overflowY)),
+              optionsReadable: optionRects.length >= 7 && optionRects.every(function (rect) {
+                return rect.width >= 240 && rect.height >= 36;
+              })
+            };
+            var add = document.querySelector('.c-sf-add-button[aria-expanded="true"]');
+            if (add) add.click();
+          }, 2100);
+
+          setTimeout(function () {
+            var addColumn = document.querySelector('.typed-table-block button.append-column');
+            if (addColumn) addColumn.click();
+            var cell = document.querySelector('.typed-table-block .public-DraftEditor-content');
+            if (cell) {
+              cell.focus();
+              cell.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+              cell.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+              cell.click();
+            }
+          }, 2500);
+
+          setTimeout(function () {
+            var editor = document.querySelector('.streamfield-portail > .champ .Draftail-Editor') || document.querySelector('.Draftail-Editor');
+            var wrapper = editor ? editor.closest('.Draftail-Editor__wrapper') || editor : null;
             var editorRect = editor ? editor.getBoundingClientRect() : null;
             var wrapperRect = wrapper ? wrapper.getBoundingClientRect() : null;
             var editorStyle = editor ? window.getComputedStyle(editor) : null;
@@ -96,7 +174,7 @@ jobs:
               editorStyle.display !== 'none' && editorStyle.visibility !== 'hidden' &&
               editorStyle.opacity !== '0'
             );
-            var toolbar = document.querySelector('.Draftail-Toolbar');
+            var toolbar = editor ? editor.querySelector('.Draftail-Toolbar') : document.querySelector('.Draftail-Toolbar');
             var pin = document.querySelector('.Draftail-ToolbarButton--pin');
             var blockToolbar = document.querySelector('.Draftail-BlockToolbar');
             var toolbarRect = toolbar ? toolbar.getBoundingClientRect() : null;
@@ -130,6 +208,39 @@ jobs:
               headingStyle && parseFloat(headingStyle.fontSize) >= 12 && parseFloat(headingStyle.fontSize) <= 18
             );
             var anchorsHidden = !anchor || (anchorStyle && anchorStyle.display === 'none');
+
+            var table = document.querySelector('.typed-table-block');
+            var tableWrapper = document.querySelector('.typed-table-block__wrapper');
+            var tableRect = table ? table.getBoundingClientRect() : null;
+            var tableWrapperRect = tableWrapper ? tableWrapper.getBoundingClientRect() : null;
+            var tableWrapperStyle = tableWrapper ? window.getComputedStyle(tableWrapper) : null;
+            var addColumnMenu = document.querySelector('.typed-table-block ul.add-column-menu');
+            var addColumnMenuRect = addColumnMenu ? addColumnMenu.getBoundingClientRect() : null;
+            var addColumnOptions = addColumnMenu ? Array.from(addColumnMenu.querySelectorAll('button')) : [];
+            var addColumnOptionRects = addColumnOptions.map(function (button) { return button.getBoundingClientRect(); });
+            var tableMenuStable = !!(
+              addColumnMenuRect && addColumnMenuRect.width >= 160 && addColumnMenuRect.height >= 90 &&
+              addColumnOptionRects.length === 3 &&
+              addColumnOptionRects.every(function (rect, index) {
+                return rect.width >= 150 && rect.height >= 32 &&
+                  (index === 0 || rect.top > addColumnOptionRects[index - 1].top);
+              })
+            );
+            var tableContained = !!(
+              tableRect && tableWrapperRect && tableWrapperStyle &&
+              tableWrapperRect.width > 300 && tableWrapperRect.width <= 1200 &&
+              ['auto', 'scroll'].includes(tableWrapperStyle.overflowX)
+            );
+            var cellEditor = document.querySelector('.typed-table-block .Draftail-Editor');
+            var cellEditorRect = cellEditor ? cellEditor.getBoundingClientRect() : null;
+            var cellToolbar = cellEditor ? cellEditor.querySelector('.Draftail-Toolbar') : null;
+            var cellToolbarStyle = cellToolbar ? window.getComputedStyle(cellToolbar) : null;
+            var cellFormatting = !!(
+              cellEditorRect && cellEditorRect.height >= 70 && cellEditorRect.height <= 190 &&
+              cellToolbar && cellToolbar.querySelectorAll('.Draftail-ToolbarButton').length >= 4 &&
+              cellToolbarStyle && cellToolbarStyle.display !== 'none'
+            );
+
             var diagnostic = document.createElement('pre');
             diagnostic.id = 'iteag-browser-diagnostic';
             diagnostic.textContent = JSON.stringify({
@@ -158,10 +269,16 @@ jobs:
               headingSane: headingSane,
               headingFont: headingStyle ? headingStyle.fontSize : '',
               anchorsHidden: anchorsHidden,
-              controller: !!document.querySelector('[data-controller="w-block"]')
+              controller: !!document.querySelector('[data-controller="w-block"]'),
+              picker: window.__pickerMetrics,
+              tableContained: tableContained,
+              tableMenuStable: tableMenuStable,
+              tableMenuWidth: addColumnMenuRect ? Math.round(addColumnMenuRect.width) : 0,
+              tableCellFormatting: cellFormatting,
+              tableCellEditorHeight: cellEditorRect ? Math.round(cellEditorRect.height) : 0
             });
             document.body.appendChild(diagnostic);
-          }, 3000);
+          }, 3600);
           </script>
           </body></html>
           """)
@@ -184,8 +301,8 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           sleep 1
-          "$CHROME" --headless=new --no-sandbox --disable-gpu \
-            --virtual-time-budget=8000 --dump-dom \
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --window-size=1280,900 \
+            --virtual-time-budget=9000 --dump-dom \
             http://127.0.0.1:8765/index.html > /tmp/iteag-streamfield-dom.html
 
           echo '--- Diagnostic navigateur ---'
@@ -202,3 +319,8 @@ jobs:
           grep -q '"controlsCompact":true' /tmp/iteag-streamfield-dom.html
           grep -q '"headingSane":true' /tmp/iteag-streamfield-dom.html
           grep -q '"anchorsHidden":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"picker":{"visible":true,"inViewport":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"scrollable":true,"optionsReadable":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"tableContained":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"tableMenuStable":true' /tmp/iteag-streamfield-dom.html
+          grep -q '"tableCellFormatting":true' /tmp/iteag-streamfield-dom.html
