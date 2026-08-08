@@ -2,17 +2,30 @@
 Django settings — Production environment.
 """
 
+from copy import deepcopy
+
 from .base import *  # noqa: F401, F403
+
+# `from .base import *` lie les objets mutables par référence. Les modifier en
+# place ici (MIDDLEWARE.insert, ajout d'une tâche Beat, extension de la CSP...)
+# muterait aussi `config.settings.base` et toute configuration déjà construite
+# à partir d'elle dans le même processus — notamment les tests qui importent
+# ponctuellement `prod.py`. Chaque structure que la production enrichit reçoit
+# donc sa propre copie avant la première mutation.
+DATABASES = deepcopy(DATABASES)  # noqa: F405
+MIDDLEWARE = list(MIDDLEWARE)  # noqa: F405
+CELERY_BEAT_SCHEDULE = deepcopy(CELERY_BEAT_SCHEDULE)  # noqa: F405
+CONTENT_SECURITY_POLICY = deepcopy(CONTENT_SECURITY_POLICY)  # noqa: F405
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")  # noqa: F405
 # django-environ met « django.db.backends.postgresql » (psycopg2).
 # Le projet utilise psycopg v3 → forcer le bon backend.
-DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"  # noqa: F405
+DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
 # psycopg v3 est compatible via le même backend depuis Django 4.2+
 # à condition que psycopg (et non psycopg2) soit installé.
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)  # noqa: F405
-DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # django-treebeard 5.3 signale que les managers actuels de Wagtail devront
 # évoluer avant Treebeard 6. Wagtail 7.4 LTS supporte officiellement Treebeard
@@ -39,13 +52,13 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # la touche périodiquement, ce qui conserve l'expiration glissante.
 SESSION_SAVE_EVERY_REQUEST = False
 SESSION_REFRESH_INTERVAL = env.int("SESSION_REFRESH_INTERVAL", default=300)  # noqa: F405
-_index_auth = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")  # noqa: F405
-MIDDLEWARE.insert(_index_auth + 1, "apps.core.middleware.RafraichissementSessionMiddleware")  # noqa: F405
+_index_auth = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
+MIDDLEWARE.insert(_index_auth + 1, "apps.core.middleware.RafraichissementSessionMiddleware")
 
 # Beat publie un heartbeat court ; le healthcheck du conteneur vérifie qu'il est
 # encore renouvelé. La sonde web /healthz reste volontairement limitée à la
 # base et au cache pour ne pas redémarrer le serveur web lors d'une panne Celery.
-CELERY_BEAT_SCHEDULE["core-heartbeat-celery"] = {  # noqa: F405
+CELERY_BEAT_SCHEDULE["core-heartbeat-celery"] = {
     "task": "core.heartbeat_celery",
     "schedule": 60.0,
 }
@@ -54,7 +67,7 @@ CELERY_BEAT_SCHEDULE["core-heartbeat-celery"] = {  # noqa: F405
 # Static files — WhiteNoise + manifest
 # ──────────────────────────────────────────────
 
-MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 STORAGES = {
     "staticfiles": {
         # Manifeste strict, à une liste d'exceptions déclarées près : voir
@@ -94,7 +107,7 @@ STORAGES["default"] = {
 _origine_medias = f"https://{AWS_S3_CUSTOM_DOMAIN}" if AWS_S3_CUSTOM_DOMAIN else AWS_S3_ENDPOINT_URL
 if _origine_medias:
     for _directive in ("img-src", "media-src"):
-        CONTENT_SECURITY_POLICY["DIRECTIVES"][_directive].append(_origine_medias)  # noqa: F405
+        CONTENT_SECURITY_POLICY["DIRECTIVES"][_directive].append(_origine_medias)
 
 
 # ──────────────────────────────────────────────
