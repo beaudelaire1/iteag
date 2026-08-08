@@ -4,6 +4,10 @@
 {% block title %}{{ lecon.titre }} — {{ module.titre }} — {{ SITE_NAME }}{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/lecteur-video.css' %}?v={{ ASSET_VERSION }}">
+{% endblock %}
+
 {% block content %}
 <section class="section" style="padding-top: 2.5rem;">
     <div class="container-wide">
@@ -43,15 +47,17 @@
                     Cette vidéo est hébergée par un service externe : la progression n'y est pas mesurée.
                 </p>
                 {% else %}
-                <div class="overflow-hidden rounded bg-navy-950 shadow-elevated"
+                <div class="iteag-player"
                      data-lecteur-video
                      data-url-lecture="{% url 'elearning:lecon_playback' module.slug lecon.slug %}"
                      data-url-progression="{% url 'elearning:lecon_progression' module.slug lecon.slug %}"
                      data-position-reprise="{{ position_reprise }}"
-                     data-intervalle="{{ intervalle_signal }}">
-                    <div class="relative">
-                        <video data-video controls controlslist="nodownload" preload="metadata" playsinline
-                               class="w-full aspect-video bg-black"
+                     data-intervalle="{{ intervalle_signal }}"
+                     tabindex="0"
+                     aria-label="Lecteur vidéo — {{ lecon.titre }}">
+                    <div class="iteag-player__stage" data-video-stage>
+                        <video data-video preload="metadata" playsinline controlslist="nodownload"
+                               class="iteag-player__video"
                                {% if lecon.video.poster %}poster="{{ lecon.video.poster.url }}"{% endif %}>
                             {% for piste in sous_titres %}
                             <track kind="subtitles" src="{{ piste.fichier_vtt.url }}"
@@ -61,53 +67,142 @@
                             Votre navigateur ne peut pas lire cette vidéo.
                         </video>
 
-                        <button type="button"
-                                data-demarrer-video
-                                class="absolute inset-0 flex items-center justify-center bg-black/20 text-white transition hover:bg-black/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+                        <button type="button" data-demarrer-video class="iteag-player__overlay"
                                 aria-label="Lire la vidéo « {{ lecon.titre }} »">
-                            <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gold-500 shadow-lg" aria-hidden="true">
-                                <svg class="h-7 w-7 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                            <span class="iteag-player__play-large" aria-hidden="true">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
                             </span>
                         </button>
-                    </div>
 
-                    <div class="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-3 sm:px-4"
-                         data-controles-video aria-label="Contrôles complémentaires de la vidéo">
-                        <button type="button" data-saut-video="-10" disabled
-                                class="inline-flex min-h-10 items-center gap-2 rounded border border-white/15 px-3 text-sm font-medium text-white transition hover:border-gold-400 hover:text-gold-300 disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Reculer de 10 secondes">
-                            <span aria-hidden="true">↶</span>
-                            <span>10 s</span>
-                        </button>
-                        <button type="button" data-saut-video="10" disabled
-                                class="inline-flex min-h-10 items-center gap-2 rounded border border-white/15 px-3 text-sm font-medium text-white transition hover:border-gold-400 hover:text-gold-300 disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Avancer de 10 secondes">
-                            <span>10 s</span>
-                            <span aria-hidden="true">↷</span>
-                        </button>
-
-                        <div class="ml-auto flex min-w-[13rem] items-center justify-end gap-2">
-                            <label for="qualite-video" class="text-xs font-medium uppercase tracking-wider text-warm-400">Qualité</label>
-                            <select id="qualite-video" data-qualite-video disabled
-                                    class="min-h-10 rounded border border-white/15 bg-navy-900 px-3 text-sm text-white outline-none transition focus:border-gold-400 disabled:cursor-not-allowed disabled:opacity-50">
-                                <option value="-1">Auto</option>
-                            </select>
+                        <div class="iteag-player__loading" data-video-loading hidden role="status" aria-live="polite">
+                            <span class="iteag-player__spinner" aria-hidden="true"></span>
+                            <span>Chargement de la vidéo…</span>
                         </div>
-                        <span data-qualite-active class="w-full text-right text-xs text-warm-500" aria-live="polite"></span>
+
+                        {% if position_reprise > 5 %}
+                        <div class="iteag-player__resume" data-reprise-video>
+                            <div class="iteag-player__panel">
+                                <p class="iteag-player__panel-title">Reprendre la lecture ?</p>
+                                <p class="iteag-player__panel-copy">
+                                    Vous vous étiez arrêté à <strong data-reprise-temps></strong>.
+                                </p>
+                                <div class="iteag-player__panel-actions">
+                                    <button type="button" class="iteag-player__panel-button iteag-player__panel-button--primary"
+                                            data-reprise-action="resume">Reprendre</button>
+                                    <button type="button" class="iteag-player__panel-button"
+                                            data-reprise-action="restart">Depuis le début</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="iteag-player__end" data-video-end hidden>
+                            <div class="iteag-player__panel">
+                                <p class="iteag-player__panel-title">Leçon terminée</p>
+                                <p class="iteag-player__panel-copy" data-video-end-copy>
+                                    Votre progression a été enregistrée.
+                                </p>
+                                <div class="iteag-player__panel-actions">
+                                    <a href="#" class="iteag-player__panel-button iteag-player__panel-button--primary"
+                                       data-lecon-suivante hidden>Leçon suivante</a>
+                                    <button type="button" class="iteag-player__panel-button" data-rejouer-video>
+                                        Revoir cette leçon
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <p data-lecteur-message
-                       class="hidden border-t border-white/10 px-4 py-3 text-sm text-white bg-navy-800"
-                       role="status" aria-live="polite"></p>
-                </div>
-                {% endif %}
+                    <div class="iteag-player__controls" data-controles-video aria-label="Contrôles de la vidéo">
+                        <input type="range" min="0" max="1000" value="0" step="1" disabled
+                               class="iteag-player__timeline" data-video-timeline
+                               aria-label="Position dans la vidéo">
 
-                {% if position_reprise %}
-                <p class="mt-3 text-sm text-warm-500" data-reprise-info>
-                    Lecture reprise là où vous vous êtes arrêté.
-                </p>
+                        <div class="iteag-player__toolbar">
+                            <button type="button" class="iteag-player__control" data-video-toggle-play
+                                    aria-label="Lire la vidéo" title="Lecture / pause (Espace)">
+                                <svg data-play-icon viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                                <svg data-pause-icon viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
+                            </button>
+
+                            <button type="button" class="iteag-player__control" data-saut-video="-10" disabled
+                                    aria-label="Reculer de 10 secondes" title="Reculer de 10 secondes (←)">
+                                <span aria-hidden="true">↶</span><span>10 s</span>
+                            </button>
+                            <button type="button" class="iteag-player__control" data-saut-video="10" disabled
+                                    aria-label="Avancer de 10 secondes" title="Avancer de 10 secondes (→)">
+                                <span>10 s</span><span aria-hidden="true">↷</span>
+                            </button>
+
+                            <button type="button" class="iteag-player__control" data-video-mute
+                                    aria-label="Couper le son" title="Muet (M)">
+                                <svg data-volume-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/>
+                                </svg>
+                                <svg data-muted-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" hidden>
+                                    <path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m16 9 5 5m0-5-5 5"/>
+                                </svg>
+                            </button>
+                            <input type="range" min="0" max="1" value="1" step="0.05"
+                                   class="iteag-player__volume" data-video-volume aria-label="Volume">
+
+                            <span class="iteag-player__time">
+                                <span data-video-current>0:00</span> / <span data-video-duration>0:00</span>
+                            </span>
+
+                            <span class="iteag-player__spacer" aria-hidden="true"></span>
+
+                            <span class="iteag-player__select-wrap">
+                                <label for="vitesse-video" class="iteag-player__select-label">Vitesse</label>
+                                <select id="vitesse-video" class="iteag-player__select" data-vitesse-video
+                                        aria-label="Vitesse de lecture">
+                                    <option value="0.75">0,75×</option>
+                                    <option value="1" selected>1×</option>
+                                    <option value="1.25">1,25×</option>
+                                    <option value="1.5">1,5×</option>
+                                    <option value="1.75">1,75×</option>
+                                    <option value="2">2×</option>
+                                </select>
+                            </span>
+
+                            <span class="iteag-player__select-wrap">
+                                <label for="sous-titres-video" class="iteag-player__select-label">CC</label>
+                                <select id="sous-titres-video" class="iteag-player__select" data-sous-titres-video
+                                        aria-label="Sous-titres" disabled>
+                                    <option value="-1">CC · désactivés</option>
+                                </select>
+                            </span>
+
+                            <span class="iteag-player__select-wrap">
+                                <label for="qualite-video" class="iteag-player__select-label">Qualité</label>
+                                <select id="qualite-video" class="iteag-player__select" data-qualite-video
+                                        aria-label="Qualité vidéo" disabled>
+                                    <option value="-1">Auto</option>
+                                </select>
+                            </span>
+
+                            <button type="button" class="iteag-player__control" data-video-pip hidden
+                                    aria-label="Image dans l'image" title="Image dans l’image">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="5" rx="1"/>
+                                </svg>
+                            </button>
+
+                            <button type="button" class="iteag-player__control" data-video-fullscreen
+                                    aria-label="Plein écran" title="Plein écran (F)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div data-qualite-active class="iteag-player__quality-state" aria-live="polite"></div>
+                    </div>
+
+                    <p data-lecteur-message class="iteag-player__message" role="status" aria-live="polite" hidden></p>
+                </div>
                 {% endif %}
 
                 {% elif lecon.type_lecon == "document" and lecon.document %}
@@ -175,7 +270,6 @@
                 {% endif %}
             </div>
 
-            {# Sommaire latéral #}
             <aside class="lg:col-span-1">
                 <div class="card-elevated sticky" style="top: 6rem;">
                     <p class="overline mb-4">Sommaire</p>
@@ -234,10 +328,6 @@
 {% endblock %}
 
 {% block extra_js %}
-{% comment %}
-   hls.js est servi depuis notre origine, jamais depuis un CDN : la CSP reste
-   « script-src 'self' ». Chargé seulement quand la leçon en a besoin.
-{% endcomment %}
 {% if lecon.video.mode_lecture == "hls" %}
 <script src="{% static 'js/vendor/hls.min.js' %}" defer></script>
 {% endif %}
