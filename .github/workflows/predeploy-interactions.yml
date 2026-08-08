@@ -76,6 +76,7 @@ jobs:
             const sansLabel = await page.evaluate(() => {
               return Array.from(document.querySelectorAll("input:not([type=hidden]), select, textarea"))
                 .filter((champ) => !champ.disabled)
+                .filter((champ) => champ.getAttribute("aria-hidden") !== "true")
                 .filter((champ) => {
                   const id = champ.id;
                   const label = id ? document.querySelector(`label[for="${CSS.escape(id)}"]`) : null;
