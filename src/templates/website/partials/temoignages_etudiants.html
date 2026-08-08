@@ -24,24 +24,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch" data-motion-stagger>
             {% for item in temoignages_etudiants %}
             {% with text_plain=item.texte|striptags %}
-            {% with is_long=text_plain|length > 140 %}
             <article class="card-elevated reveal flex flex-col justify-between h-full relative testimonial-card" style="min-height: 280px;">
                 <div class="flex-1 flex flex-col mb-4">
                     <span aria-hidden="true" class="text-3xl leading-none block mb-1" style="color: var(--color-gold-500);">“</span>
                     
                     <div class="testimonial-content-wrapper relative flex-1">
-                        <div class="testimonial-text-box prose max-w-none text-sm leading-relaxed {% if is_long %}is-clamped{% endif %}"
+                        <div class="testimonial-text-box prose max-w-none text-sm leading-relaxed {% if text_plain|length > 140 %}is-clamped{% endif %}"
                              style="color: var(--color-warm-700);">
                             {{ item.texte|safe }}
                         </div>
-                        {% if is_long %}
+                        {% if text_plain|length > 140 %}
                         <div class="testimonial-fade-overlay absolute bottom-0 left-0 right-0 h-12 pointer-events-none transition-opacity duration-300"
                              style="background: linear-gradient(to bottom, rgba(255,255,255,0), #ffffff); opacity: 1;">
                         </div>
                         {% endif %}
                     </div>
 
-                    {% if is_long %}
+                    {% if text_plain|length > 140 %}
                     <button type="button" 
                             class="btn-toggle-read-more text-xs font-semibold mt-3 self-start inline-flex items-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-full transition-all duration-200"
                             style="color: var(--color-forest-700); background: var(--color-warm-200, #eceae1); border: 1px solid var(--color-warm-300, #e0ddd0);"
@@ -69,7 +68,6 @@
                     </div>
                 </div>
             </article>
-            {% endwith %}
             {% endwith %}
             {% endfor %}
         </div>
