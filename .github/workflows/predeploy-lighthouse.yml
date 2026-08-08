@@ -89,6 +89,25 @@ jobs:
           import json
           from pathlib import Path
 
+          def details_audit(audit, limite=12):
+              details = audit.get("details") or {}
+              items = details.get("items") or []
+              sorties = []
+              for item in items[:limite]:
+                  node = item.get("node") or {}
+                  selector = node.get("selector") or ""
+                  snippet = node.get("snippet") or ""
+                  if selector or snippet:
+                      sorties.append(f"selector={selector!r} snippet={snippet!r}")
+                      continue
+                  morceaux = []
+                  for cle in ("url", "source", "duration", "total", "scripting", "scriptParseCompile"):
+                      if cle in item:
+                          morceaux.append(f"{cle}={item[cle]!r}")
+                  if morceaux:
+                      sorties.append(" ".join(morceaux))
+              return sorties
+
           echecs = []
           for chemin in sorted(Path("/tmp/lighthouse").glob("*.json")):
               data = json.loads(chemin.read_text())
@@ -133,6 +152,17 @@ jobs:
                       for identifiant, score, titre, valeur in non_conformes:
                           suffixe = f" — {valeur}" if valeur else ""
                           print(f"    - {identifiant}: {score} — {titre}{suffixe}")
+                          for detail in details_audit(audits.get(identifiant, {})):
+                              print(f"      · {detail}")
+
+              if chemin.stem == "accueil":
+                  for identifiant in ("bootup-time", "long-tasks", "mainthread-work-breakdown", "network-requests"):
+                      audit = audits.get(identifiant)
+                      if not audit:
+                          continue
+                      print(f"  Diagnostic {identifiant}: {audit.get('displayValue', '')}")
+                      for detail in details_audit(audit, limite=20):
+                          print(f"    · {detail}")
 
               if scores["accessibilite"] < 0.95:
                   echecs.append(f"{chemin.stem}: accessibilité {scores['accessibilite']:.2f} < 0.95")
