@@ -1,0 +1,15 @@
+/*
+ * Contrastes WCAG des petits libellés publics.
+ *
+ * `overline` et `stat-label` utilisent des corps de 11–12 px : les anciennes
+ * teintes gold-500 / warm-500 étaient décoratives mais sous 4.5:1 sur les
+ * fonds clairs de la charte. Les variantes sombres atteignent le contraste AA.
+ * `overline-light` reste inchangée pour les fonds navy.
+ */
+.overline {
+  color: var(--color-gold-700);
+}
+
+.stat-label {
+  color: var(--color-warm-600);
+}
