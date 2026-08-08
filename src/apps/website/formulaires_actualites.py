@@ -32,8 +32,8 @@ class ActualiteForm(FormulaireITEAG):
     contenu = CHAMP_CONTENU.formfield(
         label="Contenu de l'actualité",
         help_text=(
-            "Ajoutez uniquement les blocs utiles : texte, tableau, procédure, chiffres clés, "
-            "graphique simple, citation ou encadré."
+            "Ajoutez le bloc qui correspond réellement au contenu : texte, important, tableau, procédure, "
+            "chiffres clés, graphique simple, citation ou encadré."
         ),
         widget=StreamFieldPortail(CHAMP_CONTENU.stream_block),
     )
