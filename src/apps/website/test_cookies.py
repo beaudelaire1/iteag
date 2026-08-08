@@ -33,20 +33,20 @@ def test_socle_charge_le_bandeau_et_son_gestionnaire():
     bandeau = (templates / "partials" / "bandeau_cookies.html").read_text(encoding="utf-8")
     script = (Path(settings.BASE_DIR) / "static" / "js" / "consentement-cookies.js").read_text(encoding="utf-8")
 
-    assert 'partials/bandeau_cookies.html' in base
+    assert "partials/bandeau_cookies.html" in base
     assert "consentement-cookies.js" in base
     assert "data-cookie-settings" in footer
     assert "Essentiels uniquement" in bandeau
     assert "Accepter les préférences" in bandeau
     assert "iteag_cookie_consent" in script
-    assert 'allows: autorise' in script
-    assert 'SameSite=Lax' in script
+    assert "allows: autorise" in script
+    assert "SameSite=Lax" in script
 
 
 def test_aucun_outil_de_mesure_n_est_annonce_comme_actif():
-    politique = (
-        Path(settings.BASE_DIR) / "templates" / "website" / "politique_cookies.html"
-    ).read_text(encoding="utf-8")
+    politique = (Path(settings.BASE_DIR) / "templates" / "website" / "politique_cookies.html").read_text(
+        encoding="utf-8"
+    )
 
     assert "Aucun outil de mesure d'audience" in politique
     assert "aucune régie publicitaire" in politique
