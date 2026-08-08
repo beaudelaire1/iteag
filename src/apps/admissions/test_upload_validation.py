@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.admissions.forms import CandidatureForm
 from apps.admissions.formulaires import TAILLE_MAX_PIECE, valider_fichier_piece
+from apps.formations.models import Parcours
 
 
 def _docx() -> bytes:
@@ -100,3 +101,29 @@ def test_candidature_initiale_applique_le_validateur_aux_trois_pieces():
     for nom in ("piece_identite", "diplomes", "autre_document"):
         assert valider_fichier_piece in formulaire.fields[nom].validators
         assert formulaire.fields[nom].widget.attrs["accept"]
+
+
+@pytest.mark.django_db
+def test_candidature_initiale_refuse_reellement_un_faux_pdf():
+    parcours = Parcours.objects.create(
+        nom="Parcours de test",
+        slug="parcours-test-upload",
+        type_parcours=Parcours.TypeParcours.LIBRE,
+        ects_requis=0,
+        duree_annees=0,
+    )
+    faux_pdf = SimpleUploadedFile("identite.pdf", b"MZ-executable", content_type="application/pdf")
+    formulaire = CandidatureForm(
+        data={
+            "nom": "Test",
+            "prenom": "Candidat",
+            "email": "candidat@example.org",
+            "parcours_souhaite": parcours.pk,
+            "motivations": "Motivation suffisamment explicite pour le test.",
+        },
+        files={"piece_identite": faux_pdf},
+    )
+
+    assert not formulaire.is_valid()
+    assert "piece_identite" in formulaire.errors
+    assert "contenu du fichier" in formulaire.errors["piece_identite"][0]
