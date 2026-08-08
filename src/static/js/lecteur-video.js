@@ -19,16 +19,23 @@
   const video = conteneur.querySelector("[data-video]");
   const zoneMessage = conteneur.querySelector("[data-lecteur-message]");
   const boutonDemarrer = conteneur.querySelector("[data-demarrer-video]");
+  const boutonsSaut = [...conteneur.querySelectorAll("[data-saut-video]")];
+  const selectQualite = conteneur.querySelector("[data-qualite-video]");
+  const qualiteActive = conteneur.querySelector("[data-qualite-active]");
   const urlLecture = conteneur.dataset.urlLecture;
   const urlProgression = conteneur.dataset.urlProgression;
   const positionReprise = parseInt(conteneur.dataset.positionReprise, 10) || 0;
   const intervalle = (parseInt(conteneur.dataset.intervalle, 10) || 15) * 1000;
+
+  const CLE_QUALITE = "iteag_video_quality";
+  const DUREE_PREFERENCE_MS = 180 * 24 * 60 * 60 * 1000;
 
   let adresseObtenue = false;
   let expireLe = 0;
   let dernierSignal = 0;
   let minuteur = null;
   let hls = null;
+  let qualiteSession = "auto";
 
   /* ── Budget de reprises ──
      Une erreur de lecture signifie le plus souvent un jeton périmé, et
@@ -101,6 +108,173 @@
     boutonDemarrer.disabled = false;
   }
 
+  /* ── Préférence facultative de qualité ── */
+  function preferencesAutorisees() {
+    return window.ITEAGConsent?.allows("preferences") === true;
+  }
+
+  function supprimerPreferenceQualite() {
+    try {
+      localStorage.removeItem(CLE_QUALITE);
+    } catch (_erreur) {
+      /* Le stockage peut être bloqué par le navigateur : la lecture continue. */
+    }
+  }
+
+  function lirePreferenceQualite() {
+    if (!preferencesAutorisees()) return "";
+    try {
+      const brut = localStorage.getItem(CLE_QUALITE);
+      if (!brut) return "";
+      const valeur = JSON.parse(brut);
+      if (!valeur || Date.now() > Number(valeur.expireLe || 0)) {
+        supprimerPreferenceQualite();
+        return "";
+      }
+      return String(valeur.qualite || "");
+    } catch (_erreur) {
+      supprimerPreferenceQualite();
+      return "";
+    }
+  }
+
+  function memoriserPreferenceQualite(qualite) {
+    qualiteSession = qualite;
+    if (!preferencesAutorisees()) {
+      supprimerPreferenceQualite();
+      return;
+    }
+    try {
+      localStorage.setItem(
+        CLE_QUALITE,
+        JSON.stringify({ qualite, expireLe: Date.now() + DUREE_PREFERENCE_MS })
+      );
+    } catch (_erreur) {
+      /* Une préférence non enregistrée ne doit jamais bloquer la vidéo. */
+    }
+  }
+
+  function preferenceQualiteVoulue() {
+    if (qualiteSession !== "auto") return qualiteSession;
+    return lirePreferenceQualite() || "auto";
+  }
+
+  window.addEventListener("iteag:consent-changed", () => {
+    if (!preferencesAutorisees()) supprimerPreferenceQualite();
+  });
+
+  /* ── Contrôles complémentaires ── */
+  function activerSauts() {
+    const actif = Number.isFinite(video.duration) && video.duration > 0;
+    boutonsSaut.forEach((bouton) => {
+      bouton.disabled = !actif;
+    });
+  }
+
+  function sauter(secondes) {
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+    const cible = Math.min(video.duration, Math.max(0, video.currentTime + secondes));
+    video.currentTime = cible;
+  }
+
+  boutonsSaut.forEach((bouton) => {
+    bouton.addEventListener("click", () => {
+      const secondes = Number(bouton.dataset.sautVideo || 0);
+      if (Number.isFinite(secondes)) sauter(secondes);
+    });
+  });
+
+  video.addEventListener("loadedmetadata", activerSauts);
+  video.addEventListener("durationchange", activerSauts);
+
+  function afficherEtatQualite(texte) {
+    if (qualiteActive) qualiteActive.textContent = texte;
+  }
+
+  function desactiverQualite(libelle) {
+    if (!selectQualite) return;
+    selectQualite.innerHTML = "";
+    const option = document.createElement("option");
+    option.value = "-1";
+    option.textContent = libelle;
+    selectQualite.append(option);
+    selectQualite.disabled = true;
+    afficherEtatQualite(libelle);
+  }
+
+  function niveauxParResolution() {
+    const parHauteur = new Map();
+    hls?.levels?.forEach((niveau, index) => {
+      const hauteur = Number(niveau.height || 0);
+      if (!hauteur) return;
+      const precedent = parHauteur.get(hauteur);
+      if (!precedent || Number(niveau.bitrate || 0) > precedent.bitrate) {
+        parHauteur.set(hauteur, { index, hauteur, bitrate: Number(niveau.bitrate || 0) });
+      }
+    });
+    return [...parHauteur.values()].sort((a, b) => b.hauteur - a.hauteur);
+  }
+
+  function appliquerQualiteVoulue() {
+    if (!hls || !selectQualite) return;
+    const voulue = preferenceQualiteVoulue();
+    if (voulue === "auto") {
+      selectQualite.value = "-1";
+      hls.currentLevel = -1;
+      return;
+    }
+    const option = [...selectQualite.options].find((item) => item.dataset.hauteur === voulue);
+    if (!option) {
+      qualiteSession = "auto";
+      selectQualite.value = "-1";
+      hls.currentLevel = -1;
+      return;
+    }
+    selectQualite.value = option.value;
+    hls.currentLevel = Number(option.value);
+  }
+
+  function configurerQualites() {
+    if (!selectQualite || !hls) return;
+    selectQualite.innerHTML = "";
+
+    const auto = document.createElement("option");
+    auto.value = "-1";
+    auto.textContent = "Auto";
+    auto.dataset.hauteur = "auto";
+    selectQualite.append(auto);
+
+    niveauxParResolution().forEach((niveau) => {
+      const option = document.createElement("option");
+      option.value = String(niveau.index);
+      option.dataset.hauteur = String(niveau.hauteur);
+      option.textContent = `${niveau.hauteur}p`;
+      selectQualite.append(option);
+    });
+
+    selectQualite.disabled = selectQualite.options.length <= 1;
+    appliquerQualiteVoulue();
+    afficherEtatQualite(selectQualite.disabled ? "Qualité automatique" : "Auto · adaptation au débit");
+  }
+
+  if (selectQualite) {
+    selectQualite.addEventListener("change", () => {
+      if (!hls) return;
+      const index = Number(selectQualite.value);
+      if (index === -1) {
+        hls.currentLevel = -1;
+        memoriserPreferenceQualite("auto");
+        afficherEtatQualite("Auto · adaptation au débit");
+        return;
+      }
+      const option = selectQualite.selectedOptions[0];
+      const hauteur = option?.dataset.hauteur || "auto";
+      hls.currentLevel = index;
+      memoriserPreferenceQualite(hauteur);
+      afficherEtatQualite(`${hauteur}p · sélection manuelle`);
+    });
+  }
+
   /* ── Demande d'une adresse de lecture ── */
   async function obtenirAdresse() {
     let reponse;
@@ -149,6 +323,7 @@
   function attacherHls(adresse) {
     if (hlsNatif()) {
       video.src = adresse;
+      desactiverQualite("Auto · navigateur");
       return true;
     }
     if (typeof Hls === "undefined" || !Hls.isSupported()) {
@@ -156,6 +331,7 @@
       // mieux qu'un refus sec.
       if (video.canPlayType("application/vnd.apple.mpegurl") !== "") {
         video.src = adresse;
+        desactiverQualite("Auto · navigateur");
         return true;
       }
       afficherMessage("Votre navigateur ne permet pas la lecture de cette vidéo.");
@@ -171,6 +347,16 @@
     });
     hls.loadSource(adresse);
     hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, configurerQualites);
+    hls.on(Hls.Events.LEVEL_SWITCHED, (_evenement, donnees) => {
+      const niveau = hls.levels[donnees.level];
+      if (!niveau?.height) return;
+      if (hls.autoLevelEnabled) {
+        afficherEtatQualite(`Auto · ${niveau.height}p`);
+      } else {
+        afficherEtatQualite(`${niveau.height}p · sélection manuelle`);
+      }
+    });
     hls.on(Hls.Events.ERROR, (_evenement, donnees) => {
       if (!donnees.fatal) return;
       // Une erreur réseau fatale signifie le plus souvent un jeton périmé :
@@ -196,6 +382,7 @@
       if (!attacherHls(lecture.url)) return false;
     } else {
       video.src = lecture.url;
+      desactiverQualite("Qualité source");
     }
     adresseObtenue = true;
     masquerBouton();
