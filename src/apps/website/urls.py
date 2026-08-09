@@ -8,6 +8,12 @@ urlpatterns = [
     path("contact/merci/", views.contact_success, name="contact_success"),
     path("protection-des-donnees/", views.politique_donnees, name="politique_donnees"),
     path("cookies/", views.politique_cookies, name="politique_cookies"),
+    path("mentions-legales/", views.mentions_legales, name="mentions_legales"),
+    path(
+        "conditions-generales-de-vente/",
+        views.conditions_generales_vente,
+        name="conditions_generales_vente",
+    ),
     # ── Articles de recherche — lecture publique ──
     path("articles/", vues_articles.ArticlesPublicsView.as_view(), name="articles"),
     path("articles/<slug:slug>/", vues_articles.ArticlePublicView.as_view(), name="article_detail"),

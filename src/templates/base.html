@@ -7,7 +7,13 @@
 
     {# SEO meta #}
     <meta name="description" content="{% block meta_description %}{{ SITE_TAGLINE }}{% endblock %}">
-    <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+    {% comment %}
+    Hors des domaines publics — préproduction, URL générée par l'hébergeur — la
+    balise dit la même chose que l'en-tête X-Robots-Tag posé par le middleware.
+    Deux directives contradictoires sur la même page laissent croire à une
+    indexation possible en relisant le HTML seul.
+    {% endcomment %}
+    <meta name="robots" content="{% block robots %}{% if HOTE_INDEXABLE %}index, follow{% else %}noindex, nofollow{% endif %}{% endblock %}">
     <link rel="canonical" href="{{ CANONICAL_URL }}">
 
     {# Open Graph #}

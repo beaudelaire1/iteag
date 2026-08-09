@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Mentions légales — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Mentions légales de l'ITEAG : identification de l'éditeur, directeur de la publication, hébergeur, propriété intellectuelle et médiation.{% endblock %}
+
+{% block content %}
+<article class="py-16 lg:py-24">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <header class="mb-12 hero-entrance">
+            <p class="overline mb-3">Informations légales</p>
+            <h1 class="hero-el hero-el-1 text-4xl font-bold tracking-tight text-navy-900">Mentions légales</h1>
+            <p class="hero-el hero-el-2 mt-5 max-w-3xl text-lg leading-relaxed text-warm-600">
+                Cette page identifie l'éditeur du site, le responsable de sa publication et son hébergeur,
+                conformément à l'article 6-III de la loi pour la confiance dans l'économie numérique.
+            </p>
+            <p class="hero-el hero-el-3 mt-4 text-sm text-warm-500">Version du {{ ITEAG_MENTIONS_VERSION }}.</p>
+            <hr class="divider-gold mt-7">
+        </header>
+
+        <div class="contenu-riche prose prose-lg max-w-none reveal">
+            <h2>1. Éditeur du site</h2>
+            <p>
+                Le présent site est édité par l'<strong>{{ SITE_FULL_NAME }}</strong>{% if SITE_NAME %} («&nbsp;{{ SITE_NAME }}&nbsp;»){% endif %}.
+            </p>
+            <ul>
+                {% if ITEAG_FORME_JURIDIQUE %}<li><strong>Forme juridique</strong> : {{ ITEAG_FORME_JURIDIQUE }}</li>{% endif %}
+                <li><strong>Siège</strong> : {{ SITE_ADDRESS }}</li>
+                {% if ITEAG_IMMATRICULATION %}<li><strong>Immatriculation</strong> : {{ ITEAG_IMMATRICULATION }}</li>{% endif %}
+                {% if ITEAG_NUMERO_DECLARATION_ACTIVITE %}<li><strong>Déclaration d'activité de formation</strong> : {{ ITEAG_NUMERO_DECLARATION_ACTIVITE }}</li>{% endif %}
+                <li><strong>Courriel</strong> : <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a></li>
+                <li><strong>Téléphone</strong> : {{ SITE_PHONE }}</li>
+            </ul>
+
+            <h2>2. Directeur de la publication</h2>
+            {% if ITEAG_DIRECTEUR_PUBLICATION %}
+            <p>{{ ITEAG_DIRECTEUR_PUBLICATION }}, joignable à l'adresse <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a>.</p>
+            {% else %}
+            <p>Le directeur de la publication est joignable à l'adresse <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a>.</p>
+            {% endif %}
+
+            <h2>3. Hébergement</h2>
+            <p>
+                Le site est hébergé par <strong>{{ ITEAG_HEBERGEUR }}</strong>{% if ITEAG_HEBERGEUR_ADRESSE %}, {{ ITEAG_HEBERGEUR_ADRESSE }}{% endif %}.
+            </p>
+            <p>
+                Les vidéos de formation sont diffusées par Bunny.net, les fichiers et documents sont stockés chez
+                Cloudflare, et les paiements par carte sont traités par Stripe. Le détail de ces intervenants et des
+                données qui leur sont confiées figure dans la
+                <a href="{% url 'website:politique_donnees' %}">politique de protection des données personnelles</a>.
+            </p>
+
+            <h2>4. Objet du site</h2>
+            <p>
+                Le site présente l'activité de formation théologique de l'institut, permet de déposer une candidature,
+                de suivre une scolarité, d'accéder à des modules de formation en ligne, de consulter le catalogue de la
+                bibliothèque et de commander des ouvrages.
+            </p>
+
+            <h2>5. Propriété intellectuelle</h2>
+            <p>
+                L'ensemble des éléments du site — textes, cours, supports pédagogiques, vidéos, photographies,
+                illustrations, logos, chartes graphiques et développements — est protégé par le droit de la propriété
+                intellectuelle. Sauf mention contraire, ces éléments sont la propriété de l'ITEAG ou de leurs auteurs,
+                qui en ont concédé l'usage à l'institut.
+            </p>
+            <p>
+                L'accès à un module de formation ouvre un droit de consultation personnel. Il n'emporte aucune cession
+                de droits : la reproduction, la rediffusion, le téléchargement non autorisé, le partage de compte et la
+                mise à disposition de tiers, à titre gratuit ou onéreux, ne sont pas permis.
+            </p>
+            <p>
+                Les marques, dénominations et logos cités appartenant à des tiers restent la propriété de leurs
+                titulaires respectifs.
+            </p>
+
+            <h2>6. Liens vers d'autres sites</h2>
+            <p>
+                Le site peut renvoyer vers des ressources extérieures. L'ITEAG n'exerce aucun contrôle sur leur contenu
+                et ne saurait en répondre.
+            </p>
+
+            <h2>7. Signaler un contenu</h2>
+            <p>
+                Toute demande relative à un contenu publié — erreur, atteinte à un droit, réclamation — peut être
+                adressée à <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a>. Merci d'indiquer l'adresse exacte de
+                la page concernée et le motif de la demande.
+            </p>
+
+            <h2>8. Données personnelles et cookies</h2>
+            <p>
+                Les traitements de données personnelles sont décrits dans la
+                <a href="{% url 'website:politique_donnees' %}">politique de protection des données personnelles</a>,
+                et les cookies utilisés dans la
+                <a href="{% url 'website:politique_cookies' %}">politique des cookies</a>.
+            </p>
+
+            <h2>9. Accessibilité</h2>
+            <p>
+                L'ITEAG vise le niveau AA des règles WCAG 2.1 pour ses pages publiques. Si une page ou une fonction
+                vous reste inaccessible, signalez-le à <a href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a> : une
+                réponse et, si nécessaire, une alternative vous seront proposées.
+            </p>
+
+            <h2>10. Vente en ligne</h2>
+            <p>
+                Les commandes de livres, les achats de modules de formation et les règlements de frais de scolarité sont
+                régis par les
+                <a href="{% url 'website:conditions_generales_vente' %}">conditions générales de vente</a>.
+            </p>
+
+            <h2>11. Droit applicable</h2>
+            <p>
+                Le présent site est soumis au droit français.
+            </p>
+        </div>
+    </div>
+</article>
+{% endblock %}

@@ -169,6 +169,10 @@ class TestCommande:
         assert 'name="type_livraison"' in contenu
         assert 'name="mode_paiement"' in contenu
         assert 'name="accepte_conditions"' in contenu
+        # La case engage le client : le document qu'elle vise doit être
+        # atteignable depuis le tunnel, sinon le consentement porte sur rien.
+        assert reverse("website:conditions_generales_vente") in contenu
+        assert "conditions générales de vente</a>" in contenu
         assert reverse("commerce:devis_livraison") in contenu
         assert "commerce-commande.js?v=20260729-2" in contenu
         assert 'id="source-tarif-livraison"' in contenu

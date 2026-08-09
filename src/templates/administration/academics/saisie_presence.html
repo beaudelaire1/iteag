@@ -70,14 +70,16 @@
                             <span class="badge badge-secondary text-xs">{{ item.etudiant.parcours.nom }}</span>
                         </td>
                         <td class="py-3 px-4">
-                            <select name="statut_{{ item.etudiant.pk }}" class="form-select text-sm py-1.5 px-3">
+                            <label for="statut-{{ item.etudiant.pk }}" class="sr-only">Présence de {{ item.etudiant.utilisateur.get_full_name }}</label>
+                            <select id="statut-{{ item.etudiant.pk }}" name="statut_{{ item.etudiant.pk }}" class="form-select text-sm py-1.5 px-3">
                                 {% for val, label in statut_choices %}
                                 <option value="{{ val }}"{% if val == item.statut %} selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </td>
                         <td class="py-3 px-4">
-                            <input type="text" name="commentaire_{{ item.etudiant.pk }}" value="{{ item.commentaire }}" placeholder="Motif d'absence, retard, etc." class="form-input text-sm py-1 px-3 w-full">
+                            <label for="commentaire-{{ item.etudiant.pk }}" class="sr-only">Commentaire pour {{ item.etudiant.utilisateur.get_full_name }}</label>
+                            <input type="text" id="commentaire-{{ item.etudiant.pk }}" name="commentaire_{{ item.etudiant.pk }}" value="{{ item.commentaire }}" placeholder="Motif d'absence, retard, etc." class="form-input text-sm py-1 px-3 w-full">
                         </td>
                     </tr>
                     {% endfor %}

@@ -1,6 +1,7 @@
 """Composition des PDF de l'app Documents, sans dépendance à une requête."""
 
 import base64
+import logging
 import mimetypes
 
 from django.utils import timezone
@@ -11,17 +12,42 @@ from apps.core.services.pdf import contexte_marque, rendre_pdf
 
 from .models import DocumentAdministratif, DocumentRedige
 
+logger = logging.getLogger(__name__)
+
+
+class SignatureIllisible(Exception):
+    """Une signature est déposée, mais son fichier n'a pas pu être lu.
+
+    Distinct du cas « aucune signature déposée », qui est une dégradation
+    acceptable et volontaire. Ici le stockage a répondu autre chose que le
+    fichier attendu — panne R2, objet supprimé, droits retirés — et produire
+    quand même le document reviendrait à délivrer une pièce qui porte la date,
+    le nom et la qualité d'un signataire, mais pas sa signature.
+    """
+
 
 def _user_signature_uri(user) -> str:
+    """Signature d'un utilisateur en « data: URI », ou chaîne vide s'il n'en a pas.
+
+    Lève ``SignatureIllisible`` si une signature est déposée mais illisible :
+    l'appelant décide alors s'il peut dégrader ou s'il doit refuser. Avaler
+    l'erreur ici la rendrait indiscernable d'une absence de signature, et le
+    défaut ne se verrait que sur le PDF remis à l'étudiant.
+    """
     if user is None or not user.signature:
         return ""
     try:
         type_mime = mimetypes.guess_type(user.signature.name)[0] or "image/png"
         with user.signature.open("rb") as fichier:
             contenu = base64.b64encode(fichier.read()).decode("ascii")
-        return f"data:{type_mime};base64,{contenu}"
-    except Exception:
-        return ""
+    except Exception as erreur:
+        logger.exception(
+            "Signature illisible pour l'utilisateur %s (fichier « %s »)",
+            getattr(user, "pk", "?"),
+            getattr(user.signature, "name", "?"),
+        )
+        raise SignatureIllisible(str(erreur)) from erreur
+    return f"data:{type_mime};base64,{contenu}"
 
 
 def _signature_uri(document: DocumentRedige) -> str:

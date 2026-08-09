@@ -69,14 +69,16 @@
                         </td>
                         <td class="px-5 py-4 text-sm text-warm-600">{{ row.etudiant.parcours }}</td>
                         <td class="px-5 py-4">
-                            <select class="form-input min-w-40" name="statut_{{ row.etudiant.pk }}"{% if seance.cloturee %} disabled{% endif %}>
+                            <label for="assiduite-statut-{{ row.etudiant.pk }}" class="sr-only">Présence de {{ row.etudiant.utilisateur.get_full_name }}</label>
+                            <select id="assiduite-statut-{{ row.etudiant.pk }}" class="form-input min-w-40" name="statut_{{ row.etudiant.pk }}"{% if seance.cloturee %} disabled{% endif %}>
                                 {% for value, label in statuts %}
                                 <option value="{{ value }}"{% if row.statut == value %} selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </td>
                         <td class="px-5 py-4">
-                            <input class="form-input min-w-64" name="commentaire_{{ row.etudiant.pk }}" value="{{ row.commentaire }}" maxlength="300" placeholder="Motif ou durée du retard"{% if seance.cloturee %} disabled{% endif %}>
+                            <label for="assiduite-commentaire-{{ row.etudiant.pk }}" class="sr-only">Commentaire pour {{ row.etudiant.utilisateur.get_full_name }}</label>
+                            <input id="assiduite-commentaire-{{ row.etudiant.pk }}" class="form-input min-w-64" name="commentaire_{{ row.etudiant.pk }}" value="{{ row.commentaire }}" maxlength="300" placeholder="Motif ou durée du retard"{% if seance.cloturee %} disabled{% endif %}>
                         </td>
                         <td class="px-5 py-4 text-sm text-warm-500">
                             {% if row.presence %}

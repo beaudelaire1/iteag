@@ -114,8 +114,31 @@ class TestLeCodeDeReponseNeMentPas:
         assert reponse.status_code == 503
 
 
+# Un module s'ouvre dès l'encaissement : l'achat n'est accepté qu'accompagné de
+# la renonciation expresse au droit de rétractation (art. L221-28 du code de la
+# consommation). Les parcours nominaux ci-dessous la portent donc toujours.
+ACHAT_CONFORME = {"renonce_retractation": "1"}
+
+
 @pytest.mark.django_db
 class TestLeParcoursDAchat:
+    def test_l_achat_sans_renonciation_est_refuse(self, client, module_vendu, etudiant):
+        """Sans renonciation expresse, un contenu déjà consultable resterait remboursable."""
+        client.force_login(etudiant.utilisateur)
+        reponse = client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+
+        assert reponse.status_code == 302
+        assert reponse.url == module_vendu.get_absolute_url()
+        assert Reglement.objects.count() == 0
+
+    def test_la_case_de_renonciation_est_presentee_avant_l_achat(self, client, module_vendu, etudiant):
+        """La déclaration doit être proposée à l'écran, pas seulement exigée côté serveur."""
+        client.force_login(etudiant.utilisateur)
+        contenu = client.get(module_vendu.get_absolute_url()).content.decode()
+
+        assert 'name="renonce_retractation"' in contenu
+        assert reverse("website:conditions_generales_vente") in contenu
+
     def test_l_achat_exige_d_etre_connecte(self, client, module_vendu):
         reponse = client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
         assert reponse.status_code == 302
@@ -132,7 +155,7 @@ class TestLeParcoursDAchat:
         module_vendu.politique_acces = module_vendu.PolitiqueAcces.SUR_OCTROI
         module_vendu.save(update_fields=["politique_acces"])
         client.force_login(etudiant.utilisateur)
-        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]), ACHAT_CONFORME)
         assert Reglement.objects.count() == 0
 
     def test_le_prix_vient_de_la_base_pas_de_la_requete(self, client, module_vendu, etudiant):
@@ -140,7 +163,7 @@ class TestLeParcoursDAchat:
         client.force_login(etudiant.utilisateur)
         client.post(
             reverse("paiements:acheter_module", args=[module_vendu.slug]),
-            {"montant_ttc": "1.00", "prix": "1"},
+            {**ACHAT_CONFORME, "montant_ttc": "1.00", "prix": "1"},
         )
         reglement = Reglement.objects.get()
         assert reglement.montant_ttc == module_vendu.prix_ttc
@@ -148,8 +171,8 @@ class TestLeParcoursDAchat:
     def test_deux_clics_ne_creent_qu_un_reglement(self, client, module_vendu, etudiant):
         client.force_login(etudiant.utilisateur)
         adresse = reverse("paiements:acheter_module", args=[module_vendu.slug])
-        client.post(adresse)
-        client.post(adresse)
+        client.post(adresse, ACHAT_CONFORME)
+        client.post(adresse, ACHAT_CONFORME)
         assert Reglement.objects.count() == 1
 
     def test_on_ne_rachete_pas_un_module_deja_acquis(self, client, module_vendu, etudiant):
@@ -157,12 +180,12 @@ class TestLeParcoursDAchat:
             etudiant=etudiant, module=module_vendu, statut=InscriptionModule.StatutAcces.ACTIF
         )
         client.force_login(etudiant.utilisateur)
-        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]), ACHAT_CONFORME)
         assert Reglement.objects.count() == 0
 
     def test_le_paiement_reste_sur_une_page_iteag(self, client, module_vendu, etudiant):
         client.force_login(etudiant.utilisateur)
-        ouverture = client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        ouverture = client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]), ACHAT_CONFORME)
         reglement = Reglement.objects.get()
 
         assert ouverture.url == reverse("paiements:checkout", args=[reglement.pk])
@@ -175,7 +198,7 @@ class TestLeParcoursDAchat:
 
     def test_la_session_integree_est_creee_en_post(self, client, module_vendu, etudiant):
         client.force_login(etudiant.utilisateur)
-        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]), ACHAT_CONFORME)
         reglement = Reglement.objects.get()
 
         with patch(
@@ -190,7 +213,7 @@ class TestLeParcoursDAchat:
 
     def test_un_autre_compte_ne_voit_pas_le_paiement(self, client, module_vendu, etudiant):
         client.force_login(etudiant.utilisateur)
-        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]))
+        client.post(reverse("paiements:acheter_module", args=[module_vendu.slug]), ACHAT_CONFORME)
         reglement = Reglement.objects.get()
         client.logout()
 

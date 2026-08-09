@@ -15,6 +15,24 @@ def navigation_publique(request):
     return {"navigation_publique": lambda: rubriques_pour(chemin)}
 
 
+def _hote_indexable(request) -> bool:
+    """Le domaine servi est-il celui qu'on veut voir dans un moteur de recherche ?
+
+    Même source de vérité que le middleware qui pose l'en-tête X-Robots-Tag. La
+    balise « meta robots » annonçait « index, follow » sur la préproduction,
+    pendant que l'en-tête HTTP disait l'inverse. La directive la plus
+    restrictive l'emportant, rien n'était indexé — mais une page qui se
+    contredit elle-même est un piège pour qui la relit.
+    """
+    from apps.core.middleware import HOTES_INDEXABLES
+
+    try:
+        hote = request.get_host().split(":", 1)[0].lower()
+    except Exception:  # noqa: BLE001 - hôte non résolvable : on n'invite pas à indexer
+        return False
+    return hote in HOTES_INDEXABLES
+
+
 def site_context(request):
     """Global template context for all pages."""
     site_url = settings.SITE_URL.rstrip("/")
@@ -35,6 +53,22 @@ def site_context(request):
         "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
         "ASSET_VERSION": asset_version,
+        "HOTE_INDEXABLE": _hote_indexable(request),
+        # Identité légale de l'éditeur. Exposée globalement parce que le pied de
+        # page y renvoie depuis toutes les pages, et que la case d'acceptation
+        # des conditions de vente doit pouvoir lier le document depuis la
+        # boutique comme depuis le paiement d'un module.
+        "ITEAG_FORME_JURIDIQUE": settings.ITEAG_FORME_JURIDIQUE,
+        "ITEAG_IMMATRICULATION": settings.ITEAG_IMMATRICULATION,
+        "ITEAG_DIRECTEUR_PUBLICATION": settings.ITEAG_DIRECTEUR_PUBLICATION,
+        "ITEAG_NUMERO_DECLARATION_ACTIVITE": settings.ITEAG_NUMERO_DECLARATION_ACTIVITE,
+        "ITEAG_HEBERGEUR": settings.ITEAG_HEBERGEUR,
+        "ITEAG_HEBERGEUR_ADRESSE": settings.ITEAG_HEBERGEUR_ADRESSE,
+        "ITEAG_MEDIATEUR": settings.ITEAG_MEDIATEUR,
+        "ITEAG_MEDIATEUR_ADRESSE": settings.ITEAG_MEDIATEUR_ADRESSE,
+        "ITEAG_MEDIATEUR_URL": settings.ITEAG_MEDIATEUR_URL,
+        "ITEAG_CGV_VERSION": settings.ITEAG_CGV_VERSION,
+        "ITEAG_MENTIONS_VERSION": settings.ITEAG_MENTIONS_VERSION,
         "DEBUG": settings.DEBUG,
         "CLOUDFLARE_TURNSTILE_ENABLED": settings.CLOUDFLARE_TURNSTILE_ENABLED,
         "CLOUDFLARE_TURNSTILE_SITE_KEY": settings.CLOUDFLARE_TURNSTILE_SITE_KEY,

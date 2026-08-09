@@ -112,6 +112,14 @@
         <div class="mt-12 pt-6 border-t border-navy-800 flex flex-col lg:flex-row items-center justify-between gap-4">
             <p class="text-xs text-warm-500">&copy; {% now "Y" %} {{ SITE_NAME }}. Tous droits réservés.</p>
             <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
+                <a href="{% url 'website:mentions_legales' %}"
+                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                    Mentions légales
+                </a>
+                <a href="{% url 'website:conditions_generales_vente' %}"
+                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                    Conditions générales de vente
+                </a>
                 <a href="{% url 'website:politique_donnees' %}"
                    class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
                     Protection des données

@@ -1,4 +1,6 @@
 from django import forms
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.text import slugify
 
 from apps.commerce.models import Commande, DestinationLivraison, ProduitLivre, TarifLivraison, TypeLivraison
@@ -39,6 +41,19 @@ class CommandeForm(FormulaireITEAG):
 
     def __init__(self, *args, utilisateur=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Le libellé porte le lien vers le document accepté. Une case « j'accepte
+        # les conditions de vente » sans document opposable n'engage rien : c'est
+        # le lien qui fait du consentement autre chose qu'une formalité.
+        #
+        # Il est construit ici, et non dans la déclaration du champ, parce que
+        # résoudre une URL à l'import du module s'exécuterait avant le
+        # chargement de la configuration d'URL.
+        self.fields["accepte_conditions"].label = format_html(
+            'J\'accepte les <a href="{}" target="_blank" rel="noopener" '
+            'class="underline underline-offset-2">conditions générales de vente</a> '
+            "et confirme ma commande.",
+            reverse("website:conditions_generales_vente"),
+        )
         if utilisateur is not None and getattr(utilisateur, "is_authenticated", False) and not self.is_bound:
             self.initial.update(
                 {

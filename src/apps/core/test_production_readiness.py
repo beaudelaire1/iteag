@@ -2,7 +2,10 @@ import pytest
 from django.core.management import CommandError, call_command
 from django.test import override_settings
 
-from apps.core.services.production import anomalies_configuration_production
+from apps.core.services.production import (
+    anomalies_configuration_production,
+    anomalies_donnees_production,
+)
 
 CONFIGURATION_PRODUCTION = {
     "DEBUG": False,
@@ -53,7 +56,23 @@ CONFIGURATION_PRODUCTION = {
     "CACHES": {"default": {"BACKEND": "django_redis.cache.RedisCache"}},
     "CELERY_BROKER_URL": "redis://redis:6379/1",
     "CELERY_RESULT_BACKEND": "redis://redis:6379/2",
+    "ITEAG_FORME_JURIDIQUE": "Association déclarée",
+    "ITEAG_IMMATRICULATION": "W000000000",
+    "ITEAG_DIRECTEUR_PUBLICATION": "La direction de l'ITEAG",
+    "ITEAG_HEBERGEUR": "OVH SAS",
+    "ITEAG_HEBERGEUR_ADRESSE": "2 rue Kellermann, 59100 Roubaix, France",
+    "ITEAG_MEDIATEUR": "Médiateur de la consommation",
 }
+
+
+MENTIONS_LEGALES_OBLIGATOIRES = [
+    "ITEAG_FORME_JURIDIQUE",
+    "ITEAG_IMMATRICULATION",
+    "ITEAG_DIRECTEUR_PUBLICATION",
+    "ITEAG_HEBERGEUR",
+    "ITEAG_HEBERGEUR_ADRESSE",
+    "ITEAG_MEDIATEUR",
+]
 
 
 @pytest.fixture
@@ -122,7 +141,7 @@ def test_les_cles_stripe_de_test_sont_refusees(moteur_postgresql):
 
 @override_settings(**CONFIGURATION_PRODUCTION)
 def test_la_commande_reussit_sur_une_configuration_complete(capsys, moteur_postgresql):
-    call_command("verifier_production")
+    call_command("verifier_production", sans_base=True)
     assert "Configuration production : OK" in capsys.readouterr().out
 
 
@@ -141,4 +160,99 @@ def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, moteur_pos
     setattr(settings, nom, valeur)
 
     with pytest.raises(CommandError):
-        call_command("verifier_production")
+        call_command("verifier_production", sans_base=True)
+
+
+@pytest.mark.parametrize("nom", MENTIONS_LEGALES_OBLIGATOIRES)
+def test_une_mention_legale_manquante_refuse_l_ouverture(settings, moteur_postgresql, nom):
+    """Publier un site marchand sans identifier son éditeur n'est pas une option.
+
+    Ces valeurs ne sont connues que de l'ITEAG : le contrat de production est le
+    seul endroit où leur absence peut être constatée avant l'ouverture publique
+    plutôt qu'après.
+    """
+    for cle, config in CONFIGURATION_PRODUCTION.items():
+        setattr(settings, cle, config)
+    setattr(settings, nom, "")
+
+    anomalies = anomalies_configuration_production()
+
+    assert any(nom in anomalie for anomalie in anomalies)
+    with pytest.raises(CommandError):
+        call_command("verifier_production", sans_base=True)
+
+
+@override_settings(**{**CONFIGURATION_PRODUCTION, "ITEAG_HEBERGEUR": "   "})
+def test_une_mention_legale_blanche_vaut_absence(moteur_postgresql):
+    """Un espace saisi par erreur dans la console de déploiement reste un manque."""
+    assert any("ITEAG_HEBERGEUR" in anomalie for anomalie in anomalies_configuration_production())
+
+
+@pytest.mark.django_db
+class TestLHotePublicEstUnSeulEtMemeHote:
+    """L'écart qui a réellement eu lieu : deux hôtes pour une seule instance.
+
+    SITE_URL vient de l'environnement, le « Site » Wagtail vit en base. Corriger
+    le premier au moment de la bascule ne déplace pas le second, et rien ne le
+    rappelait : la balise canonique et la moitié du plan du site désignaient un
+    hôte différent de celui réellement servi.
+    """
+
+    @pytest.fixture
+    def site_wagtail(self, db):
+        from wagtail.models import Site
+
+        return Site.objects.get(is_default_site=True)
+
+    @override_settings(SITE_URL="https://iteag.org")
+    def test_un_hote_aligne_ne_signale_rien(self, site_wagtail):
+        site_wagtail.hostname = "iteag.org"
+        site_wagtail.save(update_fields=["hostname"])
+
+        assert anomalies_donnees_production() == []
+
+    @override_settings(SITE_URL="https://iteag.org")
+    def test_la_casse_n_est_pas_un_ecart(self, site_wagtail):
+        site_wagtail.hostname = "ITEAG.org"
+        site_wagtail.save(update_fields=["hostname"])
+
+        assert anomalies_donnees_production() == []
+
+    @override_settings(SITE_URL="https://iteag.org")
+    def test_un_hote_divergent_est_refuse(self, site_wagtail):
+        site_wagtail.hostname = "iteag-preprod.137.74.169.188.sslip.io"
+        site_wagtail.save(update_fields=["hostname"])
+
+        anomalies = anomalies_donnees_production()
+
+        assert len(anomalies) == 1
+        assert "iteag-preprod.137.74.169.188.sslip.io" in anomalies[0]
+        assert "iteag.org" in anomalies[0]
+
+    @override_settings(SITE_URL="https://iteag.org")
+    def test_l_absence_de_site_par_defaut_est_signalee(self, site_wagtail):
+        from wagtail.models import Site
+
+        Site.objects.filter(pk=site_wagtail.pk).update(is_default_site=False)
+
+        assert any("Aucun site Wagtail par défaut" in anomalie for anomalie in anomalies_donnees_production())
+
+    @override_settings(SITE_URL="")
+    def test_sans_site_url_le_controle_se_tait(self, site_wagtail):
+        """SITE_URL absent est déjà signalé par le contrat de réglages : une cause, un message."""
+        assert anomalies_donnees_production() == []
+
+    def test_la_commande_complete_refuse_un_hote_divergent(self, settings, site_wagtail, moteur_postgresql):
+        # L'hôte est enregistré **avant** de basculer les réglages : sauvegarder
+        # un Site déclenche la purge du cache de Wagtail, et la configuration de
+        # production désigne un Redis qui n'existe pas dans les tests.
+        site_wagtail.hostname = "autre-hote.example.test"
+        site_wagtail.save(update_fields=["hostname"])
+
+        for cle, valeur in CONFIGURATION_PRODUCTION.items():
+            if cle == "CACHES":
+                continue
+            setattr(settings, cle, valeur)
+
+        with pytest.raises(CommandError):
+            call_command("verifier_production")

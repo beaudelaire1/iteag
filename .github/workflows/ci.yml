@@ -135,6 +135,12 @@ jobs:
       STRIPE_CLE_PUBLIABLE: pk_live_ci_placeholder
       STRIPE_CLE_SECRETE: sk_live_ci_placeholder
       STRIPE_SECRET_WEBHOOK: whsec_ci_placeholder
+      ITEAG_FORME_JURIDIQUE: ci-forme-juridique
+      ITEAG_IMMATRICULATION: ci-immatriculation
+      ITEAG_DIRECTEUR_PUBLICATION: ci-directeur-publication
+      ITEAG_HEBERGEUR: ci-hebergeur
+      ITEAG_HEBERGEUR_ADRESSE: ci-hebergeur-adresse
+      ITEAG_MEDIATEUR: ci-mediateur
       ELEARNING_DIFFUSION_VIDEO: bunny
       BUNNY_ZONE_DIFFUSION: https://video.example.invalid
       BUNNY_CLE_SIGNATURE: ci-video-secret
@@ -164,7 +170,10 @@ jobs:
       - name: Vérifier la configuration de déploiement Django
         run: python manage.py check --deploy --fail-level WARNING
       - name: Éprouver le contrat de readiness production
-        run: python manage.py verifier_production
+        # « --sans-base » : ce job ne dispose d'aucun service PostgreSQL. Les
+        # contrôles qui interrogent la base — dont l'hôte du site Wagtail —
+        # sont exécutés sur le serveur par scripts/verifier_go_live.sh.
+        run: python manage.py verifier_production --sans-base
       - name: Vérifier le fichier Compose de production
         run: docker compose -f docker-compose.prod.yml config --quiet
       - name: Construire l'image web de production

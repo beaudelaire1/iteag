@@ -23,9 +23,12 @@
 {# ── Filtres ── #}
 <div class="card-elevated mb-6">
     <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher (nom, email, username)…"
+        <label for="recherche-utilisateurs" class="sr-only">Rechercher un compte</label>
+        <input type="text" id="recherche-utilisateurs" name="q" value="{{ query }}"
+            placeholder="Rechercher (nom, email, username)…"
             class="form-input flex-1 text-sm">
-        <select name="role" class="form-input text-sm sm:w-48">
+        <label for="filtre-role" class="sr-only">Filtrer par rôle</label>
+        <select id="filtre-role" name="role" class="form-input text-sm sm:w-48">
             <option value="">— Tous les rôles —</option>
             {% for value, label in role_choices %}
             <option value="{{ value }}" {% if value == current_role %}selected{% endif %}>{{ label }}</option>

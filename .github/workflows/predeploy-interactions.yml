@@ -1,8 +1,16 @@
 name: Predeploy browser interactions
 
+# Ces contrôles s'exécutent contre la préproduction. Ils étaient gardés par le
+# nom de la branche source (« agent/predeploy-go-readiness », « agent/go-live-ops-gate »).
+# Ces branches ayant été fusionnées, la condition n'était plus jamais vraie :
+# le contrôle existait, passait pour actif, et ne s'exécutait plus. On s'en
+# remet donc à des déclencheurs qui ne dépendent d'aucun nom éphémère — toute
+# PR vers main, un rendez-vous hebdomadaire, et le déclenchement manuel.
 on:
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "40 3 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +23,6 @@ concurrency:
 jobs:
   browser:
     name: Navigation clavier et mobile
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/go-live-ops-gate'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
