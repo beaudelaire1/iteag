@@ -139,7 +139,23 @@
                         {% if profil_etudiant %}
                         <form method="post" action="{% url 'paiements:acheter_module' module.slug %}" class="mt-4">
                             {% csrf_token %}
-                            <button type="submit" class="btn-primary w-full justify-center">
+                            {% comment %}
+                            Renonciation expresse au droit de rétractation : sans elle, un
+                            contenu numérique déjà consultable resterait remboursable quatorze
+                            jours (code de la consommation, art. L221-28).
+                            {% endcomment %}
+                            <label for="renonce-retractation"
+                                   class="flex items-start gap-2.5 cursor-pointer text-left">
+                                <input type="checkbox" name="renonce_retractation" id="renonce-retractation"
+                                       value="1" required class="form-checkbox mt-0.5">
+                                <span class="text-xs leading-5 text-warm-600">
+                                    Je demande l'ouverture immédiate de l'accès à ce module et je reconnais
+                                    qu'à ce titre je renonce à mon droit de rétractation, comme le précisent les
+                                    <a href="{% url 'website:conditions_generales_vente' %}" target="_blank"
+                                       rel="noopener" class="underline underline-offset-2">conditions générales de vente</a>.
+                                </span>
+                            </label>
+                            <button type="submit" class="btn-primary w-full justify-center mt-4">
                                 Acheter cette formation
                             </button>
                         </form>

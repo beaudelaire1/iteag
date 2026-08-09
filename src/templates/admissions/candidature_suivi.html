@@ -66,7 +66,7 @@
 
         {% if pieces_legacy %}
         <section class="card-elevated mt-8"><h2 class="text-lg font-semibold">Anciennes pièces à fournir</h2><p class="mt-1 mb-5 text-sm text-warm-500">Ces pièces ont été demandées avant la mise en place des envois groupés.</p>
-            {% for piece in pieces_legacy %}<div class="border-t border-warm-100 py-4 first:border-t-0"><p class="font-semibold text-navy-900">{{ piece.libelle }}</p>{% if piece.statut != 'validee' %}<form method="post" action="{% url 'admissions:deposer_piece' dossier.token_suivi piece.pk %}" enctype="multipart/form-data" class="mt-3 flex flex-wrap gap-3">{% csrf_token %}<input type="file" name="fichier" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.odt" class="form-file"><button type="submit" class="btn-primary">Déposer</button></form>{% endif %}</div>{% endfor %}
+            {% for piece in pieces_legacy %}<div class="border-t border-warm-100 py-4 first:border-t-0"><p class="font-semibold text-navy-900">{{ piece.libelle }}</p>{% if piece.statut != 'validee' %}<form method="post" action="{% url 'admissions:deposer_piece' dossier.token_suivi piece.pk %}" enctype="multipart/form-data" class="mt-3 flex flex-wrap gap-3">{% csrf_token %}<label for="piece-{{ piece.pk }}" class="sr-only">Fichier pour « {{ piece.libelle }} »</label><input type="file" id="piece-{{ piece.pk }}" name="fichier" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.odt" class="form-file"><button type="submit" class="btn-primary">Déposer</button></form>{% endif %}</div>{% endfor %}
         </section>
         {% endif %}
     </div>

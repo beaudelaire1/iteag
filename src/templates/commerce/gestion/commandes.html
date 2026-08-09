@@ -79,9 +79,12 @@
                 {% elif commande.statut == 'preparation' %}
                 <form method="post" action="{% url 'commerce:commande_action' commande.pk %}" class="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
                     {% csrf_token %}<input type="hidden" name="action" value="expedier">
-                    <input class="form-input" name="transporteur" placeholder="Transporteur">
-                    <input class="form-input" name="numero_suivi" placeholder="Numéro de suivi">
-                    <input class="form-input" type="url" name="url_suivi_transporteur" placeholder="https://suivi…">
+                    <label for="transporteur-{{ commande.pk }}" class="sr-only">Transporteur</label>
+                    <input class="form-input" id="transporteur-{{ commande.pk }}" name="transporteur" placeholder="Transporteur">
+                    <label for="numero-suivi-{{ commande.pk }}" class="sr-only">Numéro de suivi</label>
+                    <input class="form-input" id="numero-suivi-{{ commande.pk }}" name="numero_suivi" placeholder="Numéro de suivi">
+                    <label for="url-suivi-{{ commande.pk }}" class="sr-only">Adresse de suivi du transporteur</label>
+                    <input class="form-input" id="url-suivi-{{ commande.pk }}" type="url" name="url_suivi_transporteur" placeholder="https://suivi…">
                     <button type="submit" class="btn-primary">Marquer expédiée</button>
                 </form>
                 {% elif commande.statut == 'expediee' %}

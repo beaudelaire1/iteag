@@ -40,7 +40,9 @@
 <div class="mb-6">
     <form method="get" class="flex gap-3">
         {% if current_statut %}<input type="hidden" name="statut" value="{{ current_statut }}">{% endif %}
-        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher un nom, prénom ou email…"
+        <label for="recherche-candidatures" class="sr-only">Rechercher une candidature</label>
+        <input type="text" id="recherche-candidatures" name="q" value="{{ query }}"
+               placeholder="Rechercher un nom, prénom ou email…"
                class="form-input flex-1" style="max-width: 24rem;">
         <button type="submit" class="btn-primary" style="padding: 0.5rem 1.25rem;">Rechercher</button>
         {% if query %}<a href="{% url 'administration:candidatures' %}{% if current_statut %}?statut={{ current_statut }}{% endif %}" class="btn-ghost self-center text-xs">Effacer</a>{% endif %}

@@ -61,6 +61,58 @@ assert payload.get("base") is True, payload
 assert payload.get("cache") is True, payload
 ' "$GO_LIVE_BASE_URL"
 
+etape "Hôte public : balise canonique et plan du site"
+# Le contrat Django compare SITE_URL au « Site » Wagtail. Il ne peut pas savoir
+# sous quel nom d'hôte le proxy sert réellement les pages : c'est ce que vérifie
+# la requête ci-dessous, depuis l'extérieur de l'application. Une balise
+# canonique qui désigne un autre hôte fait sortir tout le site de l'index.
+# Le script est passé au conteneur par l'entrée standard plutôt qu'en « -c » :
+# l'analyse de la page demande des apostrophes, qu'une chaîne shell entre
+# apostrophes ne peut pas contenir.
+compose exec -T web python - "$GO_LIVE_BASE_URL" <<'PYTHON'
+import re
+import sys
+import urllib.request
+
+ENTETES = {"User-Agent": "ITEAG-go-live/1.0"}
+
+
+def lire(url, delai=20):
+    with urllib.request.urlopen(urllib.request.Request(url, headers=ENTETES), timeout=delai) as reponse:
+        return reponse.read().decode("utf-8", errors="replace")
+
+
+base = sys.argv[1].rstrip("/")
+html = lire(base + "/")
+
+canonique = re.search(r"""<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)""", html)
+assert canonique, "Aucune balise canonique sur la page d'accueil."
+attendu = base + "/"
+obtenu = canonique.group(1)
+assert obtenu == attendu, f"Balise canonique {obtenu!r}, attendu {attendu!r}."
+print("Balise canonique :", obtenu)
+
+plan = lire(base + "/sitemap.xml", delai=30)
+hotes = {re.match(r"https?://([^/]+)", url).group(1) for url in re.findall(r"<loc>([^<]+)</loc>", plan)}
+assert hotes, "Plan du site vide."
+hote_attendu = re.match(r"https?://([^/]+)", base).group(1)
+assert hotes == {hote_attendu}, f"Le plan du site mêle plusieurs hôtes : {sorted(hotes)}."
+print("Plan du site : un seul hôte,", hote_attendu)
+PYTHON
+
+etape "Pages légales publiées"
+compose exec -T web python - "$GO_LIVE_BASE_URL" <<'PYTHON'
+import sys
+import urllib.request
+
+base = sys.argv[1].rstrip("/")
+for chemin in ("/mentions-legales/", "/conditions-generales-de-vente/"):
+    requete = urllib.request.Request(base + chemin, headers={"User-Agent": "ITEAG-go-live/1.0"})
+    with urllib.request.urlopen(requete, timeout=20) as reponse:
+        assert reponse.status == 200, (chemin, reponse.status)
+    print("Publiée :", chemin)
+PYTHON
+
 etape "Worker + Beat Celery"
 compose exec -T worker sh -c 'celery -A config inspect ping --timeout=5 | grep -q pong'
 compose exec -T web python manage.py verifier_heartbeat_celery --max-age 180

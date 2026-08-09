@@ -183,3 +183,22 @@ class TestAttestation:
         with mock.patch.dict("sys.modules", {"weasyprint": None}):
             resultat = generer_attestation_pdf(str(attestation.pk))
         assert resultat in ("sans_pdf", "genere")
+
+    def test_une_signature_illisible_ne_produit_pas_d_attestation(self, attestation):
+        """Une attestation porte le nom du signataire : sans sa signature, on ne la délivre pas.
+
+        Le stockage des médias est distant. Quand il ne répond pas, produire le
+        PDF donnerait un document d'apparence signée — pire qu'un document
+        absent, que la relance de la tâche régénérera une fois R2 revenu.
+        """
+        from apps.documents.services_generation import SignatureIllisible
+
+        with mock.patch(
+            "apps.documents.services_generation.obtenir_signature_secretariat_data_uri",
+            side_effect=SignatureIllisible("R2 indisponible"),
+        ):
+            resultat = generer_attestation_pdf(str(attestation.pk))
+
+        attestation.refresh_from_db()
+        assert resultat == "sans_pdf"
+        assert not attestation.fichier_pdf

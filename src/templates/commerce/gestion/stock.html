@@ -53,8 +53,10 @@
                         <td class="p-4">
                             <form method="post" action="{% url 'commerce:stock_ajuster' produit.pk %}" class="flex min-w-[22rem] gap-2">
                                 {% csrf_token %}
-                                <input class="form-input w-24" type="number" name="variation" required placeholder="+5">
-                                <input class="form-input flex-1" name="motif" required maxlength="250" placeholder="Réassort, correction…">
+                                <label for="variation-{{ produit.pk }}" class="sr-only">Variation de stock pour {{ produit.titre }}</label>
+                                <input class="form-input w-24" id="variation-{{ produit.pk }}" type="number" name="variation" required placeholder="+5">
+                                <label for="motif-stock-{{ produit.pk }}" class="sr-only">Motif de l'ajustement</label>
+                                <input class="form-input flex-1" id="motif-stock-{{ produit.pk }}" name="motif" required maxlength="250" placeholder="Réassort, correction…">
                                 <button type="submit" class="btn-secondary">Appliquer</button>
                             </form>
                         </td>

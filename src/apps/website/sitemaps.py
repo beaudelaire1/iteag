@@ -26,6 +26,8 @@ class PagesPubliquesSitemap(Sitemap):
         return (
             "website:politique_donnees",
             "website:politique_cookies",
+            "website:mentions_legales",
+            "website:conditions_generales_vente",
             "formations:parcours_list",
             "formations:professeur_list",
             "elearning:catalogue",

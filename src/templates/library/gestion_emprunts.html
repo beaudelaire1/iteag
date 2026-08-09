@@ -52,7 +52,8 @@
             </div>
             <form method="post" action="{% url 'library:suspension_lever' sanction.pk %}" class="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row lg:mt-0">
                 {% csrf_token %}
-                <input name="motif" class="form-input min-w-64 text-xs" maxlength="500" required placeholder="Motif obligatoire de la levée">
+                <label for="motif-levee-{{ sanction.pk }}" class="sr-only">Motif de la levée de suspension</label>
+                <input id="motif-levee-{{ sanction.pk }}" name="motif" class="form-input min-w-64 text-xs" maxlength="500" required placeholder="Motif obligatoire de la levée">
                 <button type="submit" class="btn btn-sm btn-outline whitespace-nowrap">Lever exceptionnellement</button>
             </form>
         </article>

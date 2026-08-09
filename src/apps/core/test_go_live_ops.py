@@ -40,3 +40,79 @@ def test_gate_serveur_exige_les_preuves_reelles():
     assert "python manage.py verifier_stockage_media" in script
     assert "python manage.py tester_notifications_email" in script
     assert 'python manage.py verifier_bunny "$GO_LIVE_BUNNY_VIDEO_ID"' in script
+
+
+def test_gate_serveur_verifie_l_hote_public_et_les_pages_legales():
+    """Deux preuves qu'aucun contrôle interne ne peut donner.
+
+    L'application ignore sous quel nom d'hôte le proxy la sert : seule une
+    requête depuis l'extérieur peut confronter la balise canonique et le plan
+    du site à l'adresse réellement publiée. Et une page légale dépubliée ne
+    provoque aucune erreur — il faut aller la demander.
+    """
+    script = (RACINE / "scripts" / "verifier_go_live.sh").read_text(encoding="utf-8")
+
+    assert "rel=" in script and "canonical" in script
+    assert "Le plan du site mêle plusieurs hôtes" in script
+    assert "/mentions-legales/" in script
+    assert "/conditions-generales-de-vente/" in script
+
+
+def test_les_blocs_python_du_gate_serveur_compilent():
+    """Un script Python inséré dans un fichier shell n'est relu par personne.
+
+    Il n'échoue qu'à l'exécution — c'est-à-dire pendant la bascule, au moment
+    où l'on a le moins envie de déboguer une coquille de guillemet.
+    """
+    import ast
+    import re
+
+    script = (RACINE / "scripts" / "verifier_go_live.sh").read_text(encoding="utf-8")
+
+    blocs = re.findall(r"python -c '\n(.*?)\n' ", script, re.S)
+    blocs += re.findall(r"<<'PYTHON'\n(.*?)\nPYTHON\n", script, re.S)
+
+    assert blocs, "Aucun bloc Python détecté : l'extraction ne correspond plus au script."
+    for bloc in blocs:
+        ast.parse(bloc)
+
+
+WORKFLOWS_PREDEPLOIEMENT = (
+    "predeploy-lighthouse.yml",
+    "predeploy-live-audit.yml",
+    "predeploy-interactions.yml",
+    "predeploy-visual.yml",
+    "predeploy-zap.yml",
+)
+
+
+def test_aucun_controle_de_predeploiement_ne_depend_d_un_nom_de_branche():
+    """Un contrôle gardé par un nom de branche meurt avec cette branche.
+
+    Les cinq workflows ci-dessous — dont le scan de sécurité dynamique — étaient
+    conditionnés à « github.head_ref == 'agent/…' ». Ces branches fusionnées, la
+    condition n'était plus jamais vraie : les contrôles figuraient dans le dépôt,
+    ne s'exécutaient plus, et rien ne le signalait. Ce test empêche d'y revenir.
+    """
+    for nom in WORKFLOWS_PREDEPLOIEMENT:
+        contenu = (RACINE.parent / ".github" / "workflows" / nom).read_text(encoding="utf-8")
+
+        assert "head_ref" not in contenu, nom
+        assert "pull_request:" in contenu, nom
+        assert "schedule:" in contenu, nom
+        assert "workflow_dispatch:" in contenu, nom
+
+
+def test_le_gate_d_accessibilite_couvre_les_pages_publiques_a_formulaire():
+    """Le seuil était strict, mais aveugle aux pages où le défaut se trouvait."""
+    contenu = (RACINE.parent / ".github" / "workflows" / "predeploy-lighthouse.yml").read_text(encoding="utf-8")
+
+    for chemin in ("/bibliotheque/", "/boutique/", "/e-learning/"):
+        assert chemin in contenu, chemin
+
+
+def test_la_commande_de_readiness_sait_ignorer_la_base():
+    """La CI construit l'image sans PostgreSQL : le contrat doit y rester exécutable."""
+    ci = (RACINE.parent / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert "verifier_production --sans-base" in ci

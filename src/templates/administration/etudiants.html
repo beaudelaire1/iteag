@@ -23,9 +23,12 @@
 {# ── Filtres ── #}
 <div class="card-elevated mb-6">
     <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher (nom, prénom, n° étudiant)…"
+        <label for="recherche-etudiants" class="sr-only">Rechercher un étudiant</label>
+        <input type="text" id="recherche-etudiants" name="q" value="{{ query }}"
+            placeholder="Rechercher (nom, prénom, n° étudiant)…"
             class="form-input flex-1 text-sm">
-        <select name="statut" class="form-input text-sm sm:w-52">
+        <label for="filtre-statut-etudiants" class="sr-only">Filtrer par statut</label>
+        <select id="filtre-statut-etudiants" name="statut" class="form-input text-sm sm:w-52">
             <option value="">— Tous les statuts —</option>
             {% for value, label in statut_choices %}
             <option value="{{ value }}" {% if value == current_statut %}selected{% endif %}>{{ label }}</option>

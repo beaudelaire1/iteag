@@ -86,6 +86,31 @@ def test_preproduction_est_non_indexable(client):
     assert reponse["X-Robots-Tag"] == "noindex, nofollow, noarchive"
 
 
+@override_settings(ALLOWED_HOSTS=["iteag-preprod.137.74.169.188.sslip.io", "iteag.org"])
+def test_la_balise_robots_dit_la_meme_chose_que_l_entete(client):
+    """Une page ne doit pas s'autoriser en HTML ce que son en-tête lui interdit.
+
+    La préproduction servait « index, follow » dans le HTML pendant que
+    l'en-tête HTTP disait « noindex ». La directive la plus restrictive
+    l'emportant, rien n'était indexé — mais la page se contredisait, et qui
+    relisait le HTML seul pouvait conclure à une préproduction indexable.
+
+    Page choisie : les mentions légales, qui ne surchargent pas le bloc
+    « robots » — contrairement à /connexion/, volontairement non indexable
+    quel que soit le domaine.
+    """
+    preprod = client.get("/mentions-legales/", HTTP_HOST="iteag-preprod.137.74.169.188.sslip.io")
+    assert "noindex" in preprod["X-Robots-Tag"]
+    assert 'content="noindex, nofollow"' in preprod.content.decode()
+
+    public = client.get("/mentions-legales/", HTTP_HOST="iteag.org")
+    assert "X-Robots-Tag" not in public.headers
+    assert 'content="index, follow"' in public.content.decode()
+
+
+# Ce test interrogeait « iteag.org » sans déclarer ce domaine : il ne passait
+# que dans l'ordre du fichier, en profitant de l'override du test précédent. Un
+# test qui dépend de son voisin ne dit plus rien quand on l'exécute seul.
 @override_settings(ALLOWED_HOSTS=["iteag.org", "www.iteag.org"])
 def test_domaine_public_reste_indexable(client):
     reponse = client.get("/robots.txt", HTTP_HOST="iteag.org")

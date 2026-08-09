@@ -209,6 +209,20 @@ ROLES_2FA_OBLIGATOIRE = ["admin", "secretariat"]
 
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 0.5  # 30 minutes
+# Verrouillage par identifiant, et non par adresse IP. L'arbitrage se lit dans
+# les deux sens :
+#
+# - par IP seule, une attaque distribuée qui essaie un même mot de passe courant
+#   sur beaucoup de comptes ne déclenche jamais rien — chaque adresse reste sous
+#   le seuil ;
+# - par identifiant seul, quelqu'un qui connaît l'identifiant d'un membre du
+#   personnel peut le tenir verrouillé.
+#
+# Le second risque est borné par le fait que le formulaire de connexion valide
+# Turnstile **avant** d'appeler `authenticate()` (voir apps/accounts/forms.py) :
+# un échec de Turnstile n'incrémente donc aucun compteur, et verrouiller un
+# compte suppose de résoudre cinq défis valides. Les rôles « admin » et
+# « secretariat » portent en outre un second facteur obligatoire.
 AXES_LOCKOUT_PARAMETERS = ["username"]
 AXES_RESET_ON_SUCCESS = True
 
@@ -396,6 +410,47 @@ EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 EMAIL_TEST_RECIPIENT = env("EMAIL_TEST_RECIPIENT", default="")
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
+
+# ──────────────────────────────────────────────
+# Identité légale de l'éditeur — mentions légales et CGV
+# ──────────────────────────────────────────────
+#
+# Ces valeurs ne sont pas des réglages techniques : ce sont les informations que
+# la loi impose de publier (LCEN art. 6-III pour les mentions légales, Code de
+# la consommation art. L221-5 pour la vente à distance). Elles vivent ici, et
+# non en dur dans un gabarit, pour deux raisons : elles ne sont connues que de
+# l'ITEAG, et une valeur manquante doit pouvoir bloquer l'ouverture publique.
+#
+# `verifier_production` refuse une instance de production dont l'une d'elles est
+# vide : une page de mentions légales incomplète ne vaut pas mieux qu'une page
+# absente, et le manque doit se voir au déploiement plutôt qu'en lecture.
+ITEAG_FORME_JURIDIQUE = env("ITEAG_FORME_JURIDIQUE", default="")
+# Numéro RNA (W…) pour une association, ou SIREN/SIRET si l'institut en a un.
+ITEAG_IMMATRICULATION = env("ITEAG_IMMATRICULATION", default="")
+# Personne physique responsable au sens de la LCEN.
+ITEAG_DIRECTEUR_PUBLICATION = env("ITEAG_DIRECTEUR_PUBLICATION", default="")
+# Numéro de déclaration d'activité de formation, si l'ITEAG en détient un.
+# Facultatif : il n'est pas contrôlé par `verifier_production`.
+ITEAG_NUMERO_DECLARATION_ACTIVITE = env("ITEAG_NUMERO_DECLARATION_ACTIVITE", default="")
+# Hébergeur : raison sociale et adresse complètes, à publier telles quelles.
+# La valeur par défaut décrit l'hébergeur documenté dans
+# docs/exploitation/coolify.md ; elle reste à confirmer par l'ITEAG.
+ITEAG_HEBERGEUR = env("ITEAG_HEBERGEUR", default="OVH SAS")
+ITEAG_HEBERGEUR_ADRESSE = env("ITEAG_HEBERGEUR_ADRESSE", default="2 rue Kellermann, 59100 Roubaix, France")
+
+# Médiateur de la consommation. Tout professionnel qui vend à des consommateurs
+# doit en désigner un et publier ses coordonnées (code de la consommation,
+# art. L612-1). La section correspondante des CGV ne s'affiche que si le nom est
+# renseigné : mieux vaut une section absente qu'un médiateur inventé.
+ITEAG_MEDIATEUR = env("ITEAG_MEDIATEUR", default="")
+ITEAG_MEDIATEUR_ADRESSE = env("ITEAG_MEDIATEUR_ADRESSE", default="")
+ITEAG_MEDIATEUR_URL = env("ITEAG_MEDIATEUR_URL", default="")
+
+# Date de dernière révision des documents contractuels, affichée sur les pages
+# publiques. Une CGV sans date ne permet pas de savoir quelle version a été
+# acceptée lors d'une commande.
+ITEAG_CGV_VERSION = env("ITEAG_CGV_VERSION", default="9 août 2026")
+ITEAG_MENTIONS_VERSION = env("ITEAG_MENTIONS_VERSION", default="9 août 2026")
 
 # ──────────────────────────────────────────────
 # Cloudflare Turnstile — protection des formulaires publics

@@ -141,10 +141,18 @@ def generer_attestation_pdf(attestation_id: str) -> str:
     from django.conf import settings
 
     from apps.core.services.pdf import MoteurPDFIndisponible, contexte_marque, qr_data_uri, rendre_pdf
-    from apps.documents.services_generation import obtenir_signature_secretariat_data_uri
+    from apps.documents.services_generation import SignatureIllisible, obtenir_signature_secretariat_data_uri
 
     adresse = f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{attestation.url_verification()}"
-    signature_pdf, secretariat_nom, secretariat_qualite = obtenir_signature_secretariat_data_uri()
+    try:
+        signature_pdf, secretariat_nom, secretariat_qualite = obtenir_signature_secretariat_data_uri()
+    except SignatureIllisible:
+        # Une attestation porte le nom et la qualité du signataire : la produire
+        # sans l'image de sa signature donnerait un document qui a l'air signé.
+        # On préfère l'absence de PDF, réparable par une relance une fois le
+        # stockage revenu, à une pièce trompeuse déjà remise à l'étudiant.
+        logger.warning("Signature illisible : attestation %s laissée sans PDF", attestation_id)
+        return "sans_pdf"
     try:
         pdf = rendre_pdf(
             "elearning/attestation_pdf.html",

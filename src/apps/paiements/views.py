@@ -130,15 +130,35 @@ class AnnulationView(View):
 
 
 class AchatModuleView(LoginRequiredMixin, View):
-    """Prépare le paiement d'un module et ouvre la page sécurisée ITEAG."""
+    """Prépare le paiement d'un module et ouvre la page sécurisée ITEAG.
+
+    Un module est un contenu numérique dont l'accès s'ouvre dès l'encaissement.
+    L'article L221-28 du code de la consommation ne fait tomber le droit de
+    rétractation que si l'acheteur a **expressément** demandé cette exécution
+    immédiate et reconnu y renoncer. Sans cette double déclaration, l'ITEAG
+    devrait rembourser pendant quatorze jours un contenu déjà consultable.
+
+    Le contrôle est refait ici et pas seulement dans le gabarit : une case à
+    cocher retirée du DOM ne doit pas suffire à sauter la déclaration.
+    """
 
     http_method_names = ["post"]
+    CHAMP_RENONCIATION = "renonce_retractation"
 
     def post(self, request, slug):
         from apps.elearning.models import ModuleFormation
 
         module = get_object_or_404(ModuleFormation, slug=slug)
         profil = getattr(request.user, "profil_etudiant", None)
+
+        if not request.POST.get(self.CHAMP_RENONCIATION):
+            messages.error(
+                request,
+                "Pour acheter ce module, confirmez que vous demandez l'ouverture "
+                "immédiate de l'accès et que vous renoncez de ce fait à votre "
+                "droit de rétractation.",
+            )
+            return redirect(module.get_absolute_url())
 
         try:
             reglement = reglements.pour_module(
