@@ -35,6 +35,29 @@
                     <p id="erreur-livraison-formulaire" class="mt-1">
                         {{ erreur_livraison|default:"Choisissez une destination et un type de livraison disponibles." }}
                     </p>
+                    {% comment %}
+                    Un bouton grisé sans issue proposée, c'est un acheteur qui
+                    abandonne et un institut qui n'en saura rien. Les deux
+                    sorties sont donc données ici : le retrait à l'institut, qui
+                    ne dépend d'aucun tarif, et le secrétariat, qui peut établir
+                    un devis pour une destination non couverte.
+                    {% endcomment %}
+                    <p class="mt-3">
+                        Deux solutions, sans quitter cette page :
+                    </p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5">
+                        <li>
+                            choisir <strong>« Retrait à l'institut »</strong> comme type de livraison —
+                            aucun frais n'est alors à calculer, et votre commande vous attend au secrétariat ;
+                        </li>
+                        <li>
+                            nous écrire à
+                            <a href="mailto:{{ SITE_EMAIL }}?subject=Devis%20de%20livraison%20—%20commande%20boutique"
+                               class="font-semibold underline">{{ SITE_EMAIL }}</a>
+                            ou appeler le <a href="tel:{{ SITE_PHONE|cut:' ' }}" class="font-semibold underline">{{ SITE_PHONE }}</a> :
+                            nous établissons un devis pour votre destination.
+                        </li>
+                    </ul>
                     {% if request.user.role == "admin" or request.user.is_superuser %}
                     <a href="{% url 'commerce:gestion_tarifs_livraison' %}"
                        class="mt-3 inline-block font-semibold underline">
@@ -43,12 +66,22 @@
                     {% endif %}
                 </div>
                 {% include "partials/information_donnees.html" with finalite="traiter votre commande, organiser sa livraison, suivre son règlement et respecter les obligations comptables applicables" %}
+                {% comment %}
+                L'article L221-14 du code de la consommation exige que la
+                fonction qui conclut la commande porte la mention « commande
+                avec obligation de paiement », ou une formule équivalente
+                dénuée d'ambiguïté. Ce bouton crée la commande, réserve le
+                stock et vide le panier — y compris pour le virement et le
+                paiement sur place, où aucune page de paiement ne suit. Sous le
+                libellé « Suivant » qu'il portait, le consommateur n'était pas
+                engagé. Le texte est vérifié par un test de gabarit.
+                {% endcomment %}
                 <button type="submit"
                         id="bouton-commande"
                         aria-describedby="erreur-livraison-formulaire"
                         class="btn-primary mt-8"
                         {% if not livraison_disponible %}disabled{% endif %}>
-                    Suivant
+                    Commander avec obligation de paiement
                 </button>
                 <p class="mt-3 text-xs leading-5 text-warm-500">
                     Avec « Carte bancaire », vous serez redirigé immédiatement vers la page de paiement sécurisée Stripe.
@@ -105,7 +138,7 @@
                 {# Compatibilité avec une ancienne version du script encore présente dans le cache du navigateur. #}
                 <span id="source-tarif-livraison" class="hidden" style="display:none !important" aria-hidden="true"></span>
                 <p class="mt-5 text-xs leading-5 text-warm-500">
-                    Le stock est réservé en cliquant sur « Suivant ». Un paiement par carte confirmé lance automatiquement
+                    Le stock est réservé dès la validation de la commande. Un paiement par carte confirmé lance automatiquement
                     la préparation ; un virement ou un paiement sur place reste validé par le secrétariat.
                 </p>
             </aside>

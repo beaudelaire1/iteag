@@ -53,6 +53,8 @@ CONFIGURATION_PRODUCTION = {
     "ELEARNING_DIFFUSION_VIDEO": "bunny",
     "BUNNY_ZONE_DIFFUSION": "https://video.example.test",
     "BUNNY_CLE_SIGNATURE": "video-secret",
+    "BUNNY_STREAM_LIBRARY_ID": "12345",
+    "BUNNY_STREAM_API_KEY": "cle-api-stream",
     "CACHES": {"default": {"BACKEND": "django_redis.cache.RedisCache"}},
     "CELERY_BROKER_URL": "redis://redis:6379/1",
     "CELERY_RESULT_BACKEND": "redis://redis:6379/2",
@@ -150,6 +152,10 @@ def test_la_commande_reussit_sur_une_configuration_complete(capsys, moteur_postg
     [
         ("AWS_S3_ENDPOINT_URL", ""),
         ("BUNNY_CLE_SIGNATURE", ""),
+        # Sans elles, la lecture fonctionne et les chapitres restent vides :
+        # une dégradation que personne ne signale, donc à attraper ici.
+        ("BUNNY_STREAM_LIBRARY_ID", ""),
+        ("BUNNY_STREAM_API_KEY", ""),
         ("EMAIL_HOST_PASSWORD", ""),
         ("STRIPE_SECRET_WEBHOOK", ""),
     ],

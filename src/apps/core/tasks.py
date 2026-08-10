@@ -3,6 +3,7 @@
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 
@@ -54,10 +55,20 @@ def purger_sessions() -> int:
 
 
 @shared_task(name="core.purger_journal_audit")
-def purger_journal_audit(jours: int = 730) -> int:
-    """Purge le journal d'audit au-delà de la durée de conservation (2 ans)."""
+def purger_journal_audit(jours: int | None = None) -> int:
+    """Purge le journal d'audit au-delà de la durée de conservation retenue.
+
+    La durée ne se code pas ici : elle vit dans `RETENTION_JOURNAL_AUDIT_JOURS`,
+    est justifiée au §3 bis du registre des traitements, et un test échoue si
+    le code et les documents publiés cessent de dire la même chose. Ce défaut
+    a réellement existé — 730 jours appliqués contre 12 mois annoncés — et une
+    politique qui promet ce que le système ne fait pas est une information
+    trompeuse au sens de l'article 13 du RGPD.
+    """
     from apps.core.models import JournalAudit
 
+    if jours is None:
+        jours = int(getattr(settings, "RETENTION_JOURNAL_AUDIT_JOURS", 365))
     limite = timezone.now() - timedelta(days=jours)
     nombre, _ = JournalAudit.objects.filter(created_at__lt=limite).delete()
     logger.info("Purge du journal d'audit : %s entrée(s) supprimée(s)", nombre)

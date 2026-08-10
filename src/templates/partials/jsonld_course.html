@@ -1,10 +1,29 @@
-{# JSON-LD Course — Schema.org · PUB-013 #}
+{% comment %}
+JSON-LD Course — Schema.org · PUB-013
+
+Un seul gabarit pour les trois fiches qui décrivent une formation : un cours,
+un parcours diplômant, un module e-learning. Le module portait auparavant son
+propre bloc, recopié : deux descriptions du même type d'objet finissent par ne
+plus dire la même chose au moteur de recherche.
+
+Paramètres — tous facultatifs sauf « nom » :
+
+    nom          intitulé affiché (obligatoire)
+    description  texte libre ; balises et longueur sont traitées ici
+    credential   ce que la formation délivre (« 180 ECTS », un diplôme…)
+    niveau       niveau visé, quand la fiche le connaît
+    instructeur  nom du responsable, quand il est public
+    mode         « online » pour l'e-learning, sinon omis
+
+L'objet `provider` doit rester identique partout : c'est ce qui rattache les
+trois types de fiches à la même organisation dans l'index.
+{% endcomment %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "Course",
-    "name": "{{ course.titre|escapejs }}",
-    "description": "{{ course.description|striptags|truncatewords:50|escapejs }}",
+    "name": "{{ nom|escapejs }}",
+    "description": "{{ description|default:''|striptags|truncatewords:50|escapejs }}",
     "url": "{{ CANONICAL_URL }}",
     "provider": {
         "@type": "EducationalOrganization",
@@ -12,7 +31,10 @@
         "name": "{{ SITE_FULL_NAME|escapejs }}",
         "url": "{{ SITE_URL }}/"
     },
-    "educationalCredentialAwarded": "{{ course.ects|default:'2.5' }} ECTS",
-    "inLanguage": "fr"
+    "inLanguage": "fr"{% if credential %},
+    "educationalCredentialAwarded": "{{ credential|escapejs }}"{% endif %}{% if niveau %},
+    "educationalLevel": "{{ niveau|escapejs }}"{% endif %}{% if instructeur %},
+    "instructor": {"@type": "Person", "name": "{{ instructeur|escapejs }}"}{% endif %}{% if mode %},
+    "courseMode": "{{ mode|escapejs }}"{% endif %}
 }
 </script>

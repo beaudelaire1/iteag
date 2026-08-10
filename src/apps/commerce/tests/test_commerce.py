@@ -674,3 +674,49 @@ class TestMotifAnnulation:
         contenu = client.get(reverse("commerce:gestion_commandes")).content.decode()
         assert 'name="motif_annulation"' in contenu
         assert "Rupture de stock" in contenu
+
+
+# ══════════════════════════════════════════════
+# Ce que la page de commande doit dire
+# ══════════════════════════════════════════════
+
+
+@pytest.mark.django_db
+class TestLaPageDeCommandeDitLaVerite:
+    """
+    Deux exigences que le prochain remaniement graphique ne doit pas emporter :
+    la mention légale qui engage l'acheteur, et une issue quand le devis échoue.
+    """
+
+    def test_le_bouton_porte_la_mention_d_obligation_de_paiement(self, client, livre):
+        """
+        Art. L221-14 du code de la consommation : la fonction qui conclut la
+        commande doit porter « commande avec obligation de paiement » ou une
+        formule équivalente dénuée d'ambiguïté. Sous « Suivant », le
+        consommateur n'était pas engagé — alors même que ce bouton réserve le
+        stock et vide le panier.
+        """
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+
+        contenu = client.get(reverse("commerce:commander")).content.decode()
+
+        bouton = contenu[contenu.index('id="bouton-commande"') :]
+        bouton = bouton[: bouton.index("</button>")]
+        assert "obligation de paiement" in bouton.lower()
+        assert "Suivant" not in bouton
+
+    def test_un_devis_indisponible_propose_une_issue(self, client, livre):
+        """
+        Un bouton grisé sans alternative, c'est un acheteur qui abandonne et un
+        institut qui n'en sait rien. La page doit proposer le retrait sur place
+        et de quoi joindre le secrétariat.
+        """
+        TarifLivraison.objects.all().delete()
+        client.post(reverse("commerce:panier_ajouter", args=[livre.pk]), {"quantite": 1})
+
+        contenu = client.get(reverse("commerce:commander")).content.decode()
+
+        alerte = contenu[contenu.index('id="alerte-livraison-formulaire"') :]
+        alerte = alerte[: alerte.index("</div>")]
+        assert "Retrait à l'institut" in alerte
+        assert "mailto:" in alerte

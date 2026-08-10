@@ -9,6 +9,7 @@ from decimal import Decimal
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.paiements.models import Reglement
@@ -90,3 +91,23 @@ def test_le_retour_confirme_un_paiement_avant_le_webhook(client, reglement, monk
     assert reglement.statut == Reglement.Statut.PAYE
     assert reglement.contrepartie_delivree is True
     assert "Paiement confirmé" in reponse.content.decode()
+
+
+def test_un_paiement_encaisse_sans_contrepartie_ne_promet_pas_l_acces(client, reglement):
+    """
+    Le pire écran possible : « Paiement confirmé » suivi d'un bouton qui mène
+    à un 403. Tant que la contrepartie n'est pas ouverte, la page doit le dire
+    et donner la référence à citer, pas proposer une porte fermée.
+    """
+    client.force_login(reglement.utilisateur)
+    Reglement.objects.filter(pk=reglement.pk).update(
+        statut=Reglement.Statut.PAYE,
+        date_paiement=timezone.now(),
+        contrepartie_delivree=False,
+    )
+
+    contenu = client.get(reverse("paiements:succes", kwargs={"pk": reglement.pk})).content.decode()
+
+    assert "Commencer la formation" not in contenu
+    assert "accès en cours d'ouverture" in contenu.lower()
+    assert str(reglement.pk) in contenu

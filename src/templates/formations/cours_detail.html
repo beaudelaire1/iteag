@@ -5,7 +5,7 @@
 {% block meta_description %}{{ cours.description|truncatewords:30 }}{% endblock %}
 
 {% block extra_head %}
-{% include "partials/jsonld_course.html" with course=cours %}
+{% include "partials/jsonld_course.html" with nom=cours.titre description=cours.description credential=cours.ects|default:"2.5"|stringformat:"s"|add:" ECTS" %}
 {% endblock %}
 
 {% block content %}

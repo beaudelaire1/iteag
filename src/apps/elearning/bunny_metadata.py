@@ -7,11 +7,11 @@ Bunny a générés (notamment via Smart Chapters) et il est mis en cache.
 
 import json
 import logging
-import os
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from django.conf import settings
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -21,10 +21,16 @@ TIMEOUT_BUNNY_SECONDES = 3
 
 
 def _configuration() -> tuple[str, str]:
-    """Retourne l'identifiant de bibliothèque et la clé API, sans les exposer."""
+    """Retourne l'identifiant de bibliothèque et la clé API, sans les exposer.
+
+    Ces valeurs passent par les réglages Django et non par `os.environ` :
+    autrement, `verifier_production` ne peut pas les contrôler, et leur absence
+    ne se voit qu'à l'usage — un lecteur qui n'affiche jamais de chapitres,
+    sans qu'aucune erreur ne soit levée.
+    """
     return (
-        os.environ.get("BUNNY_STREAM_LIBRARY_ID", "").strip(),
-        os.environ.get("BUNNY_STREAM_API_KEY", "").strip(),
+        str(getattr(settings, "BUNNY_STREAM_LIBRARY_ID", "") or "").strip(),
+        str(getattr(settings, "BUNNY_STREAM_API_KEY", "") or "").strip(),
     )
 
 

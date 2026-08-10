@@ -4,6 +4,10 @@
 {% block title %}{{ parcours.nom }} — Formations — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ parcours.description|truncatewords:30 }}{% endblock %}
 
+{% block extra_head %}
+{% include "partials/jsonld_course.html" with nom=parcours.nom description=parcours.description credential=parcours.ects_requis|stringformat:"s"|add:" ECTS" niveau=parcours.get_type_parcours_display %}
+{% endblock %}
+
 {% block content %}
 
 {# ─── HERO ─── #}

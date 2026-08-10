@@ -3,6 +3,9 @@
 import json
 import logging
 import subprocess  # noqa: S404 — appel maîtrisé à ffprobe, sans shell
+from datetime import timedelta
+
+from django.utils import timezone
 
 from celery import shared_task
 
@@ -118,6 +121,31 @@ def expirer_acces() -> int:
 
     nombre = expirer_acces_echus()
     logger.info("Accès expirés : %s", nombre)
+    return nombre
+
+
+@shared_task(name="elearning.purger_journal_acces")
+def purger_journal_acces(jours: int | None = None) -> int:
+    """Purge le journal d'accès vidéo au-delà de la durée de conservation.
+
+    Cette table est la plus écrite du domaine — une ligne par demande de
+    lecture, autorisée ou refusée — et chaque ligne porte une adresse IP
+    nominative. Sans purge, elle croît sans borne et conserve indéfiniment des
+    données que le registre annonce comme temporaires.
+
+    La durée vit dans `RETENTION_JOURNAL_ACCES_VIDEO_JOURS`, justifiée au §3 bis
+    du registre des traitements : la finalité codée — repérer un compte partagé
+    — n'exploite qu'une fenêtre de quelques heures.
+    """
+    from django.conf import settings
+
+    from apps.elearning.models import JournalAccesVideo
+
+    if jours is None:
+        jours = int(getattr(settings, "RETENTION_JOURNAL_ACCES_VIDEO_JOURS", 90))
+    limite = timezone.now() - timedelta(days=jours)
+    nombre, _ = JournalAccesVideo.objects.filter(created_at__lt=limite).delete()
+    logger.info("Purge du journal d'accès vidéo : %s entrée(s) supprimée(s)", nombre)
     return nombre
 
 

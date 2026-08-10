@@ -28,7 +28,7 @@
                 <div class="nav-groupe" data-rubrique>
                     <a href="{{ rubrique.url }}"
                        class="nav-link{% if rubrique.active %} active{% endif %}"
-                       {% if rubrique.active %}aria-current="true"{% endif %}
+                       {% if rubrique.active %}aria-current="page"{% endif %}
                        aria-haspopup="true"
                        aria-controls="rubrique-{{ rubrique.cle }}"
                        data-rubrique-intitule>
@@ -47,7 +47,7 @@
                 {% else %}
                 <a href="{{ rubrique.url }}"
                    class="nav-link{% if rubrique.active %} active{% endif %}"
-                   {% if rubrique.active %}aria-current="true"{% endif %}>{{ rubrique.libelle }}</a>
+                   {% if rubrique.active %}aria-current="page"{% endif %}>{{ rubrique.libelle }}</a>
                 {% endif %}
                 {% endfor %}
             </div>

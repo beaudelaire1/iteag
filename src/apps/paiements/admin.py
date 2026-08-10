@@ -5,7 +5,16 @@ from apps.paiements.models import EvenementStripe, Reglement
 
 @admin.register(Reglement)
 class ReglementAdmin(admin.ModelAdmin):
-    list_display = ["libelle", "nature", "montant_ttc", "taux_tva", "statut", "contrepartie_delivree", "created_at"]
+    list_display = [
+        "libelle",
+        "nature",
+        "montant_ttc",
+        "taux_tva",
+        "statut",
+        "contrepartie_delivree",
+        "tentatives_livraison",
+        "created_at",
+    ]
     list_filter = ["statut", "nature", "contrepartie_delivree"]
     search_fields = ["libelle", "email", "session_stripe", "intention_stripe"]
     date_hierarchy = "created_at"
@@ -31,6 +40,11 @@ class ReglementAdmin(admin.ModelAdmin):
         "date_remboursement",
         "motif_echec",
         "contrepartie_delivree",
+        # Ce que la réparation planifiée a tenté, et pourquoi elle n'y arrive
+        # pas : c'est ce que le secrétariat vient lire quand l'alerte tombe.
+        "tentatives_livraison",
+        "derniere_erreur_livraison",
+        "livraison_signalee",
     ]
 
     def has_add_permission(self, request):

@@ -209,10 +209,17 @@ class TestCeQueLeVisiteurRecoit:
         assert mobile.count("for rubrique in navigation_publique") == 1
 
     def test_la_rubrique_courante_est_marquee(self, client):
-        """Sur « /formations/ », la barre doit dire qu'on est dans les formations."""
+        """Sur « /formations/ », la barre doit dire qu'on est dans les formations.
+
+        Le jeton attendu est `page`, et non `true` : c'est celui que WAI-ARIA
+        prévoit pour « la page courante au sein d'un ensemble de liens ». Les
+        lecteurs d'écran annoncent alors « page courante » ; `true` ne dit que
+        « courant », sans préciser de quoi.
+        """
         contenu = self._page(client, reverse("formations:parcours_list"))
         assert "nav-link active" in contenu, "Aucune rubrique active sur sa propre page"
-        assert 'aria-current="true"' in contenu, "L'état actif n'est pas annoncé aux technologies d'assistance"
+        assert 'aria-current="page"' in contenu, "L'état actif n'est pas annoncé aux technologies d'assistance"
+        assert 'aria-current="true"' not in contenu, "Le jeton générique ne désigne pas la rubrique courante"
 
     def test_aucune_rubrique_marquee_hors_de_son_domaine(self, client):
         contenu = self._page(client, reverse("accounts:login"))

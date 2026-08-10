@@ -107,6 +107,20 @@ class Reglement(UUIDModel, TimeStampedModel):
     motif_echec = models.TextField(blank=True)
     contrepartie_delivree = models.BooleanField(default=False, editable=False)
 
+    # Ce que la réparation planifiée a déjà tenté. Sans compteur, un rattrapage
+    # qui échoue toutes les quinze minutes remplacerait un silence par un
+    # autre : personne ne saurait qu'un paiement encaissé n'a rien ouvert.
+    tentatives_livraison = models.PositiveSmallIntegerField(
+        default=0,
+        editable=False,
+        verbose_name="Tentatives de rattrapage",
+    )
+    derniere_erreur_livraison = models.TextField(blank=True, verbose_name="Dernier échec de livraison")
+    # Le secrétariat n'est prévenu qu'une fois : une alerte répétée toutes les
+    # quinze minutes finit par ne plus être lue, ce qui est exactement le
+    # problème que cette alerte est censée résoudre.
+    livraison_signalee = models.BooleanField(default=False, editable=False)
+
     class Meta:
         verbose_name = "Règlement"
         verbose_name_plural = "Règlements"

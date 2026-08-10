@@ -23,10 +23,13 @@ class ReponseBunny:
         return json.dumps(self.charge).encode("utf-8")
 
 
-def test_chapitres_bunny_sont_normalises_et_mis_en_cache(monkeypatch):
+def test_chapitres_bunny_sont_normalises_et_mis_en_cache(monkeypatch, settings):
     cache.clear()
-    monkeypatch.setenv("BUNNY_STREAM_LIBRARY_ID", "12345")
-    monkeypatch.setenv("BUNNY_STREAM_API_KEY", "cle-api-privee")
+    # Ces deux valeurs passent par les réglages Django et non par os.environ :
+    # autrement, `verifier_production` ne peut pas contrôler leur présence, et
+    # leur absence ne se voit qu'à l'usage — un lecteur sans chapitres.
+    settings.BUNNY_STREAM_LIBRARY_ID = "12345"
+    settings.BUNNY_STREAM_API_KEY = "cle-api-privee"
     appels = []
 
     def faux_urlopen(requete, timeout):
@@ -54,10 +57,11 @@ def test_chapitres_bunny_sont_normalises_et_mis_en_cache(monkeypatch):
     assert appels[0][0].get_header("Accesskey") == "cle-api-privee"
 
 
-def test_chapitres_bunny_sont_facultatifs_sans_cle_api(monkeypatch):
+def test_chapitres_bunny_sont_facultatifs_sans_cle_api(settings):
+    """La lecture ne dépend jamais de l'API : sans clé, la vidéo démarre quand même."""
     cache.clear()
-    monkeypatch.delenv("BUNNY_STREAM_LIBRARY_ID", raising=False)
-    monkeypatch.delenv("BUNNY_STREAM_API_KEY", raising=False)
+    settings.BUNNY_STREAM_LIBRARY_ID = ""
+    settings.BUNNY_STREAM_API_KEY = ""
 
     assert bunny_metadata.chapitres_video("video-123") == []
 

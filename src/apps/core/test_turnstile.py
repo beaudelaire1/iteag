@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock, patch
 
 import pytest
@@ -78,6 +79,42 @@ def test_action_ou_hote_inattendu_est_refuse(post, action, hostname):
 @patch("apps.core.services.turnstile.requests.post", side_effect=Timeout)
 def test_indisponibilite_cloudflare_echoue_fermee(post):
     assert valider_requete(requete_avec_jeton(), action="connexion") is False
+
+
+# Les deux refus ci-dessous se ressemblent — même retour `False`, même message
+# à l'écran — et n'appellent pas du tout la même réaction : un jeton rejeté est
+# un visiteur qui recommence, une panne de Siteverify bloque toutes les
+# connexions, personnel compris. Le §5 du runbook fait chercher ces deux
+# libellés dans le journal pour trancher : les figer ici évite qu'un
+# remaniement les change sans que la procédure suive.
+
+
+@override_settings(**PROTECTION_ACTIVE)
+@patch("apps.core.services.turnstile.requests.post", side_effect=Timeout)
+def test_une_panne_de_siteverify_se_distingue_dans_le_journal(post, caplog):
+    with caplog.at_level(logging.INFO, logger="apps.core.services.turnstile"):
+        valider_requete(requete_avec_jeton(), action="connexion")
+
+    trace = caplog.records[-1]
+    assert "Vérification Turnstile impossible" in trace.getMessage()
+    # Une panne qui bloque toute connexion ne doit pas se ranger au niveau
+    # d'un refus ordinaire, sinon l'alerte ne se déclenche pas.
+    assert trace.levelno >= logging.ERROR
+
+
+@override_settings(**PROTECTION_ACTIVE)
+@patch("apps.core.services.turnstile.requests.post")
+def test_un_jeton_rejete_se_distingue_d_une_panne(post, caplog):
+    reponse = Mock()
+    reponse.json.return_value = {"success": False, "error-codes": ["invalid-input-response"]}
+    post.return_value = reponse
+
+    with caplog.at_level(logging.INFO, logger="apps.core.services.turnstile"):
+        assert valider_requete(requete_avec_jeton(), action="connexion") is False
+
+    trace = caplog.records[-1]
+    assert "Jeton Turnstile refusé" in trace.getMessage()
+    assert trace.levelno < logging.ERROR
 
 
 @override_settings(CLOUDFLARE_TURNSTILE_ENABLED=False)

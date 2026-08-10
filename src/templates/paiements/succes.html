@@ -7,7 +7,7 @@
 <section class="section" style="padding-top: 3.5rem;">
     <div class="container-narrow">
 
-        {% if confirme %}
+        {% if confirme and contrepartie_delivree %}
         <h1 class="text-2xl mb-4">Paiement confirmé</h1>
         <p class="text-warm-600 mb-6">
             Nous avons bien reçu votre règlement de
@@ -21,6 +21,28 @@
         {% elif reglement.nature == "frais_inscription" %}
         <a href="{% url 'etudiant:enrollment_requests' %}" class="btn-primary">Suivre mon inscription</a>
         {% endif %}
+
+        {% elif confirme %}
+        {% comment %}
+        Encaissé, mais la contrepartie n'est pas ouverte. Proposer ici le lien
+        vers la formation mènerait à un refus d'accès : le paiement serait
+        confirmé à l'écran et démenti au clic suivant.
+        {% endcomment %}
+        <h1 class="text-2xl mb-4">Paiement reçu — accès en cours d'ouverture</h1>
+        <p class="text-warm-600 mb-6">
+            Votre règlement de
+            <strong>{{ reglement.montant_ttc }} {{ reglement.devise }}</strong>
+            pour « {{ reglement.libelle }} » est bien encaissé, et un reçu vous a été
+            envoyé à {{ reglement.email }}. L'ouverture de votre accès prend un peu
+            plus de temps que prévu : elle se termine automatiquement, sans action
+            de votre part.
+        </p>
+        <p class="text-sm text-warm-500 mb-6">
+            Si vous n'y avez toujours pas accès d'ici une heure, écrivez au secrétariat
+            en indiquant la référence <code>{{ reglement.pk }}</code>. Votre paiement est
+            enregistré : rien n'est perdu, et vous n'avez pas à régler une seconde fois.
+        </p>
+        <a href="" class="btn-ghost">Recharger</a>
 
         {% else %}
         <h1 class="text-2xl mb-4">Paiement en cours de confirmation</h1>

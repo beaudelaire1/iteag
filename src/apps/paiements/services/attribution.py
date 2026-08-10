@@ -35,8 +35,20 @@ def delivrer(reglement: Reglement, *, acteur=None) -> Reglement:
     }
     livreurs[reglement.nature](reglement, acteur=acteur)
 
+    # La livraison a abouti : le compteur de rattrapage repart à zéro, faute de
+    # quoi un règlement rattrapé au troisième essai resterait marqué comme un
+    # incident ouvert.
     reglement.contrepartie_delivree = True
-    reglement.save(update_fields=["contrepartie_delivree", "updated_at"])
+    reglement.tentatives_livraison = 0
+    reglement.derniere_erreur_livraison = ""
+    reglement.save(
+        update_fields=[
+            "contrepartie_delivree",
+            "tentatives_livraison",
+            "derniere_erreur_livraison",
+            "updated_at",
+        ]
+    )
     journaliser(
         JournalAudit.Action.PAIEMENT_RECU,
         utilisateur=acteur or reglement.utilisateur,

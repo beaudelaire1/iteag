@@ -119,7 +119,13 @@ class SuccesView(View):
         return render(
             request,
             "paiements/succes.html",
-            {"reglement": reglement, "confirme": reglement.est_paye},
+            {
+                "reglement": reglement,
+                "confirme": reglement.est_paye,
+                # Payé ne veut pas dire délivré. Le gabarit a besoin des deux
+                # pour ne pas proposer un accès qui répondrait 403.
+                "contrepartie_delivree": reglement.contrepartie_delivree,
+            },
         )
 
 

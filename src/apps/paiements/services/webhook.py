@@ -11,7 +11,8 @@ Trois propriétés sont exigées de ce module :
 
 * **authenticité** — la signature est vérifiée en amont (`stripe_client`) ;
 * **idempotence** — Stripe redélivre, et l'insertion en base de l'identifiant
-  d'événement est ce qui tranche ;
+  d'événement est ce qui départage deux livraisons concurrentes ; ce qui
+  départage une redélivrance d'un rejeu, c'est le champ `traite` ;
 * **acquittement honnête** — on ne répond 2xx que si l'on a réellement traité.
   Répondre 200 sur une erreur ferait taire Stripe et perdre l'encaissement.
 """
@@ -71,7 +72,25 @@ def traiter(evenement: dict) -> EvenementStripe | None:
                 charge_utile=evenement if isinstance(evenement, dict) else {},
             )
     except IntegrityError as erreur:
-        raise EvenementDejaTraite(evenement["id"]) from erreur
+        # Une trace existe déjà — mais « déjà consignée » ne veut pas dire
+        # « déjà traitée ». La trace est écrite avant l'action : si l'action a
+        # échoué, la vue a répondu 500, Stripe a redélivré, et c'est ici que
+        # l'on retombe. Lever sans regarder ferait répondre 200 à la seule
+        # occasion de rattraper la livraison, et Stripe se tairait
+        # définitivement sur un paiement encaissé sans contrepartie.
+        #
+        # On relit donc `traite`, qui n'avait jusqu'ici aucun lecteur. Rejouer
+        # est sûr : `attribution.delivrer` est idempotent sous verrou.
+        trace = EvenementStripe.objects.filter(identifiant=evenement["id"]).first()
+        if trace is None or trace.traite:
+            raise EvenementDejaTraite(evenement["id"]) from erreur
+        logger.warning(
+            "Notification Stripe %s consignée mais non traitée : rejeu de l'action.",
+            evenement["id"],
+        )
+        if reglement is not None and trace.reglement_id is None:
+            trace.reglement = reglement
+            trace.save(update_fields=["reglement", "updated_at"])
 
     if reglement is None:
         trace.erreur = "Aucun règlement ne correspond à cette notification."
@@ -94,7 +113,8 @@ def traiter(evenement: dict) -> EvenementStripe | None:
         raise
 
     trace.traite = True
-    trace.save(update_fields=["traite", "updated_at"])
+    trace.erreur = ""
+    trace.save(update_fields=["traite", "erreur", "updated_at"])
     return trace
 
 

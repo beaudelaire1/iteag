@@ -467,6 +467,38 @@ CLOUDFLARE_TURNSTILE_ENABLED = env.bool(
 CLOUDFLARE_TURNSTILE_TIMEOUT = env.float("CLOUDFLARE_TURNSTILE_TIMEOUT", default=5.0)
 
 # ──────────────────────────────────────────────
+# Durées de conservation
+# ──────────────────────────────────────────────
+#
+# Une durée de conservation vit à trois endroits : la tâche qui purge, le
+# registre des traitements et la politique publiée. Tant qu'elle était recopiée
+# dans les trois, elle a divergé — le code appliquait deux ans quand la
+# politique en annonçait un, ce qui est une information trompeuse au sens de
+# l'article 13 du RGPD, opposable lors d'une réclamation.
+#
+# Ces constantes sont désormais la seule source. Les tâches lisent ici, et
+# `apps/core/test_retention.py` échoue si un document annonce autre chose.
+# Changer une durée, c'est changer la ligne ci-dessous **et** les documents que
+# le test vérifie : aucun des deux ne peut plus bouger seul.
+#
+# Valeurs arbitrées le 9 août 2026 — voir `docs/conformite/registre_traitements.md` §3 bis.
+
+# Le cahier des charges engage l'ITEAG sur douze mois de journaux de sécurité,
+# et la politique publiée l'annonce déjà. C'est donc le code qui s'aligne.
+RETENTION_JOURNAL_AUDIT_JOURS = env.int("RETENTION_JOURNAL_AUDIT_JOURS", default=365)
+
+# La finalité codée — repérer un compte partagé — n'exploite qu'une fenêtre de
+# quelques heures. Trois mois laissent de quoi instruire un signalement tardif
+# sans conserver un an d'adresses IP nominatives dont personne ne fait rien.
+RETENTION_JOURNAL_ACCES_VIDEO_JOURS = env.int("RETENTION_JOURNAL_ACCES_VIDEO_JOURS", default=90)
+
+# Corps des notifications Stripe. À ne pas confondre avec la conservation des
+# pièces comptables (10 ans), qui porte sur le montant et la référence — eux
+# survivent à la minimisation. Trois mois couvrent très largement la fenêtre de
+# redélivrance de Stripe (quelques jours) et un trimestre de rapprochement.
+RETENTION_CHARGE_UTILE_STRIPE_JOURS = env.int("RETENTION_CHARGE_UTILE_STRIPE_JOURS", default=90)
+
+# ──────────────────────────────────────────────
 # Celery
 # ──────────────────────────────────────────────
 
@@ -510,6 +542,22 @@ CELERY_BEAT_SCHEDULE = {
         "task": "core.purger_journal_audit",
         "schedule": 30 * 24 * 60 * 60,
     },
+    "elearning-purger-journal-acces": {
+        "task": "elearning.purger_journal_acces",
+        "schedule": 30 * 24 * 60 * 60,
+    },
+    # Le filet du paiement : un encaissement dont la contrepartie n'est pas
+    # partie doit se rattraper tout seul, et se dire s'il ne se rattrape pas.
+    # Un quart d'heure est assez court pour que l'étudiant ne s'en aperçoive
+    # pas, assez long pour ne pas courir derrière une livraison en cours.
+    "paiements-reparer-livraisons": {
+        "task": "paiements.reparer_livraisons",
+        "schedule": 15 * 60,
+    },
+    "paiements-minimiser-charges-utiles": {
+        "task": "paiements.minimiser_charges_utiles",
+        "schedule": 24 * 60 * 60,
+    },
 }
 
 # Boutique de livres
@@ -530,6 +578,13 @@ COMMERCE_REMISE_ETUDIANT = env("COMMERCE_REMISE_ETUDIANT", default="0.10")  # 10
 # secret de signature est ce qui distingue une notification réellement émise
 # par Stripe d'un appel forgé : sans lui, n'importe qui pourrait déclarer un
 # paiement abouti.
+# Réparation des livraisons manquées. Le délai de grâce évite de rejouer une
+# livraison qui est simplement en train de s'exécuter ; le seuil d'alerte est
+# le nombre de tentatives infructueuses au-delà duquel le secrétariat est
+# prévenu — parce qu'un rattrapage qui échoue en boucle est un silence de plus.
+PAIEMENTS_DELAI_REPARATION_MINUTES = env.int("PAIEMENTS_DELAI_REPARATION_MINUTES", default=15)
+PAIEMENTS_SEUIL_ALERTE_LIVRAISON = env.int("PAIEMENTS_SEUIL_ALERTE_LIVRAISON", default=2)
+
 STRIPE_CLE_PUBLIABLE = env("STRIPE_CLE_PUBLIABLE", default="")
 STRIPE_CLE_SECRETE = env("STRIPE_CLE_SECRETE", default="")
 STRIPE_SECRET_WEBHOOK = env("STRIPE_SECRET_WEBHOOK", default="")
@@ -540,6 +595,12 @@ STRIPE_DEVISE = env("STRIPE_DEVISE", default="EUR")
 # formation professionnelle (taux 0) pour ses modules tout en facturant la TVA
 # sur les livres.
 PAIEMENTS_TAUX_TVA_DEFAUT = env("PAIEMENTS_TAUX_TVA_DEFAUT", default="0.00")
+
+# Sonde de santé. Vide — le défaut — la sonde publie son détail par dépendance
+# à qui la consulte : deux booléens, une position tenable et assumée. Renseigné,
+# le code de réponse reste public (la supervision et le HEALTHCHECK en vivent)
+# mais le détail exige l'en-tête « X-Healthz-Token ». Voir apps/core/views.py.
+HEALTHZ_JETON = env("HEALTHZ_JETON", default="")
 
 # Réservé aux instances de recette : laisse démarrer avec des clés « sk_test_ »
 # hors DEBUG. Absent en production, où le contrôle paiements.E003 s'applique.
@@ -580,6 +641,14 @@ BUNNY_CLE_SIGNATURE = env("BUNNY_CLE_SIGNATURE", default="")
 # Liaison du jeton à l'adresse IP : plus strict, mais coupe la lecture quand
 # l'adresse change en cours de séance — fréquent en mobile.
 BUNNY_LIER_ADRESSE_IP = env.bool("BUNNY_LIER_ADRESSE_IP", default=False)
+
+# API Stream, employée pour les seuls chapitres éditoriaux du lecteur — jamais
+# sur le chemin critique de lecture, qui signe le HLS localement. Ces deux
+# valeurs étaient lues directement dans `os.environ` : elles échappaient donc à
+# `verifier_production`, et leur absence dégradait en silence — le lecteur
+# fonctionnait, sans jamais afficher de chapitres, et rien ne le disait.
+BUNNY_STREAM_LIBRARY_ID = env("BUNNY_STREAM_LIBRARY_ID", default="").strip()
+BUNNY_STREAM_API_KEY = env("BUNNY_STREAM_API_KEY", default="").strip()
 
 # Nombre de lectures simultanées tolérées par compte. 1 = un seul appareil à la
 # fois, ce qui rend le partage de compte inconfortable sans gêner un usage normal.

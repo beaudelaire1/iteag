@@ -2,8 +2,10 @@
 
 import json
 import re
+from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.contrib.sitemaps.views import sitemap
 from django.template.loader import render_to_string
 from django.test import RequestFactory, override_settings
@@ -61,6 +63,85 @@ def test_schema_organisation_est_un_json_valide():
     assert {zone["name"] for zone in organisation["areaServed"]} == {"Guadeloupe", "Martinique", "Guyane"}
     assert site["name"] == "ITEAG"
     assert site["url"] == "https://iteag.org/"
+
+
+CONTEXTE_SITE = {
+    "SITE_URL": "https://iteag.org",
+    "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
+    "CANONICAL_URL": "https://iteag.org/formations/exemple/",
+}
+
+
+def _course(**parametres):
+    rendu = render_to_string("partials/jsonld_course.html", CONTEXTE_SITE | parametres)
+    bloc = re.search(r"<script[^>]*>(.*?)</script>", rendu, re.S).group(1)
+    # Un JSON invalide n'est pas une erreur visible : le moteur de recherche
+    # ignore le bloc en silence, et la fiche disparaît des résultats enrichis
+    # sans que rien ne le signale. D'où le parsage réel plutôt qu'une
+    # recherche de sous-chaîne.
+    return json.loads(bloc)
+
+
+class TestDonneesStructureesDesFormations:
+    """
+    Le même gabarit sert aux cours, aux parcours et aux modules e-learning.
+    Les champs facultatifs y sont introduits par des virgules conditionnelles :
+    c'est exactement la construction qui produit un JSON invalide au premier
+    remaniement, et qui échoue sans bruit.
+    """
+
+    def test_le_minimum_suffit_a_produire_un_json_valide(self):
+        donnees = _course(nom="Introduction à l'Ancien Testament")
+
+        assert donnees["@type"] == "Course"
+        assert donnees["name"] == "Introduction à l'Ancien Testament"
+        assert donnees["provider"]["@id"] == "https://iteag.org/#organization"
+        assert donnees["inLanguage"] == "fr"
+        # Les champs non fournis ne doivent pas apparaître vides.
+        assert "educationalLevel" not in donnees
+        assert "instructor" not in donnees
+        assert "courseMode" not in donnees
+
+    def test_tous_les_champs_facultatifs_ensemble_restent_valides(self):
+        donnees = _course(
+            nom="Module e-learning",
+            description="<p>Une description <strong>balisée</strong>.</p>",
+            credential="180 ECTS",
+            niveau="Licence",
+            instructeur="Marie Nestor",
+            mode="online",
+        )
+
+        assert donnees["educationalCredentialAwarded"] == "180 ECTS"
+        assert donnees["educationalLevel"] == "Licence"
+        assert donnees["instructor"] == {"@type": "Person", "name": "Marie Nestor"}
+        assert donnees["courseMode"] == "online"
+        assert "<p>" not in donnees["description"]
+
+    def test_une_apostrophe_ne_casse_pas_le_bloc(self):
+        """Le nom d'un parcours en contient presque toujours une."""
+        donnees = _course(nom="Théologie « pratique » de l'Église", description='Guillemets "droits" inclus.')
+
+        assert "Église" in donnees["name"]
+
+    @pytest.mark.parametrize(
+        ("gabarit", "attendu"),
+        [
+            ("formations/cours_detail.html", "cours"),
+            ("formations/parcours_detail.html", "parcours"),
+            ("elearning/module_detail.html", "module"),
+        ],
+    )
+    def test_les_trois_fiches_emploient_le_meme_gabarit(self, gabarit, attendu):
+        """
+        Le module portait sa propre copie du bloc. Deux descriptions du même
+        type d'objet finissent par diverger : celle qu'on oublie de corriger
+        est celle que le moteur de recherche lit.
+        """
+        chemin = Path(settings.BASE_DIR) / "templates" / gabarit
+        source = chemin.read_text(encoding="utf-8")
+        assert "partials/jsonld_course.html" in source
+        assert '"@type": "Course"' not in source, f"La fiche {attendu} redéfinit le bloc au lieu de l'inclure."
 
 
 @pytest.mark.django_db

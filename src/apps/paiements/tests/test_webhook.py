@@ -6,6 +6,7 @@ est délivré, une seule fois, et ce qui est remboursé est repris. Chaque test
 correspond à une manière connue de perdre de l'argent ou d'en faire perdre.
 """
 
+import json
 from decimal import Decimal
 
 import pytest
@@ -13,7 +14,7 @@ from django.urls import reverse
 
 from apps.elearning.models import InscriptionModule
 from apps.paiements.models import EvenementStripe, Reglement
-from apps.paiements.services import webhook
+from apps.paiements.services import attribution, webhook
 from apps.paiements.tests.conftest import evenement
 
 
@@ -89,6 +90,89 @@ class TestIdempotence:
         webhook.traiter(evenement("checkout.session.completed", session_payee(reglement)))
         reglement.refresh_from_db()
         assert reglement.contrepartie_delivree is True
+
+
+# ══════════════════════════════════════════════
+# Une livraison manquée se rattrape au lieu de se taire
+# ══════════════════════════════════════════════
+#
+# Le scénario que ces tests couvrent est celui qui coûte le plus cher : la
+# trace de l'événement est écrite **avant** la livraison. Si la livraison
+# échoue, la trace existe déjà. À la redélivrance, l'insertion viole l'unicité,
+# et si l'on en concluait « déjà traité », on répondrait 200 à Stripe — qui se
+# tairait alors définitivement sur un paiement encaissé sans contrepartie.
+
+
+@pytest.mark.django_db
+class TestUneLivraisonManqueeSeRattrape:
+    def test_une_redelivrance_rejoue_une_livraison_echouee(self, monkeypatch, reglement, etudiant, module_vendu):
+        """Le test central du lot : Stripe redélivre, et cette fois ça passe."""
+        charge = evenement("checkout.session.completed", session_payee(reglement))
+        vrai_delivrer = attribution.delivrer
+
+        def delivrer_en_panne(reglement_a_livrer, **kwargs):
+            raise RuntimeError("Base indisponible le temps de la livraison.")
+
+        monkeypatch.setattr(attribution, "delivrer", delivrer_en_panne)
+        with pytest.raises(RuntimeError):
+            webhook.traiter(charge)
+
+        reglement.refresh_from_db()
+        assert reglement.statut == Reglement.Statut.PAYE
+        assert reglement.contrepartie_delivree is False
+        assert EvenementStripe.objects.get(identifiant="evt_test_1").traite is False
+
+        # Stripe redélivre le même événement une fois la panne passée.
+        monkeypatch.setattr(attribution, "delivrer", vrai_delivrer)
+        webhook.traiter(charge)
+
+        reglement.refresh_from_db()
+        assert reglement.contrepartie_delivree is True
+        assert EvenementStripe.objects.get(identifiant="evt_test_1").traite is True
+        assert InscriptionModule.objects.filter(etudiant=etudiant, module=module_vendu).count() == 1
+
+    def test_la_vue_repond_200_apres_le_rejeu(self, monkeypatch, client, reglement):
+        """Ce que Stripe voit : une erreur, puis un acquittement mérité.
+
+        Avant correction, la seconde réponse valait déjà 200 — mais sans avoir
+        rien délivré. C'est la dernière assertion qui distingue les deux.
+        """
+        charge = evenement("checkout.session.completed", session_payee(reglement))
+        monkeypatch.setattr("apps.paiements.views.lire_evenement", lambda corps, signature: charge)
+
+        def delivrer_en_panne(reglement_a_livrer, **kwargs):
+            raise RuntimeError("Panne passagère.")
+
+        vrai_delivrer = attribution.delivrer
+        monkeypatch.setattr(attribution, "delivrer", delivrer_en_panne)
+
+        adresse = reverse("paiements:webhook_stripe")
+        envoyer = lambda: client.post(  # noqa: E731 — la même requête, deux fois
+            adresse,
+            data=json.dumps(charge),
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="sig_valide",
+        )
+        assert envoyer().status_code == 500
+
+        monkeypatch.setattr(attribution, "delivrer", vrai_delivrer)
+        assert envoyer().status_code == 200
+        reglement.refresh_from_db()
+        assert reglement.contrepartie_delivree is True
+
+    def test_une_redelivrance_d_un_evenement_traite_ne_refait_rien(self, reglement, etudiant, module_vendu):
+        """L'idempotence tient toujours : rejouer ne vaut que si rien n'a été fait."""
+        charge = evenement("checkout.session.completed", session_payee(reglement))
+        webhook.traiter(charge)
+        inscription = InscriptionModule.objects.get(etudiant=etudiant, module=module_vendu)
+
+        with pytest.raises(webhook.EvenementDejaTraite):
+            webhook.traiter(charge)
+
+        assert EvenementStripe.objects.filter(identifiant="evt_test_1").count() == 1
+        assert InscriptionModule.objects.filter(etudiant=etudiant, module=module_vendu).count() == 1
+        inscription.refresh_from_db()
+        assert inscription.statut == InscriptionModule.StatutAcces.ACTIF
 
 
 # ══════════════════════════════════════════════

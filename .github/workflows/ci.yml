@@ -1,10 +1,19 @@
 name: CI
 
+# Le rendez-vous hebdomadaire ne sert qu'au job « security ». Une fois le site
+# en service, le dépôt bougera peu : une CVE publiée sur Django, Wagtail ou
+# Pillow après la dernière fusion ne serait signalée à personne, alors même que
+# le verrou à empreintes garantit que l'image déployée contient exactement la
+# version vulnérable. Les autres jobs se coupent sur ce déclencheur — relancer
+# lint, tests et build à l'identique chaque lundi ne démontrerait rien.
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "40 4 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,6 +30,8 @@ env:
 jobs:
   lint:
     name: Lint
+    # Le rendez-vous hebdomadaire est réservé à l'analyse de vulnérabilités.
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -39,6 +50,8 @@ jobs:
 
   test:
     name: Tests
+    # Le rendez-vous hebdomadaire est réservé à l'analyse de vulnérabilités.
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -90,6 +103,8 @@ jobs:
 
   build:
     name: Build & production checks
+    # Le rendez-vous hebdomadaire est réservé à l'analyse de vulnérabilités.
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -185,6 +200,9 @@ jobs:
           docker run --rm iteag-backup-ci \
             python3 /opt/iteag/postgres_backup_r2.py --help >/dev/null
 
+  # Seul job à tourner aussi sur le rendez-vous hebdomadaire. Un « schedule »
+  # qui échoue en silence ne vaut rien : vérifier que l'échec de ce job est
+  # bien notifié à quelqu'un (§3 du runbook, « Analyse de vulnérabilités »).
   security:
     name: Security Scan
     runs-on: ubuntu-latest

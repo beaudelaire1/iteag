@@ -1,5 +1,8 @@
 """Vues transverses : notifications, newsletter, sonde de santé."""
 
+import secrets
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
@@ -181,15 +184,49 @@ class NewsletterDesinscriptionView(View):
 
 
 class HealthzView(View):
-    """État des dépendances, pour la supervision et le HEALTHCHECK du conteneur."""
+    """État des dépendances, pour la supervision et le HEALTHCHECK du conteneur.
+
+    **Arbitrage retenu le 9 août 2026** — la sonde reste publique, mais son
+    détail ne l'est pas nécessairement.
+
+    Fermer l'adresse elle-même a été écarté : le HEALTHCHECK du conteneur, le
+    routage de Coolify et n'importe quelle supervision externe s'appuient sur
+    son code de réponse. La restreindre par réseau obligerait à la rouvrir à
+    chacun d'eux, et une sonde que la supervision ne peut pas joindre ne
+    supervise rien.
+
+    Ce qui méritait d'être protégé n'est pas l'existence de la panne — un 503
+    la révèle de toute façon — mais **sa nature** : dire publiquement « la base
+    répond, le cache non » renseigne un attaquant sur ce qu'il vient de faire
+    tomber. Le code de réponse reste donc toujours lisible, et le détail par
+    dépendance n'est servi qu'à qui présente `HEALTHZ_JETON` dans l'en-tête
+    `X-Healthz-Token`.
+
+    Sans jeton configuré — le défaut — le comportement est celui d'avant : tout
+    est public. C'est une position tenable pour une sonde qui n'expose que deux
+    booléens ; c'est à l'exploitant de la retenir ou de poser un jeton selon la
+    supervision qu'il met en place. Le §3 du runbook porte la décision.
+    """
+
+    EN_TETE_JETON = "HTTP_X_HEALTHZ_TOKEN"
 
     def get(self, request):
         etats = {"base": self._base(), "cache": self._cache()}
         tout_va_bien = all(etats.values())
-        return JsonResponse(
-            {"statut": "ok" if tout_va_bien else "degrade", **etats},
-            status=200 if tout_va_bien else 503,
-        )
+        corps = {"statut": "ok" if tout_va_bien else "degrade"}
+        if self._detail_autorise(request):
+            corps.update(etats)
+        return JsonResponse(corps, status=200 if tout_va_bien else 503)
+
+    @classmethod
+    def _detail_autorise(cls, request) -> bool:
+        jeton_attendu = str(getattr(settings, "HEALTHZ_JETON", "") or "")
+        if not jeton_attendu:
+            return True
+        presente = request.META.get(cls.EN_TETE_JETON, "")
+        # Comparaison à temps constant : la sonde est publique et répond vite,
+        # ce qui en ferait un oracle commode pour deviner le jeton octet à octet.
+        return secrets.compare_digest(str(presente), jeton_attendu)
 
     @staticmethod
     def _base() -> bool:

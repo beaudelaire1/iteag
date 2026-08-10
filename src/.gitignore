@@ -25,7 +25,11 @@ venv/
 
 # Node
 node_modules/
-package-lock.json
+# package-lock.json est volontairement versionné — comme le dit le .gitignore
+# de la racine. Il était ignoré ici, sans effet puisque le fichier est déjà
+# suivi, mais la contradiction laissait croire l'inverse à qui lisait ce
+# fichier : la CI et l'image de production installent exactement les versions
+# qu'il épingle.
 .npm-cache/
 .local-prod-deps/
 

@@ -454,6 +454,34 @@ class TestSondeEtErreurs:
         assert donnees["statut"] == "ok"
         assert donnees["base"] is True
 
+    def test_sans_jeton_configure_le_detail_reste_public(self, client, settings):
+        """Le défaut assumé : deux booléens, lisibles par la supervision."""
+        settings.HEALTHZ_JETON = ""
+        donnees = client.get("/healthz").json()
+        assert donnees["base"] is True
+        assert donnees["cache"] is True
+
+    def test_avec_un_jeton_le_detail_se_ferme_mais_pas_la_sonde(self, client, settings):
+        """
+        Ce qui mérite d'être protégé n'est pas l'existence d'une panne — un 503
+        la révèle — mais sa nature : dire « la base répond, le cache non »
+        renseigne un attaquant sur ce qu'il vient de faire tomber.
+        """
+        settings.HEALTHZ_JETON = "jeton-de-supervision"
+
+        anonyme = client.get("/healthz")
+        assert anonyme.status_code == 200, "La supervision doit continuer à lire le code de réponse"
+        assert anonyme.json() == {"statut": "ok"}
+
+        supervise = client.get("/healthz", HTTP_X_HEALTHZ_TOKEN="jeton-de-supervision")
+        assert supervise.json()["base"] is True
+        assert supervise.json()["cache"] is True
+
+    def test_un_jeton_errone_n_ouvre_pas_le_detail(self, client, settings):
+        settings.HEALTHZ_JETON = "jeton-de-supervision"
+        donnees = client.get("/healthz", HTTP_X_HEALTHZ_TOKEN="presque-le-bon").json()
+        assert donnees == {"statut": "ok"}
+
     def test_page_404_a_la_charte(self, client):
         reponse = client.get("/cette-page-n-existe-pas/")
         assert reponse.status_code == 404

@@ -5,24 +5,12 @@
 {% block meta_description %}{{ module.description|truncatewords:30 }}{% endblock %}
 
 {% block extra_head %}
-{# Données structurées Course — visibilité dans les résultats de recherche #}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Course",
-  "name": "{{ module.titre|escapejs }}",
-  "description": "{{ module.description|truncatewords:40|escapejs }}",
-  "url": "{{ CANONICAL_URL }}",
-  "provider": {
-    "@type": "EducationalOrganization",
-    "@id": "{{ SITE_URL }}/#organization",
-    "name": "{{ SITE_FULL_NAME|escapejs }}",
-    "url": "{{ SITE_URL }}/"
-  },
-  "educationalLevel": "{{ module.get_niveau_display|escapejs }}"{% if module.responsable %},
-  "instructor": {"@type": "Person", "name": "{{ module.responsable.nom_complet|escapejs }}"}{% endif %}
-}
-</script>
+{% comment %}
+Données structurées Course — visibilité dans les résultats de recherche. Le
+bloc était recopié ici ; il vient désormais du même gabarit que les cours et
+les parcours, pour que les trois se décrivent de la même façon.
+{% endcomment %}
+{% include "partials/jsonld_course.html" with nom=module.titre description=module.description niveau=module.get_niveau_display instructeur=module.responsable.nom_complet mode="online" %}
 
 {% if lecon_apercu %}
 {# VideoObject sur l'aperçu gratuit : le seul contenu vidéo public du module #}

@@ -35,7 +35,7 @@ def valider_requete(request, *, action: str) -> bool:
 
     jeton = request.POST.get("cf-turnstile-response", "")
     if not isinstance(jeton, str) or not jeton or len(jeton) > LONGUEUR_JETON_MAX:
-        logger.info("Turnstile refuse un jeton absent ou mal formé (action=%s).", action)
+        logger.info("Jeton Turnstile refusé — absent ou mal formé (action=%s).", action)
         return False
 
     hote_attendu = request.get_host().partition(":")[0].lower()
@@ -57,12 +57,23 @@ def valider_requete(request, *, action: str) -> bool:
         reponse.raise_for_status()
         resultat = reponse.json()
     except (RequestException, ValueError, TypeError):
-        logger.exception("Siteverify Turnstile est indisponible (action=%s).", action)
+        # Deux causes mènent au même refus, et elles n'appellent pas la même
+        # réaction : un jeton rejeté est un visiteur de plus qui recommence,
+        # une panne de Siteverify bloque **toutes** les connexions, personnel
+        # compris. Une alerte qui ne dit pas laquelle des deux se produit
+        # envoie l'exploitant chercher au mauvais endroit. D'où le niveau
+        # « erreur » ici, et le libellé que le runbook fait chercher.
+        logger.error(
+            "Vérification Turnstile impossible — Siteverify injoignable (action=%s). "
+            "Toutes les connexions sont bloquées tant que la panne dure : voir le §5 du runbook.",
+            action,
+            exc_info=True,
+        )
         return False
 
     if not isinstance(resultat, dict) or not resultat.get("success"):
         codes = resultat.get("error-codes", []) if isinstance(resultat, dict) else []
-        logger.info("Turnstile refuse le jeton (action=%s, codes=%s).", action, codes)
+        logger.info("Jeton Turnstile refusé par Siteverify (action=%s, codes=%s).", action, codes)
         return False
 
     if resultat.get("action") != action:

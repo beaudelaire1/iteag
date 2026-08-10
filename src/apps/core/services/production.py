@@ -169,6 +169,16 @@ def anomalies_configuration_production() -> list[str]:
         for nom in ("BUNNY_ZONE_DIFFUSION", "BUNNY_CLE_SIGNATURE"):
             if not getattr(settings, nom, ""):
                 anomalies.append(f"{nom} doit être renseigné lorsque Bunny est le fournisseur vidéo.")
+        # Ces deux-là ne sont pas sur le chemin critique — sans elles, la vidéo
+        # se lit, mais le lecteur n'affiche aucun chapitre. La dégradation est
+        # muette : personne ne signale l'absence d'une fonction qu'il n'a
+        # jamais vue. C'est précisément ce qui justifie de la contrôler ici.
+        for nom in ("BUNNY_STREAM_LIBRARY_ID", "BUNNY_STREAM_API_KEY"):
+            if not getattr(settings, nom, ""):
+                anomalies.append(
+                    f"{nom} doit être renseigné : sans lui, les chapitres des leçons "
+                    "restent vides sans qu'aucune erreur ne le signale."
+                )
 
     # ── Publication légale ──
     #
