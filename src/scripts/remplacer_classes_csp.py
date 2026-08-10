@@ -5,11 +5,10 @@ La première migration a déplacé mécaniquement les styles inline vers des
 classes ``csp-style-<empreinte>``. C'était sûr pour la CSP, mais mauvais pour la
 maintenance : l'intention n'est plus visible dans le gabarit.
 
-Ce second passage est volontairement simple : chaque déclaration CSS devient
-un utilitaire Tailwind explicite (standard quand il existe, valeur arbitraire
-sinon). Les deux motifs SVG historiques deviennent des classes nommées du
-design system. Après exécution, aucune classe hashée ne doit subsister et la
-feuille temporaire peut être supprimée.
+Ce second passage transforme chaque déclaration CSS en utilitaire Tailwind
+explicite (standard quand il existe, valeur arbitraire sinon). Les deux motifs
+SVG historiques deviennent des classes nommées du design system. Après
+exécution, aucune classe hashée ne doit subsister.
 """
 
 from __future__ import annotations
@@ -35,8 +34,6 @@ COULEURS_HEX = {
     "#991b1b": "red-800",
 }
 
-# Ces deux fonds contiennent des data-URI : les recopier dans un attribut class
-# serait illisible et fragile. Ils ont donc un vrai nom de design system.
 MOTIFS = {
     "60": "bg-pattern-crosses-soft",
     "80": "bg-pattern-dots-light",
@@ -72,12 +69,6 @@ def utilitaire(propriete: str, valeur: str) -> str:
         if token:
             return token
         return f"[background:{compact(valeur)}]"
-    if propriete == "background-image":
-        if "width=&quot;60&quot;" in valeur:
-            return MOTIFS["60"]
-        if "width=&quot;80&quot;" in valeur:
-            return MOTIFS["80"]
-        raise ValueError("background-image non reconnu : doit recevoir un nom de composant")
     if propriete == "border-color":
         return couleur_token("border", valeur) or f"[border-color:{compact(valeur)}]"
     if propriete == "fill":
@@ -105,13 +96,10 @@ def utilitaire(propriete: str, valeur: str) -> str:
         ("display", "none !important"): "hidden",
         ("display", "none!important"): "hidden",
     }
-    if (propriete, valeur.lower()) in simples:
-        return simples[(propriete, valeur.lower())]
-    if (propriete, valeur) in simples:
-        return simples[(propriete, valeur)]
+    cle = (propriete, valeur.lower())
+    if cle in simples:
+        return simples[cle]
 
-    # Quelques propriétés ont une forme Tailwind arbitraire plus lisible que la
-    # forme générique [property:value].
     prefixes = {
         "font-size": "text",
         "line-height": "leading",
@@ -130,8 +118,6 @@ def utilitaire(propriete: str, valeur: str) -> str:
     if prefixe:
         return f"{prefixe}-[{compact(valeur)}]"
 
-    # Tout le reste demeure explicite : on lit la propriété et la valeur dans
-    # le template, ce qui est exactement ce qu'on perdait avec le hash.
     return f"[{propriete}:{compact(valeur)}]"
 
 
@@ -148,6 +134,19 @@ def parse_declarations(css: str) -> list[tuple[str, str]]:
     return declarations
 
 
+def utilitaires_pour_regle(css: str) -> str:
+    """Traite les data-URI avant le parseur générique de déclarations."""
+    if css.startswith("background-image:") and "data:image/svg+xml" in css:
+        if "width=&quot;60&quot;" in css:
+            return MOTIFS["60"]
+        if "width=&quot;80&quot;" in css:
+            return MOTIFS["80"]
+        raise ValueError("Motif SVG historique non reconnu : nommer le composant explicitement.")
+
+    utilitaires = [utilitaire(prop, valeur) for prop, valeur in parse_declarations(css)]
+    return " ".join(dict.fromkeys(utilitaires))
+
+
 def construire_mapping() -> dict[str, str]:
     mapping: dict[str, str] = {}
     for ligne in CSS_TEMPORAIRE.read_text(encoding="utf-8").splitlines():
@@ -155,8 +154,7 @@ def construire_mapping() -> dict[str, str]:
         if not match:
             continue
         classe, css = match.groups()
-        utilitaires = [utilitaire(prop, valeur) for prop, valeur in parse_declarations(css)]
-        mapping[classe] = " ".join(dict.fromkeys(utilitaires))
+        mapping[classe] = utilitaires_pour_regle(css)
     if len(mapping) < 190:
         raise SystemExit(f"Feuille temporaire incomplète : seulement {len(mapping)} règles trouvées.")
     return mapping
