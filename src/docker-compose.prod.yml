@@ -23,10 +23,11 @@ x-application: &application
 
     SITE_URL: ${SITE_URL:?SITE_URL doit être défini}
     WAGTAILADMIN_BASE_URL: ${WAGTAILADMIN_BASE_URL:?WAGTAILADMIN_BASE_URL doit être défini}
-    # Coolify fournit SOURCE_COMMIT pour chaque déploiement Git. Le transmettre
-    # au conteneur permet aux audits externes de prouver que l'URL testée sert
-    # exactement la révision attendue, et non la préproduction précédente.
-    SOURCE_COMMIT: ${SOURCE_COMMIT:-}
+    # Dans Coolify, définir ITEAG_REVISION avec la valeur « $SOURCE_COMMIT ».
+    # SOURCE_COMMIT est prédéfini par Coolify ; on ne le redéclare pas dans le
+    # Compose, car cela peut créer une variable éditable vide qui masque la
+    # valeur prédéfinie. Une stack sans révision identifiable ne démarre plus.
+    ITEAG_REVISION: ${ITEAG_REVISION:?ITEAG_REVISION doit référencer $SOURCE_COMMIT dans Coolify}
 
     DATABASE_URL: "postgresql://${POSTGRES_USER:-iteag}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-iteag}"
 
