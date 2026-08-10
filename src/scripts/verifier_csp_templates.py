@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Vérifie les invariants CSP des pages HTML exécutées par un navigateur.
+
+Les emails HTML et les gabarits PDF sont volontairement exclus : ils ne sont
+pas servis comme pages web avec l'en-tête CSP et leurs moteurs de rendu exigent
+souvent du CSS embarqué.
+
+Ce contrôle est un garde-fou de maintenance, pas un outil de migration :
+- aucun attribut ``style=`` ni bloc ``<style>`` dans les pages web ;
+- aucune ancienne classe de migration ``csp-style-*`` ;
+- aucun gestionnaire JavaScript inline ``on...=`` ;
+- CSP globale sans ``style-src 'unsafe-inline'`` ;
+- HTMX configuré sans évaluation d'expressions ni scripts de fragments.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+RACINE = Path(__file__).resolve().parents[1]
+TEMPLATES = RACINE / "templates"
+BASE = RACINE / "config" / "settings" / "base.py"
+BASE_TEMPLATE = TEMPLATES / "base.html"
+
+STYLE_ATTR = re.compile(r"\sstyle\s*=", re.IGNORECASE)
+STYLE_BLOCK = re.compile(r"<style(?:\s|>)", re.IGNORECASE)
+EVENT_HANDLER = re.compile(r"\son[a-z]+\s*=", re.IGNORECASE)
+
+
+def est_artefact_non_web(path: Path) -> bool:
+    relatif = path.relative_to(TEMPLATES)
+    dossiers = {partie.lower() for partie in relatif.parts[:-1]}
+    nom = relatif.name.lower()
+    return (
+        "emails" in dossiers
+        or "pdf" in dossiers
+        or nom.endswith("_email.html")
+        or nom.endswith("_pdf.html")
+    )
+
+
+def main() -> int:
+    erreurs: list[str] = []
+
+    for path in sorted(TEMPLATES.rglob("*.html")):
+        if est_artefact_non_web(path):
+            continue
+        texte = path.read_text(encoding="utf-8")
+        relatif = path.relative_to(RACINE)
+        if STYLE_ATTR.search(texte):
+            erreurs.append(f"{relatif}: attribut style= interdit")
+        if STYLE_BLOCK.search(texte):
+            erreurs.append(f"{relatif}: bloc <style> interdit")
+        if "csp-style-" in texte:
+            erreurs.append(f"{relatif}: classe de migration csp-style-* interdite")
+        if EVENT_HANDLER.search(texte):
+            erreurs.append(f"{relatif}: gestionnaire JavaScript inline on...= interdit")
+
+    settings = BASE.read_text(encoding="utf-8")
+    attendu = {
+        '"style-src": ["\'self\'"]': "style-src doit être limité à self",
+        '"style-src-attr": ["\'none\'"]': "style-src-attr doit interdire les styles inline",
+    }
+    for fragment, message in attendu.items():
+        if fragment not in settings:
+            erreurs.append(f"config/settings/base.py: {message}")
+    if '"style-src": ["\'self\'", "\'unsafe-inline\'"]' in settings:
+        erreurs.append("config/settings/base.py: unsafe-inline réintroduit dans style-src")
+
+    base_html = BASE_TEMPLATE.read_text(encoding="utf-8")
+    if '"allowEval":false' not in base_html:
+        erreurs.append("templates/base.html: HTMX allowEval doit rester à false")
+    if '"allowScriptTags":false' not in base_html:
+        erreurs.append("templates/base.html: HTMX allowScriptTags doit rester à false")
+
+    if erreurs:
+        print("Invariants CSP non respectés :")
+        for erreur in erreurs:
+            print(f"- {erreur}")
+        return 1
+
+    print("OK — pages web sans styles/scripts inline et CSP stricte maintenue.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
