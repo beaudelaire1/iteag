@@ -23,6 +23,8 @@ from apps.accounts.models import User
 from apps.formations.models import Parcours
 
 RACINE = pathlib.Path(__file__).resolve().parents[2]
+TEMPLATES = RACINE / "templates"
+INCLUSION_STATIQUE = re.compile(r'{%\s*include\s+["\']([^"\']+)["\']')
 
 
 def vues_paginees() -> list[tuple[str, str]]:
@@ -43,6 +45,25 @@ def vues_paginees() -> list[tuple[str, str]]:
     return sorted(set(trouvees))
 
 
+def gabarit_offre_pagination(chemin: pathlib.Path, visites: set[pathlib.Path] | None = None) -> bool:
+    """Suit les inclusions statiques : la pagination peut vivre dans un partial HTMX."""
+    visites = visites or set()
+    chemin = chemin.resolve()
+    if chemin in visites or not chemin.exists():
+        return False
+    visites.add(chemin)
+
+    texte = chemin.read_text(encoding="utf-8")
+    if "partials/pagination.html" in texte or "page_obj.has_other_pages" in texte:
+        return True
+
+    for nom in INCLUSION_STATIQUE.findall(texte):
+        inclus = TEMPLATES / nom
+        if gabarit_offre_pagination(inclus, visites):
+            return True
+    return False
+
+
 VUES = vues_paginees()
 
 
@@ -53,12 +74,10 @@ def test_le_recensement_trouve_bien_des_vues():
 
 @pytest.mark.parametrize("classe,gabarit", VUES, ids=lambda valeur: valeur if isinstance(valeur, str) else "")
 def test_chaque_liste_paginee_offre_ses_commandes(classe, gabarit):
-    chemin = RACINE / "templates" / gabarit
+    chemin = TEMPLATES / gabarit
     if not chemin.exists():
         pytest.skip(f"Gabarit introuvable : {gabarit}")
-    texte = chemin.read_text(encoding="utf-8")
-    a_les_commandes = "partials/pagination.html" in texte or "page_obj.has_other_pages" in texte
-    assert a_les_commandes, f"{classe} pagine mais « {gabarit} » n'affiche aucune commande"
+    assert gabarit_offre_pagination(chemin), f"{classe} pagine mais « {gabarit} » n'affiche aucune commande"
 
 
 @pytest.mark.django_db
