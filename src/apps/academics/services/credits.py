@@ -7,9 +7,9 @@ publie un résultat lui transmet des ``ResultatECTSPublie`` et ce service ne
 fait qu'appliquer la décision au dossier académique.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Iterable
 
 from django.db import transaction
 from django.utils import timezone
