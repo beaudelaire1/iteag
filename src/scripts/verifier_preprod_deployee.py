@@ -6,10 +6,10 @@ préproduction serve exactement ``--revision`` puis contrôle les deux invariant
 SEO qui dépendent de l'hôte réel : canonical de l'accueil et unicité de l'hôte
 du sitemap.
 
-Le transport refuse explicitement tout schéma autre que HTTPS et le sitemap est
-analysé avec defusedxml : ce gate traite une URL réseau et du XML servis par
-l'environnement audité, il ne doit donc pas créer lui-même une surface SSRF ou
-XXE pour vérifier la sécurité du projet.
+Le script est volontairement autonome : les workflows live l'exécutent sur un
+runner GitHub vierge avant toute installation de dépendance du projet. Le
+sitemap n'a besoin que de ses éléments ``loc`` pour ce contrôle ; HTMLParser les
+extrait sans interpréter de DTD ni résoudre d'entité externe.
 """
 
 from __future__ import annotations
@@ -21,9 +21,6 @@ import sys
 import time
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse
-from xml.etree.ElementTree import ParseError
-
-from defusedxml import ElementTree
 
 ENTETE_REVISION = "X-ITEAG-Revision"
 ENTETES = {"User-Agent": "ITEAG-Predeploy-Revision-Gate/1.0"}
@@ -41,6 +38,35 @@ class CanonicalParser(HTMLParser):
         rel = {morceau.lower() for morceau in str(data.get("rel") or "").split()}
         if "canonical" in rel:
             self.canonical = str(data.get("href") or "").strip()
+
+
+class SitemapLocParser(HTMLParser):
+    """Extrait uniquement le texte des balises ``loc`` d'un sitemap XML."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.urls: list[str] = []
+        self._dans_loc = False
+        self._fragments: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        del attrs
+        if tag.lower() == "loc":
+            self._dans_loc = True
+            self._fragments = []
+
+    def handle_data(self, data):
+        if self._dans_loc:
+            self._fragments.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() != "loc" or not self._dans_loc:
+            return
+        url = "".join(self._fragments).strip()
+        if url:
+            self.urls.append(url)
+        self._dans_loc = False
+        self._fragments = []
 
 
 def lire(url: str, *, timeout: float = 20.0):
@@ -110,14 +136,12 @@ def verifier_sitemap(base: str) -> None:
     code, _, corps = lire(urljoin(base, "sitemap.xml"), timeout=30)
     if code != 200:
         raise SystemExit(f"Sitemap préproduction -> HTTP {code}.")
-    try:
-        racine = ElementTree.fromstring(corps)
-    except ParseError as exc:
-        raise SystemExit(f"Sitemap XML invalide : {exc}") from exc
 
-    urls = [elt.text.strip() for elt in racine.iter() if elt.tag.endswith("loc") and elt.text and elt.text.strip()]
+    parseur = SitemapLocParser()
+    parseur.feed(corps.decode("utf-8", errors="replace"))
+    urls = parseur.urls
     if not urls:
-        raise SystemExit("Sitemap vide.")
+        raise SystemExit("Sitemap vide ou sans balise <loc> exploitable.")
 
     hote_attendu = urlparse(base).netloc
     hotes = {urlparse(url).netloc for url in urls}
