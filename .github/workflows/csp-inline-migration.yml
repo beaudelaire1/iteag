@@ -1,10 +1,11 @@
 name: CSP inline style migration
 
 # Workflow ponctuel du chantier agent/mise-a-niveau-go-sans-reserve.
-# La migration statique a déjà été exécutée : on ne la rejoue plus, car sa
-# source est désormais la feuille générée elle-même. Ici on restaure seulement
-# les artefacts non-web puis on applique les remplacements dynamiques encore
-# présents. Le workflow sera supprimé dès que ce passage est terminé.
+# La migration statique a déjà remplacé les attributs style par des classes
+# déterministes. On reconstruit leur feuille depuis `main` — seule source où les
+# déclarations originales existent encore — puis on restaure les artefacts
+# non-web et on applique les derniers remplacements dynamiques. Le workflow sera
+# supprimé dès que ce passage est terminé.
 on:
   push:
     branches: [agent/mise-a-niveau-go-sans-reserve]
@@ -31,11 +32,26 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Restaurer les artefacts email et PDF hors CSP web
+      - name: Reconstruire la feuille statique depuis les gabarits source de main
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main
+          source_dir="$RUNNER_TEMP/iteag-main"
+          git worktree add --detach "$source_dir" origin/main
+          cp src/scripts/migrer_styles_inline.py "$source_dir/src/scripts/migrer_styles_inline.py"
+          (
+            cd "$source_dir/src"
+            python scripts/migrer_styles_inline.py --write
+            test "$(grep -c '^\.csp-style-' assets/css/inline-migre.css)" -gt 200
+          )
+          cp "$source_dir/src/assets/css/inline-migre.css" src/assets/css/inline-migre.css
+          git worktree remove --force "$source_dir"
+
+      - name: Restaurer les artefacts email et PDF hors CSP web
+        shell: bash
+        run: |
+          set -euo pipefail
           git restore --source=origin/main -- \
             ':(glob)src/templates/**/emails/**/*.html' \
             ':(glob)src/templates/**/pdf/**/*.html' \
@@ -46,11 +62,12 @@ jobs:
         working-directory: src
         run: python scripts/migrer_styles_dynamiques.py --write
 
-      - name: Vérifier qu'aucun style web inline ne subsiste
+      - name: Vérifier la fermeture CSP des pages web
         working-directory: src
         run: |
           python scripts/migrer_styles_dynamiques.py --check
           python scripts/migrer_styles_inline.py --check
+          test "$(grep -c '^\.csp-style-' assets/css/inline-migre.css)" -gt 200
 
       - name: Enregistrer uniquement les transformations produites
         shell: bash
@@ -63,6 +80,6 @@ jobs:
           git diff --stat
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/templates
-          git commit -m "Finaliser la migration CSP des gabarits web"
+          git add src/templates src/assets/css/inline-migre.css
+          git commit -m "Reconstruire la feuille CSP et finaliser les gabarits web"
           git push origin HEAD:agent/mise-a-niveau-go-sans-reserve
