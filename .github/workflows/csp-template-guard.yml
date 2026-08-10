@@ -1,0 +1,29 @@
+name: CSP template guard
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: csp-template-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  templates:
+    name: Gabarits web sans inline
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Vérifier les invariants CSP des gabarits
+        working-directory: src
+        run: python scripts/verifier_csp_templates.py
