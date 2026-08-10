@@ -18,6 +18,7 @@ PREFIXE_ADMIN_DJANGO = "/django-admin/"
 HOTES_INDEXABLES = frozenset({"iteag.org", "www.iteag.org"})
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), usb=()"
 ENTETE_REVISION = "X-ITEAG-Revision"
+VARIABLE_REVISION = "ITEAG_REVISION"
 
 # La liste remplace entièrement « script-src » sur ce préfixe. Elle reste
 # fermée aux origines tierces : seul le site lui-même peut fournir du script.
@@ -41,10 +42,11 @@ class CSPAvecAdminDjango(CSPMiddleware):
     X-Robots-Tag bloquant l'indexation : une préproduction sslip.io ne peut pas
     être indexée par oubli de configuration du proxy.
 
-    Coolify fournit ``SOURCE_COMMIT`` au déploiement. Sa valeur est exposée dans
-    un en-tête non sensible afin qu'un contrôle externe puisse prouver quelle
-    révision répond réellement derrière l'URL de préproduction. Un audit live
-    n'a ainsi plus le droit de valider silencieusement une version antérieure.
+    Le déploiement fournit ``ITEAG_REVISION`` à partir du ``SOURCE_COMMIT``
+    prédéfini par Coolify. Ce nom applicatif évite de redéclarer et d'écraser la
+    variable prédéfinie elle-même. Sa valeur est exposée dans un en-tête non
+    sensible afin qu'un contrôle externe puisse prouver quelle révision répond
+    réellement derrière l'URL de préproduction.
     """
 
     def get_policy_parts(
@@ -66,7 +68,7 @@ class CSPAvecAdminDjango(CSPMiddleware):
         response = super().process_response(request, response)
         response.headers["Permissions-Policy"] = PERMISSIONS_POLICY
 
-        revision = os.environ.get("SOURCE_COMMIT", "").strip()
+        revision = os.environ.get(VARIABLE_REVISION, "").strip()
         if revision:
             response.headers[ENTETE_REVISION] = revision
 
