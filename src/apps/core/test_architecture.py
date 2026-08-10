@@ -4,6 +4,9 @@ Test d'architecture — invariants de dépendance entre applications.
 Ces règles sont énoncées dans docs/architecture/uml.md §2.2. Elles ne valent que
 si elles sont vérifiées : ce module inspecte le graphe réel des imports et
 échoue dès qu'une dépendance non prévue ou circulaire apparaît.
+
+Il n'existe plus de liste de « dette tolérée » : une entorse connue doit être
+résorbée dans le code, pas neutralisée dans le test qui est censé la détecter.
 """
 
 import ast
@@ -37,9 +40,8 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
         # La page de statistiques rend compte de TOUTES les applications :
         # une page de pilotage qui laisserait la boutique et les encaissements
         # hors champ obligerait à ouvrir deux autres écrans pour se faire une
-        # idée, ce qui est exactement ce qu'on cherche à supprimer. Ni
-        # « commerce » ni « paiements » ne connaissent « administration » en
-        # retour, donc la flèche ne se referme pas.
+        # idée. Ni « commerce » ni « paiements » ne connaissent
+        # « administration » en retour.
         "commerce",
         "paiements",
     },
@@ -71,25 +73,6 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "website": {"core", "accounts", "formations", "elearning", "library", "commerce"},
 }
 
-# ── Dette d'architecture identifiée ──────────────────────────────────────────
-# Ces arêtes existent dans le code mais contredisent le modèle cible. Elles
-# proviennent du fait que les vues des portails étudiant et enseignant vivent
-# encore dans les apps de domaine « academics » et « lms » : le tableau de bord
-# étudiant agrège des données de lms et documents, ce qui crée le cycle
-# academics ↔ lms.
-#
-# Résorption prévue : extraction des portails hors des apps de domaine, sur le
-# modèle de ce qui a été fait pour « administration ».
-#
-# Ce jeu ne peut que DIMINUER : test_dette_ne_grandit_pas échoue aussi bien si
-# une nouvelle entorse apparaît que si une entorse résorbée y reste déclarée.
-DETTE_ARCHITECTURE: set[tuple[str, str]] = {
-    # Reste après l'extraction du portail étudiant : le service qui porte les
-    # crédits ECTS au dossier lit les évaluations, qui vivent dans « lms ».
-    # L'arête « academics → documents » a disparu avec le portail.
-    ("academics", "lms"),
-}
-
 
 def _apps_presentes() -> set[str]:
     return {chemin.name for chemin in APPS_DIR.iterdir() if chemin.is_dir() and (chemin / "apps.py").exists()}
@@ -98,9 +81,7 @@ def _apps_presentes() -> set[str]:
 def _est_module_de_test(chemin: Path) -> bool:
     # `conftest.py` est du montage de test au même titre qu'un `test_*.py` : il
     # n'est jamais importé à l'exécution. L'y inclure ferait apparaître comme
-    # dépendance de production ce qu'une simple donnée de test exige — un
-    # étudiant fictif ne peut pas exister sans son parcours, ce qui suffirait à
-    # déclarer une dépendance vers « formations » qui n'existe pas.
+    # dépendance de production ce qu'une simple donnée de test exige.
     return chemin.name in ("tests.py", "conftest.py") or chemin.name.startswith("test_")
 
 
@@ -132,17 +113,8 @@ def _imports_de_app(app: str) -> set[str]:
     return cibles - {app}
 
 
-def _graphe(avec_dette: bool = True) -> dict[str, set[str]]:
-    """Graphe réel des dépendances. `avec_dette=False` retire les arêtes connues."""
-    graphe = {app: _imports_de_app(app) for app in sorted(_apps_presentes())}
-    if not avec_dette:
-        for source, cible in DETTE_ARCHITECTURE:
-            graphe.get(source, set()).discard(cible)
-    return graphe
-
-
-def _dette_de(app: str) -> set[str]:
-    return {cible for source, cible in DETTE_ARCHITECTURE if source == app}
+def _graphe() -> dict[str, set[str]]:
+    return {app: _imports_de_app(app) for app in sorted(_apps_presentes())}
 
 
 @pytest.mark.parametrize("app", sorted(_apps_presentes()))
@@ -153,28 +125,21 @@ def test_dependances_declarees(app):
         f"L'app « {app} » n'est pas déclarée dans DEPENDANCES_AUTORISEES. "
         "Toute nouvelle app doit y être ajoutée explicitement."
     )
-    non_autorisees = _imports_de_app(app) - autorisees - _dette_de(app)
+    non_autorisees = _imports_de_app(app) - autorisees
     assert not non_autorisees, (
         f"L'app « {app} » importe {sorted(non_autorisees)}, "
         f"ce que sa déclaration n'autorise pas ({sorted(autorisees) or 'aucune'})."
     )
 
 
-def test_dette_ne_grandit_pas():
-    """Le cliquet : la dette déclarée doit correspondre exactement au réel.
-
-    Une entorse nouvelle fait échouer le test ; une entorse résorbée aussi,
-    ce qui oblige à la retirer de la déclaration plutôt qu'à l'oublier.
-    """
-    reelle = {
-        (app, cible) for app, cibles in _graphe().items() for cible in cibles - DEPENDANCES_AUTORISEES.get(app, set())
+def test_aucune_entorse_declaree_hors_contrat():
+    """Le graphe réel doit être intégralement expliqué par le contrat."""
+    entorses = {
+        (app, cible)
+        for app, cibles in _graphe().items()
+        for cible in cibles - DEPENDANCES_AUTORISEES.get(app, set())
     }
-    apparues = reelle - DETTE_ARCHITECTURE
-    resorbees = DETTE_ARCHITECTURE - reelle
-    assert not apparues, f"Nouvelles entorses à l'architecture : {sorted(apparues)}"
-    assert not resorbees, (
-        f"Entorses résorbées mais toujours déclarées : {sorted(resorbees)}. Retirez-les de DETTE_ARCHITECTURE."
-    )
+    assert not entorses, f"Dépendances hors contrat : {sorted(entorses)}"
 
 
 def test_core_ne_depend_de_rien():
@@ -183,8 +148,8 @@ def test_core_ne_depend_de_rien():
 
 
 def test_graphe_acyclique():
-    """Hors dette déclarée, le graphe de dépendances ne contient aucun cycle."""
-    graphe = _graphe(avec_dette=False)
+    """Le graphe complet de dépendances ne contient aucun cycle."""
+    graphe = _graphe()
     visites: set[str] = set()
     en_cours: list[str] = []
 
@@ -204,9 +169,8 @@ def test_graphe_acyclique():
         descendre(app)
 
 
-def test_academics_ignore_elearning():
-    """L'inversion de dépendance elearning → academics n'est jamais contournée."""
-    assert "elearning" not in _imports_de_app("academics"), (
-        "academics ne doit pas connaître elearning : le couplage se fait par "
-        "la couche service, pas par un import direct."
-    )
+def test_academics_ignore_elearning_et_lms():
+    """Le domaine académique ne doit pas relire les moteurs qui lui publient des résultats."""
+    imports = _imports_de_app("academics")
+    assert "elearning" not in imports, "academics ne doit pas connaître elearning."
+    assert "lms" not in imports, "academics ne doit pas connaître lms : le LMS transmet des résultats ECTS au domaine."
