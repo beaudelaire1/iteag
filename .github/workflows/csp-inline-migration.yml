@@ -2,8 +2,8 @@ name: CSP inline style migration
 
 # Workflow ponctuel du chantier agent/mise-a-niveau-go-sans-reserve.
 # Il remet d'abord les artefacts non-web (emails/PDF) à leur rendu d'origine,
-# puis applique le codemod uniquement aux pages HTML réellement soumises à la
-# CSP du navigateur. Il sera supprimé à la fin du chantier.
+# puis applique les deux codemods fermés aux pages réellement soumises à la CSP
+# du navigateur. Il sera supprimé à la fin du chantier.
 on:
   push:
     branches: [agent/mise-a-niveau-go-sans-reserve]
@@ -45,6 +45,16 @@ jobs:
         working-directory: src
         run: python scripts/migrer_styles_inline.py --write
 
+      - name: Migrer les styles métier dynamiques fermés
+        working-directory: src
+        run: python scripts/migrer_styles_dynamiques.py --write
+
+      - name: Vérifier qu'aucun style web inline ne subsiste
+        working-directory: src
+        run: |
+          python scripts/migrer_styles_dynamiques.py --check
+          python scripts/migrer_styles_inline.py --check
+
       - name: Enregistrer uniquement les transformations produites
         shell: bash
         run: |
@@ -57,5 +67,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/templates src/assets/css/inline-migre.css
-          git commit -m "Restaurer les artefacts non-web et migrer les styles CSP"
+          git commit -m "Finaliser la migration CSP des gabarits web"
           git push origin HEAD:agent/mise-a-niveau-go-sans-reserve
