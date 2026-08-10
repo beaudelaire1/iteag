@@ -1,10 +1,5 @@
 name: CSP inline style migration
 
-# Workflow ponctuel du chantier agent/mise-a-niveau-go-sans-reserve.
-# Il restaure d'abord la configuration exacte de main pour annuler toute édition
-# trop large, applique uniquement la modification CSP visée, puis remplace les
-# classes temporaires hashées par des utilitaires lisibles. Il sera supprimé à
-# la fin de ce passage.
 on:
   push:
     branches: [agent/mise-a-niveau-go-sans-reserve]
@@ -45,7 +40,6 @@ jobs:
           git restore --source=origin/main -- src/config/settings/base.py
           python - <<'PY'
           from pathlib import Path
-
           path = Path("src/config/settings/base.py")
           texte = path.read_text(encoding="utf-8")
           ancien = '        "style-src": ["\'self\'", "\'unsafe-inline\'"],\n'
@@ -83,8 +77,7 @@ jobs:
           from pathlib import Path
           path = Path("src/assets/css/production.css")
           texte = path.read_text(encoding="utf-8")
-          texte = texte.replace('@import "./inline-migre.css";\n', "")
-          path.write_text(texte, encoding="utf-8")
+          path.write_text(texte.replace('@import "./inline-migre.css";\n', ""), encoding="utf-8")
           PY
 
       - name: Vérifier la fermeture CSP des pages web
@@ -92,12 +85,26 @@ jobs:
         run: |
           python scripts/migrer_styles_dynamiques.py --check
           python scripts/migrer_styles_inline.py --check
-          ! grep -R --include='*.html' -n 'csp-style-' templates
-          ! grep -R --include='*.html' -nE '[[:space:]]style=["'"']' templates \
-            --exclude='*_email.html' --exclude='*_pdf.html'
-          grep -F '"style-src": ["'"'self'"'"]' config/settings/base.py
-          grep -F '"style-src-attr": ["'"'none'"'"]' config/settings/base.py
-          ! grep -F '"style-src": ["'"'self'"'", "'"'unsafe-inline'"'"]' config/settings/base.py
+          python - <<'PY'
+          from pathlib import Path
+
+          templates = Path("templates")
+          for path in templates.rglob("*.html"):
+              relatif = path.relative_to(templates)
+              parties = {p.lower() for p in relatif.parts[:-1]}
+              nom = relatif.name.lower()
+              if "emails" in parties or "pdf" in parties or nom.endswith("_email.html") or nom.endswith("_pdf.html"):
+                  continue
+              texte = path.read_text(encoding="utf-8")
+              assert "csp-style-" not in texte, path
+              assert ' style="' not in texte and " style='" not in texte, path
+
+          base = Path("config/settings/base.py").read_text(encoding="utf-8")
+          assert '"style-src": ["\'self\'"]' in base
+          assert '"style-src-attr": ["\'none\'"]' in base
+          assert '"style-src": ["\'self\'", "\'unsafe-inline\'"]' not in base
+          print("OK — gabarits web lisibles et CSP de style fermée.")
+          PY
 
       - name: Construire les assets avec les nouvelles classes
         working-directory: src
