@@ -135,9 +135,7 @@ def test_dependances_declarees(app):
 def test_aucune_entorse_declaree_hors_contrat():
     """Le graphe réel doit être intégralement expliqué par le contrat."""
     entorses = {
-        (app, cible)
-        for app, cibles in _graphe().items()
-        for cible in cibles - DEPENDANCES_AUTORISEES.get(app, set())
+        (app, cible) for app, cibles in _graphe().items() for cible in cibles - DEPENDANCES_AUTORISEES.get(app, set())
     }
     assert not entorses, f"Dépendances hors contrat : {sorted(entorses)}"
 
