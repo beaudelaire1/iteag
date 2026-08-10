@@ -13,7 +13,6 @@
 {% endblock %}
 
 {% block portal_content %}
-
 <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-10">
     <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ modules_publies }}</p><p class="stat-label">Modules publiés</p></div>
     <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ total_acces }}</p><p class="stat-label">Accès ouverts</p></div>
@@ -33,17 +32,19 @@
         </thead>
         <tbody>
             {% for module in modules %}
+            {% widthratio module.nb_termines module.nb_inscrits 100 as taux_achevement %}
             <tr>
                 <td class="font-medium">{{ module.titre }}</td>
                 <td class="num">{{ module.nb_inscrits }}</td>
                 <td class="num">{{ module.nb_termines }}</td>
                 <td>
                     <span class="flex items-center gap-3">
-                        <span class="progress-bar csp-style-6de0fa5e8a79">
-                            <span class="progress-bar-fill block"
-                                  style="width: {% widthratio module.nb_termines module.nb_inscrits 100 %}%"></span>
-                        </span>
-                        <span class="num text-xs">{% widthratio module.nb_termines module.nb_inscrits 100 %} %</span>
+                        <progress class="progress-native progress-native--compact"
+                                  max="100" value="{{ taux_achevement }}"
+                                  aria-label="Achèvement de {{ module.titre }} : {{ taux_achevement }} %">
+                            {{ taux_achevement }} %
+                        </progress>
+                        <span class="num text-xs">{{ taux_achevement }} %</span>
                     </span>
                 </td>
                 <td class="num">{{ module.avancement|floatformat:0 }} %</td>
@@ -53,8 +54,6 @@
     </table>
 </div>
 {% else %}
-<div class="card text-center py-16">
-    <p class="csp-style-9a1421a5a90b">Aucun module n'a encore d'étudiant inscrit.</p>
-</div>
+<div class="card text-center py-16"><p class="csp-style-9a1421a5a90b">Aucun module n'a encore d'étudiant inscrit.</p></div>
 {% endif %}
 {% endblock %}
