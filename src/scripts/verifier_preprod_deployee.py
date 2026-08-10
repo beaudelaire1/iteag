@@ -6,21 +6,25 @@ préproduction serve exactement ``--revision`` puis contrôle les deux invariant
 SEO qui dépendent de l'hôte réel : canonical de l'accueil et unicité de l'hôte
 du sitemap.
 
-Il est volontairement sans dépendance tierce afin de pouvoir tourner dans
-GitHub Actions comme depuis un poste d'exploitation.
+Le transport refuse explicitement tout schéma autre que HTTPS et le sitemap est
+analysé avec defusedxml : ce gate traite une URL réseau et du XML servis par
+l'environnement audité, il ne doit donc pas créer lui-même une surface SSRF ou
+XXE pour vérifier la sécurité du projet.
 """
 
 from __future__ import annotations
 
 import argparse
+import http.client
 import re
+import socket
 import sys
 import time
-import urllib.error
-import urllib.request
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse
-from xml.etree import ElementTree
+from xml.etree.ElementTree import ParseError
+
+from defusedxml import ElementTree
 
 ENTETE_REVISION = "X-ITEAG-Revision"
 ENTETES = {"User-Agent": "ITEAG-Predeploy-Revision-Gate/1.0"}
@@ -41,9 +45,24 @@ class CanonicalParser(HTMLParser):
 
 
 def lire(url: str, *, timeout: float = 20.0):
-    requete = urllib.request.Request(url, headers=ENTETES)
-    with urllib.request.urlopen(requete, timeout=timeout) as reponse:
+    """Lit exclusivement une URL HTTPS sans accepter de schéma implicite."""
+    cible = urlparse(url)
+    if cible.scheme != "https" or not cible.hostname:
+        raise ValueError(f"URL HTTPS absolue obligatoire : {url!r}")
+    if cible.username or cible.password:
+        raise ValueError("Les identifiants intégrés dans une URL sont interdits.")
+
+    chemin = cible.path or "/"
+    if cible.query:
+        chemin = f"{chemin}?{cible.query}"
+
+    connexion = http.client.HTTPSConnection(cible.hostname, cible.port or 443, timeout=timeout)
+    try:
+        connexion.request("GET", chemin, headers=ENTETES)
+        reponse = connexion.getresponse()
         return reponse.status, reponse.headers, reponse.read()
+    finally:
+        connexion.close()
 
 
 def attendre_revision(base: str, attendue: str, *, attente: int, intervalle: int) -> None:
@@ -60,7 +79,7 @@ def attendre_revision(base: str, attendue: str, *, attente: int, intervalle: int
                 print(f"Révision déployée vérifiée : {derniere}")
                 return
             derniere_erreur = f"HTTP {code}, révision {derniere}"
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        except (OSError, socket.timeout, ValueError) as exc:
             derniere_erreur = str(exc)
 
         if time.monotonic() >= echeance:
@@ -94,7 +113,7 @@ def verifier_sitemap(base: str) -> None:
         raise SystemExit(f"Sitemap préproduction -> HTTP {code}.")
     try:
         racine = ElementTree.fromstring(corps)
-    except ElementTree.ParseError as exc:
+    except ParseError as exc:
         raise SystemExit(f"Sitemap XML invalide : {exc}") from exc
 
     urls = [elt.text.strip() for elt in racine.iter() if elt.tag.endswith("loc") and elt.text and elt.text.strip()]
@@ -105,7 +124,7 @@ def verifier_sitemap(base: str) -> None:
     hotes = {urlparse(url).netloc for url in urls}
     if hotes != {hote_attendu}:
         raise SystemExit(f"Le sitemap mélange des hôtes : {sorted(hotes)}, attendu uniquement {hote_attendu}.")
-    if any(not re.match(r"^https://", url) for url in urls):
+    if any(urlparse(url).scheme != "https" for url in urls):
         raise SystemExit("Le sitemap contient au moins une URL non HTTPS.")
     print(f"Sitemap vérifié : {len(urls)} URL, hôte unique {hote_attendu}.")
 
@@ -119,6 +138,10 @@ def main() -> int:
     args = parser.parse_args()
 
     base = args.base_url.rstrip("/") + "/"
+    cible = urlparse(base)
+    if cible.scheme != "https" or not cible.hostname:
+        raise SystemExit(f"La base de préproduction doit être une URL HTTPS absolue : {base!r}")
+
     revision = args.revision.strip()
     if not re.fullmatch(r"[0-9a-fA-F]{40}", revision):
         raise SystemExit(f"Révision attendue invalide : {revision!r}.")
