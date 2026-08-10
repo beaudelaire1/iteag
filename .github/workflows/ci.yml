@@ -120,6 +120,9 @@ jobs:
       DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost
       SITE_URL: https://localhost
       WAGTAILADMIN_BASE_URL: https://localhost
+      # Même contrat que Coolify : une stack de production n'existe pas sans
+      # identité de révision. En CI, le SHA GitHub courant joue ce rôle.
+      ITEAG_REVISION: ${{ github.sha }}
       POSTGRES_PASSWORD: ci-postgres-secret
       DATABASE_URL: postgresql://iteag:ci-postgres-secret@localhost:5432/iteag
       REDIS_URL: redis://redis:6379/0
