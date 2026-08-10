@@ -7,6 +7,7 @@ souvent du CSS embarqué.
 
 Ce contrôle est un garde-fou de maintenance, pas un outil de migration :
 - aucun attribut ``style=`` ni bloc ``<style>`` dans les pages web ;
+- aucun ``attrs={"style": ...}`` généré depuis le Python applicatif ;
 - aucune ancienne classe de migration ``csp-style-*`` ;
 - aucun gestionnaire JavaScript inline ``on...=`` ;
 - CSP globale sans ``style-src 'unsafe-inline'`` ;
@@ -15,12 +16,14 @@ Ce contrôle est un garde-fou de maintenance, pas un outil de migration :
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parents[1]
 TEMPLATES = RACINE / "templates"
+APPS = RACINE / "apps"
 BASE = RACINE / "config" / "settings" / "base.py"
 BASE_TEMPLATE = TEMPLATES / "base.html"
 
@@ -33,12 +36,24 @@ def est_artefact_non_web(path: Path) -> bool:
     relatif = path.relative_to(TEMPLATES)
     dossiers = {partie.lower() for partie in relatif.parts[:-1]}
     nom = relatif.name.lower()
-    return (
-        "emails" in dossiers
-        or "pdf" in dossiers
-        or nom.endswith("_email.html")
-        or nom.endswith("_pdf.html")
-    )
+    return "emails" in dossiers or "pdf" in dossiers or nom.endswith("_email.html") or nom.endswith("_pdf.html")
+
+
+def styles_inline_generes_par_python() -> list[str]:
+    """Repère les dictionnaires applicatifs qui produiraient un attribut style."""
+    erreurs: list[str] = []
+    for path in sorted(APPS.rglob("*.py")):
+        if "migrations" in path.parts or path.name.startswith("test_") or path.name in {"tests.py", "conftest.py"}:
+            continue
+        arbre = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for noeud in ast.walk(arbre):
+            if not isinstance(noeud, ast.Dict):
+                continue
+            for cle in noeud.keys:
+                if isinstance(cle, ast.Constant) and isinstance(cle.value, str) and cle.value.lower() == "style":
+                    relatif = path.relative_to(RACINE)
+                    erreurs.append(f"{relatif}:{noeud.lineno}: clé style interdite dans le Python applicatif")
+    return erreurs
 
 
 def main() -> int:
@@ -57,6 +72,8 @@ def main() -> int:
             erreurs.append(f"{relatif}: classe de migration csp-style-* interdite")
         if EVENT_HANDLER.search(texte):
             erreurs.append(f"{relatif}: gestionnaire JavaScript inline on...= interdit")
+
+    erreurs.extend(styles_inline_generes_par_python())
 
     settings = BASE.read_text(encoding="utf-8")
     attendu = {
