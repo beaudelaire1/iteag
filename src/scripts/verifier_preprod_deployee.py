@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import http.client
 import re
-import socket
 import sys
 import time
 from html.parser import HTMLParser
@@ -79,7 +78,7 @@ def attendre_revision(base: str, attendue: str, *, attente: int, intervalle: int
                 print(f"Révision déployée vérifiée : {derniere}")
                 return
             derniere_erreur = f"HTTP {code}, révision {derniere}"
-        except (OSError, socket.timeout, ValueError) as exc:
+        except (OSError, ValueError) as exc:
             derniere_erreur = str(exc)
 
         if time.monotonic() >= echeance:
