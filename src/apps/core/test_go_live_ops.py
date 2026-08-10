@@ -1,5 +1,7 @@
 """Tests du gate d'exploitation exécuté juste avant la mise en service."""
 
+import subprocess
+import sys
 from pathlib import Path
 
 from django.core.management import call_command
@@ -75,6 +77,25 @@ def test_les_blocs_python_du_gate_serveur_compilent():
     assert blocs, "Aucun bloc Python détecté : l'extraction ne correspond plus au script."
     for bloc in blocs:
         ast.parse(bloc)
+
+
+def test_le_gate_preprod_est_autonome_sur_un_runner_vierge():
+    """Les audits live exécutent ce script avant d'installer le projet.
+
+    ``-I -S`` retire le site utilisateur et les ``site-packages`` : si une
+    dépendance externe réapparaît, le défaut est détecté en CI plutôt qu'après
+    le déploiement de main.
+    """
+    script = RACINE / "scripts" / "verifier_preprod_deployee.py"
+    resultat = subprocess.run(
+        [sys.executable, "-I", "-S", str(script), "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert resultat.returncode == 0, resultat.stderr
+    assert "--base-url" in resultat.stdout
+    assert "--revision" in resultat.stdout
 
 
 WORKFLOWS_PREDEPLOIEMENT = (
