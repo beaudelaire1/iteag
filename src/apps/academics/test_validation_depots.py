@@ -16,8 +16,9 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.academics.forms import REGLE_COPIE, REGLE_JUSTIFICATIF_PAIEMENT, StudentSubmissionForm
+from apps.academics.forms import REGLE_JUSTIFICATIF_PAIEMENT
 from apps.core.validation_fichiers import valider_fichier
+from apps.lms.forms import REGLE_COPIE, StudentSubmissionForm
 
 FAUX_PDF = b"<html><body>Ceci n'est pas un PDF.</body></html>"
 VRAI_PDF = b"%PDF-1.7\n%contenu"
