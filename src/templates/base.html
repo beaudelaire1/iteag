@@ -28,8 +28,10 @@
     <link rel="stylesheet" href="{% static 'fonts/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={{ ASSET_VERSION }}">
 
-    {# HTMX n'évalue aucune expression JavaScript fournie par le HTML et ne
-       traite aucun script provenant d'un fragment échangé. #}
+    {% comment %}
+    HTMX n'évalue aucune expression JavaScript fournie par le HTML et ne traite
+    aucun script provenant d'un fragment échangé.
+    {% endcomment %}
     <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
 
     {% block videojs_css %}{% endblock %}
@@ -76,8 +78,10 @@
     <script src="{% static 'js/htmx.min.js' %}"></script>
     <script src="{% static 'js/consentement-cookies.js' %}?v={{ ASSET_VERSION }}" defer></script>
     <script src="{% static 'js/accessibilite.js' %}?v={{ ASSET_VERSION }}" defer></script>
-    {# Convertit uniquement les données de présentation typées en propriétés CSS
-       autorisées ; aucune déclaration CSS arbitraire n'est lue depuis le HTML. #}
+    {% comment %}
+    Convertit uniquement les données de présentation typées en propriétés CSS
+    autorisées ; aucune déclaration CSS arbitraire n'est lue depuis le HTML.
+    {% endcomment %}
     <script src="{% static 'js/styles-dynamiques.js' %}?v={{ ASSET_VERSION }}" defer></script>
     <script src="{% static 'js/iteag.js' %}?v={{ ASSET_VERSION }}" defer></script>
 
