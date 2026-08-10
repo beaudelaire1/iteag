@@ -22,7 +22,7 @@
     <div>
         <a href="{% url 'administration:assiduite_cours' seance.cours_session.pk %}" class="mb-3 inline-block text-sm font-medium text-navy-700">← Retour aux séances</a>
         <p class="overline mb-2">{{ seance.cours_session.session.nom }}</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ seance.cours_session.cours.titre }}</h1>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ seance.cours_session.cours.titre }}</h1>
         <p class="mt-1 text-sm text-warm-500">{{ seance.date|date:"l d F Y" }} · {{ seance.heure_debut|time:"H:i" }}–{{ seance.heure_fin|time:"H:i" }}{% if seance.libelle %} · {{ seance.libelle }}{% endif %}</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
@@ -48,7 +48,7 @@
 <form method="post">
     {% csrf_token %}
     <input type="hidden" name="action" value="enregistrer">
-    <div class="card-elevated overflow-hidden" style="padding: 0;">
+    <div class="card-elevated overflow-hidden p-0">
         <div class="overflow-x-auto">
             <table class="table-premium">
                 <thead>

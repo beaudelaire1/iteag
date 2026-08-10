@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-10">
     <p class="overline mb-2">Espace enseignant</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Tableau de bord</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{% if professeur %}{{ professeur.prenom }} {{ professeur.nom }}{% else %}{{ user.get_full_name }}{% endif %}</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Tableau de bord</h1>
+    <p class="mt-1 text-sm text-warm-500">{% if professeur %}{{ professeur.prenom }} {{ professeur.nom }}{% else %}{{ user.get_full_name }}{% endif %}</p>
 </div>
 {% endblock %}
 
@@ -75,10 +75,10 @@
 {% endif %}
 
 {# ── Cours assignés ── #}
-<div class="card-elevated mb-8" style="padding: 0;">
+<div class="card-elevated mb-8 p-0">
     <div class="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
         <h2 class="text-base font-semibold text-navy-900">Mes cours</h2>
-        <a href="{% url 'lms:courses_list' %}" class="text-sm font-medium hover:underline" style="color: var(--color-navy-600);">Tout voir</a>
+        <a href="{% url 'lms:courses_list' %}" class="text-sm font-medium hover:underline text-navy-600">Tout voir</a>
     </div>
     <div class="divide-y divide-warm-100">
         {% for cs in cours_assignes %}
@@ -99,7 +99,7 @@
 
 {# ── Évaluations à corriger ── #}
 {% if pending_evaluations %}
-<div class="card-elevated mb-8" style="padding: 0;">
+<div class="card-elevated mb-8 p-0">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Évaluations à corriger</h2>
     </div>
@@ -122,7 +122,7 @@
 
 {# ── Annonces récentes ── #}
 {% if recent_annonces %}
-<div class="card-elevated" style="padding: 0;">
+<div class="card-elevated p-0">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Mes annonces</h2>
     </div>

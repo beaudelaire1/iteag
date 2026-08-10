@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-10">
     <p class="overline mb-2">Progression</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mon parcours</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ profil.parcours }} — {{ profil.parcours.ects_requis }} ECTS requis</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mon parcours</h1>
+    <p class="mt-1 text-sm text-warm-500">{{ profil.parcours }} — {{ profil.parcours.ects_requis }} ECTS requis</p>
 </div>
 {% endblock %}
 
@@ -22,28 +22,28 @@
 <div class="card-elevated mb-10">
     <div class="flex items-end justify-between mb-4">
         <div>
-            <p class="text-sm font-medium" style="color: var(--color-warm-600);">Progression globale</p>
-            <p class="stat-number mt-1">{{ profil.total_ects_acquis }} <span class="text-lg font-normal" style="color: var(--color-warm-400);">/ {{ profil.parcours.ects_requis }} ECTS</span></p>
+            <p class="text-sm font-medium text-warm-600">Progression globale</p>
+            <p class="stat-number mt-1">{{ profil.total_ects_acquis }} <span class="text-lg font-normal text-warm-400">/ {{ profil.parcours.ects_requis }} ECTS</span></p>
         </div>
-        <p class="text-sm" style="color: var(--color-warm-500);">Reste {{ profil.ects_restants }} ECTS</p>
+        <p class="text-sm text-warm-500">Reste {{ profil.ects_restants }} ECTS</p>
     </div>
-    <div class="progress-bar" style="height: 8px;">
+    <div class="progress-bar h-[8px]">
         <div class="progress-bar-fill" data-progress="{% widthratio profil.total_ects_acquis profil.parcours.ects_requis 100 %}"></div>
     </div>
     <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
         <div class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded-full" style="background: var(--color-navy-600);"></span>
-            <span style="color: var(--color-warm-600);">ITEAG : {{ credits_iteag.count }} crédits</span>
+            <span class="h-3 w-3 rounded-full bg-navy-600"></span>
+            <span class="text-warm-600">ITEAG : {{ credits_iteag.count }} crédits</span>
         </div>
         <div class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded-full" style="background: #059669;"></span>
-            <span style="color: var(--color-warm-600);">FLTE : {{ credits_flte.count }} crédits</span>
+            <span class="h-3 w-3 rounded-full bg-emerald-600"></span>
+            <span class="text-warm-600">FLTE : {{ credits_flte.count }} crédits</span>
         </div>
     </div>
 </div>
 
 {# ── Liste des crédits validés ── #}
-<div class="card-elevated mb-8" style="padding: 0;">
+<div class="card-elevated mb-8 p-0">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Crédits ECTS validés</h2>
     </div>
@@ -79,7 +79,7 @@
 
 {# ── Stages ── #}
 {% if stages %}
-<div class="card-elevated mb-8" style="padding: 0;">
+<div class="card-elevated mb-8 p-0">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Stages</h2>
     </div>
@@ -96,7 +96,7 @@
 
 {# ── Documents ── #}
 {% if documents %}
-<div class="card-elevated" style="padding: 0;">
+<div class="card-elevated p-0">
     <div class="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
         <h2 class="text-base font-semibold text-navy-900">Documents récents</h2>
         <a href="{% url 'documents:list' %}" class="text-sm text-navy-700 hover:underline">Tout voir</a>

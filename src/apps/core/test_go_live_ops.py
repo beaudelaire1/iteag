@@ -1,5 +1,8 @@
 """Tests du gate d'exploitation exécuté juste avant la mise en service."""
 
+import ast
+import re
+import sys
 from pathlib import Path
 
 from django.core.management import call_command
@@ -64,9 +67,6 @@ def test_les_blocs_python_du_gate_serveur_compilent():
     Il n'échoue qu'à l'exécution — c'est-à-dire pendant la bascule, au moment
     où l'on a le moins envie de déboguer une coquille de guillemet.
     """
-    import ast
-    import re
-
     script = (RACINE / "scripts" / "verifier_go_live.sh").read_text(encoding="utf-8")
 
     blocs = re.findall(r"python -c '\n(.*?)\n' ", script, re.S)
@@ -75,6 +75,22 @@ def test_les_blocs_python_du_gate_serveur_compilent():
     assert blocs, "Aucun bloc Python détecté : l'extraction ne correspond plus au script."
     for bloc in blocs:
         ast.parse(bloc)
+
+
+def test_le_gate_preprod_n_importe_que_la_bibliotheque_standard():
+    """Les audits live exécutent ce script avant d'installer le projet."""
+    script = RACINE / "scripts" / "verifier_preprod_deployee.py"
+    arbre = ast.parse(script.read_text(encoding="utf-8"), filename=str(script))
+    imports: set[str] = set()
+
+    for noeud in ast.walk(arbre):
+        if isinstance(noeud, ast.Import):
+            imports.update(alias.name.split(".", 1)[0] for alias in noeud.names)
+        elif isinstance(noeud, ast.ImportFrom) and noeud.module:
+            imports.add(noeud.module.split(".", 1)[0])
+
+    externes = imports - set(sys.stdlib_module_names)
+    assert not externes, f"Le gate préprod dépend de paquets non disponibles sur un runner vierge : {sorted(externes)}"
 
 
 WORKFLOWS_PREDEPLOIEMENT = (
@@ -86,21 +102,25 @@ WORKFLOWS_PREDEPLOIEMENT = (
 )
 
 
-def test_aucun_controle_de_predeploiement_ne_depend_d_un_nom_de_branche():
-    """Un contrôle gardé par un nom de branche meurt avec cette branche.
+def test_les_controles_live_visent_le_commit_effectivement_deploye():
+    """Une URL de préproduction fixe ne doit jamais valider une PR non déployée.
 
-    Les cinq workflows ci-dessous — dont le scan de sécurité dynamique — étaient
-    conditionnés à « github.head_ref == 'agent/…' ». Ces branches fusionnées, la
-    condition n'était plus jamais vraie : les contrôles figuraient dans le dépôt,
-    ne s'exécutaient plus, et rien ne le signalait. Ce test empêche d'y revenir.
+    Les audits live sont déclenchés après un push sur main, puis attendent que
+    la préproduction expose exactement le SHA courant avant de commencer. Une
+    branche éphémère, une PR ou une ancienne version déjà déployée ne peut donc
+    plus produire un faux feu vert.
     """
     for nom in WORKFLOWS_PREDEPLOIEMENT:
         contenu = (RACINE.parent / ".github" / "workflows" / nom).read_text(encoding="utf-8")
 
         assert "head_ref" not in contenu, nom
-        assert "pull_request:" in contenu, nom
+        assert "pull_request:" not in contenu, nom
+        assert "push:" in contenu, nom
+        assert "branches: [main]" in contenu, nom
         assert "schedule:" in contenu, nom
         assert "workflow_dispatch:" in contenu, nom
+        assert "verifier_preprod_deployee.py" in contenu, nom
+        assert '--revision "$GITHUB_SHA"' in contenu, nom
 
 
 def test_le_gate_d_accessibilite_couvre_les_pages_publiques_a_formulaire():

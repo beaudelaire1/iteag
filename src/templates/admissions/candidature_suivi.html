@@ -4,7 +4,7 @@
 
 {% block content %}
 <section class="section">
-    <div class="container-narrow" style="max-width: 44rem;">
+    <div class="container-narrow max-w-[44rem]">
         <div class="mb-10 reveal"><p class="overline mb-3">Admissions</p><h1>Suivi de votre candidature</h1><hr class="divider-gold mt-6"></div>
 
         <div class="card-elevated reveal reveal-delay-1">
@@ -23,7 +23,7 @@
                 <span class="badge {% if demande.statut == 'validee' %}badge-success{% elif demande.statut == 'a_verifier' %}badge-info{% elif demande.statut == 'a_corriger' %}badge-warning{% else %}badge-gold{% endif %}">{{ demande.get_statut_display }}</span>
             </div>
 
-            {% if demande.message %}<div class="note mt-5" style="max-width:none;"><p class="text-sm whitespace-pre-line">{{ demande.message }}</p></div>{% endif %}
+            {% if demande.message %}<div class="note mt-5 max-w-none"><p class="text-sm whitespace-pre-line">{{ demande.message }}</p></div>{% endif %}
             {% if demande.date_limite %}<p class="mt-4 text-sm {% if demande.est_en_retard %}font-semibold text-rose-700{% else %}text-warm-500{% endif %}">Échéance commune : {{ demande.date_limite|date:"d/m/Y" }}{% if demande.est_en_retard %} — délai dépassé{% endif %}</p>{% endif %}
 
             <div class="mt-6 divide-y divide-warm-100 border-y border-warm-100">

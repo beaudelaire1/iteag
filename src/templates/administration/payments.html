@@ -11,7 +11,7 @@
 
 {% block portal_header %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-    <div><p class="overline mb-2">Suivi financier</p><h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Paiements</h1><p class="mt-1 text-sm text-warm-500">Enregistrement, contrôle et rattachement aux inscriptions.</p></div>
+    <div><p class="overline mb-2">Suivi financier</p><h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Paiements</h1><p class="mt-1 text-sm text-warm-500">Enregistrement, contrôle et rattachement aux inscriptions.</p></div>
     <div class="flex gap-3"><a href="{% url 'administration:export_paiements' %}" class="btn-secondary">Exporter CSV</a><a href="{% url 'administration:payment_create' %}" class="btn-primary">+ Enregistrer</a></div>
 </div>
 {% endblock %}

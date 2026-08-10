@@ -1,13 +1,11 @@
 name: Predeploy Lighthouse
 
-# Ces contrôles s'exécutent contre la préproduction. Ils étaient gardés par le
-# nom de la branche source (« agent/predeploy-go-readiness », « agent/go-live-ops-gate »).
-# Ces branches ayant été fusionnées, la condition n'était plus jamais vraie :
-# le contrôle existait, passait pour actif, et ne s'exécutait plus. On s'en
-# remet donc à des déclencheurs qui ne dépendent d'aucun nom éphémère — toute
-# PR vers main, un rendez-vous hebdomadaire, et le déclenchement manuel.
+# Les mesures Lighthouse doivent porter sur le commit réellement servi par la
+# préproduction. Ce workflow tourne donc après un push sur main, attend le
+# redéploiement Coolify et refuse toute révision différente de github.sha avant
+# de mesurer quoi que ce soit.
 on:
-  pull_request:
+  push:
     branches: [main]
   schedule:
     - cron: "0 3 * * 1"
@@ -24,10 +22,22 @@ jobs:
   audit:
     name: Lighthouse mobile
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
+      - uses: actions/checkout@v6
+
+      - name: Prouver la révision déployée et l'hôte SEO
+        shell: bash
+        run: |
+          set -euo pipefail
+          python src/scripts/verifier_preprod_deployee.py \
+            --base-url "$BASE_URL" \
+            --revision "$GITHUB_SHA" \
+            --attente 600 \
+            --intervalle 15
+
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
@@ -76,9 +86,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/lighthouse
-          # La bibliothèque, la boutique et le catalogue e-learning manquaient à
-          # cette liste. C'est par là qu'un défaut d'accessibilité est passé : le
-          # seuil est strict, mais il ne regardait pas ces pages.
           declare -A pages=(
             [accueil]="/"
             [formations]="/formations/"
@@ -94,9 +101,6 @@ jobs:
             for tentative in 1 2 3; do
               echo "=== Lighthouse: ${nom} — mesure ${tentative}/3 — ${url} ==="
               sortie="/tmp/lighthouse/${nom}-${tentative}.json"
-              # Une trace Chrome peut exceptionnellement échouer sur un runner
-              # hébergé (NO_NAVSTART). On autorise une seule relance technique ;
-              # les scores ne sont jamais assouplis.
               if ! npx --yes lighthouse@13.4.1 "$url" \
                 --quiet \
                 --chrome-flags="--headless --no-sandbox --disable-gpu" \
@@ -114,7 +118,7 @@ jobs:
             done
           done
 
-      - name: Contrôler les médianes, minima et audits SEO réels
+      - name: Contrôler les métriques et tous les audits automatisés
         shell: bash
         run: |
           set -euo pipefail
@@ -133,6 +137,7 @@ jobs:
               "elearning",
           )
           SEO_IGNORES_PREPROD = {"is-crawlable"}
+          LCP_BON_MS = 2500
           echecs = []
 
           def charger(page):
@@ -146,6 +151,20 @@ jobs:
 
           def valeur(data, audit):
               return data["audits"].get(audit, {}).get("numericValue")
+
+          def echecs_categorie(data, categorie, ignores=frozenset()):
+              audits = data["audits"]
+              resultat = []
+              for reference in data["categories"][categorie].get("auditRefs", []):
+                  identifiant = reference["id"]
+                  if identifiant in ignores:
+                      continue
+                  audit = audits.get(identifiant, {})
+                  audit_score = audit.get("score")
+                  mode = audit.get("scoreDisplayMode")
+                  if audit_score is not None and audit_score < 1 and mode not in {"notApplicable", "informative", "manual"}:
+                      resultat.append((identifiant, audit_score, audit.get("title", "")))
+              return resultat
 
           for page in PAGES:
               mesures = charger(page)
@@ -172,36 +191,50 @@ jobs:
               print(f"  TBT médian        : {tbt_mediane:.0f} ms")
               print(f"  CLS max           : {cls_max:.3f}")
 
-              if perf_mediane < 0.70:
-                  echecs.append(f"{page}: performance médiane {perf_mediane:.2f} < 0.70")
-              if min(accessibilites) < 0.95:
-                  echecs.append(f"{page}: accessibilité min {min(accessibilites):.2f} < 0.95")
-              if min(bonnes_pratiques) < 0.95:
-                  echecs.append(f"{page}: bonnes pratiques min {min(bonnes_pratiques):.2f} < 0.95")
+              if lcp_mediane > LCP_BON_MS:
+                  echecs.append(f"{page}: LCP médian {lcp_mediane:.0f} ms > {LCP_BON_MS} ms")
               if cls_max > 0.10:
                   echecs.append(f"{page}: CLS max {cls_max:.3f} > 0.10")
 
-              # Le score SEO global est volontairement pénalisé par le noindex
-              # de préproduction. On ignore uniquement `is-crawlable` et on
-              # continue de bloquer tout autre audit SEO réellement défaillant.
+              # Un score inférieur à 100 en accessibilité / bonnes pratiques
+              # signifie qu'au moins un audit automatisé a réellement échoué :
+              # on affiche l'audit exact au lieu d'accepter un score agrégé.
               for index, data in enumerate(mesures, start=1):
-                  categorie = data["categories"]["seo"]
-                  audits = data["audits"]
-                  for reference in categorie.get("auditRefs", []):
-                      identifiant = reference["id"]
-                      audit = audits.get(identifiant, {})
-                      audit_score = audit.get("score")
-                      mode = audit.get("scoreDisplayMode")
-                      if identifiant in SEO_IGNORES_PREPROD:
-                          continue
-                      if audit_score is not None and audit_score < 1 and mode not in {"notApplicable", "informative"}:
+                  for categorie in ("accessibility", "best-practices"):
+                      for identifiant, audit_score, titre in echecs_categorie(data, categorie):
                           echecs.append(
-                              f"{page} mesure {index}: audit SEO {identifiant}={audit_score} — {audit.get('title', '')}"
+                              f"{page} mesure {index}: {categorie} {identifiant}={audit_score} — {titre}"
                           )
+                  for identifiant, audit_score, titre in echecs_categorie(data, "seo", SEO_IGNORES_PREPROD):
+                      echecs.append(f"{page} mesure {index}: SEO {identifiant}={audit_score} — {titre}")
+
+              # Les JSON complets sont conservés en artefact. On affiche aussi
+              # les diagnostics LCP disponibles pour rendre un échec actionnable.
+              if lcp_mediane > LCP_BON_MS:
+                  mediane = sorted(
+                      (valeur(data, "largest-contentful-paint"), data) for data in mesures
+                  )[1][1]
+                  for identifiant in (
+                      "largest-contentful-paint-element",
+                      "lcp-breakdown-insight",
+                      "lcp-discovery-insight",
+                  ):
+                      audit = mediane["audits"].get(identifiant)
+                      if audit:
+                          print(f"  diagnostic {identifiant}: {json.dumps(audit.get('details', {}), ensure_ascii=False)[:6000]}")
 
           if echecs:
               print("\nÉCHECS:")
-              for echec in echecs:
+              for echec in sorted(set(echecs)):
                   print(f"- {echec}")
               raise SystemExit(1)
           PY
+
+      - name: Conserver les rapports Lighthouse bruts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-preprod-${{ github.sha }}
+          path: /tmp/lighthouse/*.json
+          if-no-files-found: error
+          retention-days: 14

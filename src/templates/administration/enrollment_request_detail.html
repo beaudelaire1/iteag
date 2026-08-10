@@ -12,7 +12,7 @@
 {% block portal_header %}
 <div class="mb-8">
     <a href="{% url 'administration:enrollment_requests' %}" class="mb-4 inline-flex text-sm font-semibold text-navy-600">← Toutes les demandes</a>
-    <div class="flex flex-wrap items-center gap-3"><h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ demande.cours_session.cours.titre }}</h1><span class="badge {% if demande.statut == 'confirmee' %}badge-success{% elif demande.statut == 'refusee' or demande.statut == 'annulee' %}badge-gold{% else %}badge-warning{% endif %}">{{ demande.get_statut_display }}</span></div>
+    <div class="flex flex-wrap items-center gap-3"><h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ demande.cours_session.cours.titre }}</h1><span class="badge {% if demande.statut == 'confirmee' %}badge-success{% elif demande.statut == 'refusee' or demande.statut == 'annulee' %}badge-gold{% else %}badge-warning{% endif %}">{{ demande.get_statut_display }}</span></div>
     <p class="mt-1 text-sm text-warm-500">Demande n°{{ demande.pk }} · déposée le {{ demande.created_at|date:"d/m/Y à H:i" }}</p>
 </div>
 {% endblock %}
@@ -75,7 +75,7 @@
         <button type="submit" class="btn-primary w-full">Appliquer la décision</button>
     </form>
     {% else %}
-    <div class="card-elevated sticky top-24" style="border-left: 3px solid var(--color-gold-500);">
+    <div class="card-elevated sticky top-24 [border-left:3px_solid_var(--color-gold-500)]">
         <p class="overline mb-2">Demande clôturée</p>
         <h2 class="text-lg font-semibold text-navy-900">{{ demande.get_statut_display }}</h2>
         <p class="mt-2 text-sm text-warm-600">Aucune décision supplémentaire n’est disponible pour cet état. L’historique conserve la décision appliquée.</p>

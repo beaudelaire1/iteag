@@ -19,8 +19,8 @@
             <span>/</span>
             <span class="text-warm-800 font-medium">Assiduité</span>
         </nav>
-        <h1 style="font-size: clamp(1.4rem, 2.5vw, 1.8rem);">Bilan d'assiduité &amp; Présences</h1>
-        <p class="text-sm mt-1" style="color: var(--color-warm-500);">
+        <h1 class="text-[clamp(1.4rem,_2.5vw,_1.8rem)]">Bilan d'assiduité &amp; Présences</h1>
+        <p class="text-sm mt-1 text-warm-500">
             Cours : <strong>{{ cours_session.cours.titre }}</strong> &bull; Session : <strong>{{ cours_session.session.nom }}</strong> ({{ total_inscrits }} inscrit{{ total_inscrits|pluralize }})
         </p>
     </div>
@@ -40,7 +40,7 @@
     <div class="card-elevated p-0 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm border-collapse">
-                <thead class="bg-warm-100 text-warm-700 uppercase text-xs border-b border-warm-200" style="background: var(--color-warm-100, #f8f6f0);">
+                <thead class="bg-warm-100 text-warm-700 uppercase text-xs border-b border-warm-200 bg-warm-100">
                     <tr>
                         <th class="py-3 px-4 font-semibold">Étudiant</th>
                         <th class="py-3 px-4 font-semibold">Parcours</th>
@@ -56,7 +56,7 @@
                                 {% if item.etudiant.utilisateur.photo %}
                                 <img src="{{ item.etudiant.utilisateur.photo.url }}" alt="" class="h-9 w-9 rounded-full object-cover border border-warm-200">
                                 {% else %}
-                                <div class="h-9 w-9 rounded-full bg-navy-100 text-navy-800 flex items-center justify-center font-bold text-xs" style="background: var(--color-navy-100, #e0e7ff); color: var(--color-navy-800, #1e3a8a);">
+                                <div class="h-9 w-9 rounded-full bg-navy-100 text-navy-800 flex items-center justify-center font-bold text-xs bg-navy-100 text-navy-800">
                                     {{ item.etudiant.utilisateur.initiales }}
                                 </div>
                                 {% endif %}

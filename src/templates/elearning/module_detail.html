@@ -32,7 +32,7 @@ les parcours, pour que les trois se décrivent de la même façon.
 {% endblock %}
 
 {% block content %}
-<section class="section" style="background: var(--color-warm-100);">
+<section class="section bg-warm-100">
     <div class="container-wide">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
@@ -66,7 +66,7 @@ les parcours, pour que les trois se décrivent de la même façon.
 
             {# Encart d'accès #}
             <aside class="lg:col-span-1">
-                <div class="card-elevated sticky" style="top: 6rem;">
+                <div class="card-elevated sticky top-[6rem]">
                     <dl class="space-y-3 text-sm mb-6">
                         {% if module.duree_totale_secondes %}
                         <div class="flex justify-between">
@@ -95,7 +95,7 @@ les parcours, pour que les trois se décrivent de la même façon.
                                 <span class="font-semibold text-navy-900">{{ inscription.progression_percent }} %</span>
                             </div>
                             <div class="progress-bar" data-progress="{{ inscription.progression_percent }}">
-                                <div class="progress-bar-fill" style="width: {{ inscription.progression_percent }}%"></div>
+                                <div class="progress-bar-fill" data-progress-width="{{ inscription.progression_percent }}"></div>
                             </div>
                         </div>
 
@@ -116,7 +116,7 @@ les parcours, pour que les trois se décrivent de la même façon.
                             étudiant identifié : c'est son dossier qui portera
                             l'accès, et l'accès acheté ne s'éteint jamais.
                         {% endcomment %}
-                        <p class="text-3xl font-semibold" style="color: var(--color-navy-900);">
+                        <p class="text-3xl font-semibold text-navy-900">
                             {{ module.prix_ttc|floatformat:2 }} €
                         </p>
                         <p class="mt-1 text-xs text-warm-500">
@@ -162,7 +162,7 @@ les parcours, pour que les trois se décrivent de la même façon.
                         </a>
                         {% endif %}
                     {% elif demande_en_attente %}
-                        <p class="text-sm font-semibold" style="color: var(--color-navy-900);">Demande transmise</p>
+                        <p class="text-sm font-semibold text-navy-900">Demande transmise</p>
                         <p class="mt-1 text-sm text-warm-600">
                             Le secrétariat examine votre demande d'accès. Vous serez averti dès qu'elle est traitée.
                         </p>

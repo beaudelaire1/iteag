@@ -16,7 +16,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView, UpdateView
 
-from apps.academics.forms import StudentSubmissionForm
 from apps.academics.models import (
     CoursDeSession,
     CreditECTS,
@@ -30,6 +29,7 @@ from apps.core.models import Notification
 from apps.core.services.notifications import notifier
 from apps.documents.models import DocumentAdministratif
 from apps.library.models import Emprunt
+from apps.lms.forms import StudentSubmissionForm
 from apps.lms.models import Annonce, Evaluation, RessourcePedagogique
 from apps.lms.notifications import notifier_enseignant
 

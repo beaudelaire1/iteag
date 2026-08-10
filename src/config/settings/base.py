@@ -689,7 +689,9 @@ CONTENT_SECURITY_POLICY = {
         # bien son attribut, l'en-tête ne le reprenait pas, et le navigateur
         # continuait de l'écarter.
         "script-src": [NONCE, "'self'", *_turnstile_origins, *_stripe_script_origins],
-        "style-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'"],
+        "style-src-elem": ["'self'"],
+        "style-src-attr": ["'none'"],
         "img-src": ["'self'", "data:", "https://*.stripe.com"],
         "media-src": ["'self'", "blob:"],
         "font-src": ["'self'"],

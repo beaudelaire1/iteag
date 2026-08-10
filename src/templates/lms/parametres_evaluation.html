@@ -8,10 +8,10 @@
 {% block portal_header %}
 <div class="mb-8">
     <a href="{% url 'lms:course_detail' cours_session.pk %}"
-       class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+       class="inline-flex items-center text-sm font-medium mb-4 text-navy-600">
         ← {{ cours_session.cours.titre }}
     </a>
-    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">Calendrier d'évaluation</h1>
+    <h1 class="text-[clamp(1.25rem,_3vw,_1.75rem)]">Calendrier d'évaluation</h1>
     <p class="mt-2 text-sm text-warm-500">
         {{ cours_session.cours.titre }} — {{ cours_session.session }}
     </p>

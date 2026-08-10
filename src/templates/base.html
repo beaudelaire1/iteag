@@ -24,52 +24,35 @@
     <meta property="og:url" content="{{ CANONICAL_URL }}">
     {% block og_image %}{% endblock %}
 
-    {# Typography premium — polices auto-hébergées (RGPD + standard TUS) #}
     {% load static %}
     <link rel="stylesheet" href="{% static 'fonts/fonts.css' %}">
-
-    {# Design system ITEAG — Tailwind compilé, y compris les ajustements WCAG #}
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={{ ASSET_VERSION }}">
 
-    {# Video.js (premium media playback) #}
-    {% block videojs_css %}{% endblock %}
-
-    {# Favicon #}
-    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
-
-    {% block extra_head %}{% endblock %}
-
-    {% block json_ld %}{% endblock %}
     {% comment %}
-        Sans JavaScript, les éléments d'apparition resteraient à opacité nulle :
-        la page s'afficherait presque vide. Le repli est posé ici, où il ne peut
-        pas être oublié — il vaut pour tous les gabarits.
+    HTMX n'évalue aucune expression JavaScript fournie par le HTML et ne traite
+    aucun script provenant d'un fragment échangé.
     {% endcomment %}
+    <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
+
+    {% block videojs_css %}{% endblock %}
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    {% block extra_head %}{% endblock %}
+    {% block json_ld %}{% endblock %}
+
     <noscript>
-        <style>
-            .reveal, .reveal-left, .reveal-right, .reveal-scale,
-            .reveal-fade, .reveal-blur, .text-reveal-line, .border-draw {
-                opacity: 1 !important;
-                transform: none !important;
-            }
-        </style>
+        <link rel="stylesheet" href="{% static 'css/noscript.css' %}">
     </noscript>
 </head>
 <body class="min-h-screen flex flex-col antialiased bg-warm text-warm-900">
-    {# Skip to content — accessibilité WCAG AA #}
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:rounded bg-navy-700 text-white">
         Aller au contenu principal
     </a>
 
     {% include "partials/header.html" %}
-
-    {# Fil d'Ariane — §14/§15 cahier des charges #}
     {% block breadcrumb %}{% endblock %}
 
-    {# Messages Django — confirmations brèves, erreurs persistantes #}
     {% if messages %}
-    <div id="messages" class="fixed top-20 right-4 z-50 space-y-3 w-96 max-w-[calc(100vw-2rem)]"
-         role="status" aria-live="polite">
+    <div id="messages" class="fixed top-20 right-4 z-50 space-y-3 w-96 max-w-[calc(100vw-2rem)]" role="status" aria-live="polite">
         {% for message in messages %}
         <div class="flash flex items-start gap-3 rounded px-4 py-3 text-sm font-medium shadow-lg border backdrop-blur-sm
                     {% if message.tags == 'success' %}bg-emerald-50/95 text-emerald-900 border-emerald-200
@@ -78,8 +61,7 @@
                     {% else %}bg-sky-50/95 text-sky-900 border-sky-200{% endif %}"
              data-flash="{% if message.tags == 'success' or message.tags == 'info' %}5000{% else %}0{% endif %}">
             <span class="flex-1">{{ message }}</span>
-            <button type="button" data-flash-close aria-label="Fermer ce message"
-                    class="shrink-0 opacity-40 hover:opacity-100 transition-opacity text-lg leading-none">&times;</button>
+            <button type="button" data-flash-close aria-label="Fermer ce message" class="shrink-0 opacity-40 hover:opacity-100 transition-opacity text-lg leading-none">&times;</button>
         </div>
         {% endfor %}
     </div>
@@ -91,22 +73,19 @@
 
     {% include "partials/footer.html" %}
     {% include "partials/bandeau_cookies.html" %}
-
-    {# Jeton CSRF — exploité par HTMX #}
     {% csrf_token %}
 
-    {# HTMX auto-hébergé avec les autres ressources du projet. #}
     <script src="{% static 'js/htmx.min.js' %}"></script>
-    {# Préférences de confidentialité disponibles avant les scripts fonctionnels. #}
     <script src="{% static 'js/consentement-cookies.js' %}?v={{ ASSET_VERSION }}" defer></script>
-    {# Le correctif a11y doit s'enregistrer avant le gestionnaire d'ancres global. #}
     <script src="{% static 'js/accessibilite.js' %}?v={{ ASSET_VERSION }}" defer></script>
-    {# ITEAG global JS — scroll reveal, counters, HTMX handlers #}
+    {% comment %}
+    Convertit uniquement les données de présentation typées en propriétés CSS
+    autorisées ; aucune déclaration CSS arbitraire n'est lue depuis le HTML.
+    {% endcomment %}
+    <script src="{% static 'js/styles-dynamiques.js' %}?v={{ ASSET_VERSION }}" defer></script>
     <script src="{% static 'js/iteag.js' %}?v={{ ASSET_VERSION }}" defer></script>
 
-    {# Video.js (chargé à la demande dans les blocs) #}
     {% block videojs_js %}{% endblock %}
-
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,13 +1,12 @@
 name: Predeploy live audit
 
-# Ces contrôles s'exécutent contre la préproduction. Ils étaient gardés par le
-# nom de la branche source (« agent/predeploy-go-readiness », « agent/go-live-ops-gate »).
-# Ces branches ayant été fusionnées, la condition n'était plus jamais vraie :
-# le contrôle existait, passait pour actif, et ne s'exécutait plus. On s'en
-# remet donc à des déclencheurs qui ne dépendent d'aucun nom éphémère — toute
-# PR vers main, un rendez-vous hebdomadaire, et le déclenchement manuel.
+# Un contrôle contre une URL fixe n'a de valeur qu'après le déploiement du
+# commit qu'il prétend auditer. Il s'exécute donc après un push sur main (et
+# périodiquement), jamais sur une PR dont le code n'est pas encore servi par la
+# préproduction. Le premier gate attend SOURCE_COMMIT puis refuse toute version
+# qui ne correspond pas exactement à github.sha.
 on:
-  pull_request:
+  push:
     branches: [main]
   schedule:
     - cron: "20 3 * * 1"
@@ -24,10 +23,22 @@ jobs:
   preproduction:
     name: Preproduction HTTPS smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
+      - uses: actions/checkout@v6
+
+      - name: Prouver la révision déployée et l'hôte SEO
+        shell: bash
+        run: |
+          set -euo pipefail
+          python src/scripts/verifier_preprod_deployee.py \
+            --base-url "$BASE_URL" \
+            --revision "$GITHUB_SHA" \
+            --attente 600 \
+            --intervalle 15
+
       - name: Vérifier les pages publiques critiques
         shell: bash
         run: |
@@ -49,7 +60,7 @@ jobs:
             test "$code" = "200"
           done
 
-      - name: Vérifier la sonde applicative
+      - name: Vérifier la sonde applicative publique
         shell: bash
         run: |
           set -euo pipefail
@@ -61,8 +72,8 @@ jobs:
 
           payload = json.loads(sys.argv[1])
           assert payload.get("statut") == "ok", payload
-          assert payload.get("base") is True, payload
-          assert payload.get("cache") is True, payload
+          # base/cache peuvent être volontairement masqués par HEALTHZ_JETON.
+          # Leur contrôle profond appartient au gate serveur authentifié.
           PY
 
       - name: Vérifier les en-têtes de sécurité réels
@@ -78,7 +89,8 @@ jobs:
             '^x-content-type-options:' \
             '^x-frame-options:' \
             '^referrer-policy:' \
-            '^x-robots-tag:'
+            '^x-robots-tag:' \
+            '^x-iteag-revision:'
           do
             grep --ignore-case --quiet --extended-regexp "$header" /tmp/iteag-headers
           done
@@ -87,6 +99,7 @@ jobs:
           grep --ignore-case --quiet --extended-regexp '^content-security-policy:.*frame-ancestors '\''none'\''' /tmp/iteag-headers
           grep --ignore-case --quiet --extended-regexp '^permissions-policy:.*camera=\(\).*microphone=\(\).*geolocation=\(\).*usb=\(\)' /tmp/iteag-headers
           grep --ignore-case --quiet --extended-regexp '^x-robots-tag:.*noindex' /tmp/iteag-headers
+          grep --ignore-case --quiet --fixed-strings "x-iteag-revision: ${GITHUB_SHA}" /tmp/iteag-headers
 
       - name: Auditer les liens internes publics
         shell: bash
@@ -169,11 +182,12 @@ jobs:
           python - "$BASE_URL" <<'PY'
           from html.parser import HTMLParser
           import sys
-          from urllib.parse import urljoin
+          from urllib.parse import urljoin, urlparse
           from urllib.request import Request, urlopen
           from xml.etree import ElementTree
 
           base = sys.argv[1].rstrip("/") + "/"
+          hote_attendu = urlparse(base).netloc
 
           class Meta(HTMLParser):
               def __init__(self):
@@ -211,9 +225,11 @@ jobs:
           code, xml = lire(urljoin(base, "sitemap.xml"))
           assert code == 200
           racine = ElementTree.fromstring(xml)
-          lieux = [elt.text for elt in racine.iter() if elt.tag.endswith("loc") and elt.text]
+          lieux = [elt.text.strip() for elt in racine.iter() if elt.tag.endswith("loc") and elt.text]
           assert lieux, "Sitemap vide"
-          print(f"Sitemap: {len(lieux)} URL déclarées")
+          hotes = {urlparse(url).netloc for url in lieux}
+          assert hotes == {hote_attendu}, f"Hôtes sitemap incohérents: {sorted(hotes)} != {hote_attendu}"
+          print(f"Sitemap: {len(lieux)} URL déclarées sur {hote_attendu}")
 
           for path in ("", "presentation/", "formations/", "admissions/candidature/"):
               url = urljoin(base, path)
@@ -224,6 +240,6 @@ jobs:
               assert meta.title.strip(), f"title absent: {url}"
               assert meta.h1 == 1, f"nombre de H1={meta.h1}: {url}"
               assert meta.description.strip(), f"meta description absente: {url}"
-              assert meta.canonical.startswith("https://"), f"canonical invalide: {url}: {meta.canonical}"
+              assert meta.canonical == url, f"canonical incohérente: {url}: {meta.canonical}"
               print(f"OK meta: {url} | H1={meta.h1} | canonical={meta.canonical}")
           PY

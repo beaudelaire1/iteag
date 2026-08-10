@@ -7,14 +7,14 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/portal-ux.css' %}?v={{ ASSET_VERSION }}">
 
-<div class="min-h-[calc(100vh-4rem)]" style="background: var(--color-warm-100);">
+<div class="min-h-[calc(100vh-4rem)] bg-warm-100">
     <div class="container-wide py-8 lg:py-12">
         <div class="portal-layout">
             <aside class="portal-sidebar hidden lg:block">
                 <div class="mb-6 rounded border border-warm-200 bg-white p-4">
                     <div class="flex items-center gap-3">
                         {% if user.photo %}
-                        <img src="{{ user.photo.url }}" alt="" class="h-10 w-10 shrink-0 rounded-full object-cover" style="border: 1px solid var(--color-warm-200);">
+                        <img src="{{ user.photo.url }}" alt="" class="h-10 w-10 shrink-0 rounded-full object-cover [border:1px_solid_var(--color-warm-200)]">
                         {% else %}
                         <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-700 text-xs font-bold text-white" aria-hidden="true">{{ user.initiales }}</span>
                         {% endif %}

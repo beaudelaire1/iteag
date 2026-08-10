@@ -14,7 +14,7 @@
 <div class="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
     <div>
         <p class="overline mb-2">Administration de la boutique</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Commandes</h1>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Commandes</h1>
     </div>
     <div class="flex flex-wrap gap-3">
         {% if request.user.role == "admin" or request.user.is_superuser %}

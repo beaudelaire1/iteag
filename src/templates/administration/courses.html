@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block portal_header %}
-<div class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p class="overline mb-2">Référentiel pédagogique</p><h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Cours</h1><p class="mt-1 text-sm text-warm-500">Contenus de référence ensuite programmés dans les sessions.</p></div><a href="{% url 'administration:course_create' %}" class="btn-primary">+ Créer un cours</a></div>
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p class="overline mb-2">Référentiel pédagogique</p><h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Cours</h1><p class="mt-1 text-sm text-warm-500">Contenus de référence ensuite programmés dans les sessions.</p></div><a href="{% url 'administration:course_create' %}" class="btn-primary">+ Créer un cours</a></div>
 {% endblock %}
 
 {% block portal_content %}

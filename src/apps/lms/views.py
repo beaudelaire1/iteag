@@ -13,6 +13,7 @@ from apps.core.models import Notification
 from apps.core.services.notifications import notifier
 from apps.library.models import Emprunt
 
+from .credits import crediter_publication
 from .forms import AnnonceForm, GradeForm, ParametresEvaluationForm, RessourceUploadForm
 from .models import Annonce, Evaluation, RessourcePedagogique
 from .notifications import notifier_etudiants
@@ -418,8 +419,6 @@ class TeacherPublishGradeView(TeacherRoleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        from apps.academics.services.credits import crediter_publication
-
         professeur = _get_professeur(request)
         if professeur is None:
             raise Http404("Aucune fiche enseignant n'est rattachée à ce compte.")
@@ -470,8 +469,6 @@ class TeacherPublishGradesView(TeacherRoleRequiredMixin, DetailView):
         return CoursDeSession.objects.filter(enseignant=prof)
 
     def post(self, request, *args, **kwargs):
-        from apps.academics.services.credits import crediter_publication
-
         cours_session = self.get_object()
         evaluations_publiees = list(
             cours_session.evaluations.filter(statut=Evaluation.StatutEvaluation.NOTE).select_related(

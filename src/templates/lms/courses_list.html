@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-10">
     <p class="overline mb-2">Enseignement</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes cours</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">Tous les cours qui vous sont assignés</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mes cours</h1>
+    <p class="mt-1 text-sm text-warm-500">Tous les cours qui vous sont assignés</p>
 </div>
 {% endblock %}
 
@@ -21,13 +21,13 @@
 <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
     {% for cs in cours_list %}
     {% url 'lms:course_detail' cs.pk as course_detail_url %}
-    <article class="card-elevated flex flex-col" style="padding: 0;">
+    <article class="card-elevated flex flex-col p-0">
         <div class="px-5 py-5">
-            <h3 class="text-base font-semibold" style="color: var(--color-navy-900);">
+            <h3 class="text-base font-semibold text-navy-900">
                 <a href="{{ course_detail_url }}" class="link-reveal">{{ cs.cours.titre }}</a>
             </h3>
-            <p class="text-xs mt-1" style="color: var(--color-warm-500);">{{ cs.session.nom }}</p>
-            <div class="mt-4 flex items-center justify-between text-xs" style="color: var(--color-warm-500);">
+            <p class="text-xs mt-1 text-warm-500">{{ cs.session.nom }}</p>
+            <div class="mt-4 flex items-center justify-between text-xs text-warm-500">
                 <span>{{ cs.cours.ects }} ECTS</span>
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
                     {% if cs.statut == 'en_cours' %}bg-green-100 text-emerald-700
@@ -36,7 +36,7 @@
                     {{ cs.get_statut_display }}
                 </span>
             </div>
-            <p class="text-xs mt-2" style="color: var(--color-warm-400);">{{ cs.inscriptions.count }} étudiant{{ cs.inscriptions.count|pluralize }}</p>
+            <p class="text-xs mt-2 text-warm-400">{{ cs.inscriptions.count }} étudiant{{ cs.inscriptions.count|pluralize }}</p>
         </div>
         <div class="mt-auto flex flex-wrap gap-3 border-t border-warm-100 px-5 py-4">
             <a href="{{ course_detail_url }}" class="text-sm font-semibold text-navy-700">Gérer le cours</a>
@@ -45,7 +45,7 @@
     </article>
     {% empty %}
     <div class="sm:col-span-2 lg:col-span-3 card-elevated text-center py-12">
-        <p style="color: var(--color-warm-400);">Aucun cours assigné pour le moment.</p>
+        <p class="text-warm-400">Aucun cours assigné pour le moment.</p>
     </div>
     {% endfor %}
 </div>

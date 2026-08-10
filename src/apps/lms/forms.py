@@ -3,15 +3,37 @@ from django import forms
 from apps.academics.models import CoursDeSession
 from apps.core.editeur_riche import ChampTexteRiche
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
+from apps.core.validation_fichiers import RegleFichier, valider_fichier
 
 from .models import Annonce, Choix, Devoir, Evaluation, GroupeEtudiants, Question, RessourcePedagogique
 
 # Classes du système de design ITEAG (assets/css/input.css).
-# Les formulaires du portail enseignant utilisent les mêmes composants que le
-# reste du site : pas de classes Tailwind ad hoc, pas de palette parallèle.
+# Les formulaires du LMS utilisent les mêmes composants que le reste du site :
+# pas de classes ad hoc, pas de palette parallèle, pas de style inline.
 INPUT = "form-input"
 INPUT_COURT = "form-input w-24"
 FICHIER = "form-file"
+
+REGLE_COPIE = RegleFichier(
+    extensions=frozenset({".pdf", ".doc", ".docx", ".odt"}),
+    taille_max=10 * 1024 * 1024,
+    message_formats="Formats acceptés : PDF, DOC, DOCX ou ODT.",
+)
+
+
+class StudentSubmissionForm(FormulaireModeleITEAG):
+    """Remise d'une copie étudiante pour une évaluation du LMS."""
+
+    class Meta:
+        model = Evaluation
+        fields = ["fichier_soumis"]
+        widgets = {"fichier_soumis": forms.ClearableFileInput(attrs={"class": FICHIER, "accept": REGLE_COPIE.accept})}
+
+    def clean_fichier_soumis(self):
+        uploaded = self.cleaned_data.get("fichier_soumis")
+        if not uploaded:
+            raise forms.ValidationError("Sélectionnez le fichier à remettre.")
+        return valider_fichier(uploaded, REGLE_COPIE)
 
 
 class RessourceUploadForm(FormulaireModeleITEAG):
@@ -163,7 +185,6 @@ class DevoirForm(FormulaireModeleITEAG):
         cours_session = cours_session or getattr(self.instance, "cours_session", None)
         if cours_session is not None and cours_session.pk:
             from apps.academics.models import ProfilEtudiant, Promotion
-            from apps.lms.models import GroupeEtudiants
 
             inscrits = ProfilEtudiant.objects.filter(inscriptions__cours_session=cours_session).distinct()
             self.fields["groupe"].queryset = GroupeEtudiants.objects.filter(cours_session=cours_session)
@@ -251,7 +272,7 @@ class GroupeForm(FormulaireModeleITEAG):
             "nom": forms.TextInput(attrs={"class": INPUT, "placeholder": "Équipe 1"}),
             "description": forms.Textarea(attrs={"rows": 3, "class": INPUT, "placeholder": "Sujet du projet…"}),
             "membres": forms.CheckboxSelectMultiple(),
-            "couleur": forms.TextInput(attrs={"type": "color", "class": "form-input", "style": "width: 4rem;"}),
+            "couleur": forms.TextInput(attrs={"type": "color", "class": "form-input w-16"}),
         }
 
     def __init__(self, *args, cours_session=None, **kwargs):

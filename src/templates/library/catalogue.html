@@ -6,14 +6,14 @@
 
 {% block content %}
 <section class="section">
-    <div class="container-wide" style="max-width: 72rem;">
+    <div class="container-wide max-w-6xl">
         <header class="mb-12 reveal">
             <p class="overline mb-3">Bibliothèque</p>
             <h1>Catalogue</h1>
             <hr class="divider-gold mt-6">
         </header>
 
-        {# Barre de recherche HTMX live #}
+        {# Recherche progressive : le formulaire reste pleinement utilisable sans JavaScript. #}
         <form method="get" action="{% url 'library:catalogue' %}"
               hx-get="{% url 'library:catalogue' %}"
               hx-target="#catalogue-results"
@@ -21,38 +21,42 @@
               hx-push-url="true"
               hx-indicator="#search-indicator"
               class="mb-10 reveal reveal-delay-1">
-            <div class="flex flex-col sm:flex-row gap-3">
-                <div class="relative flex-1">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
+                <div class="relative min-w-0 flex-1">
                     <label for="recherche-catalogue" class="sr-only">Rechercher un ouvrage</label>
-                    <input type="text" id="recherche-catalogue" name="q" value="{{ query }}"
+                    <input type="search" id="recherche-catalogue" name="q" value="{{ query }}"
                            placeholder="Rechercher par titre, auteur, mot-clé…"
-                           class="form-input" style="padding-left: 2.75rem;">
-                    <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--color-warm-400);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                           autocomplete="off"
+                           class="form-input pl-11">
+                    <svg class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400"
+                         fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                    </svg>
                 </div>
-                <div class="flex gap-3">
-                    <label for="filtre-discipline" class="sr-only">Filtrer par discipline</label>
-                    <select id="filtre-discipline" name="discipline" class="form-select" style="min-width: 10rem;">
-                        <option value="">Toutes disciplines</option>
-                        {% for d in disciplines %}
-                        <option value="{{ d.slug }}" {% if current_discipline == d.slug %}selected{% endif %}>{{ d.nom }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;">
+                <div class="flex min-w-0 flex-col gap-3 sm:flex-row lg:flex-none">
+                    <div class="min-w-0 sm:min-w-40">
+                        <label for="filtre-discipline" class="sr-only">Filtrer par discipline</label>
+                        <select id="filtre-discipline" name="discipline" class="form-select w-full">
+                            <option value="">Toutes disciplines</option>
+                            {% for d in disciplines %}
+                            <option value="{{ d.slug }}" {% if current_discipline == d.slug %}selected{% endif %}>{{ d.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary shrink-0 justify-center whitespace-nowrap px-6 py-3">
                         Rechercher
                     </button>
                 </div>
             </div>
-            <div id="search-indicator" class="htmx-indicator mt-3">
-                <div class="skeleton" style="height: 2px; width: 100%;"></div>
+            <div id="search-indicator" class="htmx-indicator mt-3" role="status" aria-live="polite">
+                <span class="sr-only">Recherche en cours…</span>
+                <div class="skeleton h-0.5 w-full" aria-hidden="true"></div>
             </div>
         </form>
 
-        {# Résultats #}
-        <div id="catalogue-results">
+        <div id="catalogue-results" role="region" aria-label="Résultats du catalogue" aria-live="polite">
             {% include "library/partials/results.html" %}
         </div>
     </div>
 </section>
-
-{% include "partials/pagination.html" %}
 {% endblock %}

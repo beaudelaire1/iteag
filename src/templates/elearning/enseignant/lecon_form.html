@@ -10,7 +10,7 @@
 <div class="mb-8 max-w-2xl">
     <a href="{% url 'elearning:enseignant_structure' chapitre.module.slug %}" class="text-sm font-medium mb-4 inline-block link-reveal">← {{ chapitre.module.titre }}</a>
     <p class="overline mb-2">Chapitre : {{ chapitre.titre }}</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{% if object %}Modifier « {{ object.titre }} »{% else %}Ajouter une leçon{% endif %}</h1>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{% if object %}Modifier « {{ object.titre }} »{% else %}Ajouter une leçon{% endif %}</h1>
     <p class="mt-3 text-sm text-warm-600">Choisissez le format, ajoutez le contenu correspondant puis indiquez sa durée en minutes.</p>
 </div>
 {% endblock %}
@@ -18,9 +18,9 @@
 {% block portal_content %}
 <form method="post" enctype="multipart/form-data" class="max-w-2xl space-y-8" data-duree-minutes-form data-lecon-form>
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="note alert" style="max-width:none;" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.non_field_errors %}<div class="note alert max-w-none" role="alert">{{ form.non_field_errors }}</div>{% endif %}
     {% if DEBUG and chapitre.module.politique_acces != "public" %}
-    <div class="note alert" style="max-width:none;">En production, utilisez Bunny Stream pour un module protégé, ou rendez le module public.</div>
+    <div class="note alert max-w-none">En production, utilisez Bunny Stream pour un module protégé, ou rendez le module public.</div>
     {% endif %}
 
     <section class="card-elevated space-y-5">

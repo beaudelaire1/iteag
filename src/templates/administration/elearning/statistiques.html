@@ -8,19 +8,18 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">E-Learning</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Statistiques de visionnage</h1>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Statistiques de visionnage</h1>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-
 <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-10">
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ modules_publies }}</p><p class="stat-label">Modules publiés</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ total_acces }}</p><p class="stat-label">Accès ouverts</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ actifs }}</p><p class="stat-label">En cours</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ termines }}</p><p class="stat-label">Terminés</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ heures_vues }}</p><p class="stat-label">Heures visionnées</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ attestations }}</p><p class="stat-label">Attestations</p></div>
+    <div class="card-elevated"><p class="stat-number text-[1.75rem]">{{ modules_publies }}</p><p class="stat-label">Modules publiés</p></div>
+    <div class="card-elevated"><p class="stat-number text-[1.75rem]">{{ total_acces }}</p><p class="stat-label">Accès ouverts</p></div>
+    <div class="card-elevated"><p class="stat-number text-[1.75rem]">{{ actifs }}</p><p class="stat-label">En cours</p></div>
+    <div class="card-elevated"><p class="stat-number text-[1.75rem]">{{ termines }}</p><p class="stat-label">Terminés</p></div>
+    <div class="card-elevated"><p class="stat-number text-[1.75rem]">{{ heures_vues }}</p><p class="stat-label">Heures visionnées</p></div>
+    <div class="card-elevated"><p class="stat-number text-[1.75rem]">{{ attestations }}</p><p class="stat-label">Attestations</p></div>
 </div>
 
 <h2 class="text-lg mb-4">Par module</h2>
@@ -33,17 +32,19 @@
         </thead>
         <tbody>
             {% for module in modules %}
+            {% widthratio module.nb_termines module.nb_inscrits 100 as taux_achevement %}
             <tr>
                 <td class="font-medium">{{ module.titre }}</td>
                 <td class="num">{{ module.nb_inscrits }}</td>
                 <td class="num">{{ module.nb_termines }}</td>
                 <td>
                     <span class="flex items-center gap-3">
-                        <span class="progress-bar" style="width: 6rem;">
-                            <span class="progress-bar-fill block"
-                                  style="width: {% widthratio module.nb_termines module.nb_inscrits 100 %}%"></span>
-                        </span>
-                        <span class="num text-xs">{% widthratio module.nb_termines module.nb_inscrits 100 %} %</span>
+                        <progress class="progress-native progress-native--compact"
+                                  max="100" value="{{ taux_achevement }}"
+                                  aria-label="Achèvement de {{ module.titre }} : {{ taux_achevement }} %">
+                            {{ taux_achevement }} %
+                        </progress>
+                        <span class="num text-xs">{{ taux_achevement }} %</span>
                     </span>
                 </td>
                 <td class="num">{{ module.avancement|floatformat:0 }} %</td>
@@ -53,8 +54,6 @@
     </table>
 </div>
 {% else %}
-<div class="card text-center py-16">
-    <p style="color: var(--color-warm-600);">Aucun module n'a encore d'étudiant inscrit.</p>
-</div>
+<div class="card text-center py-16"><p class="text-warm-600">Aucun module n'a encore d'étudiant inscrit.</p></div>
 {% endif %}
 {% endblock %}

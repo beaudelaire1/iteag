@@ -18,6 +18,7 @@ from django.urls import reverse
 
 RACINE = pathlib.Path(__file__).resolve().parents[2]
 CSS_SOURCE = RACINE / "assets" / "css" / "input.css"
+CSS_NOSCRIPT = RACINE / "static" / "css" / "noscript.css"
 
 # Toutes les familles d'animation qui partent d'une opacité nulle.
 CLASSES_MASQUANTES = [
@@ -48,18 +49,19 @@ def test_le_mouvement_reduit_revele_tout(classe):
     assert classe in bloc_mouvement_reduit(), f"« {classe} » resterait invisible en mouvement réduit"
 
 
-def test_le_repli_sans_javascript_est_dans_le_gabarit_de_base():
-    """
-    Posé dans « base.html » et non dans chaque page : c'est le seul endroit où
-    il ne peut pas être oublié.
-    """
+def test_le_repli_sans_javascript_est_charge_par_le_gabarit_de_base():
+    """Le repli reste global tout en respectant une CSP sans style inline."""
     base = (RACINE / "templates" / "base.html").read_text(encoding="utf-8")
     assert "<noscript>" in base
     debut = base.index("<noscript>")
     bloc = base[debut : base.index("</noscript>", debut)]
+    assert "css/noscript.css" in bloc
+
+    css = CSS_NOSCRIPT.read_text(encoding="utf-8")
     for classe in CLASSES_MASQUANTES:
-        assert classe in bloc, f"« {classe} » resterait invisible sans JavaScript"
-    assert "opacity: 1 !important" in bloc
+        assert classe in css, f"« {classe} » resterait invisible sans JavaScript"
+    assert "opacity: 1 !important" in css
+    assert "transform: none !important" in css
 
 
 @pytest.mark.django_db
@@ -68,3 +70,4 @@ def test_les_pages_publiques_portent_le_repli(client):
     for nom_route in ("elearning:catalogue", "formations:parcours_list", "accounts:login"):
         contenu = client.get(reverse(nom_route)).content.decode()
         assert "<noscript>" in contenu, nom_route
+        assert "css/noscript.css" in contenu, nom_route

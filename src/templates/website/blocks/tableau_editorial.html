@@ -1,11 +1,11 @@
 {% load wagtailcore_tags %}
-<div class="my-8 overflow-x-auto rounded-lg border" style="border-color: var(--color-warm-200);">
+<div class="my-8 overflow-x-auto rounded-lg border border-warm-200">
     <table class="w-full min-w-[36rem] border-collapse text-sm">
         {% if value.columns %}
-        <thead style="background: var(--color-warm-100);">
+        <thead class="bg-warm-100">
             <tr>
                 {% for colonne in value.columns %}
-                <th scope="col" class="px-4 py-3 text-left font-semibold" style="color: var(--color-navy-900);">
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-navy-900">
                     {{ colonne.heading }}
                 </th>
                 {% endfor %}
@@ -14,9 +14,9 @@
         {% endif %}
         <tbody>
             {% for ligne in value.rows %}
-            <tr class="border-t" style="border-color: var(--color-warm-200);">
+            <tr class="border-t border-warm-200">
                 {% for cellule in ligne %}
-                <td class="px-4 py-3 align-top" style="color: var(--color-warm-700);">{% include_block cellule %}</td>
+                <td class="px-4 py-3 align-top text-warm-700">{% include_block cellule %}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

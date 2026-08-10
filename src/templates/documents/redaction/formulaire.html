@@ -16,11 +16,11 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2"><a href="{% url 'redaction:documents' %}">Documents rédigés</a></p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">
         {% if document %}Modifier le document{% else %}Nouveau document{% endif %}
     </h1>
     {% if document %}
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+    <p class="mt-1 text-sm text-warm-500">
         <span class="badge{% if document.est_finalise %} badge-gold{% endif %}">{{ document.get_statut_display }}</span>
         {% if document.reference %}· {{ document.reference }}{% endif %}
         {% if document.date_finalisation %}· finalisé le {{ document.date_finalisation|date:"d/m/Y" }}{% endif %}
@@ -133,7 +133,7 @@
               data-confirmer="Supprimer « {{ document.titre }} » ? Le texte sera perdu.">
             {% csrf_token %}
             <input type="hidden" name="action" value="supprimer">
-            <button type="submit" class="btn-ghost" style="color: var(--color-danger, #b91c1c);">Supprimer</button>
+            <button type="submit" class="btn-ghost text-danger">Supprimer</button>
         </form>
     </div>
 </div>

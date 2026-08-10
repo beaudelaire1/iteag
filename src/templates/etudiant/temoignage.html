@@ -16,8 +16,8 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Vie de l'institut</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mon témoignage</h1>
-    <p class="mt-2 text-sm max-w-2xl" style="color: var(--color-warm-500);">
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mon témoignage</h1>
+    <p class="mt-2 text-sm max-w-2xl text-warm-500">
         Vous pouvez proposer un témoignage sur votre expérience à l'ITEAG. Rien n'est publié automatiquement : la direction le relit d'abord.
     </p>
 </div>
@@ -28,16 +28,16 @@
 <div class="card mb-6">
     <div class="flex flex-wrap items-center gap-3">
         <span class="badge{% if temoignage.statut == 'publie' %} badge-gold{% endif %}">{{ temoignage.get_statut_display }}</span>
-        <span class="text-xs" style="color: var(--color-warm-500);">Dernière modification : {{ temoignage.modifie_le|date:"d/m/Y à H:i" }}</span>
+        <span class="text-xs text-warm-500">Dernière modification : {{ temoignage.modifie_le|date:"d/m/Y à H:i" }}</span>
     </div>
     {% if temoignage.statut == 'publie' %}
-    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">Ce témoignage est actuellement visible sur le site. Toute modification le remettra en attente de validation.</p>
+    <p class="mt-3 text-sm text-warm-600">Ce témoignage est actuellement visible sur le site. Toute modification le remettra en attente de validation.</p>
     {% elif temoignage.statut == 'retire' %}
-    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">Ce témoignage est conservé dans votre espace mais n'est plus affiché publiquement.</p>
+    <p class="mt-3 text-sm text-warm-600">Ce témoignage est conservé dans votre espace mais n'est plus affiché publiquement.</p>
     {% elif temoignage.statut == 'refuse' and temoignage.motif_refus %}
-    <div class="mt-4 rounded-lg p-4" style="background: var(--color-warm-100);">
-        <p class="text-sm font-semibold" style="color: var(--color-navy-900);">À reprendre</p>
-        <p class="mt-1 text-sm" style="color: var(--color-warm-700);">{{ temoignage.motif_refus }}</p>
+    <div class="mt-4 rounded-lg p-4 bg-warm-100">
+        <p class="text-sm font-semibold text-navy-900">À reprendre</p>
+        <p class="mt-1 text-sm text-warm-700">{{ temoignage.motif_refus }}</p>
     </div>
     {% endif %}
 
@@ -45,7 +45,7 @@
     <div class="mt-5 flex items-center gap-4">
         <img src="{{ temoignage.photo.url }}" alt="Photo actuellement associée au témoignage de {{ temoignage.nom_affiche }}"
              class="h-20 w-20 rounded-full object-cover" loading="lazy">
-        <p class="text-sm" style="color: var(--color-warm-600);">Cette photo accompagnera le témoignage s'il est publié.</p>
+        <p class="text-sm text-warm-600">Cette photo accompagnera le témoignage s'il est publié.</p>
     </div>
     {% endif %}
 </div>

@@ -1,5 +1,5 @@
 {% if request.resolver_match.namespace == 'enseignant' and request.resolver_match.url_name == 'accueil' %}
-    <a href="{% url 'lms:devoirs_list' %}" class="card-elevated mb-8 flex flex-wrap items-center justify-between gap-5 hover:shadow-elevated transition-shadow" style="border-left: 3px solid var(--color-gold-500);">
+    <a href="{% url 'lms:devoirs_list' %}" class="card-elevated mb-8 flex flex-wrap items-center justify-between gap-5 hover:shadow-elevated transition-shadow [border-left:3px_solid_var(--color-gold-500)]">
         <div>
             <p class="overline mb-1">Action rapide</p>
             <h2 class="text-base font-semibold text-navy-900">Créer un devoir ou un QCM</h2>
@@ -8,7 +8,7 @@
         <span class="btn-primary">Commencer</span>
     </a>
     {% if evaluations_a_corriger or videos_en_attente or modules_brouillons %}
-    <section class="card-elevated mb-8" style="padding: 0; border-left: 3px solid var(--color-gold-500);">
+    <section class="card-elevated mb-8 p-0 [border-left:3px_solid_var(--color-gold-500)]">
         <div class="border-b border-warm-100 px-5 py-4">
             <p class="overline mb-1">Priorités</p>
             <h2 class="text-base font-semibold text-navy-900">À traiter maintenant</h2>
@@ -37,7 +37,7 @@
     {% endif %}
 {% elif request.resolver_match.namespace == 'etudiant' and request.resolver_match.url_name == 'dashboard' %}
     {% if pending_evaluations or demandes_paiement %}
-    <section class="card-elevated mb-8" style="padding: 0; border-left: 3px solid var(--color-gold-500);">
+    <section class="card-elevated mb-8 p-0 [border-left:3px_solid_var(--color-gold-500)]">
         <div class="border-b border-warm-100 px-5 py-4">
             <p class="overline mb-1">À faire</p>
             <h2 class="text-base font-semibold text-navy-900">Vos prochaines actions</h2>

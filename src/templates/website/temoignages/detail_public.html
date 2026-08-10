@@ -4,21 +4,21 @@
 {% block meta_description %}{{ temoignage.texte|striptags|truncatechars:160 }}{% endblock %}
 
 {% block content %}
-<section class="section" style="background: var(--color-warm-100); min-height: 70vh;">
+<section class="section bg-warm-100 min-h-[70vh]">
     <div class="container-narrow">
         <p class="mb-8">
             <a href="/#temoignages" class="btn-ghost">← Retour aux témoignages</a>
         </p>
 
-        <article class="card-elevated" style="padding: clamp(1.5rem, 4vw, 3.5rem);">
-            <header class="flex items-center gap-4 pb-6 border-b" style="border-color: var(--color-warm-200);">
+        <article class="card-elevated [padding:clamp(1.5rem,_4vw,_3.5rem)]">
+            <header class="flex items-center gap-4 pb-6 border-b border-warm-200">
                 {% if temoignage.photo %}
                 <img src="{{ temoignage.photo.url }}"
                      alt="Photo de {{ temoignage.nom_affiche }}"
                      class="h-16 w-16 rounded-full object-cover flex-shrink-0">
                 {% else %}
-                <div class="h-16 w-16 rounded-full flex items-center justify-center font-bold text-xl text-white flex-shrink-0"
-                     style="background: var(--color-forest-700);">
+                <div class="h-16 w-16 rounded-full flex items-center justify-center font-bold text-xl text-white flex-shrink-0 bg-forest-700"
+                    >
                     {{ temoignage.nom_affiche|slice:":1" }}
                 </div>
                 {% endif %}
@@ -26,14 +26,14 @@
                     <p class="overline mb-1">Parole d'étudiant</p>
                     <h1 class="text-2xl md:text-3xl">{{ temoignage.nom_affiche }}</h1>
                     {% if temoignage.promotion %}
-                    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ temoignage.promotion }}</p>
+                    <p class="mt-1 text-sm text-warm-500">{{ temoignage.promotion }}</p>
                     {% endif %}
                 </div>
             </header>
 
             <div class="pt-8 md:pt-10">
-                <span aria-hidden="true" class="block text-5xl leading-none mb-3" style="color: var(--color-gold-500);">“</span>
-                <div class="prose-article contenu-riche" style="color: var(--color-warm-800);">
+                <span aria-hidden="true" class="block text-5xl leading-none mb-3 text-gold-500">“</span>
+                <div class="prose-article contenu-riche text-warm-800">
                     {{ temoignage.texte|safe }}
                 </div>
             </div>

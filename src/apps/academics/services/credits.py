@@ -1,59 +1,59 @@
 """
 Inscription des crédits ECTS au dossier de l'étudiant.
 
-L'enseignant saisit `Evaluation.ects_valides` ; le relevé de notes, la
-progression et le calcul des ECTS restants lisent `CreditECTS`. Ce service est
-le seul pont entre les deux. Sans lui, un étudiant peut valider tous ses cours
-et conserver un relevé vierge.
-
-Le crédit est inscrit **à la publication** des notes, pas à leur saisie : tant
-qu'une note n'est pas publiée, l'enseignant peut la reprendre. Créditer plus
-tôt reviendrait à porter au dossier une décision non arrêtée.
+Le domaine académique possède le dossier ECTS ; il ne doit pas connaître le
+modèle d'évaluation du LMS. La frontière est donc explicite : le domaine qui
+publie un résultat lui transmet des ``ResultatECTSPublie`` et ce service ne
+fait qu'appliquer la décision au dossier académique.
 """
+
+from collections.abc import Iterable
+from dataclasses import dataclass
+from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
 
-from apps.academics.models import CreditECTS
+from apps.academics.models import CreditECTS, ProfilEtudiant
 
 
-def crediter_publication(cours_session) -> int:
+@dataclass(frozen=True)
+class ResultatECTSPublie:
+    """Décision académique minimale nécessaire pour porter un crédit au dossier."""
+
+    etudiant: ProfilEtudiant
+    ects_valides: Decimal
+
+
+@transaction.atomic
+def crediter_resultats_publication(cours_session, resultats: Iterable[ResultatECTSPublie]) -> int:
+    """Inscrit au dossier les ECTS d'un résultat déjà publié par son domaine.
+
+    Cette fonction ne décide jamais qu'une évaluation est publiée : elle reçoit
+    cette décision. L'opération reste idempotente grâce au ``get_or_create`` et
+    à la contrainte d'unicité ``etudiant + cours + session + source`` portée par
+    le schéma.
     """
-    Inscrit au dossier les crédits des évaluations publiées de ce cours.
-
-    Retourne le nombre de crédits nouvellement inscrits. L'opération est
-    idempotente : republier ne double pas le dossier académique.
-    """
-    from apps.lms.models import Evaluation
-
-    evaluations = (
-        Evaluation.objects.filter(
-            cours_session=cours_session,
-            statut=Evaluation.StatutEvaluation.PUBLIE,
-            ects_valides__gt=0,
-        )
-        .select_related("etudiant")
-        .only("id", "etudiant", "ects_valides")
-    )
 
     # La date de validation est celle de fin de session : c'est la date
     # académique du résultat, pas celle où le secrétariat a cliqué.
     date_validation = getattr(cours_session.session, "date_fin", None) or timezone.now().date()
 
     inscrits = 0
-    with transaction.atomic():
-        for evaluation in evaluations:
-            _, cree = CreditECTS.objects.get_or_create(
-                etudiant=evaluation.etudiant,
-                cours=cours_session.cours,
-                session=cours_session.session,
-                source=CreditECTS.SourceCredit.ITEAG,
-                defaults={
-                    "ects_obtenus": evaluation.ects_valides,
-                    "date_validation": date_validation,
-                },
-            )
-            inscrits += int(cree)
+    for resultat in resultats:
+        if resultat.ects_valides <= 0:
+            continue
+        _, cree = CreditECTS.objects.get_or_create(
+            etudiant=resultat.etudiant,
+            cours=cours_session.cours,
+            session=cours_session.session,
+            source=CreditECTS.SourceCredit.ITEAG,
+            defaults={
+                "ects_obtenus": resultat.ects_valides,
+                "date_validation": date_validation,
+            },
+        )
+        inscrits += int(cree)
     return inscrits
 
 

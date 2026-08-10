@@ -11,11 +11,11 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% if cancel_url %}{{ cancel_url }}{% elif user.is_secretariat %}{% url 'secretariat:dashboard' %}{% else %}{% url 'administration:dashboard' %}{% endif %}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+    <a href="{% if cancel_url %}{{ cancel_url }}{% elif user.is_secretariat %}{% url 'secretariat:dashboard' %}{% else %}{% url 'administration:dashboard' %}{% endif %}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors text-navy-600">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour
     </a>
-    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">{{ form_title }}</h1>
+    <h1 class="text-[clamp(1.25rem,_3vw,_1.75rem)]">{{ form_title }}</h1>
 </div>
 {% endblock %}
 
@@ -32,7 +32,7 @@
             <label class="form-label">{{ field.label }}</label>
             <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-1">
                 {% for choice in field %}
-                <label class="inline-flex items-center gap-2 text-sm cursor-pointer" style="color: var(--color-navy-800);">
+                <label class="inline-flex items-center gap-2 text-sm cursor-pointer text-navy-800">
                     {{ choice.tag }} {{ choice.choice_label }}
                 </label>
                 {% endfor %}
@@ -47,7 +47,7 @@
 
         <div class="flex items-center gap-4 pt-2">
             <button type="submit" class="btn-primary">Enregistrer</button>
-            <a href="{% if cancel_url %}{{ cancel_url }}{% elif user.is_secretariat %}{% url 'secretariat:dashboard' %}{% else %}{% url 'administration:dashboard' %}{% endif %}" class="text-sm font-medium" style="color: var(--color-warm-500);">Annuler</a>
+            <a href="{% if cancel_url %}{{ cancel_url }}{% elif user.is_secretariat %}{% url 'secretariat:dashboard' %}{% else %}{% url 'administration:dashboard' %}{% endif %}" class="text-sm font-medium text-warm-500">Annuler</a>
         </div>
     </form>
 </div>

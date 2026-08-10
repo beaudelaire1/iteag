@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<section class="section" style="padding-top: 2.5rem;">
+<section class="section pt-10">
     <div class="container-wide">
 
         <nav aria-label="Fil d'ariane" class="mb-6 text-sm text-warm-500">
@@ -271,7 +271,7 @@
             </div>
 
             <aside class="lg:col-span-1">
-                <div class="card-elevated sticky" style="top: 6rem;">
+                <div class="card-elevated sticky top-[6rem]">
                     <p class="overline mb-4">Sommaire</p>
 
                     {% if inscription %}
@@ -284,7 +284,7 @@
                         </div>
                         <div class="progress-bar">
                             <div class="progress-bar-fill" data-progression-barre
-                                 style="width: {{ inscription.progression_percent }}%"></div>
+                                 data-progress-width="{{ inscription.progression_percent }}"></div>
                         </div>
                     </div>
                     {% endif %}

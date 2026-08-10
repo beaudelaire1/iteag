@@ -36,7 +36,7 @@
             <span class="font-semibold text-navy-900">{{ inscription.progression_percent }} %</span>
         </div>
         <div class="progress-bar">
-            <div class="progress-bar-fill" style="width: {{ inscription.progression_percent }}%"></div>
+            <div class="progress-bar-fill" data-progress-width="{{ inscription.progression_percent }}"></div>
         </div>
         {% endif %}
 

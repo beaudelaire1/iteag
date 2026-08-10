@@ -7,8 +7,8 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Publications</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Témoignages étudiants</h1>
-    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">Seule la direction peut publier, refuser ou retirer un témoignage du site.</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Témoignages étudiants</h1>
+    <p class="mt-2 text-sm text-warm-500">Seule la direction peut publier, refuser ou retirer un témoignage du site.</p>
 </div>
 {% endblock %}
 
@@ -37,15 +37,15 @@
             <span class="badge{% if temoignage.statut == 'publie' %} badge-gold{% endif %}">{{ temoignage.get_statut_display }}</span>
         </div>
 
-        <blockquote class="mt-5 leading-relaxed prose max-w-none" style="color: var(--color-warm-700);">
+        <blockquote class="mt-5 leading-relaxed prose max-w-none text-warm-700">
             {{ temoignage.texte|safe }}
         </blockquote>
-        <p class="mt-3 text-xs" style="color: var(--color-warm-500);">
+        <p class="mt-3 text-xs text-warm-500">
             Soumis le {{ temoignage.soumis_le|date:"d/m/Y à H:i" }} · consentement {% if temoignage.consentement_publication %}accordé{% else %}absent{% endif %} · photo {% if temoignage.photo %}prévue{% else %}non fournie{% endif %}
         </p>
 
         {% if temoignage.motif_refus %}
-        <div class="mt-4 rounded-lg p-3 text-sm" style="background: var(--color-warm-100); color: var(--color-warm-700);">
+        <div class="mt-4 rounded-lg p-3 text-sm bg-warm-100 text-warm-700">
             Motif précédent : {{ temoignage.motif_refus }}
         </div>
         {% endif %}
