@@ -119,7 +119,7 @@ jobs:
           git diff --stat
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/config/settings/base.py src/templates src/assets/css src/static/css/main.css
+          git add src/config/settings/base.py src/templates src/assets/css
           git add -u src/assets/css/inline-migre.css
           git commit -m "Remplacer les classes CSP opaques par des utilitaires lisibles"
           git push origin HEAD:agent/mise-a-niveau-go-sans-reserve
