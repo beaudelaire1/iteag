@@ -40,19 +40,20 @@ def est_artefact_non_web(path: Path) -> bool:
 
 
 def styles_inline_generes_par_python() -> list[str]:
-    """Repère les dictionnaires applicatifs qui produiraient un attribut style."""
+    """Repère les ``attrs`` de widgets qui produiraient un attribut style."""
     erreurs: list[str] = []
     for path in sorted(APPS.rglob("*.py")):
         if "migrations" in path.parts or path.name.startswith("test_") or path.name in {"tests.py", "conftest.py"}:
             continue
         arbre = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for noeud in ast.walk(arbre):
-            if not isinstance(noeud, ast.Dict):
-                continue
-            for cle in noeud.keys:
-                if isinstance(cle, ast.Constant) and isinstance(cle.value, str) and cle.value.lower() == "style":
-                    relatif = path.relative_to(RACINE)
-                    erreurs.append(f"{relatif}:{noeud.lineno}: clé style interdite dans le Python applicatif")
+        for appel in (noeud for noeud in ast.walk(arbre) if isinstance(noeud, ast.Call)):
+            for mot_cle in appel.keywords:
+                if mot_cle.arg != "attrs" or not isinstance(mot_cle.value, ast.Dict):
+                    continue
+                for cle in mot_cle.value.keys:
+                    if isinstance(cle, ast.Constant) and isinstance(cle.value, str) and cle.value.lower() == "style":
+                        relatif = path.relative_to(RACINE)
+                        erreurs.append(f"{relatif}:{appel.lineno}: attribut style interdit dans attrs=")
     return erreurs
 
 
