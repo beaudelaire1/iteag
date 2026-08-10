@@ -5,37 +5,40 @@
 {% block categorie %}Lettre d'information{% endblock %}
 
 {% block corps %}
-<p class="csp-style-05b832ec0811">
+<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
     Restez informé
 </p>
-<h1 class="csp-style-a4a35210a4ab">
+<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
+           font-weight:normal;line-height:1.25;color:#1A2D29;">
     Confirmez votre inscription
 </h1>
 
-<p class="csp-style-a7a79ba5ae29">
+<p style="margin:0 0 17px;">
     Vous avez demandé à recevoir la lettre d'information de l'ITEAG à l'adresse
-    <strong class="csp-style-f01204816fe4">{{ email }}</strong>.
+    <strong style="color:#1A2D29;">{{ email }}</strong>.
 </p>
 
-<p class="csp-style-986ce5109b72">
+<p style="margin:0 0 27px;color:#544B3D;">
     Cliquez sur le bouton ci-dessous pour valider cette demande. Sans cette confirmation,
     aucun message ne vous sera envoyé.
 </p>
 
-<p class="csp-style-bdc59e72ca5d">
-    <a class="button csp-style-b485c735879f" href="{{ lien_confirmation }}"
-      >
+<p style="margin:0 0 22px;">
+    <a class="button" href="{{ lien_confirmation }}"
+       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
+              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;letter-spacing:.03em;">
         Confirmer mon inscription
-        <span class="csp-style-ed481f5e6478">&nbsp;→</span>
+        <span style="color:#EEC671;">&nbsp;→</span>
     </a>
 </p>
 
-<p class="csp-style-44205d1d308e">
+<p style="margin:0;font-size:11px;line-height:1.55;color:#978B72;">
     Lien de confirmation :
-    <a class="csp-style-f48b1ebfef44" href="{{ lien_confirmation }}">{{ lien_confirmation }}</a>
+    <a href="{{ lien_confirmation }}" style="color:#355952;word-break:break-all;">{{ lien_confirmation }}</a>
 </p>
 
-<p class="csp-style-339196c0c26f">
+<p style="margin:25px 0 0;padding:16px 18px;background-color:#FDF8EC;border:1px solid #F3D9A0;
+          border-radius:4px;font-size:12px;line-height:1.6;color:#736957;">
     Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message :
     aucune inscription ne sera enregistrée.
 </p>

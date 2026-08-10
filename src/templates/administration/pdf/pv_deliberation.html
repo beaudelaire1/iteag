@@ -145,11 +145,11 @@
     <table class="table-pv">
         <thead>
             <tr>
-                <th class="csp-style-c4ead094be65">Étudiant (N° Matricule)</th>
-                <th class="csp-style-700cb1b9bec0">Parcours</th>
-                <th class="csp-style-b8b699ddacaf">Cours suivis &amp; Notes (/20)</th>
-                <th class="csp-style-bb42a457b4f5">ECTS Validés</th>
-                <th class="csp-style-bb42a457b4f5">Décision Jury</th>
+                <th style="width: 22%;">Étudiant (N° Matricule)</th>
+                <th style="width: 23%;">Parcours</th>
+                <th style="width: 35%;">Cours suivis &amp; Notes (/20)</th>
+                <th style="width: 10%; text-align: center;">ECTS Validés</th>
+                <th style="width: 10%; text-align: center;">Décision Jury</th>
             </tr>
         </thead>
         <tbody>
@@ -157,11 +157,11 @@
             <tr>
                 <td>
                     <strong>{{ item.profil.utilisateur.get_full_name }}</strong><br>
-                    <span class="csp-style-6db928a5860f">Matricule : {{ item.profil.numero_etudiant }}</span>
+                    <span style="font-size: 7.5pt; color: #6b7280;">Matricule : {{ item.profil.numero_etudiant }}</span>
                 </td>
                 <td>{{ item.profil.parcours.nom }}</td>
                 <td>
-                    <ul class="csp-style-c34dee243544">
+                    <ul style="margin: 0; padding-left: 3mm; list-style-type: square;">
                         {% for cn in item.cours_notes %}
                         <li>
                             {{ cn.cours.titre }} : 
@@ -174,10 +174,10 @@
                         {% endfor %}
                     </ul>
                 </td>
-                <td class="csp-style-fb5ec070f2bf">
+                <td style="text-align: center;">
                     <strong>{{ item.total_ects_session }} ECTS</strong>
                 </td>
-                <td class="csp-style-fb5ec070f2bf">
+                <td style="text-align: center;">
                     {% if item.reussite %}
                         <span class="badge-admis">ADMIS</span>
                     {% else %}
@@ -189,15 +189,15 @@
         </tbody>
     </table>
     {% else %}
-    <p class="csp-style-f304198fb83d">Aucune inscription enregistrée pour cette session académique.</p>
+    <p style="font-family: 'Inter', sans-serif; font-size: 9pt; font-style: italic; color: #6b7280;">Aucune inscription enregistrée pour cette session académique.</p>
     {% endif %}
 
     <div class="signatures-section">
-        <div class="signature-col csp-style-b486e33bec47">
+        <div class="signature-col" style="padding-right: 5mm;">
             <p><strong>Le Secrétaire de Séance / Enseignant référent :</strong></p>
             <div class="signature-box"></div>
         </div>
-        <div class="signature-col csp-style-db864baf759d">
+        <div class="signature-col" style="padding-left: 5mm;">
             <p><strong>Le Directeur de l'ITEAG / Président du Jury :</strong></p>
             <div class="signature-box"></div>
         </div>

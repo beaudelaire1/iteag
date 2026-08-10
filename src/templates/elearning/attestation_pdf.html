@@ -210,9 +210,9 @@ identique qu'il soit produit en conteneur ou sur un poste de travail.
                     Délivrée le {{ attestation.date_emission|date:"j F Y" }}
                 </td>
                 <td class="colonne-signature">
-                    <div class="csp-style-b5d906f7eb40">
+                    <div style="height: 12mm; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                         {% if signature_pdf %}
-                        <img class="csp-style-acae202e4cf5" src="{{ signature_pdf }}" alt="Signature">
+                        <img src="{{ signature_pdf }}" alt="Signature" style="max-height: 11mm; max-width: 40mm; object-fit: contain;">
                         {% endif %}
                     </div>
                     <div class="signature-ligne"></div>

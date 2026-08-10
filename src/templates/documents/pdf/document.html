@@ -200,7 +200,7 @@
 {% elif document_type == "releve_notes" %}
 <h2 class="section-heading">Crédits définitivement acquis</h2>
 <table class="statement">
-    <thead><tr><th class="csp-style-dc6146367b7b">Enseignement</th><th class="csp-style-d4a99f5f430b">Session</th><th class="csp-style-32cbb91c0f2b">Origine</th><th class="number csp-style-62f056b354ec">ECTS</th></tr></thead>
+    <thead><tr><th style="width:46%">Enseignement</th><th style="width:28%">Session</th><th style="width:14%">Origine</th><th style="width:12%" class="number">ECTS</th></tr></thead>
     <tbody>
         {% for credit in credits %}
         <tr>
@@ -218,7 +218,7 @@
 {% elif document_type == "recu" %}
 <h2 class="section-heading">Versements confirmés</h2>
 <table class="statement">
-    <thead><tr><th class="csp-style-dcb994d58d1c">Date</th><th class="csp-style-dc9d6d9a864f">Session</th><th class="csp-style-83010997b361">Mode</th><th class="csp-style-1368fa0d46f3">Référence</th><th class="number csp-style-6968352194b1">Montant</th></tr></thead>
+    <thead><tr><th style="width:19%">Date</th><th style="width:30%">Session</th><th style="width:17%">Mode</th><th style="width:18%">Référence</th><th style="width:16%" class="number">Montant</th></tr></thead>
     <tbody>
         {% for paiement in paiements %}
         <tr><td>{{ paiement.date_paiement|date:"d/m/Y" }}</td><td class="secondary">{{ paiement.session|default:"—" }}</td><td class="secondary">{{ paiement.get_mode_display }}</td><td class="secondary">{{ paiement.reference|default:"—" }}</td><td class="number">{{ paiement.montant }} €</td></tr>

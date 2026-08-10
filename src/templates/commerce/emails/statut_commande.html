@@ -5,29 +5,31 @@
 {% block categorie %}Suivi de commande{% endblock %}
 
 {% block corps %}
-<p class="csp-style-05b832ec0811">
+<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
     Commande {{ numero }}
 </p>
-<h1 class="csp-style-a4a35210a4ab">
+<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
+           font-weight:normal;line-height:1.25;color:#1A2D29;">
     {{ statut }}
 </h1>
 
-<p class="csp-style-7b8b5d8af2d9">Bonjour {{ nom }},</p>
-<div class="csp-style-25276a6cbde6">{{ message }}</div>
+<p style="margin:0 0 18px;">Bonjour {{ nom }},</p>
+<div style="margin:0 0 25px;padding:18px 20px;background-color:#F0F6F5;border-left:4px solid #457D70;
+            font-size:15px;line-height:1.65;color:#263F3B;">{{ message }}</div>
 
 {% if transporteur or numero_suivi %}
-<table class="csp-style-9403376f6837" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-      >
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="margin:0 0 25px;border-top:1px solid #EDE5D0;border-bottom:1px solid #EDE5D0;">
     {% if transporteur %}
     <tr>
-        <td class="csp-style-5caddf7f3e56">Transporteur</td>
-        <td class="csp-style-100e8fa00e9b" align="right">{{ transporteur }}</td>
+        <td style="padding:12px 0;font-size:12px;color:#736957;">Transporteur</td>
+        <td align="right" style="padding:12px 0;font-size:13px;font-weight:bold;color:#1A2D29;">{{ transporteur }}</td>
     </tr>
     {% endif %}
     {% if numero_suivi %}
     <tr>
-        <td class="csp-style-41aeef7dafe5">Numéro de suivi</td>
-        <td class="csp-style-83aa49486d65" align="right">
+        <td style="padding:12px 0;border-top:1px solid #EDE5D0;font-size:12px;color:#736957;">Numéro de suivi</td>
+        <td align="right" style="padding:12px 0;border-top:1px solid #EDE5D0;font-size:13px;font-weight:bold;color:#1A2D29;">
             {{ numero_suivi }}
         </td>
     </tr>
@@ -36,15 +38,16 @@
 {% endif %}
 
 {% if url_suivi_transporteur %}
-<p class="csp-style-2b0e8ce8c266">
-    <a class="button csp-style-8209641dabb6" href="{{ url_suivi_transporteur }}"
-      >
-        Suivre auprès du transporteur <span class="csp-style-ed481f5e6478">&nbsp;→</span>
+<p style="margin:0 0 12px;">
+    <a class="button" href="{{ url_suivi_transporteur }}"
+       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
+              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;">
+        Suivre auprès du transporteur <span style="color:#EEC671;">&nbsp;→</span>
     </a>
 </p>
 {% endif %}
 
-<p class="csp-style-4775c2f9b6c5">
-    <a class="csp-style-a278dd0fcdf1" href="{{ suivi_url }}">Consulter le détail de la commande</a>
+<p style="margin:0;font-size:12px;">
+    <a href="{{ suivi_url }}" style="color:#355952;font-weight:bold;">Consulter le détail de la commande</a>
 </p>
 {% endblock %}
