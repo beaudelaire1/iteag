@@ -1,13 +1,9 @@
 /* Valeurs de présentation dynamiques compatibles avec une CSP stricte.
 
-   Le serveur transmet des données, jamais des déclarations CSS. Ce module ne
-   sait appliquer que trois propriétés précisément autorisées et valide leur
-   domaine avant de toucher à CSSOM :
-   - pourcentage de largeur : nombre borné entre 0 et 100 ;
-   - délai de transition : entier borné entre 0 et 2000 ms ;
-   - couleur de groupe : hexadécimal #RRGGBB uniquement.
-
-   Aucun nom de propriété ni fragment CSS ne vient de l'utilisateur. */
+   Le serveur transmet des données typées, jamais des déclarations CSS. Les
+   seules écritures CSS autorisées ici sont une largeur bornée, un délai borné
+   et une couleur hexadécimale validée. Les autres variations visuelles sont
+   des états fermés qui ne font qu'ajouter des classes connues à l'avance. */
 (function () {
   "use strict";
 
@@ -39,6 +35,23 @@
       const couleur = String(element.dataset.backgroundColor || "").trim();
       if (!/^#[0-9a-fA-F]{6}$/.test(couleur)) return;
       element.style.backgroundColor = couleur;
+    });
+
+    scope.querySelectorAll("[data-pagination-state]").forEach((element) => {
+      const courant = element.dataset.paginationState === "current";
+      element.classList.toggle("pagination-current", courant);
+      element.classList.toggle("pagination-available", !courant);
+      if (courant) element.setAttribute("aria-current", "page");
+    });
+
+    scope.querySelectorAll("[data-question-choice-state]").forEach((element) => {
+      const correct = element.dataset.questionChoiceState === "correct";
+      element.classList.toggle("question-choice-correct", correct);
+      element.classList.toggle("question-choice-neutral", !correct);
+    });
+
+    scope.querySelectorAll("[data-divider-state]").forEach((element) => {
+      element.classList.toggle("conditional-divider", element.dataset.dividerState === "active");
     });
   }
 
