@@ -1,13 +1,12 @@
 name: Predeploy browser interactions
 
-# Ces contrôles s'exécutent contre la préproduction. Ils étaient gardés par le
-# nom de la branche source (« agent/predeploy-go-readiness », « agent/go-live-ops-gate »).
-# Ces branches ayant été fusionnées, la condition n'était plus jamais vraie :
-# le contrôle existait, passait pour actif, et ne s'exécutait plus. On s'en
-# remet donc à des déclencheurs qui ne dépendent d'aucun nom éphémère — toute
-# PR vers main, un rendez-vous hebdomadaire, et le déclenchement manuel.
+# Ces contrôles visent une URL de préproduction fixe : ils n'ont de valeur que
+# lorsque cette URL sert réellement le commit audité. Ils s'exécutent donc
+# après un push sur main (ou sur déclenchement planifié/manuel), jamais sur une
+# PR non encore déployée. Le gate de révision attend le redéploiement Coolify et
+# refuse toute version différente de github.sha.
 on:
-  pull_request:
+  push:
     branches: [main]
   schedule:
     - cron: "40 3 * * 1"
@@ -24,10 +23,22 @@ jobs:
   browser:
     name: Navigation clavier et mobile
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
+      - uses: actions/checkout@v6
+
+      - name: Prouver la révision déployée et l'hôte SEO
+        shell: bash
+        run: |
+          set -euo pipefail
+          python src/scripts/verifier_preprod_deployee.py \
+            --base-url "$BASE_URL" \
+            --revision "$GITHUB_SHA" \
+            --attente 600 \
+            --intervalle 15
+
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
