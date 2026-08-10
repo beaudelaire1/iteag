@@ -1,7 +1,7 @@
 /* Composants qui remplacent les anciens styles inline dynamiques.
    Les valeurs métier passent désormais par des attributs HTML sémantiques
-   (`value`, `max`, `aria-*`) plutôt que par une déclaration CSS fabriquée dans
-   un gabarit. */
+   (`value`, `max`, `aria-*`) ou par des états fermés plutôt que par une
+   déclaration CSS fabriquée dans un gabarit. */
 
 .progress-native {
   display: block;
@@ -53,4 +53,12 @@
 .conditional-divider {
   border-bottom: 1px solid var(--color-warm-200);
   padding-bottom: 0.5rem;
+}
+
+.deadline-urgent {
+  color: var(--color-gold-600);
+}
+
+.deadline-normal {
+  color: var(--color-warm-400);
 }
