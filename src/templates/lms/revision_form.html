@@ -7,12 +7,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:course_detail' evaluation.cours_session_id %}" class="inline-flex items-center text-sm font-medium mb-4 csp-style-9726ceed6b6d">
+    <a href="{% url 'lms:course_detail' evaluation.cours_session_id %}" class="inline-flex items-center text-sm font-medium mb-4 text-navy-600">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour au cours
     </a>
     <p class="overline mb-2">Recours · {{ evaluation.cours_session.cours.titre }}</p>
-    <h1 class="csp-style-f11d9f094ef8">
+    <h1 class="text-[clamp(1.25rem,_3vw,_1.75rem)]">
         Réviser la note de {{ evaluation.etudiant.utilisateur.get_full_name }}
     </h1>
 </div>
@@ -22,8 +22,8 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
     <section class="lg:col-span-2">
-        <div class="mb-6 rounded border p-4 csp-style-9f0d6dbe15ee">
-            <p class="text-sm csp-style-9bce6c04a80b">
+        <div class="mb-6 rounded border p-4 border-warm-300 bg-warm-50">
+            <p class="text-sm text-navy-800">
                 Cette note est <strong>déjà publiée</strong> : l'étudiant l'a vue, et elle peut avoir
                 été portée à son relevé. La corriger reste possible — c'est ce que suppose un recours —
                 mais l'ancienne valeur est conservée, le motif est enregistré, et l'étudiant est averti.
@@ -34,10 +34,10 @@
             {% csrf_token %}
             {% include "partials/erreurs_formulaire.html" %}
 
-            <dl class="grid grid-cols-2 gap-4 text-sm pb-4 csp-style-fc29f59e3d64">
+            <dl class="grid grid-cols-2 gap-4 text-sm pb-4 [border-bottom:1px_solid_var(--color-warm-200)]">
                 <div>
                     <dt class="text-warm-500">Note actuelle</dt>
-                    <dd class="text-2xl font-semibold num csp-style-a4a1aa46c7f2">
+                    <dd class="text-2xl font-semibold num text-navy-900">
                         {% if evaluation.note is not None %}{{ evaluation.note }}{% else %}—{% endif %}
                     </dd>
                 </div>
@@ -58,14 +58,14 @@
 
     <aside class="lg:col-span-1">
         <section class="card">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">
                 Historique des révisions
             </h2>
             {% if revisions %}
             <ol class="space-y-4">
                 {% for revision in revisions %}
-                <li class="text-sm csp-style-b0e5c898cdf7">
-                    <p class="font-semibold num csp-style-a4a1aa46c7f2">
+                <li class="text-sm [border-left:2px_solid_var(--color-warm-300)] [padding-left:0.875rem]">
+                    <p class="font-semibold num text-navy-900">
                         {{ revision.note_avant|default:"—" }} → {{ revision.note_apres|default:"—" }}
                     </p>
                     <p class="mt-1 text-warm-600">{{ revision.motif }}</p>

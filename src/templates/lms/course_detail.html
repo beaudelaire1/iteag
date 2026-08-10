@@ -12,10 +12,10 @@
 {% block portal_header %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-5">
     <div>
-        <a href="{% url 'enseignant:accueil' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block csp-style-9726ceed6b6d">← Retour au tableau de bord</a>
+        <a href="{% url 'enseignant:accueil' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block text-navy-600">← Retour au tableau de bord</a>
         <p class="overline mb-2">Cours</p>
-        <h1 class="csp-style-513ca5addf79">{{ cours_session.cours.titre }}</h1>
-        <p class="mt-1 text-sm csp-style-25e866ad732d">{{ cours_session.session.nom }} · {{ cours_session.get_statut_display }} · {{ cours_session.cours.ects }} ECTS</p>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ cours_session.cours.titre }}</h1>
+        <p class="mt-1 text-sm text-warm-500">{{ cours_session.session.nom }} · {{ cours_session.get_statut_display }} · {{ cours_session.cours.ects }} ECTS</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
         <a href="{% url 'administration:emargement_pdf' cours_session.pk %}" class="btn-outline text-sm" target="_blank">
@@ -31,18 +31,18 @@
 {% block portal_content %}
 <div data-tabs class="space-y-6">
     {# ── Tabs ── #}
-    <div class="border-b csp-style-2998f592f360">
+    <div class="border-b border-warm-200">
         <nav class="flex gap-6 -mb-px" role="tablist">
-            <button type="button" role="tab" data-tab="students" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider csp-style-efbb8610fce7">
+            <button type="button" role="tab" data-tab="students" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider text-navy-700">
                 Étudiants ({{ inscriptions|length }})
             </button>
-            <button type="button" role="tab" data-tab="resources" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider csp-style-efbb8610fce7">
+            <button type="button" role="tab" data-tab="resources" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider text-navy-700">
                 Ressources ({{ ressources|length }})
             </button>
-            <button type="button" role="tab" data-tab="evaluations" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider csp-style-efbb8610fce7">
+            <button type="button" role="tab" data-tab="evaluations" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider text-navy-700">
                 Notes et évaluations ({{ evaluations|length }})
             </button>
-            <button type="button" role="tab" data-tab="announcements" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider csp-style-efbb8610fce7">
+            <button type="button" role="tab" data-tab="announcements" aria-selected="false" class="py-3 px-1 text-sm font-semibold uppercase tracking-wider text-navy-700">
                 Annonces ({{ annonces|length }})
             </button>
         </nav>
@@ -50,7 +50,7 @@
 
     {# ── Étudiants ── #}
     <div role="tabpanel" data-tab-panel="students" hidden>
-        <div class="card-elevated csp-style-98781402ac5c">
+        <div class="card-elevated p-0">
             {% if inscriptions %}
             <div class="overflow-x-auto">
                 <table class="table-premium">
@@ -86,7 +86,7 @@
                 Ajouter une ressource
             </a>
         </div>
-        <div class="card-elevated csp-style-98781402ac5c">
+        <div class="card-elevated p-0">
             <div class="divide-y divide-warm-100">
                 {% for res in ressources %}
                 <div class="px-5 py-3 flex items-center justify-between">
@@ -142,11 +142,11 @@
                 <div class="flex flex-wrap gap-3">
                     <form method="post" action="{% url 'lms:basculer_depot' cours_session.pk %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn-ghost csp-style-e261fd854dcb">
+                        <button type="submit" class="btn-ghost [padding:0.5rem_1.1rem]">
                             {% if cours_session.depot_est_ouvert %}Fermer la remise{% else %}Rouvrir{% endif %}
                         </button>
                     </form>
-                    <a href="{% url 'lms:parametres_evaluation' cours_session.pk %}" class="btn-ghost csp-style-e261fd854dcb">
+                    <a href="{% url 'lms:parametres_evaluation' cours_session.pk %}" class="btn-ghost [padding:0.5rem_1.1rem]">
                         Modifier le calendrier
                     </a>
                 </div>
@@ -170,7 +170,7 @@
                 </button>
             </form>
         </div>
-        <div class="card-elevated csp-style-98781402ac5c">
+        <div class="card-elevated p-0">
             {% if evaluations %}
             <div class="overflow-x-auto">
                 <table class="table-premium">
@@ -238,7 +238,7 @@
                 Publier une annonce
             </a>
         </div>
-        <div class="card-elevated csp-style-98781402ac5c">
+        <div class="card-elevated p-0">
             <div class="divide-y divide-warm-100">
                 {% for annonce in annonces %}
                 <div class="px-5 py-4">

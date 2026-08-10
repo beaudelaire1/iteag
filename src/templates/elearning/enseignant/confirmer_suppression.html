@@ -11,8 +11,8 @@
         <p class="overline mb-3">Suppression</p>
         <h1 class="text-xl mb-4">Supprimer {{ libelle }} ?</h1>
 
-        <p class="mb-2 csp-style-81372cea588f">{{ consequence }}</p>
-        <p class="mb-6 text-sm csp-style-25e866ad732d">Cette action est irréversible.</p>
+        <p class="mb-2 text-warm-700">{{ consequence }}</p>
+        <p class="mb-6 text-sm text-warm-500">Cette action est irréversible.</p>
 
         <form method="post" class="flex flex-wrap gap-4">
             {% csrf_token %}

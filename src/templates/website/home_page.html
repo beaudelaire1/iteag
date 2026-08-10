@@ -9,16 +9,16 @@
 
 {# ═══════════════  HERO PAR DÉFAUT  ═══════════════ #}
 {% if not has_editorial_body %}
-<section class="relative overflow-hidden csp-style-d60d5794de27">
-    <div class="absolute inset-0 opacity-10 csp-style-4072be145281"></div>
+<section class="relative overflow-hidden [background:linear-gradient(135deg,_var(--color-navy-900)_0%,_var(--color-navy-800)_50%,_var(--color-navy-700)_100%)]">
+    <div class="absolute inset-0 opacity-10 bg-pattern-crosses-soft"></div>
     <div class="container-wide section-hero relative">
         <div class="max-w-3xl" data-motion-hero>
             <p class="overline-light mb-5 reveal">{{ SITE_TAGLINE }}</p>
-            <h1 class="text-white reveal reveal-delay-1 csp-style-d9b43a70fb44">
+            <h1 class="text-white reveal reveal-delay-1 text-[clamp(2.5rem,_6vw,_4.25rem)] leading-[1.08] tracking-[-0.03em]">
                 {{ SITE_FULL_NAME }}
             </h1>
             {% if page.sous_titre %}
-            <p class="mt-6 text-lg sm:text-xl leading-relaxed reveal reveal-delay-2 csp-style-7a158a53e702">
+            <p class="mt-6 text-lg sm:text-xl leading-relaxed reveal reveal-delay-2 text-navy-200">
                 {{ page.sous_titre }}
             </p>
             {% endif %}
@@ -35,7 +35,7 @@
     </div>
     <div class="absolute bottom-0 left-0 right-0">
         <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full h-8 sm:h-12">
-            <path class="csp-style-41407b2a45c6" d="M0 60V20C240 45 480 5 720 20C960 35 1200 5 1440 20V60H0Z"/>
+            <path class="fill-warm-50" d="M0 60V20C240 45 480 5 720 20C960 35 1200 5 1440 20V60H0Z"/>
         </svg>
     </div>
 </section>
@@ -46,12 +46,12 @@
         <hr class="divider-gold mx-auto mb-6 reveal">
         <p class="overline mb-3 reveal reveal-delay-1">Qui sommes-nous</p>
         <h2 class="mb-8 reveal reveal-delay-1">ITEAG, qu'est-ce que c'est ?</h2>
-        <p class="text-lg leading-relaxed mb-6 reveal reveal-delay-2 csp-style-81372cea588f">
+        <p class="text-lg leading-relaxed mb-6 reveal reveal-delay-2 text-warm-700">
             Un centre de formation en théologie évangélique, qui s'adresse à tous ceux qui souhaitent
             librement développer leurs connaissances théologiques ou obtenir un diplôme qui leur
             permettra de mieux exercer un ministère au sein de leur assemblée.
         </p>
-        <p class="leading-relaxed mb-10 reveal reveal-delay-2 csp-style-9a1421a5a90b">
+        <p class="leading-relaxed mb-10 reveal reveal-delay-2 text-warm-600">
             Association loi 1905, l'ITEAG est un projet fédérateur œuvrant à l'unité évangélique.
             Situé en Guadeloupe, il rayonne sur les Antilles et la Guyane avec des parcours diplômants
             et libres, adaptés à chaque profil.
@@ -61,24 +61,24 @@
 </section>
 
 {# ═══════════════  CHIFFRES CLÉS  ═══════════════ #}
-<section class="py-16 overflow-hidden csp-style-c87b142a29d7">
+<section class="py-16 overflow-hidden bg-navy-800">
     <div class="container-wide">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center" data-motion-stagger>
             <div class="reveal">
                 <p class="stat-number text-white" data-counter="4" data-counter-suffix="">4</p>
-                <p class="stat-label csp-style-7a158a53e702">Parcours de formation</p>
+                <p class="stat-label text-navy-200">Parcours de formation</p>
             </div>
             <div class="reveal">
                 <p class="stat-number text-white" data-counter="7" data-counter-suffix="">7</p>
-                <p class="stat-label csp-style-7a158a53e702">Professeurs qualifiés</p>
+                <p class="stat-label text-navy-200">Professeurs qualifiés</p>
             </div>
             <div class="reveal">
                 <p class="stat-number text-white" data-counter="3000" data-counter-suffix="+">3000+</p>
-                <p class="stat-label csp-style-7a158a53e702">Ouvrages en bibliothèque</p>
+                <p class="stat-label text-navy-200">Ouvrages en bibliothèque</p>
             </div>
             <div class="reveal">
                 <p class="stat-number text-white" data-counter="3" data-counter-suffix="">3</p>
-                <p class="stat-label csp-style-7a158a53e702">Territoires (Gpe, Mq, Gy)</p>
+                <p class="stat-label text-navy-200">Territoires (Gpe, Mq, Gy)</p>
             </div>
         </div>
     </div>
@@ -98,11 +98,11 @@
                 <div class="mb-4">
                     <span class="badge badge-gold">{{ parcours.get_niveau_display|default:"Formation" }}</span>
                 </div>
-                <h3 class="text-lg mb-3 csp-style-a4a1aa46c7f2">{{ parcours.nom }}</h3>
-                <p class="text-sm leading-relaxed mb-5 line-clamp-3 csp-style-9a1421a5a90b">
+                <h3 class="text-lg mb-3 text-navy-900">{{ parcours.nom }}</h3>
+                <p class="text-sm leading-relaxed mb-5 line-clamp-3 text-warm-600">
                     {{ parcours.description|truncatewords:30 }}
                 </p>
-                <a href="{{ parcours.get_absolute_url }}" class="stretched-link text-sm font-semibold uppercase tracking-wider csp-style-7c3a20d74106">
+                <a href="{{ parcours.get_absolute_url }}" class="stretched-link text-sm font-semibold uppercase tracking-wider text-navy-700 tracking-[0.08em]">
                     En savoir plus →
                 </a>
             </article>
@@ -123,23 +123,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" data-motion-stagger>
             <article class="card reveal">
                 <span class="badge badge-gold mb-4">Diplôme ITEAG</span>
-                <h3 class="text-lg mb-3 csp-style-a4a1aa46c7f2">Parcours diplômant</h3>
-                <p class="text-sm leading-relaxed csp-style-9a1421a5a90b">Formation complète en théologie évangélique sanctionnée par le diplôme de l'ITEAG.</p>
+                <h3 class="text-lg mb-3 text-navy-900">Parcours diplômant</h3>
+                <p class="text-sm leading-relaxed text-warm-600">Formation complète en théologie évangélique sanctionnée par le diplôme de l'ITEAG.</p>
             </article>
             <article class="card reveal">
                 <span class="badge badge-gold mb-4">Bachelor</span>
-                <h3 class="text-lg mb-3 csp-style-a4a1aa46c7f2">Bachelor FLTE</h3>
-                <p class="text-sm leading-relaxed csp-style-9a1421a5a90b">Cursus universitaire en partenariat avec la Faculté Libre de Théologie Évangélique.</p>
+                <h3 class="text-lg mb-3 text-navy-900">Bachelor FLTE</h3>
+                <p class="text-sm leading-relaxed text-warm-600">Cursus universitaire en partenariat avec la Faculté Libre de Théologie Évangélique.</p>
             </article>
             <article class="card reveal">
                 <span class="badge badge-gold mb-4">Libre</span>
-                <h3 class="text-lg mb-3 csp-style-a4a1aa46c7f2">Parcours libre</h3>
-                <p class="text-sm leading-relaxed csp-style-9a1421a5a90b">Suivez les cours de votre choix à votre rythme, sans engagement diplômant.</p>
+                <h3 class="text-lg mb-3 text-navy-900">Parcours libre</h3>
+                <p class="text-sm leading-relaxed text-warm-600">Suivez les cours de votre choix à votre rythme, sans engagement diplômant.</p>
             </article>
             <article class="card reveal">
                 <span class="badge badge-gold mb-4">Pro</span>
-                <h3 class="text-lg mb-3 csp-style-a4a1aa46c7f2">ITEAG Pro</h3>
-                <p class="text-sm leading-relaxed csp-style-9a1421a5a90b">Formation continue pour les ministères en activité dans les Antilles-Guyane.</p>
+                <h3 class="text-lg mb-3 text-navy-900">ITEAG Pro</h3>
+                <p class="text-sm leading-relaxed text-warm-600">Formation continue pour les ministères en activité dans les Antilles-Guyane.</p>
             </article>
         </div>
         <div class="text-center mt-12 reveal">
@@ -151,7 +151,7 @@
 
 {# ═══════════════  PROFESSEURS  ═══════════════ #}
 {% if featured_professeurs %}
-<section class="section csp-style-4088532c4dae">
+<section class="section bg-warm-100">
     <div class="container-wide">
         <div class="text-center mb-14 reveal">
             <p class="overline mb-3">Notre équipe</p>
@@ -168,22 +168,22 @@
             <article class="text-center reveal relative">
                 {% if prof.photo %}
                 <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}"
-                     class="h-32 w-32 mx-auto mb-4 rounded-full object-cover csp-style-bccdc837fe1a"
+                     class="h-32 w-32 mx-auto mb-4 rounded-full object-cover shadow-[0_0_0_3px_rgba(234,_182,_62,_0.25)]"
                      width="128" height="128" loading="lazy"
                     >
                 {% else %}
-                <div class="h-32 w-32 mx-auto mb-4 rounded-full flex items-center justify-center font-bold text-2xl csp-style-6dca1f61b6b5"
+                <div class="h-32 w-32 mx-auto mb-4 rounded-full flex items-center justify-center font-bold text-2xl bg-navy-100 text-navy-700"
                      aria-hidden="true">
                     {{ prof.prenom|slice:":1" }}{{ prof.nom|slice:":1" }}
                 </div>
                 {% endif %}
-                <h3 class="text-base mb-1 csp-style-a4a1aa46c7f2">
+                <h3 class="text-base mb-1 text-navy-900">
                     <a href="{{ prof.get_absolute_url }}" class="stretched-link">{{ prof.nom_complet }}</a>
                 </h3>
                 {% if prof.specialite %}
-                <p class="text-xs csp-style-9a1421a5a90b">{{ prof.specialite }}</p>
+                <p class="text-xs text-warm-600">{{ prof.specialite }}</p>
                 {% elif prof.disciplines.all %}
-                <p class="text-xs csp-style-9a1421a5a90b">
+                <p class="text-xs text-warm-600">
                     {% for discipline in prof.disciplines.all %}{{ discipline.nom }}{% if not forloop.last %} · {% endif %}{% endfor %}
                 </p>
                 {% endif %}
@@ -208,12 +208,12 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
             {% for news in latest_news %}
             <article class="card relative group reveal">
-                <time class="text-xs font-medium uppercase tracking-wider csp-style-9a1421a5a90b" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
-                <h3 class="text-lg mt-3 mb-3 csp-style-a4a1aa46c7f2">{{ news.title }}</h3>
+                <time class="text-xs font-medium uppercase tracking-wider text-warm-600" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
+                <h3 class="text-lg mt-3 mb-3 text-navy-900">{{ news.title }}</h3>
                 {% if news.excerpt %}
-                <p class="text-sm leading-relaxed line-clamp-3 csp-style-9a1421a5a90b">{{ news.excerpt }}</p>
+                <p class="text-sm leading-relaxed line-clamp-3 text-warm-600">{{ news.excerpt }}</p>
                 {% endif %}
-                <a href="{{ news.url }}" class="stretched-link mt-4 inline-block text-sm font-semibold uppercase tracking-wider csp-style-efbb8610fce7">
+                <a href="{{ news.url }}" class="stretched-link mt-4 inline-block text-sm font-semibold uppercase tracking-wider text-navy-700">
                     Lire la suite →
                 </a>
             </article>
@@ -227,11 +227,11 @@
 {% endif %}
 
 {# ═══════════════  CTA INSCRIPTION  ═══════════════ #}
-<section class="section csp-style-c87b142a29d7">
+<section class="section bg-navy-800">
     <div class="container-narrow text-center reveal">
         <p class="overline-light mb-4">Rejoignez-nous</p>
         <h2 class="text-white mb-5">Prêt à vous former ?</h2>
-        <p class="text-lg leading-relaxed mb-10 csp-style-7a158a53e702">
+        <p class="text-lg leading-relaxed mb-10 text-navy-200">
             Que vous souhaitiez obtenir un diplôme, approfondir vos connaissances ou vous engager
             dans un ministère, l'ITEAG vous accompagne dans votre parcours.
         </p>
@@ -252,16 +252,16 @@
 
     {# ═══════════════  HERO  ═══════════════ #}
     {% if block.block_type == "hero" %}
-    <section class="relative overflow-hidden csp-style-d60d5794de27">
-        <div class="absolute inset-0 opacity-10 csp-style-4072be145281"></div>
+    <section class="relative overflow-hidden [background:linear-gradient(135deg,_var(--color-navy-900)_0%,_var(--color-navy-800)_50%,_var(--color-navy-700)_100%)]">
+        <div class="absolute inset-0 opacity-10 bg-pattern-crosses-soft"></div>
         <div class="container-wide section-hero relative">
             <div class="max-w-3xl" data-motion-hero>
                 <p class="overline-light mb-5 reveal">{{ SITE_TAGLINE }}</p>
-                <h1 class="text-white reveal reveal-delay-1 csp-style-d9b43a70fb44">
+                <h1 class="text-white reveal reveal-delay-1 text-[clamp(2.5rem,_6vw,_4.25rem)] leading-[1.08] tracking-[-0.03em]">
                     {{ block.value.titre }}
                 </h1>
                 {% if block.value.sous_titre %}
-                <p class="mt-6 text-lg sm:text-xl leading-relaxed reveal reveal-delay-2 csp-style-7a158a53e702">
+                <p class="mt-6 text-lg sm:text-xl leading-relaxed reveal reveal-delay-2 text-navy-200">
                     {{ block.value.sous_titre }}
                 </p>
                 {% endif %}
@@ -281,7 +281,7 @@
         {# Vague décorative #}
         <div class="absolute bottom-0 left-0 right-0">
             <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full h-8 sm:h-12">
-                <path class="csp-style-41407b2a45c6" d="M0 60V20C240 45 480 5 720 20C960 35 1200 5 1440 20V60H0Z"/>
+                <path class="fill-warm-50" d="M0 60V20C240 45 480 5 720 20C960 35 1200 5 1440 20V60H0Z"/>
             </svg>
         </div>
     </section>
@@ -294,7 +294,7 @@
                 <hr class="divider-gold mx-auto mb-6">
                 <h2>{{ block.value.titre }}</h2>
             </div>
-            <div class="prose prose-lg max-w-none reveal reveal-delay-1 csp-style-81372cea588f">
+            <div class="prose prose-lg max-w-none reveal reveal-delay-1 text-warm-700">
                 {{ block.value.contenu|richtext }}
             </div>
         </div>
@@ -302,7 +302,7 @@
 
     {# ═══════════════  TÉMOIGNAGES  ═══════════════ #}
     {% elif block.block_type == "temoignages" %}
-    <section class="section csp-style-4088532c4dae">
+    <section class="section bg-warm-100">
         <div class="container-wide">
             <div class="text-center mb-14 reveal">
                 <p class="overline mb-3">Témoignages</p>
@@ -311,22 +311,22 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-motion-stagger>
                 {% for item in block.value %}
                 <article class="card-elevated reveal reveal-delay-{{ forloop.counter }}">
-                    <blockquote class="leading-relaxed mb-5 csp-style-81372cea588f">
-                        <svg class="h-6 w-6 mb-3 csp-style-acdb9f353fa2" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11h4v10H0z"/></svg>
+                    <blockquote class="leading-relaxed mb-5 text-warm-700">
+                        <svg class="h-6 w-6 mb-3 text-gold-300" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11h4v10H0z"/></svg>
                         <p>« {{ item.texte }} »</p>
                     </blockquote>
-                    <div class="flex items-center gap-3 pt-5 border-t csp-style-2998f592f360">
+                    <div class="flex items-center gap-3 pt-5 border-t border-warm-200">
                         {% if item.photo %}
                             {% image item.photo fill-48x48 as photo_rendition %}
                             <img src="{{ photo_rendition.url }}" alt="{{ item.nom }}" class="h-12 w-12 rounded-full object-cover" width="48" height="48" loading="lazy">
                         {% else %}
-                            <div class="h-12 w-12 rounded-full flex items-center justify-center font-bold text-sm csp-style-6dca1f61b6b5">
+                            <div class="h-12 w-12 rounded-full flex items-center justify-center font-bold text-sm bg-navy-100 text-navy-700">
                                 {{ item.nom|slice:":1"|upper }}
                             </div>
                         {% endif %}
                         <div>
-                            <p class="text-sm font-semibold csp-style-a4a1aa46c7f2">{{ item.nom }}</p>
-                            {% if item.role %}<p class="text-xs csp-style-9a1421a5a90b">{{ item.role }}</p>{% endif %}
+                            <p class="text-sm font-semibold text-navy-900">{{ item.nom }}</p>
+                            {% if item.role %}<p class="text-xs text-warm-600">{{ item.role }}</p>{% endif %}
                         </div>
                     </div>
                 </article>
@@ -337,12 +337,12 @@
 
     {# ═══════════════  CTA  ═══════════════ #}
     {% elif block.block_type == "cta" %}
-    <section class="section csp-style-c87b142a29d7">
+    <section class="section bg-navy-800">
         <div class="container-narrow text-center reveal">
             <p class="overline-light mb-4">Rejoignez-nous</p>
             <h2 class="text-white mb-5">{{ block.value.titre }}</h2>
             {% if block.value.description %}
-            <p class="text-lg leading-relaxed mb-10 csp-style-7a158a53e702">{{ block.value.description }}</p>
+            <p class="text-lg leading-relaxed mb-10 text-navy-200">{{ block.value.description }}</p>
             {% endif %}
             <a href="{{ block.value.lien }}" class="btn-gold">
                 {{ block.value.texte_bouton }}
@@ -360,12 +360,12 @@
             </div>
             <div class="space-y-3 reveal reveal-delay-1">
                 {% for item in block.value %}
-                <details class="accordeon border rounded csp-style-2998f592f360">
-                    <summary class="px-6 py-4 csp-style-a4a1aa46c7f2">
+                <details class="accordeon border rounded border-warm-200">
+                    <summary class="px-6 py-4 text-navy-900">
                         <span class="text-base font-medium pr-4">{{ item.question }}</span>
-                        <svg class="chevron h-4 w-4 csp-style-e32fa995291e" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                        <svg class="chevron h-4 w-4 text-gold-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                     </summary>
-                    <div class="px-6 pb-5 prose prose-sm csp-style-9a1421a5a90b">
+                    <div class="px-6 pb-5 prose prose-sm text-warm-600">
                         {{ item.reponse|richtext }}
                     </div>
                 </details>

@@ -14,7 +14,7 @@
     <div class="flex items-start gap-4">
         {% if professeur.photo %}
         <img src="{{ professeur.photo.url }}" alt=""
-             class="h-16 w-16 shrink-0 rounded-full object-cover csp-style-6802a5286497">
+             class="h-16 w-16 shrink-0 rounded-full object-cover [border:1px_solid_var(--color-warm-200)]">
         {% else %}
         <span class="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-navy-700 text-lg font-bold text-white" aria-hidden="true">
             {{ professeur.prenom|slice:":1"|upper }}{{ professeur.nom|slice:":1"|upper }}
@@ -22,7 +22,7 @@
         {% endif %}
         <div>
             <p class="overline mb-1">Corps enseignant</p>
-            <h1 class="csp-style-4cc564cbbef1">{{ professeur.nom_complet }}</h1>
+            <h1 class="text-[clamp(1.4rem,_3vw,_1.9rem)]">{{ professeur.nom_complet }}</h1>
             {% if professeur.specialite %}
             <p class="mt-1 text-sm text-warm-600">{{ professeur.specialite }}</p>
             {% endif %}
@@ -166,7 +166,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="module" value="{{ module.pk }}">
                     <input type="hidden" name="action" value="retirer">
-                    <button type="submit" class="btn-ghost csp-style-8b8c191d1b00">Retirer</button>
+                    <button type="submit" class="btn-ghost [padding:0.35rem_0.9rem]">Retirer</button>
                 </form>
             </span>
         </li>

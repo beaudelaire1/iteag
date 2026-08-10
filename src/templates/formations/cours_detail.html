@@ -11,10 +11,10 @@
 {% block content %}
 
 {# ─── HERO ─── #}
-<section class="relative overflow-hidden csp-style-6c4ea52380da">
-    <div class="container-narrow relative csp-style-2d6b2d76ecf0">
+<section class="relative overflow-hidden [background:linear-gradient(160deg,_var(--color-navy-950)_0%,_var(--color-navy-800)_60%,_var(--color-navy-700)_100%)]">
+    <div class="container-narrow relative [padding-top:clamp(3.5rem,_7vw,_5rem)] [padding-bottom:clamp(4.5rem,_9vw,_7rem)]">
         {% if cours.parcours.all %}
-        <a href="{{ cours.parcours.first.get_absolute_url }}" class="inline-flex items-center text-sm font-medium mb-6 transition-colors duration-200 hero-entrance csp-style-7a158a53e702">
+        <a href="{{ cours.parcours.first.get_absolute_url }}" class="inline-flex items-center text-sm font-medium mb-6 transition-colors duration-200 hero-entrance text-navy-200">
             <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
             Retour au parcours
         </a>
@@ -22,17 +22,17 @@
         <div class="hero-entrance">
             <div class="flex flex-wrap items-center gap-3 mb-4 hero-el hero-el-1">
                 <span class="badge badge-info">{{ cours.code }}</span>
-                <span class="text-sm font-semibold csp-style-e141aab29292">{{ cours.ects }} ECTS</span>
+                <span class="text-sm font-semibold text-gold-400">{{ cours.ects }} ECTS</span>
                 {% if cours.discipline %}
                 <span class="badge badge-gold">{{ cours.discipline.nom }}</span>
                 {% endif %}
             </div>
-            <h1 class="text-white hero-el hero-el-2 csp-style-c685a4702045">{{ cours.titre }}</h1>
+            <h1 class="text-white hero-el hero-el-2 text-[clamp(1.5rem,_3.5vw,_2.25rem)] leading-[1.2]">{{ cours.titre }}</h1>
         </div>
     </div>
     <div class="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full csp-style-4e6547632499">
-            <path class="csp-style-41407b2a45c6" d="M0 60V20C240 40 480 5 720 15C960 25 1200 10 1440 20V60H0Z"/>
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full h-[clamp(1.5rem,_3vw,_3.5rem)]">
+            <path class="fill-warm-50" d="M0 60V20C240 40 480 5 720 15C960 25 1200 10 1440 20V60H0Z"/>
         </svg>
     </div>
 </section>
@@ -41,7 +41,7 @@
 <section class="section">
     <div class="container-narrow">
         {% if cours.description %}
-        <div class="prose prose-lg max-w-none mb-14 reveal csp-style-81372cea588f">
+        <div class="prose prose-lg max-w-none mb-14 reveal text-warm-700">
             {{ cours.description|linebreaks }}
         </div>
         {% endif %}
@@ -51,7 +51,7 @@
             <hr class="divider-gold mb-6">
             <p class="overline mb-2">Pédagogie</p>
             <h2 class="mb-5">Objectifs pédagogiques</h2>
-            <div class="prose max-w-none csp-style-81372cea588f">
+            <div class="prose max-w-none text-warm-700">
                 {{ cours.objectifs|linebreaks }}
             </div>
         </div>
@@ -66,13 +66,13 @@
                 {% for notice in bibliographie %}
                 <div class="card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5">
                     <div>
-                        <a href="{% url 'library:notice_detail' notice.pk %}" class="font-semibold hover:underline csp-style-9bce6c04a80b">
+                        <a href="{% url 'library:notice_detail' notice.pk %}" class="font-semibold hover:underline text-navy-800">
                             {{ notice.titre }}
                         </a>
                         {% if notice.auteur %}
-                        <p class="text-sm csp-style-9a1421a5a90b">Par {{ notice.auteur }}</p>
+                        <p class="text-sm text-warm-600">Par {{ notice.auteur }}</p>
                         {% endif %}
-                        <div class="flex items-center gap-2 mt-1 text-xs csp-style-25e866ad732d">
+                        <div class="flex items-center gap-2 mt-1 text-xs text-warm-500">
                             {% if notice.cote %}<span>Cote : {{ notice.cote }}</span>{% endif %}
                             {% if notice.disponible %}
                             <span class="badge badge-success text-xs">Disponible en bibliothèque</span>
@@ -105,12 +105,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {% for p in cours.parcours.all %}
                 <a href="{{ p.get_absolute_url }}" class="card group flex items-center gap-4 transition-colors duration-200">
-                    <div class="h-10 w-10 rounded flex items-center justify-center shrink-0 csp-style-8f5d00b0477b">
+                    <div class="h-10 w-10 rounded flex items-center justify-center shrink-0 bg-navy-700">
                         <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342"/></svg>
                     </div>
                     <div>
-                        <p class="font-semibold text-sm csp-style-9bce6c04a80b">{{ p.nom }}</p>
-                        <p class="text-xs csp-style-25e866ad732d">{{ p.get_type_parcours_display }}</p>
+                        <p class="font-semibold text-sm text-navy-800">{{ p.nom }}</p>
+                        <p class="text-xs text-warm-500">{{ p.get_type_parcours_display }}</p>
                     </div>
                 </a>
                 {% endfor %}

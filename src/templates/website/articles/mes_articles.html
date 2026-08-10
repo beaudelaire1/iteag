@@ -9,8 +9,8 @@
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
         <p class="overline mb-2">Publications</p>
-        <h1 class="csp-style-513ca5addf79">Mes articles</h1>
-        <p class="mt-1 text-sm csp-style-25e866ad732d">
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mes articles</h1>
+        <p class="mt-1 text-sm text-warm-500">
             Vos travaux, du brouillon à la publication sur le site public.
         </p>
     </div>
@@ -41,12 +41,12 @@
                 <p class="text-sm text-warm-600">{{ article.sous_titre }}</p>
                 {% endif %}
                 {% if article.motif_refus %}
-                <p class="mt-2 text-sm csp-style-dd68f00ae6eb">
+                <p class="mt-2 text-sm text-gold-700">
                     À reprendre : {{ article.motif_refus }}
                 </p>
                 {% endif %}
                 {% if article.retrait_demande %}
-                <p class="mt-2 text-sm csp-style-dd68f00ae6eb">
+                <p class="mt-2 text-sm text-gold-700">
                     Retrait demandé le {{ article.retrait_demande_le|date:"d/m/Y" }} —
                     l'article reste en ligne jusqu'à la décision de la direction.
                 </p>
@@ -76,7 +76,7 @@
                 <form method="post" action="{% url 'website:article_supprimer' article.pk %}"
                       data-confirmer="Supprimer « {{ article.titre }} » ? Le texte et ses illustrations seront perdus.">
                     {% csrf_token %}
-                    <button type="submit" class="btn-ghost csp-style-a42c11b9db20">
+                    <button type="submit" class="btn-ghost text-danger">
                         Supprimer
                     </button>
                 </form>

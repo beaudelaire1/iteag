@@ -10,13 +10,13 @@
         <header class="mb-10">
             <p class="overline mb-2">Publications</p>
             <h1>Articles</h1>
-            <p class="mt-2 max-w-2xl csp-style-9a1421a5a90b">
+            <p class="mt-2 max-w-2xl text-warm-600">
                 Les travaux des enseignants de l'institut : théologie, exégèse, histoire de l'Église.
             </p>
         </header>
 
         <form method="get" class="mb-8 flex flex-wrap gap-3">
-            <label class="min-w-0 flex-1 csp-style-964f53d31a05">
+            <label class="min-w-0 flex-1 max-w-[28rem]">
                 <span class="sr-only">Rechercher un article</span>
                 <input type="search" name="q" value="{{ recherche }}" class="form-input"
                        placeholder="Titre, mot-clé ou auteur…">
@@ -30,17 +30,17 @@
             <article class="card-elevated flex flex-col">
                 {% if article.image_principale %}
                 <img src="{{ article.image_principale.url }}" alt=""
-                     class="mb-4 w-full rounded object-cover csp-style-7eeeda55af2f">
+                     class="mb-4 w-full rounded object-cover h-[11rem]">
                 {% endif %}
                 <p class="overline mb-1">{{ article.date_publication|date:"F Y" }}</p>
-                <h2 class="text-lg font-semibold csp-style-a4a1aa46c7f2">
+                <h2 class="text-lg font-semibold text-navy-900">
                     <a href="{{ article.get_absolute_url }}">{{ article.titre }}</a>
                 </h2>
                 {% if article.sous_titre %}
-                <p class="mt-1 text-sm csp-style-9a1421a5a90b">{{ article.sous_titre }}</p>
+                <p class="mt-1 text-sm text-warm-600">{{ article.sous_titre }}</p>
                 {% endif %}
-                <p class="mt-3 flex-1 text-sm csp-style-25e866ad732d">{{ article.resume }}</p>
-                <p class="mt-4 text-sm font-medium csp-style-efbb8610fce7">
+                <p class="mt-3 flex-1 text-sm text-warm-500">{{ article.resume }}</p>
+                <p class="mt-4 text-sm font-medium text-navy-700">
                     {{ article.auteur.nom_complet }}
                 </p>
             </article>
@@ -51,7 +51,7 @@
 
         {% else %}
         <div class="card py-14 text-center">
-            <p class="csp-style-9a1421a5a90b">
+            <p class="text-warm-600">
                 {% if recherche %}Aucun article ne correspond à « {{ recherche }} ».
                 {% else %}Aucun article publié pour le moment.{% endif %}
             </p>

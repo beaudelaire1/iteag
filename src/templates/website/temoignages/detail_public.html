@@ -4,20 +4,20 @@
 {% block meta_description %}{{ temoignage.texte|striptags|truncatechars:160 }}{% endblock %}
 
 {% block content %}
-<section class="section csp-style-ac115f739a1f">
+<section class="section bg-warm-100 min-h-[70vh]">
     <div class="container-narrow">
         <p class="mb-8">
             <a href="/#temoignages" class="btn-ghost">← Retour aux témoignages</a>
         </p>
 
-        <article class="card-elevated csp-style-30e83c55169c">
-            <header class="flex items-center gap-4 pb-6 border-b csp-style-2998f592f360">
+        <article class="card-elevated [padding:clamp(1.5rem,_4vw,_3.5rem)]">
+            <header class="flex items-center gap-4 pb-6 border-b border-warm-200">
                 {% if temoignage.photo %}
                 <img src="{{ temoignage.photo.url }}"
                      alt="Photo de {{ temoignage.nom_affiche }}"
                      class="h-16 w-16 rounded-full object-cover flex-shrink-0">
                 {% else %}
-                <div class="h-16 w-16 rounded-full flex items-center justify-center font-bold text-xl text-white flex-shrink-0 csp-style-2f4112190872"
+                <div class="h-16 w-16 rounded-full flex items-center justify-center font-bold text-xl text-white flex-shrink-0 bg-forest-700"
                     >
                     {{ temoignage.nom_affiche|slice:":1" }}
                 </div>
@@ -26,14 +26,14 @@
                     <p class="overline mb-1">Parole d'étudiant</p>
                     <h1 class="text-2xl md:text-3xl">{{ temoignage.nom_affiche }}</h1>
                     {% if temoignage.promotion %}
-                    <p class="mt-1 text-sm csp-style-25e866ad732d">{{ temoignage.promotion }}</p>
+                    <p class="mt-1 text-sm text-warm-500">{{ temoignage.promotion }}</p>
                     {% endif %}
                 </div>
             </header>
 
             <div class="pt-8 md:pt-10">
-                <span aria-hidden="true" class="block text-5xl leading-none mb-3 csp-style-e32fa995291e">“</span>
-                <div class="prose-article contenu-riche csp-style-a9ff150f836d">
+                <span aria-hidden="true" class="block text-5xl leading-none mb-3 text-gold-500">“</span>
+                <div class="prose-article contenu-riche text-warm-800">
                     {{ temoignage.texte|safe }}
                 </div>
             </div>

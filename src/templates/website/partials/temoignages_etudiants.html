@@ -1,5 +1,5 @@
 {% if temoignages_etudiants %}
-<section id="temoignages" class="section csp-style-4088532c4dae">
+<section id="temoignages" class="section bg-warm-100">
     <div class="container-wide">
         <div class="text-center mb-12 reveal">
             <p class="overline mb-3">Témoignages</p>
@@ -8,17 +8,17 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch" data-motion-stagger>
             {% for item in temoignages_etudiants %}
             {% with text_plain=item.texte|striptags %}
-            <article class="card-elevated reveal flex flex-col h-full relative testimonial-card csp-style-55c1fe69b00c">
+            <article class="card-elevated reveal flex flex-col h-full relative testimonial-card min-h-[280px]">
                 <div class="flex-1 flex flex-col mb-5">
-                    <span aria-hidden="true" class="text-3xl leading-none block mb-2 csp-style-e32fa995291e">“</span>
-                    <p class="text-sm leading-relaxed csp-style-81372cea588f">
+                    <span aria-hidden="true" class="text-3xl leading-none block mb-2 text-gold-500">“</span>
+                    <p class="text-sm leading-relaxed text-warm-700">
                         {{ text_plain|truncatechars:220 }}
                     </p>
 
                     {% if text_plain|length > 220 %}
                     <p class="mt-5">
                         <a href="{% url 'website:temoignage_public' item.pk %}"
-                           class="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-75 csp-style-06769d59868e"
+                           class="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-75 text-forest-700"
                           
                            aria-label="Lire le témoignage complet de {{ item.nom_affiche }}">
                             Lire le témoignage
@@ -28,18 +28,18 @@
                     {% endif %}
                 </div>
 
-                <footer class="pt-4 border-t flex items-center gap-3 mt-auto csp-style-2998f592f360">
+                <footer class="pt-4 border-t flex items-center gap-3 mt-auto border-warm-200">
                     {% if item.photo %}
                     <img src="{{ item.photo.url }}" alt="Photo de {{ item.nom_affiche }}"
                          class="h-11 w-11 rounded-full object-cover flex-shrink-0" loading="lazy">
                     {% else %}
-                    <div class="h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0 csp-style-2f4112190872">
+                    <div class="h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0 bg-forest-700">
                         {{ item.nom_affiche|slice:":1" }}
                     </div>
                     {% endif %}
                     <div class="min-w-0">
-                        <p class="text-sm font-semibold truncate csp-style-a4a1aa46c7f2">{{ item.nom_affiche }}</p>
-                        {% if item.promotion %}<p class="text-xs mt-0.5 text-ellipsis overflow-hidden csp-style-25e866ad732d">{{ item.promotion }}</p>{% endif %}
+                        <p class="text-sm font-semibold truncate text-navy-900">{{ item.nom_affiche }}</p>
+                        {% if item.promotion %}<p class="text-xs mt-0.5 text-ellipsis overflow-hidden text-warm-500">{{ item.promotion }}</p>{% endif %}
                     </div>
                 </footer>
             </article>

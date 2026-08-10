@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-10">
     <p class="overline mb-2">Notation</p>
-    <h1 class="csp-style-513ca5addf79">Évaluations</h1>
-    <p class="mt-1 text-sm csp-style-25e866ad732d">Toutes les évaluations de vos étudiants</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Évaluations</h1>
+    <p class="mt-1 text-sm text-warm-500">Toutes les évaluations de vos étudiants</p>
 </div>
 {% endblock %}
 
@@ -46,31 +46,31 @@
 </form>
 
 {% if a_corriger %}
-<p class="mb-6 text-sm csp-style-9a1421a5a90b">
-    <strong class="csp-style-d9313ccc85a3">{{ a_corriger }}</strong> copie{{ a_corriger|pluralize }} en attente de correction.
+<p class="mb-6 text-sm text-warm-600">
+    <strong class="text-gold-600">{{ a_corriger }}</strong> copie{{ a_corriger|pluralize }} en attente de correction.
 </p>
 {% endif %}
 
-<div class="card-elevated csp-style-98781402ac5c">
+<div class="card-elevated p-0">
     {% if evaluations %}
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y csp-style-2998f592f360">
-            <thead class="csp-style-4f054290a08c">
+        <table class="min-w-full divide-y border-warm-200">
+            <thead class="bg-warm-50">
                 <tr>
-                    <th class="px-5 py-3 text-left text-xs font-medium uppercase csp-style-25e866ad732d">Étudiant</th>
-                    <th class="px-5 py-3 text-left text-xs font-medium uppercase csp-style-25e866ad732d">Cours</th>
-                    <th class="px-5 py-3 text-left text-xs font-medium uppercase csp-style-25e866ad732d">Type</th>
-                    <th class="px-5 py-3 text-left text-xs font-medium uppercase csp-style-25e866ad732d">Statut</th>
-                    <th class="px-5 py-3 text-right text-xs font-medium uppercase csp-style-25e866ad732d">Note</th>
-                    <th class="px-5 py-3 text-left text-xs font-medium uppercase csp-style-25e866ad732d">Action</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Étudiant</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Cours</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Type</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Statut</th>
+                    <th class="px-5 py-3 text-right text-xs font-medium uppercase text-warm-500">Note</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium uppercase text-warm-500">Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y csp-style-b5a2a623575b">
+            <tbody class="divide-y border-warm-100">
                 {% for eval in evaluations %}
                 <tr>
-                    <td class="px-5 py-3 text-sm font-medium csp-style-a4a1aa46c7f2">{{ eval.etudiant.utilisateur.get_full_name }}</td>
-                    <td class="px-5 py-3 text-sm csp-style-9a1421a5a90b">{{ eval.cours_session.cours.titre }}</td>
-                    <td class="px-5 py-3 text-sm csp-style-9a1421a5a90b">{{ eval.get_type_evaluation_display }}</td>
+                    <td class="px-5 py-3 text-sm font-medium text-navy-900">{{ eval.etudiant.utilisateur.get_full_name }}</td>
+                    <td class="px-5 py-3 text-sm text-warm-600">{{ eval.cours_session.cours.titre }}</td>
+                    <td class="px-5 py-3 text-sm text-warm-600">{{ eval.get_type_evaluation_display }}</td>
                     <td class="px-5 py-3 text-sm">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
                             {% if eval.statut == 'soumis' %}bg-navy-100 text-navy-700
@@ -81,19 +81,19 @@
                             {{ eval.get_statut_display }}
                         </span>
                     </td>
-                    <td class="px-5 py-3 text-sm text-right font-semibold csp-style-a4a1aa46c7f2">{% if eval.note is not None %}{{ eval.note }}/20{% else %}—{% endif %}</td>
+                    <td class="px-5 py-3 text-sm text-right font-semibold text-navy-900">{% if eval.note is not None %}{{ eval.note }}/20{% else %}—{% endif %}</td>
                     <td class="px-5 py-3 text-sm">
                         {% if eval.statut == 'soumis' or eval.statut == 'en_correction' %}
-                        <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="font-medium hover:underline csp-style-9726ceed6b6d">Noter</a>
+                        <a href="{% url 'lms:grade_evaluation' eval.pk %}" class="font-medium hover:underline text-navy-600">Noter</a>
                         {% elif eval.statut == 'publie' %}
                         {% comment %}
                             Une note publiée reste corrigible : c'est la voie du recours,
                             et elle doit être atteignable là où l'enseignant regarde ses copies.
                         {% endcomment %}
-                        <a href="{% url 'lms:revise_grade' eval.pk %}" class="font-medium hover:underline csp-style-9726ceed6b6d">Réviser</a>
+                        <a href="{% url 'lms:revise_grade' eval.pk %}" class="font-medium hover:underline text-navy-600">Réviser</a>
                         {% endif %}
                         {% if eval.fichier_soumis %}
-                        <a href="{{ eval.fichier_soumis.url }}" class="ml-3 font-medium hover:underline csp-style-9726ceed6b6d">Copie</a>
+                        <a href="{{ eval.fichier_soumis.url }}" class="ml-3 font-medium hover:underline text-navy-600">Copie</a>
                         {% endif %}
                     </td>
                 </tr>
@@ -102,7 +102,7 @@
         </table>
     </div>
     {% else %}
-    <p class="px-5 py-12 text-sm text-center csp-style-dba57faf99a4">Aucune évaluation pour le moment.</p>
+    <p class="px-5 py-12 text-sm text-center text-warm-400">Aucune évaluation pour le moment.</p>
     {% endif %}
 </div>
 

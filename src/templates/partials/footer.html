@@ -3,9 +3,9 @@
 <footer class="mt-auto bg-navy-950 text-warm-400">
 
     {# Bande dorée subtile animée #}
-    <div class="shimmer-gold csp-style-bf24016eaddb"></div>
+    <div class="shimmer-gold h-0.5 [background:linear-gradient(90deg,_transparent,_var(--color-gold-400),_transparent)]"></div>
 
-    <div class="container-wide section csp-style-fbb6c9579690">
+    <div class="container-wide section [padding-top:clamp(3rem,_6vw,_5rem)] [padding-bottom:clamp(3rem,_6vw,_5rem)]">
         <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
 
             {# Col 1 — Marque #}
@@ -22,7 +22,7 @@
             </div>
 
             {# Col 2 — Institut #}
-            <div class="reveal csp-style-3ea1a85e69d9">
+            <div class="reveal delay-[100ms]">
                 <h2 class="overline-light mb-5">Institut</h2>
                 <ul class="space-y-2.5 text-sm">
                     <li><a href="/" class="hover:text-white transition-colors duration-200">Accueil</a></li>
@@ -36,7 +36,7 @@
             </div>
 
             {# Col 3 — Formation #}
-            <div class="reveal csp-style-f9da8db4098d">
+            <div class="reveal delay-[200ms]">
                 <h2 class="overline-light mb-5">Formation</h2>
                 <ul class="space-y-2.5 text-sm">
                     <li><a href="{% url 'formations:parcours_list' %}" class="hover:text-white transition-colors duration-200">Se former à l'ITEAG</a></li>
@@ -49,7 +49,7 @@
             </div>
 
             {# Col 4 — Contact #}
-            <div class="reveal csp-style-d5c85b986d49">
+            <div class="reveal delay-[300ms]">
                 <h2 class="overline-light mb-5">Contact</h2>
                 <ul class="space-y-3 text-sm">
                     <li>

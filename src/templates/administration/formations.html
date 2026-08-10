@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
-        <h1 class="csp-style-513ca5addf79">Formations</h1>
-        <p class="text-sm mt-1 csp-style-25e866ad732d">Parcours, disciplines, cours et tarifs</p>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Formations</h1>
+        <p class="text-sm mt-1 text-warm-500">Parcours, disciplines, cours et tarifs</p>
     </div>
     <div class="flex flex-wrap gap-3">
         <a href="{% url 'administration:courses' %}" class="btn-secondary">Référentiel des cours</a>
@@ -27,8 +27,8 @@
     {# ── Parcours ── #}
     <section>
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
-                Parcours <span class="font-normal text-xs csp-style-dba57faf99a4">({{ parcours_list|length }})</span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">
+                Parcours <span class="font-normal text-xs text-warm-400">({{ parcours_list|length }})</span>
             </h2>
             <a href="{% url 'administration:parcours_create' %}" class="btn-secondary text-xs">+ Nouveau parcours</a>
         </div>
@@ -36,19 +36,19 @@
             {% for p in parcours_list %}
             <div class="card-elevated flex items-center justify-between gap-4">
                 <div>
-                    <h3 class="font-semibold csp-style-a4a1aa46c7f2">{{ p.nom }}</h3>
-                    <p class="text-xs mt-0.5 csp-style-25e866ad732d">
+                    <h3 class="font-semibold text-navy-900">{{ p.nom }}</h3>
+                    <p class="text-xs mt-0.5 text-warm-500">
                         {{ p.get_type_parcours_display }} — {{ p.ects_requis }} ECTS — {{ p.duree_annees }} ans
                         {% if not p.actif %}<span class="badge badge-danger ml-1">inactif</span>{% endif %}
                     </p>
                     <p class="mt-2 flex gap-3 text-xs">
-                        <a href="{% url 'administration:parcours_update' p.pk %}" class="link-reveal csp-style-9726ceed6b6d">Modifier</a>
-                        <a href="{% url 'administration:parcours_delete' p.pk %}" class="link-reveal csp-style-c18ac1598993">Supprimer</a>
+                        <a href="{% url 'administration:parcours_update' p.pk %}" class="link-reveal text-navy-600">Modifier</a>
+                        <a href="{% url 'administration:parcours_delete' p.pk %}" class="link-reveal text-red-700">Supprimer</a>
                     </p>
                 </div>
                 <div class="text-right shrink-0">
-                    <span class="text-2xl font-bold csp-style-9bce6c04a80b">{{ p.nb_cours }}</span>
-                    <span class="block text-xs csp-style-dba57faf99a4">cours</span>
+                    <span class="text-2xl font-bold text-navy-800">{{ p.nb_cours }}</span>
+                    <span class="block text-xs text-warm-400">cours</span>
                 </div>
             </div>
             {% endfor %}
@@ -58,22 +58,22 @@
     {# ── Disciplines ── #}
     <section>
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
-                Disciplines <span class="font-normal text-xs csp-style-dba57faf99a4">({{ disciplines|length }})</span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">
+                Disciplines <span class="font-normal text-xs text-warm-400">({{ disciplines|length }})</span>
             </h2>
             <a href="{% url 'administration:discipline_create' %}" class="btn-secondary text-xs">+ Nouvelle discipline</a>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for d in disciplines %}
             <div class="card-elevated">
-                <h3 class="font-semibold csp-style-a4a1aa46c7f2">{{ d.nom }}</h3>
-                <p class="text-xs mt-1 csp-style-25e866ad732d">{{ d.nb_cours }} cours</p>
+                <h3 class="font-semibold text-navy-900">{{ d.nom }}</h3>
+                <p class="text-xs mt-1 text-warm-500">{{ d.nb_cours }} cours</p>
                 {% if d.description %}
-                <p class="text-sm mt-2 line-clamp-2 csp-style-9a1421a5a90b">{{ d.description }}</p>
+                <p class="text-sm mt-2 line-clamp-2 text-warm-600">{{ d.description }}</p>
                 {% endif %}
                 <p class="mt-3 flex gap-3 text-xs">
-                    <a href="{% url 'administration:discipline_update' d.pk %}" class="link-reveal csp-style-9726ceed6b6d">Modifier</a>
-                    <a href="{% url 'administration:discipline_delete' d.pk %}" class="link-reveal csp-style-c18ac1598993">Supprimer</a>
+                    <a href="{% url 'administration:discipline_update' d.pk %}" class="link-reveal text-navy-600">Modifier</a>
+                    <a href="{% url 'administration:discipline_delete' d.pk %}" class="link-reveal text-red-700">Supprimer</a>
                 </p>
             </div>
             {% endfor %}
@@ -82,7 +82,7 @@
 
     {# ── Tarifs ── #}
     <section>
-        <h2 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">
             Grille tarifaire
         </h2>
         {% if tarifs %}
@@ -90,18 +90,18 @@
             <div class="overflow-x-auto -mx-6 -my-6">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="csp-style-4f054290a08c">
-                            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">Formule</th>
-                            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">Type de membre</th>
-                            <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">Montant / session</th>
+                        <tr class="bg-warm-50">
+                            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">Formule</th>
+                            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">Type de membre</th>
+                            <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">Montant / session</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y csp-style-b5a2a623575b">
+                    <tbody class="divide-y border-warm-100">
                         {% for t in tarifs %}
                         <tr class="hover:bg-warm-50 transition-colors">
-                            <td class="px-6 py-3 font-medium csp-style-a4a1aa46c7f2">{{ t.get_formule_display }}</td>
-                            <td class="px-6 py-3 csp-style-9a1421a5a90b">{{ t.get_type_membre_display }}</td>
-                            <td class="px-6 py-3 text-right font-semibold csp-style-9bce6c04a80b">{{ t.montant_session }} €</td>
+                            <td class="px-6 py-3 font-medium text-navy-900">{{ t.get_formule_display }}</td>
+                            <td class="px-6 py-3 text-warm-600">{{ t.get_type_membre_display }}</td>
+                            <td class="px-6 py-3 text-right font-semibold text-navy-800">{{ t.montant_session }} €</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -109,7 +109,7 @@
             </div>
         </div>
         {% else %}
-        <p class="text-sm csp-style-dba57faf99a4">Aucun tarif configuré.</p>
+        <p class="text-sm text-warm-400">Aucun tarif configuré.</p>
         {% endif %}
     </section>
 </div>

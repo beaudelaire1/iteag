@@ -7,12 +7,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:devoirs_list' %}" class="inline-flex items-center text-sm font-medium mb-4 csp-style-9726ceed6b6d">
+    <a href="{% url 'lms:devoirs_list' %}" class="inline-flex items-center text-sm font-medium mb-4 text-navy-600">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Mes devoirs
     </a>
     <p class="overline mb-2">{{ cours_session.cours.titre }} · {{ cours_session.session }}</p>
-    <h1 class="csp-style-f11d9f094ef8">
+    <h1 class="text-[clamp(1.25rem,_3vw,_1.75rem)]">
         {% if devoir %}Modifier le devoir{% else %}Nouveau devoir{% endif %}
     </h1>
 </div>
@@ -34,8 +34,8 @@
         {% include "partials/champ.html" with field=form.consigne %}
         {% include "partials/champ.html" with field=form.fichier_consigne %}
 
-        <div class="pt-2 csp-style-d28c8df99194">
-            <p class="overline mb-1 csp-style-9a7472a9ec3a">Fenêtre de dépôt</p>
+        <div class="pt-2 [border-top:1px_solid_var(--color-warm-200)]">
+            <p class="overline mb-1 mt-4">Fenêtre de dépôt</p>
             <p class="mb-4 text-xs text-warm-500">
                 Avant l'ouverture, l'étudiant voit le sujet sans pouvoir déposer.
                 Après la fermeture, le dépôt est refusé — sauf si vous acceptez les retards,
@@ -48,9 +48,9 @@
             {% include "partials/champ.html" with field=form.retard_accepte %}
         </div>
 
-        <div class="pt-2 csp-style-d28c8df99194">
-            <p class="overline mb-4 csp-style-9a7472a9ec3a">Destinataires</p>
-            <p class="mb-4 text-sm csp-style-25e866ad732d">
+        <div class="pt-2 [border-top:1px_solid_var(--color-warm-200)]">
+            <p class="overline mb-4 mt-4">Destinataires</p>
+            <p class="mb-4 text-sm text-warm-500">
                 Par défaut le devoir s'adresse à tous les inscrits. Un groupe, une promotion
                 ou une liste d'étudiants ne fait que restreindre ce périmètre :
                 un devoir ne touche jamais quelqu'un qui ne suit pas le cours.
@@ -63,8 +63,8 @@
             {% include "partials/champ.html" with field=form.etudiants %}
         </div>
 
-        <div class="pt-2 csp-style-d28c8df99194">
-            <p class="overline mb-4 csp-style-9a7472a9ec3a">Notation</p>
+        <div class="pt-2 [border-top:1px_solid_var(--color-warm-200)]">
+            <p class="overline mb-4 mt-4">Notation</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
                 {% include "partials/champ.html" with field=form.bareme %}
                 {% include "partials/champ.html" with field=form.ects %}

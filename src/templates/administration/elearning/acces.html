@@ -9,7 +9,7 @@
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
         <p class="overline mb-2">E-Learning</p>
-        <h1 class="csp-style-513ca5addf79">Accès aux modules</h1>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Accès aux modules</h1>
     </div>
     <a href="{% url 'administration:acces_export' %}" class="btn-ghost">Exporter (CSV)</a>
 </div>
@@ -18,8 +18,8 @@
 {% block portal_content %}
 
 {% if demandes_en_attente %}
-<div class="card-elevated mb-6 csp-style-ffdb4e30f106">
-    <p class="text-sm csp-style-a4a1aa46c7f2">
+<div class="card-elevated mb-6 [border-left:3px_solid_var(--color-gold-500)]">
+    <p class="text-sm text-navy-900">
         <strong>{{ demandes_en_attente }}</strong> demande{{ demandes_en_attente|pluralize }} d'accès
         en attente de décision —
         <a href="?statut=demande" class="link-reveal">les traiter</a>.
@@ -31,7 +31,7 @@
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     {% for valeur, libelle in statuts %}
     <a href="?statut={{ valeur }}" class="card-elevated text-center py-4 {% if statut_courant == valeur %}shadow-gold{% endif %}">
-        <p class="stat-number csp-style-0bcd9ceed044">{% for cle, nb in compteurs.items %}{% if cle == valeur %}{{ nb }}{% endif %}{% endfor %}</p>
+        <p class="stat-number text-[1.5rem]">{% for cle, nb in compteurs.items %}{% if cle == valeur %}{{ nb }}{% endif %}{% endfor %}</p>
         <p class="stat-label">{{ libelle }}</p>
     </a>
     {% endfor %}
@@ -75,7 +75,7 @@
 
 {# Ouverture d'un module à une promotion entière #}
 <details class="accordeon card-elevated mb-6">
-    <summary class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
+    <summary class="text-sm font-bold uppercase tracking-wider text-navy-800">
         <span>Ouvrir un module à une promotion</span>
         <svg class="chevron h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
     </summary>
@@ -122,7 +122,7 @@
         </div>
         <div>
             <label class="form-label" for="jours">Jours (octroi, prolongation)</label>
-            <input type="number" name="jours" id="jours" value="90" min="1" class="form-input csp-style-1cba2cc74a01">
+            <input type="number" name="jours" id="jours" value="90" min="1" class="form-input w-[8rem]">
         </div>
         <div class="flex-1 min-w-48">
             <label class="form-label" for="motif">Motif (refus, révocation)</label>
@@ -151,7 +151,7 @@
                     </td>
                     <td>
                         <span class="font-medium">{{ inscription.etudiant.utilisateur.get_full_name }}</span>
-                        <span class="block text-xs csp-style-dba57faf99a4">
+                        <span class="block text-xs text-warm-400">
                             {{ inscription.etudiant.numero_etudiant }} · {{ inscription.etudiant.promotion.nom|default:"—" }}
                         </span>
                     </td>
@@ -175,7 +175,7 @@
 
     {% else %}
     <div class="card text-center py-16">
-        <p class="csp-style-9a1421a5a90b">Aucun accès ne correspond à cette recherche.</p>
+        <p class="text-warm-600">Aucun accès ne correspond à cette recherche.</p>
     </div>
     {% endif %}
 </form>

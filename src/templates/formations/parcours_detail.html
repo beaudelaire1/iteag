@@ -11,10 +11,10 @@
 {% block content %}
 
 {# ─── HERO ─── #}
-<section class="relative overflow-hidden csp-style-5844eff603c0">
-    <div class="absolute inset-0 opacity-[0.04] csp-style-67ff139fd07f"></div>
-    <div class="container-wide relative csp-style-24ee867382d1">
-        <a href="{% url 'formations:parcours_list' %}" class="inline-flex items-center text-sm font-medium mb-6 transition-colors duration-200 hero-entrance csp-style-7a158a53e702">
+<section class="relative overflow-hidden [background:linear-gradient(160deg,_var(--color-navy-950)_0%,_var(--color-navy-800)_40%,_var(--color-navy-700)_100%)]">
+    <div class="absolute inset-0 opacity-[0.04] bg-pattern-dots-light"></div>
+    <div class="container-wide relative [padding-top:clamp(4rem,_8vw,_6rem)] [padding-bottom:clamp(5rem,_10vw,_8rem)]">
+        <a href="{% url 'formations:parcours_list' %}" class="inline-flex items-center text-sm font-medium mb-6 transition-colors duration-200 hero-entrance text-navy-200">
             <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
             Tous les parcours
         </a>
@@ -22,21 +22,21 @@
             <div class="flex flex-wrap items-center gap-3 mb-4 hero-el hero-el-1">
                 <span class="badge badge-gold">{{ parcours.get_type_parcours_display }}</span>
                 {% if parcours.ects_requis %}
-                <span class="text-sm font-semibold uppercase tracking-wider csp-style-e141aab29292">{{ parcours.ects_requis }} ECTS</span>
+                <span class="text-sm font-semibold uppercase tracking-wider text-gold-400">{{ parcours.ects_requis }} ECTS</span>
                 {% endif %}
                 {% if parcours.duree_annees %}
-                <span class="text-sm csp-style-7629cab8ab22">{{ parcours.duree_annees }} ans</span>
+                <span class="text-sm text-navy-300">{{ parcours.duree_annees }} ans</span>
                 {% endif %}
             </div>
-            <h1 class="text-white hero-el hero-el-2 csp-style-571a1236a791">{{ parcours.nom }}</h1>
+            <h1 class="text-white hero-el hero-el-2 text-[clamp(1.75rem,_4vw,_2.75rem)] leading-[1.15]">{{ parcours.nom }}</h1>
             {% if parcours.description %}
-            <p class="mt-5 text-base leading-relaxed hero-el hero-el-3 csp-style-8515c8bbe40e">{{ parcours.description|truncatewords:40 }}</p>
+            <p class="mt-5 text-base leading-relaxed hero-el hero-el-3 text-navy-200 max-w-[36rem]">{{ parcours.description|truncatewords:40 }}</p>
             {% endif %}
         </div>
     </div>
     <div class="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full csp-style-69125a57de9d">
-            <path class="csp-style-41407b2a45c6" d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z"/>
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full h-[clamp(2rem,_4vw,_4.5rem)]">
+            <path class="fill-warm-50" d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z"/>
         </svg>
     </div>
 </section>
@@ -48,7 +48,7 @@
             {# Colonne principale #}
             <div class="lg:col-span-2">
                 {% if parcours.description %}
-                <div class="prose prose-lg max-w-none mb-14 reveal csp-style-81372cea588f">
+                <div class="prose prose-lg max-w-none mb-14 reveal text-warm-700">
                     {{ parcours.description|linebreaks }}
                 </div>
                 {% endif %}
@@ -60,20 +60,20 @@
                     <p class="overline mb-2">Programme</p>
                     <h2 class="mb-8">
                         Cours proposés
-                        <span class="text-base font-normal csp-style-25e866ad732d">({{ cours|length }} cours)</span>
+                        <span class="text-base font-normal text-warm-500">({{ cours|length }} cours)</span>
                     </h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {% for c in cours %}
                         <article class="card group relative reveal" data-transition-delay="{{ forloop.counter0 }}0">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="badge badge-info">{{ c.code }}</span>
-                                <span class="text-xs font-semibold csp-style-e32fa995291e">{{ c.ects }} ECTS</span>
+                                <span class="text-xs font-semibold text-gold-500">{{ c.ects }} ECTS</span>
                             </div>
-                            <h3 class="text-base font-semibold csp-style-a4a1aa46c7f2">
+                            <h3 class="text-base font-semibold text-navy-900">
                                 <a href="{{ c.get_absolute_url }}" class="stretched-link">{{ c.titre }}</a>
                             </h3>
                             {% if c.discipline %}
-                            <p class="mt-2 text-xs csp-style-25e866ad732d">{{ c.discipline.nom }}</p>
+                            <p class="mt-2 text-xs text-warm-500">{{ c.discipline.nom }}</p>
                             {% endif %}
                         </article>
                         {% endfor %}
@@ -86,28 +86,28 @@
             <aside class="lg:col-span-1 space-y-6">
                 {# Résumé #}
                 <div class="card-elevated p-6 reveal">
-                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">En bref</h3>
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">En bref</h3>
                     <dl class="space-y-3 text-sm">
                         {% if parcours.ects_requis %}
-                        <div class="flex justify-between csp-style-2e16d9fe2b12">
-                            <dt class="csp-style-25e866ad732d">Crédits ECTS</dt>
-                            <dd class="font-semibold csp-style-9bce6c04a80b">{{ parcours.ects_requis }}</dd>
+                        <div class="flex justify-between [border-bottom:1px_solid_var(--color-warm-150)] [padding-bottom:8px]">
+                            <dt class="text-warm-500">Crédits ECTS</dt>
+                            <dd class="font-semibold text-navy-800">{{ parcours.ects_requis }}</dd>
                         </div>
                         {% endif %}
                         {% if parcours.duree_annees %}
-                        <div class="flex justify-between csp-style-2e16d9fe2b12">
-                            <dt class="csp-style-25e866ad732d">Durée</dt>
-                            <dd class="font-semibold csp-style-9bce6c04a80b">{{ parcours.duree_annees }} ans</dd>
+                        <div class="flex justify-between [border-bottom:1px_solid_var(--color-warm-150)] [padding-bottom:8px]">
+                            <dt class="text-warm-500">Durée</dt>
+                            <dd class="font-semibold text-navy-800">{{ parcours.duree_annees }} ans</dd>
                         </div>
                         {% endif %}
-                        <div class="flex justify-between csp-style-2e16d9fe2b12">
-                            <dt class="csp-style-25e866ad732d">Sessions</dt>
-                            <dd class="font-semibold csp-style-9bce6c04a80b">4 / an</dd>
+                        <div class="flex justify-between [border-bottom:1px_solid_var(--color-warm-150)] [padding-bottom:8px]">
+                            <dt class="text-warm-500">Sessions</dt>
+                            <dd class="font-semibold text-navy-800">4 / an</dd>
                         </div>
                         {% if cours %}
                         <div class="flex justify-between">
-                            <dt class="csp-style-25e866ad732d">Cours</dt>
-                            <dd class="font-semibold csp-style-9bce6c04a80b">{{ cours|length }}</dd>
+                            <dt class="text-warm-500">Cours</dt>
+                            <dd class="font-semibold text-navy-800">{{ cours|length }}</dd>
                         </div>
                         {% endif %}
                     </dl>
@@ -115,9 +115,9 @@
 
                 {# Conditions d'entrée #}
                 {% if parcours.conditions_entree %}
-                <div class="card-elevated p-6 reveal csp-style-3ea1a85e69d9">
-                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">Conditions d'entrée</h3>
-                    <div class="text-sm leading-relaxed csp-style-9a1421a5a90b">
+                <div class="card-elevated p-6 reveal delay-[100ms]">
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">Conditions d'entrée</h3>
+                    <div class="text-sm leading-relaxed text-warm-600">
                         {{ parcours.conditions_entree|linebreaks }}
                     </div>
                 </div>
@@ -125,26 +125,26 @@
 
                 {# Tarifs #}
                 {% if tarifs %}
-                <div class="card-elevated p-6 reveal csp-style-f9da8db4098d">
-                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">Tarifs</h3>
+                <div class="card-elevated p-6 reveal delay-[200ms]">
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">Tarifs</h3>
                     <div class="space-y-3">
                         {% for tarif in tarifs %}
                         <div class="flex justify-between items-center text-sm" data-divider-state="{% if not forloop.last %}active{% endif %}">
                             <div>
-                                <p class="font-medium csp-style-9bce6c04a80b">{{ tarif.get_formule_display }}</p>
-                                <p class="text-xs csp-style-25e866ad732d">{{ tarif.get_type_membre_display }}</p>
+                                <p class="font-medium text-navy-800">{{ tarif.get_formule_display }}</p>
+                                <p class="text-xs text-warm-500">{{ tarif.get_type_membre_display }}</p>
                             </div>
-                            <span class="font-bold csp-style-9bce6c04a80b">{{ tarif.montant_session|floatformat:0 }}&nbsp;€</span>
+                            <span class="font-bold text-navy-800">{{ tarif.montant_session|floatformat:0 }}&nbsp;€</span>
                         </div>
                         {% endfor %}
                     </div>
-                    <p class="mt-3 text-xs csp-style-dba57faf99a4">* tarif par session</p>
+                    <p class="mt-3 text-xs text-warm-400">* tarif par session</p>
                 </div>
                 {% endif %}
 
                 {# CTA #}
-                <div class="card-elevated p-6 text-center reveal csp-style-04dec2510700">
-                    <p class="text-sm mb-4 csp-style-7a158a53e702">Ce parcours vous intéresse ?</p>
+                <div class="card-elevated p-6 text-center reveal bg-navy-700 delay-[300ms]">
+                    <p class="text-sm mb-4 text-navy-200">Ce parcours vous intéresse ?</p>
                     <a href="{% url 'admissions:candidature_form' %}" class="btn-gold w-full justify-center">
                         S'inscrire
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>

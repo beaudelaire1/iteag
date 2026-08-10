@@ -9,7 +9,7 @@
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
         <p class="overline mb-2">E-Learning</p>
-        <h1 class="csp-style-513ca5addf79">Mes modules</h1>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mes modules</h1>
     </div>
     <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Nouveau module</a>
 </div>
@@ -25,13 +25,13 @@
             {% else %}<span class="badge badge-warning">{{ module.get_statut_display }}</span>{% endif %}
             {% if module.certifiant %}<span class="badge badge-gold">Attestation</span>{% endif %}
         </p>
-        <h2 class="text-base font-semibold mb-2 csp-style-a4a1aa46c7f2">
+        <h2 class="text-base font-semibold mb-2 text-navy-900">
             <a href="{% url 'elearning:enseignant_structure' module.slug %}" class="stretched-link">{{ module.titre }}</a>
         </h2>
         {% if module.description %}
-        <p class="text-sm line-clamp-2 mb-4 csp-style-9a1421a5a90b">{{ module.description }}</p>
+        <p class="text-sm line-clamp-2 mb-4 text-warm-600">{{ module.description }}</p>
         {% endif %}
-        <dl class="mt-auto pt-4 border-t flex flex-wrap gap-x-6 gap-y-1 text-xs csp-style-08a651b438ad"
+        <dl class="mt-auto pt-4 border-t flex flex-wrap gap-x-6 gap-y-1 text-xs border-warm-100 text-warm-500"
            >
             <div><dt class="inline">Durée —</dt> <dd class="inline">{{ module.duree_minutes }} min</dd></div>
             <div><dt class="inline">Inscrits —</dt> <dd class="inline">{{ module.nb_inscrits }}</dd></div>
@@ -41,7 +41,7 @@
 </div>
 {% else %}
 <div class="card text-center py-16">
-    <p class="mb-4 csp-style-9a1421a5a90b">Aucun module pour le moment.</p>
+    <p class="mb-4 text-warm-600">Aucun module pour le moment.</p>
     <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Créer un module</a>
 </div>
 {% endif %}

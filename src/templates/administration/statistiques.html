@@ -19,8 +19,8 @@ barre.
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Pilotage</p>
-    <h1 class="csp-style-513ca5addf79">Statistiques de l'institut</h1>
-    <p class="mt-2 csp-style-513eb5035b1d">
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Statistiques de l'institut</h1>
+    <p class="mt-2 text-warm-600 max-w-[60ch]">
         Chaque application rend compte de son activité : un état, une structure, une tendance
         sur douze mois glissants. Un taux dont la base est vide s'affiche « — » plutôt que « 0 % ».
     </p>
@@ -36,7 +36,7 @@ barre.
 </nav>
 
 {% for domaine in domaines %}
-<section id="{{ domaine.cle }}" class="mb-14 csp-style-85339c1dfb52">
+<section id="{{ domaine.cle }}" class="mb-14 scroll-mt-20">
 
     <div class="tw flex flex-wrap items-baseline justify-between gap-3 mb-1">
         <h2 class="text-lg">{{ domaine.titre }}</h2>
@@ -44,15 +44,15 @@ barre.
         <a href="{{ domaine.lien_url }}" class="link-underline text-sm">{{ domaine.lien_libelle }}</a>
         {% endif %}
     </div>
-    <p class="text-sm mb-5 csp-style-9a1421a5a90b">{{ domaine.explication }}</p>
+    <p class="text-sm mb-5 text-warm-600">{{ domaine.explication }}</p>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {% for indicateur in domaine.indicateurs %}
         <div class="card-elevated">
-            <p class="stat-number csp-style-3e105a6881d5">{{ indicateur.valeur }}</p>
+            <p class="stat-number text-[1.6rem]">{{ indicateur.valeur }}</p>
             <p class="stat-label">{{ indicateur.libelle }}</p>
             {% if indicateur.precision %}
-            <p class="text-xs mt-1 csp-style-9a1421a5a90b">{{ indicateur.precision }}</p>
+            <p class="text-xs mt-1 text-warm-600">{{ indicateur.precision }}</p>
             {% endif %}
         </div>
         {% endfor %}
@@ -85,11 +85,11 @@ barre.
             <ul class="tw space-y-2">
                 {% for barre in domaine.serie %}
                 <li class="flex items-center gap-3 text-xs">
-                    <span class="csp-style-b62c8857528e">{{ barre.libelle }}</span>
+                    <span class="w-[4.5rem] text-warm-600">{{ barre.libelle }}</span>
                     <span class="progress-bar block flex-1">
                         <span class="progress-bar-fill block" data-progress-width="{{ barre.part }}"></span>
                     </span>
-                    <span class="num csp-style-ebbeb1cbc225">{{ barre.texte }}</span>
+                    <span class="num w-[6rem] text-right">{{ barre.texte }}</span>
                 </li>
                 {% endfor %}
             </ul>

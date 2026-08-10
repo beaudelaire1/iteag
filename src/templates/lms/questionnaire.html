@@ -7,12 +7,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:devoir_detail' devoir.pk %}" class="inline-flex items-center text-sm font-medium mb-4 csp-style-9726ceed6b6d">
+    <a href="{% url 'lms:devoir_detail' devoir.pk %}" class="inline-flex items-center text-sm font-medium mb-4 text-navy-600">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour au devoir
     </a>
     <p class="overline mb-2">{{ devoir.cours_session.cours.titre }}</p>
-    <h1 class="csp-style-513ca5addf79">{{ devoir.titre }}</h1>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ devoir.titre }}</h1>
     <p class="mt-2 text-sm text-warm-600">
         {{ questions|length }} question(s) · {{ total_points }} point(s) au total,
         ramenés sur {{ devoir.bareme|floatformat:0 }} à la correction.
@@ -23,13 +23,13 @@
 {% block portal_content %}
 
 {% if motif_incomplet %}
-<div class="mb-6 rounded border p-4 csp-style-9f0d6dbe15ee" role="alert">
-    <p class="text-sm font-semibold csp-style-a4a1aa46c7f2">Ce questionnaire n'est pas prêt</p>
+<div class="mb-6 rounded border p-4 border-warm-300 bg-warm-50" role="alert">
+    <p class="text-sm font-semibold text-navy-900">Ce questionnaire n'est pas prêt</p>
     <p class="mt-1 text-sm text-warm-700">{{ motif_incomplet }}</p>
 </div>
 {% else %}
-<div class="mb-6 rounded border p-4 csp-style-48a46268f2ad">
-    <p class="text-sm csp-style-9bce6c04a80b">
+<div class="mb-6 rounded border p-4 border-warm-300">
+    <p class="text-sm text-navy-800">
         Le questionnaire est complet. Il pourra être ouvert aux étudiants depuis la fiche du devoir,
         et sera corrigé automatiquement à la remise.
     </p>
@@ -54,7 +54,7 @@
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
             <p class="overline mb-1">Création en une étape</p>
-            <h2 id="ajouter-question-titre" class="text-xl font-semibold csp-style-a4a1aa46c7f2">
+            <h2 id="ajouter-question-titre" class="text-xl font-semibold text-navy-900">
                 Ajouter une question
             </h2>
             <p class="mt-1 text-sm text-warm-600">
@@ -69,7 +69,7 @@
         <input type="hidden" name="ordre" value="0">
 
         {% if form_question.non_field_errors %}
-        <div class="rounded border p-4 csp-style-9f0d6dbe15ee" role="alert">
+        <div class="rounded border p-4 border-warm-300 bg-warm-50" role="alert">
             {% for erreur in form_question.non_field_errors %}
             <p class="text-sm form-erreur">{{ erreur }}</p>
             {% endfor %}
@@ -91,8 +91,8 @@
             </div>
         </div>
 
-        <fieldset class="rounded border p-4 sm:p-5 csp-style-2998f592f360">
-            <legend class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
+        <fieldset class="rounded border p-4 sm:p-5 border-warm-200">
+            <legend class="text-sm font-bold uppercase tracking-wider text-navy-800">
                 Propositions de réponse
             </legend>
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-1 mb-4">
@@ -106,7 +106,7 @@
 
             <div id="qcm-propositions" class="space-y-3">
                 {% for proposition in propositions %}
-                <div class="rounded border p-3 sm:p-4 csp-style-2998f592f360" data-proposition-row>
+                <div class="rounded border p-3 sm:p-4 border-warm-200" data-proposition-row>
                     <div class="flex items-center justify-between gap-3 mb-2">
                         <label class="text-xs font-semibold uppercase tracking-wider text-warm-600" data-proposition-label>
                             Proposition {{ forloop.counter }}
@@ -125,7 +125,7 @@
                             placeholder="Saisissez une réponse possible"
                             aria-label="Proposition {{ forloop.counter }}"
                         >
-                        <label class="inline-flex items-center gap-2 text-sm font-medium whitespace-nowrap csp-style-9bce6c04a80b">
+                        <label class="inline-flex items-center gap-2 text-sm font-medium whitespace-nowrap text-navy-800">
                             <input
                                 type="{% if form_question.type_question.value == 'choix_multiple' %}checkbox{% else %}radio{% endif %}"
                                 name="correcte"
@@ -154,7 +154,7 @@
     <div class="flex items-end justify-between gap-4 mb-4">
         <div>
             <p class="overline mb-1">Questionnaire</p>
-            <h2 id="questions-questionnaire-titre" class="text-xl font-semibold csp-style-a4a1aa46c7f2">
+            <h2 id="questions-questionnaire-titre" class="text-xl font-semibold text-navy-900">
                 Questions enregistrées
             </h2>
         </div>
@@ -169,7 +169,7 @@
                     <p class="text-xs text-warm-500 mb-1">
                         Question {{ forloop.counter }} · {{ question.get_type_question_display }} · {{ question.points }} pt
                     </p>
-                    <p class="font-medium csp-style-0848d1d69c4e">{{ question.enonce }}</p>
+                    <p class="font-medium text-navy-900 whitespace-pre-line">{{ question.enonce }}</p>
                 </div>
                 <a href="{% url 'lms:question_detail' question.pk %}" class="btn-ghost shrink-0">Modifier</a>
             </div>
@@ -182,7 +182,7 @@
                 {% for choix in question.choix.all %}
                 <li class="flex items-start gap-2 text-sm">
                     {% if choix.correct %}
-                    <span class="csp-style-efbb8610fce7" aria-label="Réponse correcte">✓</span>
+                    <span class="text-navy-700" aria-label="Réponse correcte">✓</span>
                     {% else %}
                     <span aria-hidden="true" class="text-warm-300">·</span>
                     {% endif %}
@@ -196,7 +196,7 @@
             </ul>
         </article>
         {% empty %}
-        <div class="card text-center csp-style-55fafcd2eb9d">
+        <div class="card text-center [padding:3rem_1.5rem]">
             <p class="text-sm text-warm-600">Aucune question enregistrée pour le moment.</p>
         </div>
         {% endfor %}

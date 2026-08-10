@@ -7,29 +7,29 @@
 {% block content %}
 
 {# ─── HERO ─── #}
-<section class="relative overflow-hidden csp-style-5844eff603c0">
-    <div class="absolute inset-0 opacity-[0.04] csp-style-67ff139fd07f"></div>
-    <div class="container-wide relative csp-style-f5491b77855a">
+<section class="relative overflow-hidden [background:linear-gradient(160deg,_var(--color-navy-950)_0%,_var(--color-navy-800)_40%,_var(--color-navy-700)_100%)]">
+    <div class="absolute inset-0 opacity-[0.04] bg-pattern-dots-light"></div>
+    <div class="container-wide relative [padding-top:clamp(5rem,_10vw,_8rem)] [padding-bottom:clamp(5rem,_10vw,_8rem)]">
         <div class="text-center max-w-3xl mx-auto hero-entrance">
             <p class="overline-light mb-4 hero-el hero-el-1">Équipe pédagogique</p>
-            <h1 class="text-white hero-el hero-el-2 csp-style-0743a5fadc3b">Nos enseignants</h1>
-            <p class="mt-5 text-lg leading-relaxed hero-el hero-el-3 csp-style-b3fe4366b4ae">
+            <h1 class="text-white hero-el hero-el-2 text-[clamp(2rem,_4.5vw,_3.25rem)] leading-[1.12]">Nos enseignants</h1>
+            <p class="mt-5 text-lg leading-relaxed hero-el hero-el-3 text-navy-200 max-w-[34rem] [margin:0_auto]">
                 Des théologiens et pasteurs reconnus d'Hexagone et de la Caraïbe, engagés dans la formation
                 des serviteurs de Dieu aux Antilles-Guyane.
             </p>
         </div>
     </div>
     <div class="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full csp-style-69125a57de9d">
-            <path class="csp-style-41407b2a45c6" d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z"/>
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full h-[clamp(2rem,_4vw,_4.5rem)]">
+            <path class="fill-warm-50" d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z"/>
         </svg>
     </div>
 </section>
 
 {# ─── CHIFFRE ─── #}
-<section class="overflow-hidden csp-style-afbdc739e362">
+<section class="overflow-hidden bg-warm-100 [border-bottom:1px_solid_var(--color-warm-200)] [padding:clamp(1.5rem,_3vw,_2.5rem)_0]">
     <div class="container-wide text-center reveal">
-        <p class="stat-number csp-style-b7efa4a1967d" data-counter="{{ professeurs|length }}" data-counter-suffix="">{{ professeurs|length }}</p>
+        <p class="stat-number text-navy-800 text-[clamp(1.5rem,_3vw,_2.5rem)]" data-counter="{{ professeurs|length }}" data-counter-suffix="">{{ professeurs|length }}</p>
         <p class="stat-label">Enseignants qualifiés</p>
     </div>
 </section>
@@ -49,44 +49,44 @@
                 <a href="{{ prof.get_absolute_url }}" class="block">
                 <div class="pt-2 pb-4">
                     {% if prof.photo %}
-                    <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-28 w-28 rounded-full object-cover csp-style-65c91307ad32" width="112" height="112" loading="lazy">
+                    <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-28 w-28 rounded-full object-cover shadow-[var(--shadow-card)]" width="112" height="112" loading="lazy">
                     {% else %}
-                    <div class="mx-auto h-28 w-28 rounded-full flex items-center justify-center csp-style-8f5d00b0477b">
+                    <div class="mx-auto h-28 w-28 rounded-full flex items-center justify-center bg-navy-700">
                         <span class="text-3xl font-bold text-white">{{ prof.prenom|slice:":1"|upper }}{{ prof.nom|slice:":1"|upper }}</span>
                     </div>
                     {% endif %}
                 </div>
-                <h2 class="text-lg font-semibold group-hover:underline csp-style-a4a1aa46c7f2">{{ prof.nom_complet }}</h2>
+                <h2 class="text-lg font-semibold group-hover:underline text-navy-900">{{ prof.nom_complet }}</h2>
                 {% if prof.specialite %}
-                <p class="mt-1 text-sm csp-style-25e866ad732d">{{ prof.specialite }}</p>
+                <p class="mt-1 text-sm text-warm-500">{{ prof.specialite }}</p>
                 {% endif %}
                 {% if prof.disciplines.all %}
                 <div class="mt-3 flex flex-wrap justify-center gap-1.5">
                     {% for d in prof.disciplines.all %}
-                    <span class="badge badge-gold csp-style-1cc799c407d6">{{ d.nom }}</span>
+                    <span class="badge badge-gold text-[0.625rem]">{{ d.nom }}</span>
                     {% endfor %}
                 </div>
                 {% endif %}
                 {% if prof.biographie %}
-                <p class="mt-3 text-sm line-clamp-3 csp-style-9a1421a5a90b">{{ prof.biographie|truncatewords:25 }}</p>
+                <p class="mt-3 text-sm line-clamp-3 text-warm-600">{{ prof.biographie|truncatewords:25 }}</p>
                 {% endif %}
-                <p class="mt-4 text-sm font-semibold uppercase tracking-wider csp-style-efbb8610fce7">Voir le profil →</p>
+                <p class="mt-4 text-sm font-semibold uppercase tracking-wider text-navy-700">Voir le profil →</p>
                 </a>
             </article>
             {% empty %}
-            <p class="col-span-full text-center py-12 csp-style-25e866ad732d">Aucun enseignant référencé pour le moment.</p>
+            <p class="col-span-full text-center py-12 text-warm-500">Aucun enseignant référencé pour le moment.</p>
             {% endfor %}
         </div>
     </div>
 </section>
 
 {# ─── CTA ─── #}
-<section class="relative overflow-hidden csp-style-38a2f3e2ccd9">
-    <div class="absolute inset-0 csp-style-c4fa0cfb744f"></div>
+<section class="relative overflow-hidden bg-navy-800 [padding:clamp(3.5rem,_7vw,_6rem)_0]">
+    <div class="absolute inset-0 [background:radial-gradient(ellipse_50%_80%_at_80%_50%,_rgba(234,182,62,0.06)_0%,_transparent_70%)]"></div>
     <div class="container-narrow text-center relative reveal">
         <p class="overline-light mb-4">Rejoignez-nous</p>
-        <h2 class="text-white mb-5 csp-style-910a5b1eca89">Formez-vous avec les meilleurs</h2>
-        <p class="text-base leading-relaxed mb-8 mx-auto csp-style-5c1539ba945d">
+        <h2 class="text-white mb-5 text-[clamp(1.5rem,_3vw,_2.25rem)]">Formez-vous avec les meilleurs</h2>
+        <p class="text-base leading-relaxed mb-8 mx-auto text-navy-200 max-w-[30rem]">
             Rejoignez l'ITEAG et bénéficiez d'un enseignement de qualité dispensé par des théologiens reconnus.
         </p>
         <div class="flex flex-wrap justify-center gap-4">

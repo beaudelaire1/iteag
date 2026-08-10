@@ -8,7 +8,7 @@
 <div class="mb-8">
     <a href="{% url 'etudiant:grades' %}" class="text-sm font-medium text-navy-600">← Retour aux évaluations</a>
     <p class="overline mt-5 mb-2">Remise de devoir</p>
-    <h1 class="csp-style-513ca5addf79">{{ evaluation.cours_session.cours.titre }}</h1>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ evaluation.cours_session.cours.titre }}</h1>
     <p class="mt-1 text-sm text-warm-500">{{ evaluation.get_type_evaluation_display }} · {{ evaluation.cours_session.session.nom }}</p>
 </div>
 {% endblock %}
@@ -18,8 +18,8 @@
     <div>
         {% if devoir and devoir.consigne %}
         <section class="card mb-6">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-3 csp-style-9bce6c04a80b">Consigne</h2>
-            <p class="text-sm text-warm-700 csp-style-03fd3ef4d6db">{{ devoir.consigne }}</p>
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-3 text-navy-800">Consigne</h2>
+            <p class="text-sm text-warm-700 whitespace-pre-line">{{ devoir.consigne }}</p>
             {% if devoir.fichier_consigne %}
             <a href="{{ devoir.fichier_consigne.url }}" class="btn-ghost mt-4">Télécharger le sujet</a>
             {% endif %}
@@ -29,7 +29,7 @@
         {% if motif_de_refus %}
         {# Un refus utile dit pourquoi, et quand ce sera possible. #}
         <div class="card-elevated" role="alert">
-            <p class="text-sm font-semibold csp-style-a4a1aa46c7f2">Le dépôt n'est pas ouvert</p>
+            <p class="text-sm font-semibold text-navy-900">Le dépôt n'est pas ouvert</p>
             <p class="mt-2 text-sm text-warm-700">{{ motif_de_refus }}</p>
             <a href="{% url 'etudiant:grades' %}" class="btn-ghost mt-5">Retour à mes évaluations</a>
         </div>
@@ -61,12 +61,12 @@
         {% if echeance %}
         <div class="card">
             <p class="overline mb-2">À remettre avant</p>
-            <p class="text-base font-semibold csp-style-a4a1aa46c7f2">
+            <p class="text-base font-semibold text-navy-900">
                 {{ echeance|date:"l j F Y" }}
             </p>
             <p class="text-sm text-warm-600">à {{ echeance|date:"H:i" }}</p>
             {% if delai_accorde %}
-            <p class="mt-3 text-xs csp-style-efbb8610fce7">
+            <p class="mt-3 text-xs text-navy-700">
                 Un délai personnel vous a été accordé par votre enseignant.
             </p>
             {% elif devoir.retard_accepte %}

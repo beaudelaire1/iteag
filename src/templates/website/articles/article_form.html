@@ -17,11 +17,11 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2"><a href="{% url 'website:mes_articles' %}">Mes articles</a></p>
-    <h1 class="csp-style-513ca5addf79">
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">
         {% if article %}Modifier l'article{% else %}Nouvel article{% endif %}
     </h1>
     {% if article %}
-    <p class="mt-1 text-sm csp-style-25e866ad732d">
+    <p class="mt-1 text-sm text-warm-500">
         <span class="badge">{{ article.get_statut_display }}</span>
         {% if article.date_publication %}· publié le {{ article.date_publication|date:"d/m/Y" }}{% endif %}
     </p>
@@ -32,7 +32,7 @@
 {% block portal_content %}
 
 {% if article and article.motif_refus %}
-<div class="card mb-6 csp-style-c07f55353bf7">
+<div class="card mb-6 [border-left:3px_solid_var(--color-gold-600,_#b45309)]">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-warm-500">Retour du relecteur</h2>
     <p class="mt-2">{{ article.motif_refus }}</p>
 </div>
@@ -98,7 +98,7 @@
         {% for illustration in article.illustrations.all %}
         <figure class="rounded border border-warm-200 p-2">
             <img src="{{ illustration.fichier.url }}" alt="{{ illustration.legende }}"
-                 class="w-full rounded object-cover csp-style-3d9afb8724e6">
+                 class="w-full rounded object-cover max-h-[8rem]">
             <figcaption class="mt-2 text-xs text-warm-500">{{ illustration.legende|default:"Sans légende" }}</figcaption>
             <div class="mt-2 flex gap-2">
                 <form method="post" action="{% url 'website:illustration_supprimer' illustration.pk %}">

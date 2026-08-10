@@ -22,7 +22,7 @@
     <div>
         <a href="{% url 'administration:assiduite' %}" class="mb-3 inline-block text-sm font-medium text-navy-700">← Tous les cours</a>
         <p class="overline mb-2">{{ cours_session.session.nom }}</p>
-        <h1 class="csp-style-513ca5addf79">{{ cours_session.cours.titre }}</h1>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ cours_session.cours.titre }}</h1>
         <p class="mt-1 text-sm text-warm-500">{{ cours_session.enseignant }} · {{ nombre_inscrits }} inscrit{{ nombre_inscrits|pluralize }}</p>
     </div>
     <a href="{% url 'administration:emargement_pdf' cours_session.pk %}" class="btn-outline text-sm" target="_blank">Émargement PDF</a>

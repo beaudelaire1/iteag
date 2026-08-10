@@ -15,14 +15,14 @@
 {% block portal_header %}
 <div class="mb-8">
     {% if cours_session %}
-    <a href="{% url 'lms:course_detail' cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block csp-style-9726ceed6b6d">← Retour au cours</a>
+    <a href="{% url 'lms:course_detail' cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block text-navy-600">← Retour au cours</a>
     {% else %}
-    <a href="{% url 'lms:annonces_list' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block csp-style-9726ceed6b6d">← Retour aux annonces</a>
+    <a href="{% url 'lms:annonces_list' %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block text-navy-600">← Retour aux annonces</a>
     {% endif %}
     <p class="overline mb-2">Annonces</p>
-    <h1 class="csp-style-513ca5addf79">{% if annonce %}Modifier l'annonce{% else %}Publier une annonce{% endif %}</h1>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{% if annonce %}Modifier l'annonce{% else %}Publier une annonce{% endif %}</h1>
     {% if cours_session %}
-    <p class="mt-1 text-sm csp-style-25e866ad732d">{{ cours_session.cours.titre }} — {{ cours_session.session.nom }}</p>
+    <p class="mt-1 text-sm text-warm-500">{{ cours_session.cours.titre }} — {{ cours_session.session.nom }}</p>
     {% endif %}
 </div>
 {% endblock %}

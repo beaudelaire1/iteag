@@ -13,12 +13,12 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Administration de la boutique</p>
-    <h1 class="csp-style-513ca5addf79">{% if produit %}Modifier le livre{% else %}Ajouter un livre{% endif %}</h1>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{% if produit %}Modifier le livre{% else %}Ajouter un livre{% endif %}</h1>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-<form method="post" enctype="multipart/form-data" class="card-elevated p-7 csp-style-e55be316ca7c">
+<form method="post" enctype="multipart/form-data" class="card-elevated p-7 max-w-[52rem]">
     {% csrf_token %}
     {% include "partials/erreurs_formulaire.html" with form=form %}
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">

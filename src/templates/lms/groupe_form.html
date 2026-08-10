@@ -7,12 +7,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:groupes_list' %}" class="inline-flex items-center text-sm font-medium mb-4 csp-style-9726ceed6b6d">
+    <a href="{% url 'lms:groupes_list' %}" class="inline-flex items-center text-sm font-medium mb-4 text-navy-600">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Groupes de travail
     </a>
     <p class="overline mb-2">{{ cours_session.cours.titre }} · {{ cours_session.session }}</p>
-    <h1 class="csp-style-f11d9f094ef8">
+    <h1 class="text-[clamp(1.25rem,_3vw,_1.75rem)]">
         {% if groupe %}Modifier le groupe{% else %}Nouveau groupe{% endif %}
     </h1>
 </div>
@@ -35,7 +35,7 @@
                 {% for choix in form.membres %}
                 <label class="flex items-start gap-2.5 cursor-pointer text-sm" for="{{ choix.id_for_label }}">
                     {{ choix.tag }}
-                    <span class="csp-style-81372cea588f">{{ choix.choice_label }}</span>
+                    <span class="text-warm-700">{{ choix.choice_label }}</span>
                 </label>
                 {% endfor %}
             </div>

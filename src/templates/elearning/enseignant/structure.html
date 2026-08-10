@@ -7,12 +7,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'elearning:enseignant_modules' %}" class="inline-flex items-center text-sm font-medium mb-4 link-reveal csp-style-9726ceed6b6d">
+    <a href="{% url 'elearning:enseignant_modules' %}" class="inline-flex items-center text-sm font-medium mb-4 link-reveal text-navy-600">
         ← Retour aux modules
     </a>
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="csp-style-513ca5addf79">{{ module.titre }}</h1>
+            <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{{ module.titre }}</h1>
             {% if module.statut == "publie" %}<span class="badge badge-success">Publié</span>
             {% else %}<span class="badge badge-warning">{{ module.get_statut_display }}</span>{% endif %}
         </div>
@@ -37,7 +37,7 @@
 {% block portal_content %}
 
 {% if apercu_integral %}
-<div class="note alert mb-8 csp-style-4cd2d700c258">
+<div class="note alert mb-8 max-w-none">
     <span class="lbl">Ce module est entièrement gratuit</span>
     <p>
         Les {{ nombre_apercus }} leçon{{ nombre_apercus|pluralize }} du module sont en aperçu gratuit.
@@ -47,14 +47,14 @@
     </p>
 </div>
 {% elif nombre_apercus %}
-<p class="mb-8 text-sm csp-style-25e866ad732d">
+<p class="mb-8 text-sm text-warm-500">
     {{ nombre_apercus }} leçon{{ nombre_apercus|pluralize }} sur {{ nombre_lecons }}
     {{ nombre_apercus|pluralize:"est,sont" }} en aperçu gratuit, visible{{ nombre_apercus|pluralize }} sans compte.
 </p>
 {% endif %}
 
 {% if not publiable %}
-<div class="note alert mb-8 csp-style-4cd2d700c258">
+<div class="note alert mb-8 max-w-none">
     <span class="lbl">{% if module.statut == "publie" %}À corriger{% else %}Publication bloquée{% endif %}</span>
     <p>{{ motif_blocage }}</p>
 </div>
@@ -64,14 +64,14 @@
 {% for chapitre in chapitres %}
 <section class="card-elevated mb-6">
     <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">
+        <h2 class="text-base font-semibold text-navy-900">
             {{ forloop.counter }}. {{ chapitre.titre }}
         </h2>
         <div class="flex gap-3">
-            <a href="{% url 'elearning:enseignant_lecon_creer' chapitre.pk %}" class="btn-ghost csp-style-7311080bbdf5">
+            <a href="{% url 'elearning:enseignant_lecon_creer' chapitre.pk %}" class="btn-ghost [padding:0.5rem_1.25rem]">
                 Ajouter une leçon
             </a>
-            <a href="{% url 'elearning:enseignant_chapitre_supprimer' chapitre.pk %}" class="btn-ghost text-danger csp-style-7311080bbdf5">
+            <a href="{% url 'elearning:enseignant_chapitre_supprimer' chapitre.pk %}" class="btn-ghost text-danger [padding:0.5rem_1.25rem]">
                 Supprimer
             </a>
         </div>
@@ -82,11 +82,11 @@
         {% csrf_token %}
         <ul class="space-y-2" role="list">
             {% for lecon in chapitre.lecons.all %}
-            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded border csp-style-2998f592f360">
+            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded border border-warm-200">
                 <span class="flex items-center gap-3 min-w-0">
                     <input type="hidden" name="lecon" value="{{ lecon.pk }}">
                     <span class="badge badge-info shrink-0">{{ lecon.get_type_lecon_display }}</span>
-                    <span class="truncate text-sm csp-style-a9ff150f836d">{{ lecon.titre }}</span>
+                    <span class="truncate text-sm text-warm-800">{{ lecon.titre }}</span>
                     {% if lecon.apercu_gratuit %}<span class="badge badge-gold shrink-0">Aperçu</span>{% endif %}
                     {% if not lecon.obligatoire %}<span class="badge badge-info shrink-0">Facultative</span>{% endif %}
                     {% if lecon.type_lecon == "video" %}
@@ -99,8 +99,8 @@
                 </span>
                 <span class="flex items-center gap-4 shrink-0">
                     <label class="sr-only" for="ordre-{{ lecon.pk }}">Position de {{ lecon.titre }}</label>
-                    <span class="text-xs csp-style-dba57faf99a4">position {{ lecon.ordre }}</span>
-                    <a href="{% url 'elearning:enseignant_lecon_modifier' lecon.pk %}" class="text-sm link-reveal csp-style-efbb8610fce7">Modifier</a>
+                    <span class="text-xs text-warm-400">position {{ lecon.ordre }}</span>
+                    <a href="{% url 'elearning:enseignant_lecon_modifier' lecon.pk %}" class="text-sm link-reveal text-navy-700">Modifier</a>
                     <a href="{% url 'elearning:enseignant_lecon_supprimer' lecon.pk %}" class="text-sm link-reveal text-danger">Supprimer</a>
                 </span>
             </li>
@@ -108,7 +108,7 @@
         </ul>
     </form>
     {% else %}
-    <p class="text-sm csp-style-25e866ad732d">Ce chapitre ne contient encore aucune leçon.</p>
+    <p class="text-sm text-warm-500">Ce chapitre ne contient encore aucune leçon.</p>
     {% endif %}
 </section>
 {% empty %}
@@ -119,7 +119,7 @@
 
 {# ── Ajout d'un chapitre ── #}
 <section class="card-elevated">
-    <h2 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">
+    <h2 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">
         Ajouter un chapitre
     </h2>
     <form method="post" action="{% url 'elearning:enseignant_chapitre_creer' module.slug %}"

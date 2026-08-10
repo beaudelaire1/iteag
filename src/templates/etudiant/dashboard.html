@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-10">
     <p class="overline mb-2">Tableau de bord</p>
-    <h1 class="csp-style-513ca5addf79">Bonjour {{ user.first_name|default:user.username }}</h1>
-    <p class="mt-1 text-sm csp-style-25e866ad732d">{{ profil.parcours }} — {{ profil.promotion }}</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Bonjour {{ user.first_name|default:user.username }}</h1>
+    <p class="mt-1 text-sm text-warm-500">{{ profil.parcours }} — {{ profil.promotion }}</p>
 </div>
 {% endblock %}
 
@@ -27,7 +27,7 @@
     </div>
     <div class="flex items-center gap-2">
         <a href="{% url 'etudiant:course_catalogue' %}" class="btn-primary whitespace-nowrap">Voir le catalogue</a>
-        <button type="button" class="btn-ghost csp-style-03867a6e5ff3" data-alerte-fermer
+        <button type="button" class="btn-ghost [padding:0.5rem_0.75rem]" data-alerte-fermer
             aria-label="Masquer cette alerte" title="Masquer">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -41,15 +41,15 @@
 <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-10">
     <div class="card-elevated">
         <p class="stat-label">ECTS acquis</p>
-        <p class="stat-number mt-2">{{ total_ects_acquis }}<span class="text-base font-normal csp-style-dba57faf99a4">/{{ profil.parcours.ects_requis }}</span></p>
+        <p class="stat-number mt-2">{{ total_ects_acquis }}<span class="text-base font-normal text-warm-400">/{{ profil.parcours.ects_requis }}</span></p>
         <div class="progress-bar mt-3">
             <div class="progress-bar-fill" data-progress="{{ progress_percent }}"></div>
         </div>
     </div>
     <div class="card-elevated">
         <p class="stat-label">Session en cours</p>
-        <p class="mt-2 text-lg font-semibold csp-style-a4a1aa46c7f2">
-            {% if current_session %}{{ current_session.nom }}{% else %}<span class="csp-style-dba57faf99a4">—</span>{% endif %}
+        <p class="mt-2 text-lg font-semibold text-navy-900">
+            {% if current_session %}{{ current_session.nom }}{% else %}<span class="text-warm-400">—</span>{% endif %}
         </p>
     </div>
     <div class="card-elevated">
@@ -112,44 +112,44 @@
 
 {# ── Formation vidéo ── #}
 {% if modules_total %}
-<div class="card-elevated mb-8 csp-style-98781402ac5c">
-    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b csp-style-b5a2a623575b">
+<div class="card-elevated mb-8 p-0">
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-warm-100">
         <div>
-            <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">Mon E-Learning</h2>
-            <p class="text-xs mt-0.5 csp-style-25e866ad732d">
+            <h2 class="text-base font-semibold text-navy-900">Mon E-Learning</h2>
+            <p class="text-xs mt-0.5 text-warm-500">
                 {{ modules_total }} module{{ modules_total|pluralize }} · {{ modules_termines }} terminé{{ modules_termines|pluralize }}
             </p>
         </div>
-        <a href="{% url 'elearning:mes_formations' %}" class="text-xs font-semibold uppercase tracking-wider csp-style-9726ceed6b6d">Tout voir →</a>
+        <a href="{% url 'elearning:mes_formations' %}" class="text-xs font-semibold uppercase tracking-wider text-navy-600">Tout voir →</a>
     </div>
 
-    <div class="divide-y csp-style-b5a2a623575b">
+    <div class="divide-y border-warm-100">
         {% for acces in modules_en_cours %}
         <a href="{{ acces.module.get_absolute_url }}" class="block px-5 py-4 hover:bg-warm-50 transition-colors">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-medium csp-style-a4a1aa46c7f2">{{ acces.module.titre }}</p>
-                    <p class="text-xs mt-0.5 csp-style-25e866ad732d">
+                    <p class="truncate text-sm font-medium text-navy-900">{{ acces.module.titre }}</p>
+                    <p class="text-xs mt-0.5 text-warm-500">
                         {% if acces.module.discipline %}{{ acces.module.discipline }} · {% endif %}
                         {{ acces.module.duree_minutes }} min
                         {% if acces.date_fin_acces %} · accès jusqu'au {{ acces.date_fin_acces|date:"d/m/Y" }}{% endif %}
                     </p>
                 </div>
-                <span class="shrink-0 text-sm font-semibold csp-style-9bce6c04a80b">{{ acces.progression_percent }} %</span>
+                <span class="shrink-0 text-sm font-semibold text-navy-800">{{ acces.progression_percent }} %</span>
             </div>
             <div class="progress-bar mt-3">
                 <div class="progress-bar-fill" data-progress-width="{{ acces.progression_percent }}"></div>
             </div>
         </a>
         {% empty %}
-        <p class="px-5 py-6 text-sm text-center csp-style-dba57faf99a4">
+        <p class="px-5 py-6 text-sm text-center text-warm-400">
             Aucun module en cours. <a href="{% url 'elearning:catalogue' %}" class="link-reveal">Parcourir le catalogue</a>
         </p>
         {% endfor %}
     </div>
 
     {% if attestations %}
-    <div class="px-5 py-4 border-t csp-style-d4151117c663">
+    <div class="px-5 py-4 border-t border-warm-100 bg-warm-50">
         <p class="overline mb-2">Attestations obtenues</p>
         <ul class="space-y-1" role="list">
             {% for attestation in attestations %}
@@ -157,7 +157,7 @@
                 <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}" class="link-reveal">
                     {{ attestation.inscription.module.titre }}
                 </a>
-                <span class="text-xs csp-style-25e866ad732d"> — {{ attestation.numero }}</span>
+                <span class="text-xs text-warm-500"> — {{ attestation.numero }}</span>
             </li>
             {% endfor %}
         </ul>
@@ -168,41 +168,41 @@
 
 <div class="grid lg:grid-cols-2 gap-8">
     {# ── Cours inscrits ── #}
-    <div class="card-elevated csp-style-98781402ac5c">
-        <div class="px-5 py-4 border-b csp-style-b5a2a623575b">
-            <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">Mes cours</h2>
+    <div class="card-elevated p-0">
+        <div class="px-5 py-4 border-b border-warm-100">
+            <h2 class="text-base font-semibold text-navy-900">Mes cours</h2>
         </div>
-        <div class="divide-y csp-style-b5a2a623575b">
+        <div class="divide-y border-warm-100">
             {% for insc in inscriptions %}
             <div class="px-5 py-3">
-                <p class="text-sm font-medium csp-style-a4a1aa46c7f2">{{ insc.cours_session.cours.titre }}</p>
-                <p class="text-xs mt-0.5 csp-style-25e866ad732d">{{ insc.cours_session.session.nom }} — {{ insc.cours_session.enseignant }}</p>
+                <p class="text-sm font-medium text-navy-900">{{ insc.cours_session.cours.titre }}</p>
+                <p class="text-xs mt-0.5 text-warm-500">{{ insc.cours_session.session.nom }} — {{ insc.cours_session.enseignant }}</p>
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center csp-style-dba57faf99a4">Aucune inscription en cours.</p>
+            <p class="px-5 py-6 text-sm text-center text-warm-400">Aucune inscription en cours.</p>
             {% endfor %}
         </div>
     </div>
 
     {# ── Évaluations en attente ── #}
-    <div class="card-elevated csp-style-98781402ac5c">
-        <div class="px-5 py-4 border-b csp-style-b5a2a623575b">
-            <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">Devoirs et évaluations</h2>
+    <div class="card-elevated p-0">
+        <div class="px-5 py-4 border-b border-warm-100">
+            <h2 class="text-base font-semibold text-navy-900">Devoirs et évaluations</h2>
         </div>
-        <div class="divide-y csp-style-b5a2a623575b">
+        <div class="divide-y border-warm-100">
             {% for eval in pending_evaluations %}
             <div class="px-5 py-3 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium csp-style-a4a1aa46c7f2">{{ eval.cours_session.cours.titre }}</p>
-                    <p class="text-xs csp-style-25e866ad732d">{{ eval.get_type_evaluation_display }}</p>
+                    <p class="text-sm font-medium text-navy-900">{{ eval.cours_session.cours.titre }}</p>
+                    <p class="text-xs text-warm-500">{{ eval.get_type_evaluation_display }}</p>
                 </div>
                 {% if eval.statut == 'en_attente' %}
                 {% if eval.devoir.modalite == 'qcm' %}
-                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary csp-style-f7f034eaf5e8">
+                <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary [padding:.4rem_.75rem] text-[.6875rem]">
                     Répondre
                 </a>
                 {% else %}
-                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary csp-style-f7f034eaf5e8">
+                <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary [padding:.4rem_.75rem] text-[.6875rem]">
                     Déposer le devoir
                 </a>
                 {% endif %}
@@ -213,44 +213,44 @@
                 {% endif %}
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center csp-style-dba57faf99a4">Aucune évaluation en cours.</p>
+            <p class="px-5 py-6 text-sm text-center text-warm-400">Aucune évaluation en cours.</p>
             {% endfor %}
         </div>
     </div>
 
     {# ── Annonces ── #}
-    <div class="card-elevated csp-style-98781402ac5c">
-        <div class="px-5 py-4 border-b csp-style-b5a2a623575b">
-            <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">Annonces</h2>
+    <div class="card-elevated p-0">
+        <div class="px-5 py-4 border-b border-warm-100">
+            <h2 class="text-base font-semibold text-navy-900">Annonces</h2>
         </div>
-        <div class="divide-y csp-style-b5a2a623575b">
+        <div class="divide-y border-warm-100">
             {% for annonce in recent_annonces %}
             <div class="px-5 py-3">
-                <p class="text-sm font-medium csp-style-a4a1aa46c7f2">{{ annonce.titre }}</p>
-                <p class="text-xs mt-0.5 csp-style-25e866ad732d">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
+                <p class="text-sm font-medium text-navy-900">{{ annonce.titre }}</p>
+                <p class="text-xs mt-0.5 text-warm-500">{{ annonce.cours_session.cours.titre }} — {{ annonce.created_at|date:"d/m/Y" }}</p>
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center csp-style-dba57faf99a4">Aucune annonce récente.</p>
+            <p class="px-5 py-6 text-sm text-center text-warm-400">Aucune annonce récente.</p>
             {% endfor %}
         </div>
     </div>
 
     {# ── Paiements ── #}
-    <div class="card-elevated csp-style-98781402ac5c">
-        <div class="px-5 py-4 border-b csp-style-b5a2a623575b">
-            <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">Derniers paiements</h2>
+    <div class="card-elevated p-0">
+        <div class="px-5 py-4 border-b border-warm-100">
+            <h2 class="text-base font-semibold text-navy-900">Derniers paiements</h2>
         </div>
-        <div class="divide-y csp-style-b5a2a623575b">
+        <div class="divide-y border-warm-100">
             {% for p in latest_payments %}
             <div class="px-5 py-3 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium csp-style-a4a1aa46c7f2">{{ p.session }}</p>
-                    <p class="text-xs csp-style-25e866ad732d">{{ p.get_mode_display }} — {{ p.date_paiement|date:"d/m/Y" }}</p>
+                    <p class="text-sm font-medium text-navy-900">{{ p.session }}</p>
+                    <p class="text-xs text-warm-500">{{ p.get_mode_display }} — {{ p.date_paiement|date:"d/m/Y" }}</p>
                 </div>
-                <span class="text-sm font-semibold csp-style-9bce6c04a80b">{{ p.montant }} €</span>
+                <span class="text-sm font-semibold text-navy-800">{{ p.montant }} €</span>
             </div>
             {% empty %}
-            <p class="px-5 py-6 text-sm text-center csp-style-dba57faf99a4">Aucun paiement enregistré.</p>
+            <p class="px-5 py-6 text-sm text-center text-warm-400">Aucun paiement enregistré.</p>
             {% endfor %}
         </div>
     </div>

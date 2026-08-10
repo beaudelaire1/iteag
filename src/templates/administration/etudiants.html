@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
     <div>
-        <h1 class="csp-style-513ca5addf79">Étudiants</h1>
-        <p class="text-sm mt-1 csp-style-25e866ad732d">{{ etudiants.paginator.count }} profil{{ etudiants.paginator.count|pluralize }} étudiant{{ etudiants.paginator.count|pluralize }}</p>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Étudiants</h1>
+        <p class="text-sm mt-1 text-warm-500">{{ etudiants.paginator.count }} profil{{ etudiants.paginator.count|pluralize }} étudiant{{ etudiants.paginator.count|pluralize }}</p>
     </div>
     <a href="{% url 'administration:etudiant_create' %}" class="btn-primary text-sm">+ Nouveau profil</a>
 </div>
@@ -36,7 +36,7 @@
         </select>
         <button type="submit" class="btn-primary text-sm">Filtrer</button>
         {% if query or current_statut %}
-        <a href="{% url 'administration:etudiants' %}" class="text-sm font-medium csp-style-9726ceed6b6d">Réinitialiser</a>
+        <a href="{% url 'administration:etudiants' %}" class="text-sm font-medium text-navy-600">Réinitialiser</a>
         {% endif %}
     </form>
 </div>
@@ -47,36 +47,36 @@
     <div class="overflow-x-auto -mx-6 -my-6">
         <table class="w-full text-sm">
             <thead>
-                <tr class="csp-style-4f054290a08c">
-                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">Étudiant</th>
-                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">N° Étudiant</th>
-                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden md:table-cell csp-style-25e866ad732d">Parcours</th>
-                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell csp-style-25e866ad732d">Promotion</th>
-                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">Statut</th>
-                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell csp-style-25e866ad732d">ECTS</th>
-                    <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">Actions</th>
+                <tr class="bg-warm-50">
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">Étudiant</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">N° Étudiant</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden md:table-cell text-warm-500">Parcours</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell text-warm-500">Promotion</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">Statut</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell text-warm-500">ECTS</th>
+                    <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-warm-500">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y csp-style-b5a2a623575b">
+            <tbody class="divide-y border-warm-100">
                 {% for e in etudiants %}
                 <tr class="hover:bg-warm-50 transition-colors">
                     <td class="px-6 py-3">
                         <span class="flex items-center gap-3">
                             {% if e.utilisateur.photo %}
                             <img src="{{ e.utilisateur.photo.url }}" alt=""
-                                 class="h-9 w-9 shrink-0 rounded-full object-cover csp-style-6802a5286497">
+                                 class="h-9 w-9 shrink-0 rounded-full object-cover [border:1px_solid_var(--color-warm-200)]">
                             {% else %}
-                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-bold text-white csp-style-8f5d00b0477b" aria-hidden="true">{{ e.utilisateur.initiales }}</span>
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-bold text-white bg-navy-700" aria-hidden="true">{{ e.utilisateur.initiales }}</span>
                             {% endif %}
                             <span class="min-w-0">
-                                <a href="{% url 'administration:etudiant_detail' e.pk %}" class="font-medium link-reveal csp-style-a4a1aa46c7f2">{{ e.utilisateur.get_full_name|default:e.utilisateur.username }}</a>
-                                <span class="block text-xs mt-0.5 csp-style-dba57faf99a4">{{ e.utilisateur.email }}</span>
+                                <a href="{% url 'administration:etudiant_detail' e.pk %}" class="font-medium link-reveal text-navy-900">{{ e.utilisateur.get_full_name|default:e.utilisateur.username }}</a>
+                                <span class="block text-xs mt-0.5 text-warm-400">{{ e.utilisateur.email }}</span>
                             </span>
                         </span>
                     </td>
-                    <td class="px-6 py-3 font-mono text-xs csp-style-efbb8610fce7">{{ e.numero_etudiant }}</td>
-                    <td class="px-6 py-3 hidden md:table-cell csp-style-9a1421a5a90b">{{ e.parcours }}</td>
-                    <td class="px-6 py-3 hidden lg:table-cell csp-style-9a1421a5a90b">{{ e.promotion }}</td>
+                    <td class="px-6 py-3 font-mono text-xs text-navy-700">{{ e.numero_etudiant }}</td>
+                    <td class="px-6 py-3 hidden md:table-cell text-warm-600">{{ e.parcours }}</td>
+                    <td class="px-6 py-3 hidden lg:table-cell text-warm-600">{{ e.promotion }}</td>
                     <td class="px-6 py-3">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
                             {% if e.statut_inscription == 'actif' %}bg-emerald-50 text-emerald-700
@@ -88,11 +88,11 @@
                         </span>
                     </td>
                     <td class="px-6 py-3 hidden lg:table-cell">
-                        <span class="text-xs font-semibold csp-style-efbb8610fce7">{{ e.total_ects_acquis }}/{{ e.parcours.ects_requis }}</span>
+                        <span class="text-xs font-semibold text-navy-700">{{ e.total_ects_acquis }}/{{ e.parcours.ects_requis }}</span>
                     </td>
                     <td class="px-6 py-3 text-right">
-                        <a href="{% url 'administration:etudiant_detail' e.pk %}" class="text-xs font-medium mr-3 csp-style-9726ceed6b6d">Fiche</a>
-                        <a href="{% url 'administration:etudiant_update' e.pk %}" class="text-xs font-medium mr-3 csp-style-9726ceed6b6d">Modifier</a>
+                        <a href="{% url 'administration:etudiant_detail' e.pk %}" class="text-xs font-medium mr-3 text-navy-600">Fiche</a>
+                        <a href="{% url 'administration:etudiant_update' e.pk %}" class="text-xs font-medium mr-3 text-navy-600">Modifier</a>
                         {% if user.is_admin %}
                         <a href="{% url 'administration:etudiant_delete' e.pk %}" class="lien-danger">Supprimer</a>
                         {% endif %}
@@ -104,7 +104,7 @@
     </div>
     {% else %}
     <div class="py-12 text-center">
-        <p class="csp-style-dba57faf99a4">Aucun étudiant trouvé.</p>
+        <p class="text-warm-400">Aucun étudiant trouvé.</p>
     </div>
     {% endif %}
 </div>
@@ -114,7 +114,7 @@
 <nav class="flex justify-center mt-8 gap-1">
     {% if etudiants.has_previous %}
     <a href="?page={{ etudiants.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
-       class="px-3 py-1.5 rounded text-sm font-medium transition-colors csp-style-eb3a04302f2f">‹</a>
+       class="px-3 py-1.5 rounded text-sm font-medium transition-colors text-navy-600 bg-warm-100">‹</a>
     {% endif %}
     {% for num in etudiants.paginator.page_range %}
     <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
@@ -123,7 +123,7 @@
     {% endfor %}
     {% if etudiants.has_next %}
     <a href="?page={{ etudiants.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
-       class="px-3 py-1.5 rounded text-sm font-medium transition-colors csp-style-eb3a04302f2f">›</a>
+       class="px-3 py-1.5 rounded text-sm font-medium transition-colors text-navy-600 bg-warm-100">›</a>
     {% endif %}
 </nav>
 {% endif %}

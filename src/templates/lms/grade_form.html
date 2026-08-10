@@ -11,10 +11,10 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:course_detail' evaluation.cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block csp-style-9726ceed6b6d">← Retour au cours</a>
+    <a href="{% url 'lms:course_detail' evaluation.cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block text-navy-600">← Retour au cours</a>
     <p class="overline mb-2">Notation</p>
-    <h1 class="csp-style-513ca5addf79">Noter {{ evaluation.etudiant.utilisateur.get_full_name }}</h1>
-    <p class="mt-1 text-sm csp-style-25e866ad732d">{{ evaluation.cours_session.cours.titre }} — {{ evaluation.get_type_evaluation_display }}</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Noter {{ evaluation.etudiant.utilisateur.get_full_name }}</h1>
+    <p class="mt-1 text-sm text-warm-500">{{ evaluation.cours_session.cours.titre }} — {{ evaluation.get_type_evaluation_display }}</p>
 </div>
 {% endblock %}
 
@@ -23,11 +23,11 @@
 <div class="card-elevated mb-6 max-w-2xl">
     <div class="grid grid-cols-2 gap-4 text-sm">
         <div>
-            <p class="font-medium csp-style-25e866ad732d">Étudiant</p>
-            <p class="csp-style-a4a1aa46c7f2">{{ evaluation.etudiant.utilisateur.get_full_name }}</p>
+            <p class="font-medium text-warm-500">Étudiant</p>
+            <p class="text-navy-900">{{ evaluation.etudiant.utilisateur.get_full_name }}</p>
         </div>
         <div>
-            <p class="font-medium csp-style-25e866ad732d">Statut actuel</p>
+            <p class="font-medium text-warm-500">Statut actuel</p>
             <p>
                 <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
                     {% if evaluation.statut == 'soumis' %}bg-navy-100 text-navy-700
@@ -39,25 +39,25 @@
         </div>
         {% if evaluation.fichier_soumis %}
         <div class="col-span-2">
-            <p class="font-medium csp-style-25e866ad732d">Fichier remis</p>
+            <p class="font-medium text-warm-500">Fichier remis</p>
             {% comment %}
                 Servi par une vue qui revérifie le droit, et non par l'adresse
                 média : la copie d'un étudiant n'est pas un document public.
             {% endcomment %}
-            <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'remise' %}" class="hover:underline csp-style-9726ceed6b6d">Télécharger la copie remise</a>
+            <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'remise' %}" class="hover:underline text-navy-600">Télécharger la copie remise</a>
         </div>
         {% endif %}
         {% if evaluation.fichier_corrige %}
         <div class="col-span-2">
-            <p class="font-medium csp-style-25e866ad732d">Copie corrigée déjà déposée</p>
-            <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'corrige' %}" class="hover:underline csp-style-9726ceed6b6d">Télécharger le corrigé</a>
+            <p class="font-medium text-warm-500">Copie corrigée déjà déposée</p>
+            <a href="{% url 'lms:evaluation_fichier' evaluation.pk 'corrige' %}" class="hover:underline text-navy-600">Télécharger le corrigé</a>
         </div>
         {% endif %}
     </div>
 </div>
 
 {% if deja_publiee %}
-<div class="note alert mb-6 csp-style-bc6075c3e214">
+<div class="note alert mb-6 max-w-[42rem]">
     <span class="lbl">Note déjà publiée</span>
     <p>
         L'étudiant l'a déjà vue. Toute correction lui sera visible immédiatement,
