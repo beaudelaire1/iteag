@@ -1,11 +1,10 @@
 name: CSP inline style migration
 
 # Workflow ponctuel du chantier agent/mise-a-niveau-go-sans-reserve.
-# La migration statique a déjà remplacé les attributs style par des classes
-# déterministes. On reconstruit leur feuille depuis `main` — seule source où les
-# déclarations originales existent encore — puis on restaure les artefacts
-# non-web et on applique les derniers remplacements dynamiques. Le workflow sera
-# supprimé dès que ce passage est terminé.
+# Il restaure d'abord la configuration exacte de main pour annuler toute édition
+# trop large, applique uniquement la modification CSP visée, puis remplace les
+# classes temporaires hashées par des utilitaires lisibles. Il sera supprimé à
+# la fin de ce passage.
 on:
   push:
     branches: [agent/mise-a-niveau-go-sans-reserve]
@@ -21,7 +20,7 @@ jobs:
   migrate:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:
@@ -32,21 +31,32 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Reconstruire la feuille statique depuis les gabarits source de main
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Restaurer base.py puis appliquer seulement la CSP des styles
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main
-          source_dir="$RUNNER_TEMP/iteag-main"
-          git worktree add --detach "$source_dir" origin/main
-          cp src/scripts/migrer_styles_inline.py "$source_dir/src/scripts/migrer_styles_inline.py"
-          (
-            cd "$source_dir/src"
-            python scripts/migrer_styles_inline.py --write
-            test "$(grep -c '^\.csp-style-' assets/css/inline-migre.css)" -gt 200
+          git restore --source=origin/main -- src/config/settings/base.py
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/config/settings/base.py")
+          texte = path.read_text(encoding="utf-8")
+          ancien = '        "style-src": ["\'self\'", "\'unsafe-inline\'"],\n'
+          nouveau = (
+              '        "style-src": ["\'self\'"],\n'
+              '        "style-src-elem": ["\'self\'"],\n'
+              '        "style-src-attr": ["\'none\'"],\n'
           )
-          cp "$source_dir/src/assets/css/inline-migre.css" src/assets/css/inline-migre.css
-          git worktree remove --force "$source_dir"
+          assert texte.count(ancien) == 1, "La directive style-src attendue n'est pas unique."
+          path.write_text(texte.replace(ancien, nouveau), encoding="utf-8")
+          PY
 
       - name: Restaurer les artefacts email et PDF hors CSP web
         shell: bash
@@ -58,28 +68,51 @@ jobs:
             ':(glob)src/templates/**/*_email.html' \
             ':(glob)src/templates/**/*_pdf.html'
 
-      - name: Migrer les styles métier dynamiques fermés
+      - name: Remplacer les classes hashées par des utilitaires lisibles
         working-directory: src
-        run: python scripts/migrer_styles_dynamiques.py --write
+        run: |
+          python scripts/remplacer_classes_csp.py --write
+          python scripts/remplacer_classes_csp.py --check
+
+      - name: Retirer la feuille temporaire de migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm src/assets/css/inline-migre.css
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("src/assets/css/production.css")
+          texte = path.read_text(encoding="utf-8")
+          texte = texte.replace('@import "./inline-migre.css";\n', "")
+          path.write_text(texte, encoding="utf-8")
+          PY
 
       - name: Vérifier la fermeture CSP des pages web
         working-directory: src
         run: |
           python scripts/migrer_styles_dynamiques.py --check
           python scripts/migrer_styles_inline.py --check
-          test "$(grep -c '^\.csp-style-' assets/css/inline-migre.css)" -gt 200
+          ! grep -R --include='*.html' -n 'csp-style-' templates
+          ! grep -R --include='*.html' -nE '[[:space:]]style=["'"']' templates \
+            --exclude='*_email.html' --exclude='*_pdf.html'
+          grep -F '"style-src": ["'"'self'"'"]' config/settings/base.py
+          grep -F '"style-src-attr": ["'"'none'"'"]' config/settings/base.py
+          ! grep -F '"style-src": ["'"'self'"'", "'"'unsafe-inline'"'"]' config/settings/base.py
 
-      - name: Enregistrer uniquement les transformations produites
+      - name: Construire les assets avec les nouvelles classes
+        working-directory: src
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Enregistrer la migration lisible
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet; then
-            echo "Aucune transformation supplémentaire."
-            exit 0
-          fi
           git diff --stat
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/templates src/assets/css/inline-migre.css
-          git commit -m "Reconstruire la feuille CSP et finaliser les gabarits web"
+          git add src/config/settings/base.py src/templates src/assets/css src/static/css/main.css
+          git add -u src/assets/css/inline-migre.css
+          git commit -m "Remplacer les classes CSP opaques par des utilitaires lisibles"
           git push origin HEAD:agent/mise-a-niveau-go-sans-reserve
