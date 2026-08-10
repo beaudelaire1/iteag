@@ -31,6 +31,13 @@
     {# Design system ITEAG — Tailwind compilé, y compris les ajustements WCAG #}
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={{ ASSET_VERSION }}">
 
+    {# HTMX est utilisé uniquement comme couche progressive : aucune expression
+       JavaScript dans les attributs, aucun script extrait d'un fragment et pas
+       de style injecté par la bibliothèque. Cette configuration retire les
+       primitives signalées par le scan statique tout en conservant les requêtes
+       hx-get/hx-post et les swaps HTML du projet. #}
+    <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
+
     {# Video.js (premium media playback) #}
     {% block videojs_css %}{% endblock %}
 
@@ -42,17 +49,12 @@
     {% block json_ld %}{% endblock %}
     {% comment %}
         Sans JavaScript, les éléments d'apparition resteraient à opacité nulle :
-        la page s'afficherait presque vide. Le repli est posé ici, où il ne peut
-        pas être oublié — il vaut pour tous les gabarits.
+        la page s'afficherait presque vide. Le repli vit dans une feuille de
+        style auto-hébergée chargée uniquement dans <noscript>, afin de ne pas
+        nécessiter `style-src 'unsafe-inline'`.
     {% endcomment %}
     <noscript>
-        <style>
-            .reveal, .reveal-left, .reveal-right, .reveal-scale,
-            .reveal-fade, .reveal-blur, .text-reveal-line, .border-draw {
-                opacity: 1 !important;
-                transform: none !important;
-            }
-        </style>
+        <link rel="stylesheet" href="{% static 'css/noscript.css' %}">
     </noscript>
 </head>
 <body class="min-h-screen flex flex-col antialiased bg-warm text-warm-900">
