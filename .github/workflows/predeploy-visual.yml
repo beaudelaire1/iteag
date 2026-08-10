@@ -1,13 +1,11 @@
 name: Predeploy visual review
 
-# Ces contrôles s'exécutent contre la préproduction. Ils étaient gardés par le
-# nom de la branche source (« agent/predeploy-go-readiness », « agent/go-live-ops-gate »).
-# Ces branches ayant été fusionnées, la condition n'était plus jamais vraie :
-# le contrôle existait, passait pour actif, et ne s'exécutait plus. On s'en
-# remet donc à des déclencheurs qui ne dépendent d'aucun nom éphémère — toute
-# PR vers main, un rendez-vous hebdomadaire, et le déclenchement manuel.
+# Une capture de la préproduction ne vaut preuve que si elle représente le
+# commit attendu. Ce workflow s'exécute après un push sur main (ou sur demande /
+# planification), attend le redéploiement Coolify puis refuse toute révision
+# différente de github.sha avant d'ouvrir le navigateur.
 on:
-  pull_request:
+  push:
     branches: [main]
   schedule:
     - cron: "0 4 * * 1"
@@ -24,10 +22,22 @@ jobs:
   captures:
     name: Captures desktop et mobile
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 22
     env:
       BASE_URL: https://iteag-preprod.137.74.169.188.sslip.io
     steps:
+      - uses: actions/checkout@v6
+
+      - name: Prouver la révision déployée et l'hôte SEO
+        shell: bash
+        run: |
+          set -euo pipefail
+          python src/scripts/verifier_preprod_deployee.py \
+            --base-url "$BASE_URL" \
+            --revision "$GITHUB_SHA" \
+            --attente 600 \
+            --intervalle 15
+
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
@@ -124,6 +134,10 @@ jobs:
                 if (!response || response.status() !== 200) {
                   throw new Error(`${url} -> ${response?.status() ?? "aucune réponse"}`);
                 }
+                const revision = response.headers()["x-iteag-revision"];
+                if (revision !== process.env.GITHUB_SHA) {
+                  throw new Error(`${url}: révision ${revision || "absente"}, attendue ${process.env.GITHUB_SHA}`);
+                }
                 await page.evaluate(async () => {
                   if (document.fonts?.ready) await document.fonts.ready;
                 });
@@ -150,9 +164,10 @@ jobs:
           test "$(find "$RUNNER_TEMP/captures" -name '*.png' -size +10k | wc -l)" -eq 12
 
       - name: Publier les captures
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: iteag-preprod-captures-sans-bandeau
+          name: iteag-preprod-captures-${{ github.sha }}
           path: ${{ runner.temp }}/captures
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
