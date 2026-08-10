@@ -53,6 +53,12 @@
     scope.querySelectorAll("[data-divider-state]").forEach((element) => {
       element.classList.toggle("conditional-divider", element.dataset.dividerState === "active");
     });
+
+    scope.querySelectorAll("[data-deadline-state]").forEach((element) => {
+      const urgent = element.dataset.deadlineState === "urgent";
+      element.classList.toggle("deadline-urgent", urgent);
+      element.classList.toggle("deadline-normal", !urgent);
+    });
   }
 
   if (document.readyState === "loading") {
