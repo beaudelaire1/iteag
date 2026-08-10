@@ -1,21 +1,70 @@
 {# HTMX partial — catalogue results · swappable #}
 {% load static %}
 {% if notices %}
-<div class="overflow-x-auto rounded border htmx-swap-fade" style="border-color: var(--color-warm-200);">
+<div class="space-y-4 md:hidden htmx-swap-fade">
+    {% for notice in notices %}
+    <article class="rounded border border-warm-200 bg-white p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <h2 class="text-lg font-semibold text-navy-800">
+                    <a href="{% url 'library:notice_detail' notice.pk %}" class="hover:underline">
+                        {{ notice.titre }}
+                    </a>
+                </h2>
+                {% if notice.auteur %}<p class="mt-1 text-sm text-warm-600">{{ notice.auteur }}</p>{% endif %}
+            </div>
+            {% if notice.disponible %}
+            <span class="badge badge-success shrink-0">Disponible</span>
+            {% else %}
+            <span class="badge badge-danger shrink-0">Indisponible</span>
+            {% endif %}
+        </div>
+
+        <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+            <dt class="font-medium text-warm-600">Cote</dt>
+            <dd class="text-warm-800">{{ notice.cote|default:"—" }}</dd>
+        </dl>
+
+        <div class="mt-5 flex flex-wrap items-center gap-2">
+            {% if notice.pk in user_reservations_notice_ids %}
+            <form method="post" action="{% url 'library:notice_annuler' notice.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded border border-red-300 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-100">
+                    Annuler la réservation
+                </button>
+            </form>
+            {% elif notice.pk in user_active_loans_notice_ids %}
+            <span class="badge badge-info text-xs">Emprunté par vous</span>
+            {% elif notice.disponible and user.is_authenticated %}
+            <form method="post" action="{% url 'library:notice_reserver' notice.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary px-3 py-2 text-xs">Réserver</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'library:notice_detail' notice.pk %}"
+               class="rounded border border-warm-300 px-3 py-2 text-xs font-medium text-warm-700 transition-colors hover:bg-warm-100">
+                Voir la notice
+            </a>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+<div class="hidden overflow-x-auto rounded border border-warm-200 md:block htmx-swap-fade">
     <table class="table-premium">
         <thead>
             <tr>
-                <th>Titre</th>
-                <th>Auteur</th>
-                <th>Cote</th>
-                <th>Disponible</th>
-                <th class="text-right">Actions</th>
+                <th scope="col">Titre</th>
+                <th scope="col">Auteur</th>
+                <th scope="col">Cote</th>
+                <th scope="col">Disponible</th>
+                <th scope="col" class="text-right">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for notice in notices %}
             <tr>
-                <td class="font-medium" style="color: var(--color-navy-800);">
+                <td class="font-medium text-navy-800">
                     <a href="{% url 'library:notice_detail' notice.pk %}" class="hover:underline">
                         {{ notice.titre }}
                     </a>
@@ -34,23 +83,20 @@
                         {% if notice.pk in user_reservations_notice_ids %}
                         <form method="post" action="{% url 'library:notice_annuler' notice.pk %}" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="px-2.5 py-1 text-xs rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors font-medium">
+                            <button type="submit" class="rounded border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100">
                                 Annuler réservation
                             </button>
                         </form>
                         {% elif notice.pk in user_active_loans_notice_ids %}
                         <span class="badge badge-info text-xs">Emprunté par vous</span>
-                        {% elif notice.disponible %}
-                        {% if user.is_authenticated %}
+                        {% elif notice.disponible and user.is_authenticated %}
                         <form method="post" action="{% url 'library:notice_reserver' notice.pk %}" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn-primary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;">
-                                Réserver
-                            </button>
+                            <button type="submit" class="btn-primary px-2.5 py-1 text-xs">Réserver</button>
                         </form>
                         {% endif %}
-                        {% endif %}
-                        <a href="{% url 'library:notice_detail' notice.pk %}" class="px-2.5 py-1 text-xs rounded border border-warm-300 text-warm-700 hover:bg-warm-100 transition-colors font-medium">
+                        <a href="{% url 'library:notice_detail' notice.pk %}"
+                           class="rounded border border-warm-300 px-2.5 py-1 text-xs font-medium text-warm-700 transition-colors hover:bg-warm-100">
                             Détails
                         </a>
                     </div>
@@ -64,9 +110,11 @@
 {% include "partials/pagination.html" %}
 
 {% else %}
-<div class="text-center py-16 htmx-swap-fade">
-    <svg class="mx-auto h-12 w-12 mb-4" style="color: var(--color-warm-300);" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
-    <p style="color: var(--color-warm-500);">
+<div class="py-16 text-center htmx-swap-fade">
+    <svg class="mx-auto mb-4 h-12 w-12 text-warm-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+    </svg>
+    <p class="text-warm-500">
         {% if query %}Aucun résultat pour « {{ query }} ».{% else %}Le catalogue sera bientôt disponible.{% endif %}
     </p>
 </div>
