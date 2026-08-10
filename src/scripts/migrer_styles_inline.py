@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Migration ponctuelle des styles inline des gabarits Django vers une feuille CSS.
+"""Migration des styles inline des pages web Django vers une feuille CSS.
 
-Le projet historique contient de nombreux ``style="..."`` statiques. Ils
-obligent la CSP à autoriser ``style-src 'unsafe-inline'``. Cette migration ne
-relâche pas la politique : elle transforme uniquement les valeurs CSS
-**statiques** en classes déterministes et laisse volontairement toute valeur
-Django dynamique en anomalie à traiter à la main.
+Le contrôle CSP concerne les réponses HTML exécutées par un navigateur. Les
+emails HTML et les documents PDF sont des artefacts de rendu distincts : ils ne
+reçoivent pas l'en-tête CSP du site et certains moteurs de messagerie/PDF ont
+besoin de CSS embarqué. Ils sont donc explicitement hors périmètre ici, au lieu
+d'être modifiés par un codemod qui casserait leur rendu.
+
+Pour les pages web, seuls les ``style="..."`` entièrement statiques sont
+convertis en classes déterministes. Toute valeur Django dynamique reste visible
+comme anomalie et doit être remplacée par un composant typé.
 
 Usage depuis ``src/``::
 
     python scripts/migrer_styles_inline.py --write
     python scripts/migrer_styles_inline.py --check
-
-``--write`` est idempotent. ``--check`` échoue tant qu'il reste un attribut
-``style`` ou un bloc ``<style>`` dans les gabarits.
 """
 
 from __future__ import annotations
@@ -35,8 +36,20 @@ STYLE_BLOCK = re.compile(r"<style(?:\s[^>]*)?>.*?</style\s*>", re.DOTALL | re.IG
 DJANGO = ("{{", "{%", "{#")
 
 
+def est_artefact_non_web(path: Path) -> bool:
+    """Emails/PDF ne sont pas des documents soumis à la CSP du navigateur."""
+    relatif = path.relative_to(TEMPLATES)
+    parties = {partie.lower() for partie in relatif.parts[:-1]}
+    nom = relatif.name.lower()
+    return (
+        "emails" in parties
+        or "pdf" in parties
+        or nom.endswith("_email.html")
+        or nom.endswith("_pdf.html")
+    )
+
+
 def normaliser_css(css: str) -> str:
-    """Conserve la déclaration telle qu'écrite, hors espaces périphériques."""
     return css.strip()
 
 
@@ -46,7 +59,6 @@ def nom_classe(css: str) -> str:
 
 
 def migrer_balise(texte: str, regles: dict[str, str]) -> tuple[str, int, list[str]]:
-    """Retourne la balise migrée, le nombre de styles et les valeurs dynamiques."""
     styles = list(STYLE_ATTR.finditer(texte))
     if not styles:
         return texte, 0, []
@@ -72,8 +84,6 @@ def migrer_balise(texte: str, regles: dict[str, str]) -> tuple[str, int, list[st
             + sans_style[classe_existante.end("classes") :]
         )
     else:
-        # On ajoute la classe juste après le nom de balise. Le premier espace
-        # éventuel reste en place ; aucune autre donnée du gabarit n'est déplacée.
         fin_nom = re.match(r"<([A-Za-z][A-Za-z0-9:-]*)", sans_style)
         if not fin_nom:
             raise ValueError(f"Balise HTML inattendue : {texte[:160]!r}")
@@ -116,13 +126,17 @@ def ecrire_css(regles: dict[str, str]) -> None:
     CSS_GENERE.write_text("\n".join(lignes), encoding="utf-8")
 
 
+def pages_web() -> list[Path]:
+    return [path for path in sorted(TEMPLATES.rglob("*.html")) if not est_artefact_non_web(path)]
+
+
 def scanner(*, ecrire: bool) -> tuple[int, list[tuple[Path, str]], list[Path]]:
     regles: dict[str, str] = {}
     total = 0
     dynamiques: list[tuple[Path, str]] = []
     blocs: list[Path] = []
 
-    for path in sorted(TEMPLATES.rglob("*.html")):
+    for path in pages_web():
         migres, restants, nb_blocs = migrer_fichier(path, ecrire=ecrire, regles=regles)
         total += migres
         dynamiques.extend((path, css) for css in restants)
@@ -137,7 +151,7 @@ def scanner(*, ecrire: bool) -> tuple[int, list[tuple[Path, str]], list[Path]]:
 def verifier_aucun_inline() -> tuple[list[tuple[Path, str]], list[Path]]:
     attributs: list[tuple[Path, str]] = []
     blocs: list[Path] = []
-    for path in sorted(TEMPLATES.rglob("*.html")):
+    for path in pages_web():
         contenu = path.read_text(encoding="utf-8")
         attributs.extend((path, match.group("css").strip()) for match in STYLE_ATTR.finditer(contenu))
         if STYLE_BLOCK.search(contenu):
@@ -158,29 +172,38 @@ def main() -> int:
 
     if args.write:
         total, dynamiques, blocs = scanner(ecrire=True)
-        print(f"Styles statiques migrés : {total}")
-        print(f"Classes CSS générées : {sum(1 for ligne in CSS_GENERE.read_text(encoding='utf-8').splitlines() if ligne.startswith('.csp-style-'))}")
+        print(f"Styles statiques web migrés : {total}")
+        print(
+            "Classes CSS générées : "
+            + str(
+                sum(
+                    1
+                    for ligne in CSS_GENERE.read_text(encoding="utf-8").splitlines()
+                    if ligne.startswith(".csp-style-")
+                )
+            )
+        )
         if dynamiques:
-            print("Styles dynamiques laissés pour correction manuelle :")
+            print("Styles dynamiques web laissés pour correction manuelle :")
             for path, css in dynamiques:
                 print(f"- {relatif(path)}: {css}")
         if blocs:
-            print("Blocs <style> laissés pour externalisation manuelle :")
+            print("Blocs <style> web laissés pour externalisation manuelle :")
             for path in blocs:
                 print(f"- {relatif(path)}")
         return 0
 
     attributs, blocs = verifier_aucun_inline()
     if not attributs and not blocs:
-        print("OK — aucun style inline dans les gabarits.")
+        print("OK — aucun style inline dans les pages web soumises à la CSP.")
         return 0
 
     if attributs:
-        print("Attributs style interdits :")
+        print("Attributs style interdits dans les pages web :")
         for path, css in attributs:
             print(f"- {relatif(path)}: {css}")
     if blocs:
-        print("Blocs <style> interdits :")
+        print("Blocs <style> interdits dans les pages web :")
         for path in blocs:
             print(f"- {relatif(path)}")
     return 1
