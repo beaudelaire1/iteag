@@ -60,7 +60,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             {% for parcours in parcours_list %}
-            <article class="card group relative reveal" style="transition-delay: {{ forloop.counter0 }}20ms;">
+            <article class="card group relative reveal" data-transition-delay="{{ forloop.counter0 }}20">
                 <div class="flex items-center gap-3 mb-5">
                     <span class="badge badge-gold">{{ parcours.get_type_parcours_display }}</span>
                     {% if parcours.ects_requis %}
@@ -106,7 +106,7 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {% for disc in disciplines %}
-            <div class="card-elevated text-center p-8 reveal" style="transition-delay: {{ forloop.counter0 }}00ms;">
+            <div class="card-elevated text-center p-8 reveal" data-transition-delay="{{ forloop.counter0 }}00">
                 <div class="h-14 w-14 mx-auto mb-4 rounded-full flex items-center justify-center csp-style-8f5d00b0477b">
                     <span class="text-white font-bold text-sm">{{ forloop.counter }}</span>
                 </div>

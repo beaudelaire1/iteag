@@ -138,7 +138,7 @@
                 <span class="shrink-0 text-sm font-semibold csp-style-9bce6c04a80b">{{ acces.progression_percent }} %</span>
             </div>
             <div class="progress-bar mt-3">
-                <div class="progress-bar-fill" style="width: {{ acces.progression_percent }}%"></div>
+                <div class="progress-bar-fill" data-progress-width="{{ acces.progression_percent }}"></div>
             </div>
         </a>
         {% empty %}

@@ -184,7 +184,7 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {% for prof in autres_professeurs %}
-            <a href="{{ prof.get_absolute_url }}" class="card-elevated text-center group hover:shadow-lg transition-shadow reveal" style="transition-delay: {{ forloop.counter0 }}00ms;">
+            <a href="{{ prof.get_absolute_url }}" class="card-elevated text-center group hover:shadow-lg transition-shadow reveal" data-transition-delay="{{ forloop.counter0 }}00">
                 <div class="pt-2 pb-4">
                     {% if prof.photo %}
                     <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="mx-auto h-20 w-20 rounded-full object-cover" width="80" height="80" loading="lazy">

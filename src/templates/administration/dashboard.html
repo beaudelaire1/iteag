@@ -129,7 +129,7 @@
                 </span>
                 <span class="shrink-0 text-right">
                     <span class="block text-sm font-semibold csp-style-9bce6c04a80b">{{ echeance.date|date:"d/m/Y" }}</span>
-                    <span class="block text-xs" style="color: {% if echeance.jours_restants <= 7 %}var(--color-gold-600){% else %}var(--color-warm-400){% endif %};">
+                    <span class="block text-xs" data-deadline-state="{% if echeance.jours_restants <= 7 %}urgent{% else %}normal{% endif %}">
                         {% if echeance.jours_restants == 0 %}aujourd'hui{% else %}dans {{ echeance.jours_restants }} jour{{ echeance.jours_restants|pluralize }}{% endif %}
                     </span>
                 </span>

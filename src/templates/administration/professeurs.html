@@ -95,7 +95,7 @@
     {% endif %}
     {% for num in professeurs.paginator.page_range %}
     <a href="?page={{ num }}" class="px-3 py-1.5 rounded text-sm font-medium {% if professeurs.number == num %}text-white{% endif %}"
-       style="{% if professeurs.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
+       data-pagination-state="{% if professeurs.number == num %}current{% else %}available{% endif %}">{{ num }}</a>
     {% endfor %}
     {% if professeurs.has_next %}
     <a href="?page={{ professeurs.next_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium csp-style-eb3a04302f2f">›</a>

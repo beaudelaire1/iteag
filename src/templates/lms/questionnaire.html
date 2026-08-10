@@ -186,7 +186,7 @@
                     {% else %}
                     <span aria-hidden="true" class="text-warm-300">·</span>
                     {% endif %}
-                    <span style="color: {% if choix.correct %}var(--color-navy-900){% else %}var(--color-warm-600){% endif %};">
+                    <span data-question-choice-state="{% if choix.correct %}correct{% else %}neutral{% endif %}">
                         {{ choix.libelle }}
                     </span>
                 </li>

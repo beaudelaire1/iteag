@@ -64,7 +64,7 @@
                     </h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {% for c in cours %}
-                        <article class="card group relative reveal" style="transition-delay: {{ forloop.counter0 }}0ms;">
+                        <article class="card group relative reveal" data-transition-delay="{{ forloop.counter0 }}0">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="badge badge-info">{{ c.code }}</span>
                                 <span class="text-xs font-semibold csp-style-e32fa995291e">{{ c.ects }} ECTS</span>
@@ -129,7 +129,7 @@
                     <h3 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">Tarifs</h3>
                     <div class="space-y-3">
                         {% for tarif in tarifs %}
-                        <div class="flex justify-between items-center text-sm" style="{% if not forloop.last %}border-bottom: 1px solid var(--color-warm-150); padding-bottom: 8px;{% endif %}">
+                        <div class="flex justify-between items-center text-sm" data-divider-state="{% if not forloop.last %}active{% endif %}">
                             <div>
                                 <p class="font-medium csp-style-9bce6c04a80b">{{ tarif.get_formule_display }}</p>
                                 <p class="text-xs csp-style-25e866ad732d">{{ tarif.get_type_membre_display }}</p>

@@ -114,7 +114,7 @@
     {% for num in users.paginator.page_range %}
     <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
        class="px-3 py-1.5 rounded text-sm font-medium {% if users.number == num %}text-white{% endif %}"
-       style="{% if users.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
+       data-pagination-state="{% if users.number == num %}current{% else %}available{% endif %}">{{ num }}</a>
     {% endfor %}
     {% if users.has_next %}
     <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"

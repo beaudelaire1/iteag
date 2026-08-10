@@ -119,7 +119,7 @@
     {% for num in etudiants.paginator.page_range %}
     <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"
        class="px-3 py-1.5 rounded text-sm font-medium transition-colors {% if etudiants.number == num %}text-white{% endif %}"
-       style="{% if etudiants.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
+       data-pagination-state="{% if etudiants.number == num %}current{% else %}available{% endif %}">{{ num }}</a>
     {% endfor %}
     {% if etudiants.has_next %}
     <a href="?page={{ etudiants.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}"

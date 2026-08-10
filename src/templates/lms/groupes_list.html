@@ -40,7 +40,7 @@
             <div class="min-w-0">
                 <h2 class="text-base font-semibold csp-style-a4a1aa46c7f2">
                     {% if groupe.couleur %}
-                    <span class="inline-block h-3 w-3 rounded-full align-middle" style="background: {{ groupe.couleur }};" aria-hidden="true"></span>
+                    <span class="inline-block h-3 w-3 rounded-full align-middle" data-background-color="{{ groupe.couleur }}" aria-hidden="true"></span>
                     {% endif %}
                     {{ groupe.nom }}
                 </h2>

@@ -71,7 +71,7 @@ barre.
                         <span class="num">{{ barre.texte }}</span>
                     </span>
                     <span class="progress-bar block">
-                        <span class="progress-bar-fill block" style="width: {{ barre.part }}%"></span>
+                        <span class="progress-bar-fill block" data-progress-width="{{ barre.part }}"></span>
                     </span>
                 </li>
                 {% endfor %}
@@ -87,7 +87,7 @@ barre.
                 <li class="flex items-center gap-3 text-xs">
                     <span class="csp-style-b62c8857528e">{{ barre.libelle }}</span>
                     <span class="progress-bar block flex-1">
-                        <span class="progress-bar-fill block" style="width: {{ barre.part }}%"></span>
+                        <span class="progress-bar-fill block" data-progress-width="{{ barre.part }}"></span>
                     </span>
                     <span class="num csp-style-ebbeb1cbc225">{{ barre.texte }}</span>
                 </li>
