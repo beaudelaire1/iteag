@@ -86,21 +86,25 @@ WORKFLOWS_PREDEPLOIEMENT = (
 )
 
 
-def test_aucun_controle_de_predeploiement_ne_depend_d_un_nom_de_branche():
-    """Un contrôle gardé par un nom de branche meurt avec cette branche.
+def test_les_controles_live_visent_le_commit_effectivement_deploye():
+    """Une URL de préproduction fixe ne doit jamais valider une PR non déployée.
 
-    Les cinq workflows ci-dessous — dont le scan de sécurité dynamique — étaient
-    conditionnés à « github.head_ref == 'agent/…' ». Ces branches fusionnées, la
-    condition n'était plus jamais vraie : les contrôles figuraient dans le dépôt,
-    ne s'exécutaient plus, et rien ne le signalait. Ce test empêche d'y revenir.
+    Les audits live sont déclenchés après un push sur main, puis attendent que
+    la préproduction expose exactement le SHA courant avant de commencer. Une
+    branche éphémère, une PR ou une ancienne version déjà déployée ne peut donc
+    plus produire un faux feu vert.
     """
     for nom in WORKFLOWS_PREDEPLOIEMENT:
         contenu = (RACINE.parent / ".github" / "workflows" / nom).read_text(encoding="utf-8")
 
         assert "head_ref" not in contenu, nom
-        assert "pull_request:" in contenu, nom
+        assert "pull_request:" not in contenu, nom
+        assert "push:" in contenu, nom
+        assert "branches: [main]" in contenu, nom
         assert "schedule:" in contenu, nom
         assert "workflow_dispatch:" in contenu, nom
+        assert "verifier_preprod_deployee.py" in contenu, nom
+        assert '--revision "$GITHUB_SHA"' in contenu, nom
 
 
 def test_le_gate_d_accessibilite_couvre_les_pages_publiques_a_formulaire():
