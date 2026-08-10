@@ -26,8 +26,6 @@ def est_artefact_non_web(path: Path) -> bool:
 
 
 REMPLACEMENTS_DIRECTS: tuple[tuple[re.Pattern[str], str], ...] = (
-    # Largeurs métier : le HTML transporte une valeur, styles-dynamiques.js la
-    # borne à [0, 100] avant d'écrire uniquement `element.style.width`.
     (
         re.compile(r'''\sstyle="width:\s*\{\{\s*([^{}]+?)\s*\}\}%\s*;?"'''),
         r''' data-progress-width="{{ \1 }}"''',
@@ -36,32 +34,24 @@ REMPLACEMENTS_DIRECTS: tuple[tuple[re.Pattern[str], str], ...] = (
         re.compile(r'''\sstyle="width:\s*\{%\s*widthratio\s+(.+?)\s*%\}%\s*;?"'''),
         r''' data-progress-width="{% widthratio \1 %}"''',
     ),
-    # Délais d'apparition calculés depuis forloop.counter0. Seule une valeur
-    # numérique bornée est ensuite acceptée côté navigateur.
     (
         re.compile(r'''\sstyle="transition-delay:\s*\{\{\s*forloop\.counter0\s*\}\}([0-9]+)ms\s*;?"'''),
         r''' data-transition-delay="{{ forloop.counter0 }}\1"''',
     ),
-    # Couleur de groupe : seul #RRGGBB est accepté par le JS.
     (
         re.compile(r'''\sstyle="background:\s*\{\{\s*groupe\.couleur\s*\}\}\s*;?"'''),
         r''' data-background-color="{{ groupe.couleur }}"''',
     ),
-    # L'éditeur possède déjà `data-iteag-min-height` sur son widget et son JS
-    # applique la variable CSS. Le style du conteneur était donc redondant.
     (
         re.compile(r'''\sstyle="--iteag-editor-min-height:\s*\{\{\s*min_height\|default:'18rem'\s*\}\}\s*;?"'''),
         "",
     ),
-    # Graphique éditorial : la couleur est une classe fixe, seule la largeur
-    # reste dynamique et typée.
     (
         re.compile(
             r'''\sstyle="width:\s*\{\{\s*item\.pourcentage\s*\}\}%\s*;\s*background:\s*var\(--color-navy-700\)\s*;?"'''
         ),
         r''' data-progress-width="{{ item.pourcentage }}"''',
     ),
-    # États visuels fermés : aucune valeur CSS n'est transportée.
     (
         re.compile(
             r'''\sstyle="\{%\s*if\s+([^%]+?)\s*%\}background:\s*var\(--color-navy-800\);\s*color:\s*#fff;\{%\s*else\s*%\}color:\s*var\(--color-navy-600\);\{%\s*endif\s*%\}"'''
@@ -79,6 +69,14 @@ REMPLACEMENTS_DIRECTS: tuple[tuple[re.Pattern[str], str], ...] = (
             r'''\sstyle="\{%\s*if\s+not\s+forloop\.last\s*%\}border-bottom:\s*1px\s+solid\s+var\(--color-warm-150\);\s*padding-bottom:\s*8px;\{%\s*endif\s*%\}"'''
         ),
         r''' data-divider-state="{% if not forloop.last %}active{% endif %}"''',
+    ),
+    # L'état d'une échéance est binaire ; le gabarit transmet cet état, pas les
+    # deux couleurs CSS entre lesquelles il choisit.
+    (
+        re.compile(
+            r'''\sstyle="color:\s*\{%\s*if\s+echeance\.jours_restants\s*<=\s*7\s*%\}var\(--color-gold-600\)\{%\s*else\s*%\}var\(--color-warm-400\)\{%\s*endif\s*%\};?"'''
+        ),
+        r''' data-deadline-state="{% if echeance.jours_restants <= 7 %}urgent{% else %}normal{% endif %}"''',
     ),
 )
 
