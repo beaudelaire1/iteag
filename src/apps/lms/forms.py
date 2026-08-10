@@ -27,9 +27,7 @@ class StudentSubmissionForm(FormulaireModeleITEAG):
     class Meta:
         model = Evaluation
         fields = ["fichier_soumis"]
-        widgets = {
-            "fichier_soumis": forms.ClearableFileInput(attrs={"class": FICHIER, "accept": REGLE_COPIE.accept})
-        }
+        widgets = {"fichier_soumis": forms.ClearableFileInput(attrs={"class": FICHIER, "accept": REGLE_COPIE.accept})}
 
     def clean_fichier_soumis(self):
         uploaded = self.cleaned_data.get("fichier_soumis")
