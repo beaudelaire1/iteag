@@ -1,0 +1,17 @@
+/* Repli sans JavaScript pour les animations d'apparition.
+
+   Le contenu est visible par défaut lorsqu'aucun script ne peut ajouter la
+   classe `revealed`. La feuille n'est chargée que dans <noscript>, ce qui évite
+   tout style inline et permet à la CSP de rester strictement `style-src 'self'`
+   une fois les attributs style restants migrés. */
+.reveal,
+.reveal-left,
+.reveal-right,
+.reveal-scale,
+.reveal-fade,
+.reveal-blur,
+.text-reveal-line,
+.border-draw {
+  opacity: 1 !important;
+  transform: none !important;
+}
