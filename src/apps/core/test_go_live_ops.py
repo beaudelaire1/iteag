@@ -93,6 +93,23 @@ def test_le_gate_preprod_n_importe_que_la_bibliotheque_standard():
     assert not externes, f"Le gate préprod dépend de paquets non disponibles sur un runner vierge : {sorted(externes)}"
 
 
+def test_compose_exige_une_revision_applicative_sans_masquer_source_commit():
+    """Une stack non identifiable ne doit plus pouvoir démarrer silencieusement.
+
+    ``SOURCE_COMMIT`` est une variable prédéfinie par Coolify. La redéclarer
+    directement dans Compose peut créer une variable éditable vide. Le contrat
+    du projet utilise donc ``ITEAG_REVISION``, configurée dans Coolify avec la
+    valeur ``$SOURCE_COMMIT``, et la rend obligatoire avant création des
+    conteneurs.
+    """
+    compose = (RACINE / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    ci = (RACINE.parent / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert "ITEAG_REVISION: ${ITEAG_REVISION:?" in compose
+    assert "SOURCE_COMMIT:" not in compose
+    assert "ITEAG_REVISION: ${{ github.sha }}" in ci
+
+
 WORKFLOWS_PREDEPLOIEMENT = (
     "predeploy-lighthouse.yml",
     "predeploy-live-audit.yml",
