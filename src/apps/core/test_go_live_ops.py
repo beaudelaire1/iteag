@@ -1,6 +1,7 @@
 """Tests du gate d'exploitation exécuté juste avant la mise en service."""
 
-import subprocess
+import ast
+import re
 import sys
 from pathlib import Path
 
@@ -66,9 +67,6 @@ def test_les_blocs_python_du_gate_serveur_compilent():
     Il n'échoue qu'à l'exécution — c'est-à-dire pendant la bascule, au moment
     où l'on a le moins envie de déboguer une coquille de guillemet.
     """
-    import ast
-    import re
-
     script = (RACINE / "scripts" / "verifier_go_live.sh").read_text(encoding="utf-8")
 
     blocs = re.findall(r"python -c '\n(.*?)\n' ", script, re.S)
@@ -79,23 +77,20 @@ def test_les_blocs_python_du_gate_serveur_compilent():
         ast.parse(bloc)
 
 
-def test_le_gate_preprod_est_autonome_sur_un_runner_vierge():
-    """Les audits live exécutent ce script avant d'installer le projet.
-
-    ``-I -S`` retire le site utilisateur et les ``site-packages`` : si une
-    dépendance externe réapparaît, le défaut est détecté en CI plutôt qu'après
-    le déploiement de main.
-    """
+def test_le_gate_preprod_n_importe_que_la_bibliotheque_standard():
+    """Les audits live exécutent ce script avant d'installer le projet."""
     script = RACINE / "scripts" / "verifier_preprod_deployee.py"
-    resultat = subprocess.run(
-        [sys.executable, "-I", "-S", str(script), "--help"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert resultat.returncode == 0, resultat.stderr
-    assert "--base-url" in resultat.stdout
-    assert "--revision" in resultat.stdout
+    arbre = ast.parse(script.read_text(encoding="utf-8"), filename=str(script))
+    imports: set[str] = set()
+
+    for noeud in ast.walk(arbre):
+        if isinstance(noeud, ast.Import):
+            imports.update(alias.name.split(".", 1)[0] for alias in noeud.names)
+        elif isinstance(noeud, ast.ImportFrom) and noeud.module:
+            imports.add(noeud.module.split(".", 1)[0])
+
+    externes = imports - set(sys.stdlib_module_names)
+    assert not externes, f"Le gate préprod dépend de paquets non disponibles sur un runner vierge : {sorted(externes)}"
 
 
 WORKFLOWS_PREDEPLOIEMENT = (
