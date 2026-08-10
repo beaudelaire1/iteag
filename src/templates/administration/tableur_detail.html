@@ -12,7 +12,7 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2"><a href="{% url 'administration:tableurs' %}">Imports et exports</a></p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ schema.libelle }}</h1>
+    <h1 class="csp-style-513ca5addf79">{{ schema.libelle }}</h1>
 </div>
 {% endblock %}
 
@@ -24,8 +24,8 @@ Toutes les erreurs d'un coup, avec le numéro de ligne tel qu'Excel l'affiche
 — en-tête comprise. S'arrêter à la première obligerait à redéposer le fichier
 autant de fois qu'il compte de fautes.
 {% endcomment %}
-<div class="card mb-8" style="border-left: 3px solid var(--color-danger, #b91c1c);">
-    <h2 class="text-base font-semibold" style="color: var(--color-danger, #b91c1c);">
+<div class="card mb-8 csp-style-e4a18fc13028">
+    <h2 class="text-base font-semibold csp-style-a42c11b9db20">
         Import refusé — rien n'a été enregistré
     </h2>
     <p class="mt-1 text-sm text-warm-600">

@@ -7,12 +7,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'etudiant:grades' %}" class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+    <a href="{% url 'etudiant:grades' %}" class="inline-flex items-center text-sm font-medium mb-4 csp-style-9726ceed6b6d">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Mes évaluations
     </a>
     <p class="overline mb-2">{{ evaluation.cours_session.cours.titre }}</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ devoir.titre }}</h1>
+    <h1 class="csp-style-513ca5addf79">{{ devoir.titre }}</h1>
     {% if echeance %}
     <p class="mt-2 text-sm text-warm-600">
         À remettre avant le {{ echeance|date:"l j F Y" }} à {{ echeance|date:"H:i" }}.
@@ -25,7 +25,7 @@
 
 {% if motif_de_refus %}
 <div class="card-elevated max-w-2xl" role="alert">
-    <p class="text-sm font-semibold" style="color: var(--color-navy-900);">Ce questionnaire n'est pas ouvert</p>
+    <p class="text-sm font-semibold csp-style-a4a1aa46c7f2">Ce questionnaire n'est pas ouvert</p>
     <p class="mt-2 text-sm text-warm-700">{{ motif_de_refus }}</p>
     <a href="{% url 'etudiant:grades' %}" class="btn-ghost mt-5">Retour à mes évaluations</a>
 </div>
@@ -34,8 +34,8 @@
 
 {% if devoir.consigne %}
 <section class="card mb-6 max-w-3xl">
-    <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">Consigne</h2>
-    <p class="text-sm text-warm-700" style="white-space: pre-line;">{{ devoir.consigne }}</p>
+    <h2 class="text-sm font-bold uppercase tracking-wider mb-3 csp-style-9bce6c04a80b">Consigne</h2>
+    <p class="text-sm text-warm-700 csp-style-03fd3ef4d6db">{{ devoir.consigne }}</p>
 </section>
 {% endif %}
 
@@ -49,19 +49,19 @@
             {% if question.type_question == 'choix_multiple' %}· plusieurs réponses possibles{% endif %}
         </legend>
 
-        <p class="font-medium mb-4" style="color: var(--color-navy-900); white-space: pre-line;">{{ question.enonce }}</p>
+        <p class="font-medium mb-4 csp-style-0848d1d69c4e">{{ question.enonce }}</p>
 
         <div class="space-y-2.5">
             {% for choix in question.choix.all %}
-            <label class="flex items-start gap-2.5 cursor-pointer rounded border p-3 transition-colors hover:bg-warm-50"
-                   style="border-color: var(--color-warm-200);"
+            <label class="flex items-start gap-2.5 cursor-pointer rounded border p-3 transition-colors hover:bg-warm-50 csp-style-2998f592f360"
+                  
                    for="choix-{{ choix.pk }}">
                 <input type="{% if question.type_question == 'choix_multiple' %}checkbox{% else %}radio{% endif %}"
                        name="question-{{ question.pk }}"
                        id="choix-{{ choix.pk }}"
                        value="{{ choix.pk }}"
                        class="form-checkbox mt-0.5">
-                <span class="text-sm" style="color: var(--color-navy-800);">{{ choix.libelle }}</span>
+                <span class="text-sm csp-style-9bce6c04a80b">{{ choix.libelle }}</span>
             </label>
             {% endfor %}
         </div>

@@ -4,15 +4,15 @@
 
 {% block content %}
 <section class="section">
-    <div class="container-narrow text-center" style="max-width: 40rem;">
+    <div class="container-narrow text-center csp-style-788dfeba6ad9">
         <div class="reveal">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full mb-6" style="background: #ECFDF5;">
-                <svg class="h-8 w-8" style="color: #065F46;" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full mb-6 csp-style-d1e6edb544a8">
+                <svg class="h-8 w-8 csp-style-a0e8ca13ba73" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
             </div>
             <h1 class="mb-5">Candidature enregistrée</h1>
-            <p class="text-lg mb-10" style="color: var(--color-warm-600);">
+            <p class="text-lg mb-10 csp-style-9a1421a5a90b">
                 Votre dossier a bien été reçu. Vous recevrez un e-mail de confirmation à l'adresse indiquée.
             </p>
         </div>
@@ -21,25 +21,25 @@
             <p class="overline mb-4">Récapitulatif</p>
             <dl class="space-y-3 text-sm">
                 <div class="flex justify-between">
-                    <dt style="color: var(--color-warm-500);">Nom</dt>
-                    <dd class="font-medium" style="color: var(--color-navy-900);">{{ dossier.nom }} {{ dossier.prenom }}</dd>
+                    <dt class="csp-style-25e866ad732d">Nom</dt>
+                    <dd class="font-medium csp-style-a4a1aa46c7f2">{{ dossier.nom }} {{ dossier.prenom }}</dd>
                 </div>
                 <div class="flex justify-between">
-                    <dt style="color: var(--color-warm-500);">Parcours souhaité</dt>
-                    <dd class="font-medium" style="color: var(--color-navy-900);">{{ dossier.parcours_souhaite }}</dd>
+                    <dt class="csp-style-25e866ad732d">Parcours souhaité</dt>
+                    <dd class="font-medium csp-style-a4a1aa46c7f2">{{ dossier.parcours_souhaite }}</dd>
                 </div>
                 <div class="flex justify-between">
-                    <dt style="color: var(--color-warm-500);">Statut</dt>
-                    <dd class="font-medium" style="color: var(--color-navy-900);">{{ dossier.get_statut_display }}</dd>
+                    <dt class="csp-style-25e866ad732d">Statut</dt>
+                    <dd class="font-medium csp-style-a4a1aa46c7f2">{{ dossier.get_statut_display }}</dd>
                 </div>
             </dl>
         </div>
 
-        <p class="text-sm reveal reveal-delay-2" style="color: var(--color-warm-500);">
+        <p class="text-sm reveal reveal-delay-2 csp-style-25e866ad732d">
             Conservez ce lien pour suivre l'avancement de votre dossier&nbsp;:
         </p>
         <a href="{% url 'admissions:candidature_suivi' dossier.token_suivi %}"
-           class="inline-block mt-2 font-medium transition-colors duration-200" style="color: var(--color-navy-600);">
+           class="inline-block mt-2 font-medium transition-colors duration-200 csp-style-9726ceed6b6d">
             Suivre mon dossier →
         </a>
     </div>

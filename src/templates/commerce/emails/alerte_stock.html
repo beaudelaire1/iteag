@@ -5,31 +5,30 @@
 {% block categorie %}Alerte interne{% endblock %}
 
 {% block corps %}
-<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#A8790C;">
+<p class="csp-style-52ef4bd21523">
     Boutique · Stock
 </p>
-<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
-           font-weight:normal;line-height:1.25;color:#1A2D29;">Réapprovisionnement à prévoir</h1>
-<p style="margin:0 0 24px;color:#544B3D;">
+<h1 class="csp-style-a4a35210a4ab">Réapprovisionnement à prévoir</h1>
+<p class="csp-style-d66e37558bdf">
     Le stock disponible d'un ouvrage vient d'atteindre le seuil d'alerte configuré.
 </p>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background-color:#FDF8EC;border:1px solid #F3D9A0;border-radius:4px;">
+<table class="csp-style-0d7e82367aec" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+      >
     <tr>
-        <td colspan="2" style="padding:18px 20px;border-bottom:1px solid #F3D9A0;">
-            <strong style="font-size:17px;color:#1A2D29;">{{ titre }}</strong><br>
-            <span style="font-size:11px;color:#736957;">Référence {{ sku }}</span>
+        <td class="csp-style-f1c69885964c" colspan="2">
+            <strong class="csp-style-13a3f5b34e37">{{ titre }}</strong><br>
+            <span class="csp-style-cfb6074fcbb9">Référence {{ sku }}</span>
         </td>
     </tr>
     <tr>
-        <td style="padding:17px 20px;font-size:12px;color:#736957;">Stock disponible</td>
-        <td align="right" style="padding:17px 20px;font-size:20px;font-weight:bold;color:#A8790C;">
+        <td class="csp-style-4d13b9c856a6">Stock disponible</td>
+        <td class="csp-style-4a7525aff04e" align="right">
             {{ stock_disponible }}
         </td>
     </tr>
     <tr>
-        <td style="padding:0 20px 17px;font-size:12px;color:#736957;">Seuil configuré</td>
-        <td align="right" style="padding:0 20px 17px;font-size:13px;font-weight:bold;color:#1A2D29;">{{ seuil }}</td>
+        <td class="csp-style-607bbdcc20ce">Seuil configuré</td>
+        <td class="csp-style-20580c8b5f38" align="right">{{ seuil }}</td>
     </tr>
 </table>
 {% endblock %}

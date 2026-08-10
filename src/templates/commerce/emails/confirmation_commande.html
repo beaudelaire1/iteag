@@ -5,40 +5,38 @@
 {% block categorie %}Boutique ITEAG{% endblock %}
 
 {% block corps %}
-<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
+<p class="csp-style-05b832ec0811">
     Commande confirmée
 </p>
-<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
-           font-weight:normal;line-height:1.25;color:#1A2D29;">Merci pour votre commande</h1>
-<p style="margin:0 0 22px;">Bonjour {{ nom }},</p>
-<p style="margin:0 0 26px;color:#544B3D;">
+<h1 class="csp-style-a4a35210a4ab">Merci pour votre commande</h1>
+<p class="csp-style-bdc59e72ca5d">Bonjour {{ nom }},</p>
+<p class="csp-style-358101df95c4">
     Votre commande a bien été enregistrée. Vous recevrez un nouveau message à chaque étape importante de son traitement.
 </p>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="margin:0 0 28px;background-color:#F0F6F5;border:1px solid #D6E8E5;border-radius:4px;">
+<table class="csp-style-e1a8f3ee3042" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+      >
     <tr>
-        <td style="padding:18px 20px;border-bottom:1px solid #D6E8E5;">
-            <span style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:#736957;">Commande</span><br>
-            <strong style="font-size:17px;color:#1A2D29;">{{ numero }}</strong>
+        <td class="csp-style-6c14daecd1ed">
+            <span class="csp-style-28d6dcacb135">Commande</span><br>
+            <strong class="csp-style-13a3f5b34e37">{{ numero }}</strong>
         </td>
-        <td align="right" style="padding:18px 20px;border-bottom:1px solid #D6E8E5;">
-            <span style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:#736957;">Montant</span><br>
-            <strong style="font-size:20px;color:#355952;">{{ total }} €</strong>
+        <td class="csp-style-6c14daecd1ed" align="right">
+            <span class="csp-style-28d6dcacb135">Montant</span><br>
+            <strong class="csp-style-24b9620d972f">{{ total }} €</strong>
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="padding:15px 20px;font-size:13px;color:#544B3D;">
-            Mode de règlement&nbsp;: <strong style="color:#1A2D29;">{{ mode_paiement }}</strong>
+        <td class="csp-style-0e9ade7aecc8" colspan="2">
+            Mode de règlement&nbsp;: <strong class="csp-style-f01204816fe4">{{ mode_paiement }}</strong>
         </td>
     </tr>
 </table>
 
-<p style="margin:0;">
-    <a class="button" href="{{ suivi_url }}"
-       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
-              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;letter-spacing:.03em;">
-        Suivre ma commande <span style="color:#EEC671;">&nbsp;→</span>
+<p class="csp-style-38965f9b18ca">
+    <a class="button csp-style-b485c735879f" href="{{ suivi_url }}"
+      >
+        Suivre ma commande <span class="csp-style-ed481f5e6478">&nbsp;→</span>
     </a>
 </p>
 {% endblock %}

@@ -8,11 +8,11 @@
 {% block portal_header %}
 <div class="mb-8">
     <a href="{% url 'elearning:enseignant_videos' %}"
-       class="inline-flex items-center text-sm font-medium mb-4 link-reveal" style="color: var(--color-navy-600);">
+       class="inline-flex items-center text-sm font-medium mb-4 link-reveal csp-style-9726ceed6b6d">
         ← Mes vidéos
     </a>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Sous-titres</h1>
-    <p class="mt-2 text-sm" style="color: var(--color-warm-500);">{{ video.titre }}</p>
+    <h1 class="csp-style-513ca5addf79">Sous-titres</h1>
+    <p class="mt-2 text-sm csp-style-25e866ad732d">{{ video.titre }}</p>
 </div>
 {% endblock %}
 
@@ -21,13 +21,13 @@
 
     {% if video.sous_titres.all %}
     <section class="card-elevated mb-6">
-        <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">
             Pistes existantes
         </h2>
         <ul class="space-y-2" role="list">
             {% for piste in video.sous_titres.all %}
-            <li class="flex items-center justify-between gap-3 px-4 py-3 rounded border" style="border-color: var(--color-warm-200);">
-                <span class="text-sm">{{ piste.libelle }} <span style="color: var(--color-warm-400);">({{ piste.langue }})</span></span>
+            <li class="flex items-center justify-between gap-3 px-4 py-3 rounded border csp-style-2998f592f360">
+                <span class="text-sm">{{ piste.libelle }} <span class="csp-style-dba57faf99a4">({{ piste.langue }})</span></span>
                 {% if piste.par_defaut %}<span class="badge badge-gold">Par défaut</span>{% endif %}
             </li>
             {% endfor %}
@@ -37,7 +37,7 @@
 
     <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
         {% csrf_token %}
-        <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+        <h2 class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
             Ajouter une piste
         </h2>
 
@@ -45,7 +45,7 @@
         <div class="{% if champ.field.widget.input_type == 'checkbox' %}flex items-center gap-3{% endif %}">
             {% if champ.field.widget.input_type == 'checkbox' %}
                 {{ champ }}
-                <label for="{{ champ.id_for_label }}" class="text-sm font-medium" style="color: var(--color-navy-900);">{{ champ.label }}</label>
+                <label for="{{ champ.id_for_label }}" class="text-sm font-medium csp-style-a4a1aa46c7f2">{{ champ.label }}</label>
             {% else %}
                 <label class="form-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
                 {{ champ }}
@@ -54,7 +54,7 @@
         </div>
         {% endfor %}
 
-        <p class="text-xs" style="color: var(--color-warm-500);">
+        <p class="text-xs csp-style-25e866ad732d">
             Format WebVTT (.vtt). Les sous-titres rendent la vidéo utilisable par les personnes
             sourdes ou malentendantes, et lisibles en environnement bruyant.
         </p>

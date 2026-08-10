@@ -13,11 +13,11 @@
 <div class="mb-8">
     {% comment %}Le retour ramène à la liste d'où l'on vient, plus au tableau de bord.{% endcomment %}
     {% if not cancel_url %}{% url 'administration:dashboard' as cancel_url %}{% endif %}
-    <a href="{{ cancel_url }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+    <a href="{{ cancel_url }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors csp-style-9726ceed6b6d">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour
     </a>
-    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem); color: #B91C1C;">Confirmer la suppression</h1>
+    <h1 class="csp-style-ebdef92d3b68">Confirmer la suppression</h1>
 </div>
 {% endblock %}
 
@@ -25,12 +25,12 @@
 <div class="max-w-lg">
     <div class="card-elevated">
         <div class="flex items-start gap-4 mb-6">
-            <div class="h-10 w-10 rounded-full flex items-center justify-center shrink-0" style="background: #fef2f2;">
-                <svg class="h-5 w-5" style="color: #B91C1C;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+            <div class="h-10 w-10 rounded-full flex items-center justify-center shrink-0 csp-style-634054039522">
+                <svg class="h-5 w-5 csp-style-c18ac1598993" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
             </div>
             <div>
-                <p class="font-semibold" style="color: var(--color-navy-900);">Supprimer {{ object_label }} ?</p>
-                <p class="text-sm mt-1" style="color: var(--color-warm-500);">Cette action est irréversible.</p>
+                <p class="font-semibold csp-style-a4a1aa46c7f2">Supprimer {{ object_label }} ?</p>
+                <p class="text-sm mt-1 csp-style-25e866ad732d">Cette action est irréversible.</p>
             </div>
         </div>
 
@@ -46,11 +46,11 @@
             précis, et un compte utilisateur effacé emportait sans un mot les
             notes, les crédits et les paiements de l'étudiant.
         {% endcomment %}
-        <div class="rounded border px-4 py-3 mb-6" style="border-color: var(--color-gold-300); background: var(--color-gold-50);">
-            <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color: var(--color-gold-700);">
+        <div class="rounded border px-4 py-3 mb-6 csp-style-08166d89c2c7">
+            <p class="text-xs font-bold uppercase tracking-wider mb-2 csp-style-867a5cac695a">
                 Seront également supprimés
             </p>
-            <ul class="space-y-1 text-sm" style="color: var(--color-warm-700);" role="list">
+            <ul class="space-y-1 text-sm csp-style-81372cea588f" role="list">
                 {% for libelle, nombre in pertes %}
                 <li><strong>{{ nombre }}</strong> — {{ libelle }}</li>
                 {% endfor %}

@@ -13,7 +13,7 @@
 <div class="flex items-center justify-between mb-8">
     <div>
         <p class="overline mb-2">{% if user.is_secretariat %}Secrétariat{% else %}Administration{% endif %}</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Candidatures</h1>
+        <h1 class="csp-style-513ca5addf79">Candidatures</h1>
     </div>
 </div>
 {% endblock %}
@@ -43,8 +43,8 @@
         <label for="recherche-candidatures" class="sr-only">Rechercher une candidature</label>
         <input type="text" id="recherche-candidatures" name="q" value="{{ query }}"
                placeholder="Rechercher un nom, prénom ou email…"
-               class="form-input flex-1" style="max-width: 24rem;">
-        <button type="submit" class="btn-primary" style="padding: 0.5rem 1.25rem;">Rechercher</button>
+               class="form-input flex-1 csp-style-2b55942f3977">
+        <button type="submit" class="btn-primary csp-style-7311080bbdf5">Rechercher</button>
         {% if query %}<a href="{% url 'administration:candidatures' %}{% if current_statut %}?statut={{ current_statut }}{% endif %}" class="btn-ghost self-center text-xs">Effacer</a>{% endif %}
     </form>
 </div>
@@ -64,7 +64,7 @@
             </select>
         </div>
         <button type="submit" class="btn-primary">Appliquer</button>
-        <p class="text-xs flex-1 min-w-64" style="color: var(--color-warm-500);">
+        <p class="text-xs flex-1 min-w-64 csp-style-25e866ad732d">
             « Accepté » crée le compte étudiant et ouvre les accès, comme depuis la fiche. Le candidat
             est versé dans la promotion active la plus récente de son parcours ; s'il faut en choisir
             une autre, passez par sa fiche.
@@ -72,20 +72,20 @@
     </div>
     {% endif %}
 
-<div class="card-elevated overflow-hidden" style="padding: 0;">
+<div class="card-elevated overflow-hidden csp-style-98781402ac5c">
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
-                <tr style="background: var(--color-warm-50);">
+                <tr class="csp-style-4f054290a08c">
                     <th class="px-5 py-3"><span class="sr-only">Sélection</span></th>
-                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Candidat</th>
-                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Parcours</th>
-                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Date</th>
-                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color: var(--color-warm-500);">Statut</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider csp-style-25e866ad732d">Candidat</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider csp-style-25e866ad732d">Parcours</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider csp-style-25e866ad732d">Date</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider csp-style-25e866ad732d">Statut</th>
                     <th class="px-5 py-3"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y" style="border-color: var(--color-warm-100);">
+            <tbody class="divide-y csp-style-b5a2a623575b">
                 {% for d in dossiers %}
                 <tr class="hover:bg-warm-50 transition-colors">
                     <td class="px-5 py-3">
@@ -93,11 +93,11 @@
                         <input type="checkbox" name="selected" id="dossier-{{ d.pk }}" value="{{ d.pk }}">
                     </td>
                     <td class="px-5 py-3">
-                        <p class="font-medium" style="color: var(--color-navy-900);">{{ d.nom_complet }}</p>
-                        <p class="text-xs" style="color: var(--color-warm-400);">{{ d.email }}</p>
+                        <p class="font-medium csp-style-a4a1aa46c7f2">{{ d.nom_complet }}</p>
+                        <p class="text-xs csp-style-dba57faf99a4">{{ d.email }}</p>
                     </td>
-                    <td class="px-5 py-3" style="color: var(--color-warm-600);">{{ d.parcours_souhaite }}</td>
-                    <td class="px-5 py-3" style="color: var(--color-warm-500);">{{ d.date_soumission|date:"d/m/Y" }}</td>
+                    <td class="px-5 py-3 csp-style-9a1421a5a90b">{{ d.parcours_souhaite }}</td>
+                    <td class="px-5 py-3 csp-style-25e866ad732d">{{ d.date_soumission|date:"d/m/Y" }}</td>
                     <td class="px-5 py-3">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
                             {% if d.statut == 'soumis' %}badge-info
@@ -109,12 +109,12 @@
                         </span>
                     </td>
                     <td class="px-5 py-3 text-right">
-                        <a href="{% url 'administration:candidature_detail' d.pk %}" class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-navy-600);">Voir →</a>
+                        <a href="{% url 'administration:candidature_detail' d.pk %}" class="text-xs font-semibold uppercase tracking-wider csp-style-9726ceed6b6d">Voir →</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-5 py-10 text-center" style="color: var(--color-warm-400);">Aucune candidature trouvée.</td>
+                    <td colspan="6" class="px-5 py-10 text-center csp-style-dba57faf99a4">Aucune candidature trouvée.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -129,7 +129,7 @@
     {% if page_obj.has_previous %}
     <a href="?page={{ page_obj.previous_page_number }}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn-ghost text-xs">← Précédent</a>
     {% endif %}
-    <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold" style="color: var(--color-warm-500);">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold csp-style-25e866ad732d">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}
     <a href="?page={{ page_obj.next_page_number }}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn-ghost text-xs">Suivant →</a>
     {% endif %}

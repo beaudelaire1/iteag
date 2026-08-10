@@ -11,12 +11,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{{ retour }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+    <a href="{{ retour }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors csp-style-9726ceed6b6d">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour à mon espace
     </a>
     <p class="overline mb-2">{{ user.get_role_display }}</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mon profil</h1>
+    <h1 class="csp-style-513ca5addf79">Mon profil</h1>
 </div>
 {% endblock %}
 
@@ -32,7 +32,7 @@
             <div class="flex items-center gap-5">
                 {% if user.photo %}
                 <img src="{{ user.photo.url }}" alt="Photo de {{ user.get_full_name|default:user.username }}"
-                     class="h-20 w-20 rounded-full object-cover" style="border: 2px solid var(--color-warm-200);">
+                     class="h-20 w-20 rounded-full object-cover csp-style-9b23a9a29fb8">
                 {% else %}
                 <span class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-navy-700 text-lg font-bold text-white" aria-hidden="true">
                     {{ user.initiales }}
@@ -56,8 +56,8 @@
                 {% include "partials/champ.html" with field=form_profil.photo %}
             </div>
 
-            <div class="pt-2" style="border-top: 1px solid var(--color-warm-200);">
-                <p class="overline mb-4" style="margin-top: 1rem;">Adresse postale</p>
+            <div class="pt-2 csp-style-d28c8df99194">
+                <p class="overline mb-4 csp-style-9a7472a9ec3a">Adresse postale</p>
                 {% include "partials/champ.html" with field=form_profil.adresse %}
                 {% include "partials/champ.html" with field=form_profil.complement_adresse %}
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-1">
@@ -75,7 +75,7 @@
     <section class="lg:col-span-1 space-y-6">
         <form method="post" class="card-elevated space-y-5" novalidate>
             {% csrf_token %}
-            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+            <h2 class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
                 Mot de passe
             </h2>
             {% include "partials/erreurs_formulaire.html" with form=form_mot_de_passe %}
@@ -88,7 +88,7 @@
         </form>
 
         <div class="card">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: var(--color-navy-800);">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-3 csp-style-9bce6c04a80b">
                 Double authentification
             </h2>
             {% if second_facteur_actif %}

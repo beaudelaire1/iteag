@@ -9,8 +9,8 @@
 {% block portal_header %}
 <div class="mb-8 max-w-3xl">
     <p class="overline mb-2">E-Learning</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{% if object %}Modifier « {{ object.titre }} »{% else %}Créer un module E-Learning{% endif %}</h1>
-    <p class="mt-3 text-sm" style="color: var(--color-warm-600);">
+    <h1 class="csp-style-513ca5addf79">{% if object %}Modifier « {{ object.titre }} »{% else %}Créer un module E-Learning{% endif %}</h1>
+    <p class="mt-3 text-sm csp-style-9a1421a5a90b">
         Définissez d’abord le cadre du module. Les chapitres et les leçons seront ajoutés après l’enregistrement.
     </p>
 </div>
@@ -19,7 +19,7 @@
 {% block portal_content %}
 <form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-8" data-module-form>
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="note alert" style="max-width:none;" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.non_field_errors %}<div class="note alert csp-style-db31b27e1eb7" role="alert">{{ form.non_field_errors }}</div>{% endif %}
 
     <section class="card-elevated space-y-5">
         <div><p class="overline mb-1">Étape 1</p><h2 class="text-lg font-semibold">Identifier le module</h2>

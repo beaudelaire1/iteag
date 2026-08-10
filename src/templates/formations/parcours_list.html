@@ -7,43 +7,43 @@
 {% block content %}
 
 {# ─── HERO ─── #}
-<section class="relative overflow-hidden" style="background: linear-gradient(160deg, var(--color-navy-950) 0%, var(--color-navy-800) 40%, var(--color-navy-700) 100%);">
-    <div class="absolute inset-0 opacity-[0.04]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;80&quot; height=&quot;80&quot; viewBox=&quot;0 0 80 80&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Ccircle cx=&quot;40&quot; cy=&quot;40&quot; r=&quot;1.5&quot;/%3E%3C/g%3E%3C/svg%3E');"></div>
-    <div class="container-wide relative" style="padding-top: clamp(5rem, 10vw, 8rem); padding-bottom: clamp(5rem, 10vw, 8rem);">
+<section class="relative overflow-hidden csp-style-5844eff603c0">
+    <div class="absolute inset-0 opacity-[0.04] csp-style-67ff139fd07f"></div>
+    <div class="container-wide relative csp-style-f5491b77855a">
         <div class="text-center max-w-3xl mx-auto hero-entrance">
             <p class="overline-light mb-4 hero-el hero-el-1">Se former à l'ITEAG</p>
-            <h1 class="text-white hero-el hero-el-2" style="font-size: clamp(2rem, 4.5vw, 3.25rem); line-height: 1.12;">Nos formations</h1>
-            <p class="mt-5 text-lg leading-relaxed hero-el hero-el-3" style="color: var(--color-navy-200); max-width: 36rem; margin: 0 auto;">
+            <h1 class="text-white hero-el hero-el-2 csp-style-0743a5fadc3b">Nos formations</h1>
+            <p class="mt-5 text-lg leading-relaxed hero-el hero-el-3 csp-style-e0559833d780">
                 Deux types de diplômes, un parcours libre et une formation continue — 4 sessions
                 d'une semaine par an pendant 6 ans, des professeurs reconnus d'Hexagone et de la Caraïbe.
             </p>
         </div>
     </div>
     <div class="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full" style="height: clamp(2rem, 4vw, 4.5rem);">
-            <path d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z" style="fill: var(--color-warm-50);"/>
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full csp-style-69125a57de9d">
+            <path class="csp-style-41407b2a45c6" d="M0 80V30C180 55 360 10 540 25C720 40 900 10 1080 25C1260 40 1360 20 1440 30V80H0Z"/>
         </svg>
     </div>
 </section>
 
 {# ─── CHIFFRES CLÉS ─── #}
-<section class="overflow-hidden" style="background: var(--color-warm-100); border-bottom: 1px solid var(--color-warm-200); padding: clamp(2rem, 4vw, 3.5rem) 0;">
+<section class="overflow-hidden csp-style-d6356617dffa">
     <div class="container-wide">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div class="reveal">
-                <p class="stat-number" style="color: var(--color-navy-800); font-size: clamp(1.5rem, 3vw, 2.5rem);" data-counter="180" data-counter-suffix="">180</p>
+                <p class="stat-number csp-style-b7efa4a1967d" data-counter="180" data-counter-suffix="">180</p>
                 <p class="stat-label">Crédits ECTS</p>
             </div>
-            <div class="reveal" style="transition-delay: 100ms;">
-                <p class="stat-number" style="color: var(--color-navy-800); font-size: clamp(1.5rem, 3vw, 2.5rem);" data-counter="5" data-counter-suffix="">5</p>
+            <div class="reveal csp-style-3ea1a85e69d9">
+                <p class="stat-number csp-style-b7efa4a1967d" data-counter="5" data-counter-suffix="">5</p>
                 <p class="stat-label">Disciplines</p>
             </div>
-            <div class="reveal" style="transition-delay: 200ms;">
-                <p class="stat-number" style="color: var(--color-navy-800); font-size: clamp(1.5rem, 3vw, 2.5rem);" data-counter="4" data-counter-suffix="">4</p>
+            <div class="reveal csp-style-f9da8db4098d">
+                <p class="stat-number csp-style-b7efa4a1967d" data-counter="4" data-counter-suffix="">4</p>
                 <p class="stat-label">Sessions / an</p>
             </div>
-            <div class="reveal" style="transition-delay: 300ms;">
-                <p class="stat-number" style="color: var(--color-navy-800); font-size: clamp(1.5rem, 3vw, 2.5rem);" data-counter="6" data-counter-suffix="">6</p>
+            <div class="reveal csp-style-d5c85b986d49">
+                <p class="stat-number csp-style-b7efa4a1967d" data-counter="6" data-counter-suffix="">6</p>
                 <p class="stat-label">Années de cursus</p>
             </div>
         </div>
@@ -64,32 +64,32 @@
                 <div class="flex items-center gap-3 mb-5">
                     <span class="badge badge-gold">{{ parcours.get_type_parcours_display }}</span>
                     {% if parcours.ects_requis %}
-                    <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-warm-500);">{{ parcours.ects_requis }} ECTS</span>
+                    <span class="text-xs font-semibold uppercase tracking-wider csp-style-25e866ad732d">{{ parcours.ects_requis }} ECTS</span>
                     {% endif %}
                 </div>
-                <h3 class="text-xl mb-3" style="color: var(--color-navy-900);">
+                <h3 class="text-xl mb-3 csp-style-a4a1aa46c7f2">
                     <a href="{{ parcours.get_absolute_url }}" class="stretched-link">{{ parcours.nom }}</a>
                 </h3>
                 {% if parcours.description %}
-                <p class="text-sm leading-relaxed mb-5 line-clamp-3" style="color: var(--color-warm-600);">{{ parcours.description|truncatewords:40 }}</p>
+                <p class="text-sm leading-relaxed mb-5 line-clamp-3 csp-style-9a1421a5a90b">{{ parcours.description|truncatewords:40 }}</p>
                 {% endif %}
-                <div class="flex items-center justify-between pt-4" style="border-top: 1px solid var(--color-warm-200);">
+                <div class="flex items-center justify-between pt-4 csp-style-d28c8df99194">
                     {% if parcours.duree_annees %}
-                    <span class="flex items-center text-xs" style="color: var(--color-warm-500);">
-                        <svg class="h-3.5 w-3.5 mr-1" style="color: var(--color-gold-500);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="flex items-center text-xs csp-style-25e866ad732d">
+                        <svg class="h-3.5 w-3.5 mr-1 csp-style-e32fa995291e" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         {{ parcours.duree_annees }} ans
                     </span>
                     {% else %}
-                    <span class="flex items-center text-xs" style="color: var(--color-warm-500);">
-                        <svg class="h-3.5 w-3.5 mr-1" style="color: var(--color-gold-500);" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="flex items-center text-xs csp-style-25e866ad732d">
+                        <svg class="h-3.5 w-3.5 mr-1 csp-style-e32fa995291e" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         À votre rythme
                     </span>
                     {% endif %}
-                    <span class="text-sm font-semibold uppercase tracking-wider" style="color: var(--color-navy-700); letter-spacing: 0.08em;">En savoir plus →</span>
+                    <span class="text-sm font-semibold uppercase tracking-wider csp-style-7c3a20d74106">En savoir plus →</span>
                 </div>
             </article>
             {% empty %}
-            <p class="col-span-2 text-center py-12" style="color: var(--color-warm-500);">Aucun parcours disponible pour le moment.</p>
+            <p class="col-span-2 text-center py-12 csp-style-25e866ad732d">Aucun parcours disponible pour le moment.</p>
             {% endfor %}
         </div>
     </div>
@@ -97,7 +97,7 @@
 
 {# ─── 5 DISCIPLINES ─── #}
 {% if disciplines %}
-<section class="section" style="background: var(--color-warm-100);">
+<section class="section csp-style-4088532c4dae">
     <div class="container-wide">
         <div class="text-center mb-14 reveal">
             <hr class="divider-gold mx-auto mb-6">
@@ -107,12 +107,12 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {% for disc in disciplines %}
             <div class="card-elevated text-center p-8 reveal" style="transition-delay: {{ forloop.counter0 }}00ms;">
-                <div class="h-14 w-14 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--color-navy-700);">
+                <div class="h-14 w-14 mx-auto mb-4 rounded-full flex items-center justify-center csp-style-8f5d00b0477b">
                     <span class="text-white font-bold text-sm">{{ forloop.counter }}</span>
                 </div>
-                <h3 class="text-sm font-bold uppercase tracking-wider mb-2" style="color: var(--color-navy-800);">{{ disc.nom }}</h3>
+                <h3 class="text-sm font-bold uppercase tracking-wider mb-2 csp-style-9bce6c04a80b">{{ disc.nom }}</h3>
                 {% if disc.description %}
-                <p class="text-xs leading-relaxed line-clamp-3" style="color: var(--color-warm-500);">{{ disc.description|truncatewords:15 }}</p>
+                <p class="text-xs leading-relaxed line-clamp-3 csp-style-25e866ad732d">{{ disc.description|truncatewords:15 }}</p>
                 {% endif %}
             </div>
             {% endfor %}
@@ -129,68 +129,68 @@
                 <hr class="divider-gold mb-6">
                 <p class="overline mb-3">Modalités</p>
                 <h2 class="mb-6">Comment se déroule la formation ?</h2>
-                <div class="space-y-5" style="color: var(--color-warm-700);">
+                <div class="space-y-5 csp-style-81372cea588f">
                     <div class="flex items-start gap-4">
-                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0" style="background: var(--color-gold-50); color: var(--color-gold-600);">
+                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0 csp-style-2e1e392fd27e">
                             <span class="text-sm font-bold">1</span>
                         </div>
                         <div>
-                            <p class="font-semibold mb-1" style="color: var(--color-navy-800);">4 sessions intensives par an</p>
+                            <p class="font-semibold mb-1 csp-style-9bce6c04a80b">4 sessions intensives par an</p>
                             <p class="text-sm">Carnaval (fév-mars), Pâques (avril), Grandes vacances (juillet) et Toussaint (novembre).</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-4">
-                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0" style="background: var(--color-gold-50); color: var(--color-gold-600);">
+                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0 csp-style-2e1e392fd27e">
                             <span class="text-sm font-bold">2</span>
                         </div>
                         <div>
-                            <p class="font-semibold mb-1" style="color: var(--color-navy-800);">Cours magistraux + validation</p>
+                            <p class="font-semibold mb-1 csp-style-9bce6c04a80b">Cours magistraux + validation</p>
                             <p class="text-sm">Chaque cours validé : 2,5 ECTS. Travaux écrits, stages (30 ECTS), VAE possible.</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-4">
-                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0" style="background: var(--color-gold-50); color: var(--color-gold-600);">
+                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0 csp-style-2e1e392fd27e">
                             <span class="text-sm font-bold">3</span>
                         </div>
                         <div>
-                            <p class="font-semibold mb-1" style="color: var(--color-navy-800);">Formation en distanciel possible</p>
+                            <p class="font-semibold mb-1 csp-style-9bce6c04a80b">Formation en distanciel possible</p>
                             <p class="text-sm">Pour les étudiants de Guyane, Martinique et autres territoires — cours vidéo disponibles.</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-4">
-                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0" style="background: var(--color-gold-50); color: var(--color-gold-600);">
+                        <div class="flex items-center justify-center h-10 w-10 rounded shrink-0 csp-style-2e1e392fd27e">
                             <span class="text-sm font-bold">4</span>
                         </div>
                         <div>
-                            <p class="font-semibold mb-1" style="color: var(--color-navy-800);">Transfert de crédits</p>
+                            <p class="font-semibold mb-1 csp-style-9bce6c04a80b">Transfert de crédits</p>
                             <p class="text-sm">Possibilité de transfert des crédits d'une institution à l'autre.</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="reveal" style="transition-delay: 150ms;">
-                <div class="card-elevated p-8" style="background: var(--color-navy-700);">
+            <div class="reveal csp-style-9abb457c2f2d">
+                <div class="card-elevated p-8 csp-style-8f5d00b0477b">
                     <p class="overline-light mb-4">Sessions de cours</p>
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="rounded p-4 text-center" style="background: rgba(255,255,255,0.08);">
+                        <div class="rounded p-4 text-center csp-style-dee234f15209">
                             <p class="text-2xl font-heading font-bold text-white mb-1">Fév-Mars</p>
-                            <p class="text-xs uppercase tracking-wider" style="color: var(--color-navy-200);">Carnaval</p>
+                            <p class="text-xs uppercase tracking-wider csp-style-7a158a53e702">Carnaval</p>
                         </div>
-                        <div class="rounded p-4 text-center" style="background: rgba(255,255,255,0.08);">
+                        <div class="rounded p-4 text-center csp-style-dee234f15209">
                             <p class="text-2xl font-heading font-bold text-white mb-1">Avril</p>
-                            <p class="text-xs uppercase tracking-wider" style="color: var(--color-navy-200);">Pâques</p>
+                            <p class="text-xs uppercase tracking-wider csp-style-7a158a53e702">Pâques</p>
                         </div>
-                        <div class="rounded p-4 text-center" style="background: rgba(255,255,255,0.08);">
+                        <div class="rounded p-4 text-center csp-style-dee234f15209">
                             <p class="text-2xl font-heading font-bold text-white mb-1">Juillet</p>
-                            <p class="text-xs uppercase tracking-wider" style="color: var(--color-navy-200);">Vacances</p>
+                            <p class="text-xs uppercase tracking-wider csp-style-7a158a53e702">Vacances</p>
                         </div>
-                        <div class="rounded p-4 text-center" style="background: rgba(255,255,255,0.08);">
+                        <div class="rounded p-4 text-center csp-style-dee234f15209">
                             <p class="text-2xl font-heading font-bold text-white mb-1">Nov.</p>
-                            <p class="text-xs uppercase tracking-wider" style="color: var(--color-navy-200);">Toussaint</p>
+                            <p class="text-xs uppercase tracking-wider csp-style-7a158a53e702">Toussaint</p>
                         </div>
                     </div>
-                    <div class="mt-6 pt-5" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                        <p class="text-sm text-center" style="color: var(--color-navy-200);">
+                    <div class="mt-6 pt-5 csp-style-e9dde1c2de34">
+                        <p class="text-sm text-center csp-style-7a158a53e702">
                             Chaque session dure <strong class="text-white">une semaine intensive</strong>
                         </p>
                     </div>
@@ -202,13 +202,13 @@
 
 {# ─── TARIFS ─── #}
 {% if tarifs %}
-<section class="section" style="background: var(--color-warm-100);">
+<section class="section csp-style-4088532c4dae">
     <div class="container-wide">
         <div class="text-center mb-14 reveal">
             <hr class="divider-gold mx-auto mb-6">
             <p class="overline mb-3">Investissement</p>
             <h2>Coût de la formation</h2>
-            <p class="mt-4 mx-auto text-sm" style="max-width: 30rem; color: var(--color-warm-500);">
+            <p class="mt-4 mx-auto text-sm csp-style-3e9112e823ed">
                 * 4 sessions par an. Tarifs par session.
             </p>
         </div>
@@ -216,29 +216,29 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="card-elevated p-8 text-center reveal">
                     <p class="overline mb-2">Toutes les sessions</p>
-                    <h3 class="text-lg mb-6" style="color: var(--color-navy-900);">Souscription annuelle</h3>
+                    <h3 class="text-lg mb-6 csp-style-a4a1aa46c7f2">Souscription annuelle</h3>
                     <div class="space-y-4">
-                        <div class="rounded p-4" style="background: var(--color-warm-100);">
-                            <p class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--color-warm-500);">Membre d'église fondatrice</p>
-                            <p class="text-3xl font-heading font-bold" style="color: var(--color-navy-800);">200 <span class="text-base font-sans">€/session</span></p>
+                        <div class="rounded p-4 csp-style-4088532c4dae">
+                            <p class="text-xs uppercase tracking-wider font-semibold mb-1 csp-style-25e866ad732d">Membre d'église fondatrice</p>
+                            <p class="text-3xl font-heading font-bold csp-style-9bce6c04a80b">200 <span class="text-base font-sans">€/session</span></p>
                         </div>
-                        <div class="rounded p-4" style="background: var(--color-warm-100);">
-                            <p class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--color-warm-500);">Autre</p>
-                            <p class="text-3xl font-heading font-bold" style="color: var(--color-navy-800);">250 <span class="text-base font-sans">€/session</span></p>
+                        <div class="rounded p-4 csp-style-4088532c4dae">
+                            <p class="text-xs uppercase tracking-wider font-semibold mb-1 csp-style-25e866ad732d">Autre</p>
+                            <p class="text-3xl font-heading font-bold csp-style-9bce6c04a80b">250 <span class="text-base font-sans">€/session</span></p>
                         </div>
                     </div>
                 </div>
-                <div class="card-elevated p-8 text-center reveal" style="transition-delay: 120ms;">
+                <div class="card-elevated p-8 text-center reveal csp-style-cd1268fcf66d">
                     <p class="overline mb-2">Session au choix</p>
-                    <h3 class="text-lg mb-6" style="color: var(--color-navy-900);">Souscription à la carte</h3>
+                    <h3 class="text-lg mb-6 csp-style-a4a1aa46c7f2">Souscription à la carte</h3>
                     <div class="space-y-4">
-                        <div class="rounded p-4" style="background: var(--color-warm-100);">
-                            <p class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--color-warm-500);">Membre d'église fondatrice</p>
-                            <p class="text-3xl font-heading font-bold" style="color: var(--color-navy-800);">250 <span class="text-base font-sans">€/session</span></p>
+                        <div class="rounded p-4 csp-style-4088532c4dae">
+                            <p class="text-xs uppercase tracking-wider font-semibold mb-1 csp-style-25e866ad732d">Membre d'église fondatrice</p>
+                            <p class="text-3xl font-heading font-bold csp-style-9bce6c04a80b">250 <span class="text-base font-sans">€/session</span></p>
                         </div>
-                        <div class="rounded p-4" style="background: var(--color-warm-100);">
-                            <p class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--color-warm-500);">Autre</p>
-                            <p class="text-3xl font-heading font-bold" style="color: var(--color-navy-800);">300 <span class="text-base font-sans">€/session</span></p>
+                        <div class="rounded p-4 csp-style-4088532c4dae">
+                            <p class="text-xs uppercase tracking-wider font-semibold mb-1 csp-style-25e866ad732d">Autre</p>
+                            <p class="text-3xl font-heading font-bold csp-style-9bce6c04a80b">300 <span class="text-base font-sans">€/session</span></p>
                         </div>
                     </div>
                 </div>
@@ -255,19 +255,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div>
                     <p class="overline mb-2">Secrétariat</p>
-                    <h2 class="text-xl mb-4" style="color: var(--color-navy-900);">Horaires d'ouverture</h2>
-                    <div class="space-y-2 text-sm" style="color: var(--color-warm-600);">
-                        <div class="flex justify-between"><span>Lundi, Mardi</span><span class="font-medium" style="color: var(--color-navy-800);">9h30 — 12h30 / 13h — 17h</span></div>
-                        <div class="flex justify-between"><span>Mercredi</span><span class="font-medium" style="color: var(--color-navy-800);">9h — 12h</span></div>
-                        <div class="flex justify-between"><span>Jeudi</span><span class="font-medium" style="color: var(--color-navy-800);">9h30 — 12h30 / 13h — 17h</span></div>
-                        <div class="flex justify-between"><span>Vendredi</span><span class="font-medium" style="color: var(--color-navy-800);">9h30 — 12h30 / 13h — 16h</span></div>
+                    <h2 class="text-xl mb-4 csp-style-a4a1aa46c7f2">Horaires d'ouverture</h2>
+                    <div class="space-y-2 text-sm csp-style-9a1421a5a90b">
+                        <div class="flex justify-between"><span>Lundi, Mardi</span><span class="font-medium csp-style-9bce6c04a80b">9h30 — 12h30 / 13h — 17h</span></div>
+                        <div class="flex justify-between"><span>Mercredi</span><span class="font-medium csp-style-9bce6c04a80b">9h — 12h</span></div>
+                        <div class="flex justify-between"><span>Jeudi</span><span class="font-medium csp-style-9bce6c04a80b">9h30 — 12h30 / 13h — 17h</span></div>
+                        <div class="flex justify-between"><span>Vendredi</span><span class="font-medium csp-style-9bce6c04a80b">9h30 — 12h30 / 13h — 16h</span></div>
                     </div>
                 </div>
                 <div class="text-center md:text-right">
-                    <p class="text-sm mb-1" style="color: var(--color-warm-500);">Téléphone</p>
-                    <a href="tel:{{ SITE_PHONE }}" class="text-lg font-semibold block mb-4" style="color: var(--color-navy-700);">{{ SITE_PHONE }}</a>
-                    <p class="text-sm mb-1" style="color: var(--color-warm-500);">Email</p>
-                    <a href="mailto:{{ SITE_EMAIL }}" class="text-lg font-semibold block mb-6" style="color: var(--color-navy-700);">{{ SITE_EMAIL }}</a>
+                    <p class="text-sm mb-1 csp-style-25e866ad732d">Téléphone</p>
+                    <a href="tel:{{ SITE_PHONE }}" class="text-lg font-semibold block mb-4 csp-style-efbb8610fce7">{{ SITE_PHONE }}</a>
+                    <p class="text-sm mb-1 csp-style-25e866ad732d">Email</p>
+                    <a href="mailto:{{ SITE_EMAIL }}" class="text-lg font-semibold block mb-6 csp-style-efbb8610fce7">{{ SITE_EMAIL }}</a>
                     <a href="{% url 'admissions:candidature_form' %}" class="btn-gold">
                         S'inscrire
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
@@ -279,12 +279,12 @@
 </section>
 
 {# ─── CTA ─── #}
-<section class="relative overflow-hidden" style="background: var(--color-navy-800); padding: clamp(3.5rem, 7vw, 6rem) 0;">
-    <div class="absolute inset-0" style="background: radial-gradient(ellipse 50% 80% at 80% 50%, rgba(234,182,62,0.06) 0%, transparent 70%);"></div>
+<section class="relative overflow-hidden csp-style-38a2f3e2ccd9">
+    <div class="absolute inset-0 csp-style-c4fa0cfb744f"></div>
     <div class="container-narrow text-center relative reveal">
         <p class="overline-light mb-4">Rejoignez-nous</p>
-        <h2 class="text-white mb-5" style="font-size: clamp(1.5rem, 3vw, 2.25rem);">Prêt à vous former ?</h2>
-        <p class="text-base leading-relaxed mb-8 mx-auto" style="color: var(--color-navy-200); max-width: 30rem;">
+        <h2 class="text-white mb-5 csp-style-910a5b1eca89">Prêt à vous former ?</h2>
+        <p class="text-base leading-relaxed mb-8 mx-auto csp-style-5c1539ba945d">
             Que vous souhaitiez obtenir un diplôme, approfondir vos connaissances ou renforcer votre ministère,
             l'ITEAG vous accompagne.
         </p>

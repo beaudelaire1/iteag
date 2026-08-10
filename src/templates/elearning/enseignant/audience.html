@@ -8,21 +8,21 @@
 {% block portal_header %}
 <div class="mb-8">
     <a href="{% url 'elearning:enseignant_structure' module.slug %}"
-       class="inline-flex items-center text-sm font-medium mb-4 link-reveal" style="color: var(--color-navy-600);">
+       class="inline-flex items-center text-sm font-medium mb-4 link-reveal csp-style-9726ceed6b6d">
         ← {{ module.titre }}
     </a>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Audience du module</h1>
+    <h1 class="csp-style-513ca5addf79">Audience du module</h1>
 </div>
 {% endblock %}
 
 {% block portal_content %}
 
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ total_inscrits }}</p><p class="stat-label">Inscrits</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ actifs }}</p><p class="stat-label">En cours</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ termines }}</p><p class="stat-label">Terminés</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ progression_moyenne }} %</p><p class="stat-label">Avancement moyen</p></div>
-    <div class="card-elevated"><p class="stat-number" style="font-size: 1.75rem;">{{ jamais_commence }}</p><p class="stat-label">Jamais commencé</p></div>
+    <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ total_inscrits }}</p><p class="stat-label">Inscrits</p></div>
+    <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ actifs }}</p><p class="stat-label">En cours</p></div>
+    <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ termines }}</p><p class="stat-label">Terminés</p></div>
+    <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ progression_moyenne }} %</p><p class="stat-label">Avancement moyen</p></div>
+    <div class="card-elevated"><p class="stat-number csp-style-bf478580eba6">{{ jamais_commence }}</p><p class="stat-label">Jamais commencé</p></div>
 </div>
 
 {# Là où la courbe s'effondre se trouve la leçon à retravailler. #}
@@ -41,7 +41,7 @@
                 <td class="num">{{ ligne.terminees }}</td>
                 <td>
                     <span class="flex items-center gap-3">
-                        <span class="progress-bar" style="width: 6rem;">
+                        <span class="progress-bar csp-style-6de0fa5e8a79">
                             <span class="progress-bar-fill block" style="width: {{ ligne.taux }}%"></span>
                         </span>
                         <span class="num text-xs">{{ ligne.taux }} %</span>
@@ -54,7 +54,7 @@
     </table>
 </div>
 {% else %}
-<p class="mb-10" style="color: var(--color-warm-500);">Le module ne contient encore aucune leçon.</p>
+<p class="mb-10 csp-style-25e866ad732d">Le module ne contient encore aucune leçon.</p>
 {% endif %}
 
 <h2 class="text-lg mb-4">Étudiants</h2>
@@ -80,7 +80,7 @@
 </div>
 {% else %}
 <div class="card text-center py-10">
-    <p style="color: var(--color-warm-600);">Aucun étudiant n'a encore accès à ce module.</p>
+    <p class="csp-style-9a1421a5a90b">Aucun étudiant n'a encore accès à ce module.</p>
 </div>
 {% endif %}
 {% endblock %}

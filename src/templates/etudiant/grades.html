@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="mb-10">
     <p class="overline mb-2">Évaluations</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Devoirs et notes</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+    <h1 class="csp-style-513ca5addf79">Devoirs et notes</h1>
+    <p class="mt-1 text-sm csp-style-25e866ad732d">
         Déposez les travaux demandés et consultez les résultats publiés.
     </p>
 </div>
@@ -21,7 +21,7 @@
 
 {% block portal_content %}
 {# ── Travaux à remettre ── #}
-<div class="card-elevated mb-8" style="padding: 0;">
+<div class="card-elevated mb-8 csp-style-98781402ac5c">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Travaux à remettre</h2>
         <p class="mt-1 text-xs text-warm-500">Le bouton de dépôt apparaît tant que l’enseignant accepte les remises.</p>
@@ -44,11 +44,11 @@
                 </span>
                 {% if eval.statut == 'en_attente' %}
                     {% if eval.devoir.modalite == 'qcm' %}
-                    <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary" style="padding: .5rem .9rem; font-size: .6875rem;">
+                    <a href="{% url 'etudiant:questionnaire' eval.pk %}" class="btn-primary csp-style-3cd464007bbe">
                         Répondre au questionnaire
                     </a>
                     {% else %}
-                    <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary" style="padding: .5rem .9rem; font-size: .6875rem;">
+                    <a href="{% url 'etudiant:submit_evaluation' eval.pk %}" class="btn-primary csp-style-3cd464007bbe">
                         Déposer mon devoir
                     </a>
                     {% endif %}
@@ -63,7 +63,7 @@
 </div>
 
 {# ── Notes publiées ── #}
-<div class="card-elevated" style="padding: 0;">
+<div class="card-elevated csp-style-98781402ac5c">
     <div class="px-5 py-4 border-b border-warm-100">
         <h2 class="text-base font-semibold text-navy-900">Notes publiées</h2>
     </div>

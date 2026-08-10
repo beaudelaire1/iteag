@@ -11,12 +11,12 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{{ retour }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors" style="color: var(--color-navy-600);">
+    <a href="{{ retour }}" class="inline-flex items-center text-sm font-medium mb-4 transition-colors csp-style-9726ceed6b6d">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour à mon espace
     </a>
     <p class="overline mb-2">{{ user.get_role_display }}</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Ma signature</h1>
+    <h1 class="csp-style-513ca5addf79">Ma signature</h1>
 </div>
 {% endblock %}
 
@@ -37,7 +37,7 @@
         {% if user.signature %}
         <div>
             <label class="block text-sm font-medium text-navy-900 mb-2">Signature actuelle</label>
-            <div class="flex min-h-32 items-center justify-center bg-white p-6 rounded" style="border: 1px solid var(--color-warm-200);">
+            <div class="flex min-h-32 items-center justify-center bg-white p-6 rounded csp-style-6802a5286497">
                 <img src="{{ user.signature.url }}" alt="Signature numérique actuelle" class="max-h-24 max-w-full object-contain">
             </div>
         </div>

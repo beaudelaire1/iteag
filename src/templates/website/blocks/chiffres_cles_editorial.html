@@ -1,11 +1,11 @@
-<section class="my-8 rounded-xl p-5 sm:p-6" style="background: var(--color-warm-100);">
-    {% if value.titre %}<h2 class="text-xl font-bold mb-5" style="color: var(--color-navy-900);">{{ value.titre }}</h2>{% endif %}
+<section class="my-8 rounded-xl p-5 sm:p-6 csp-style-4088532c4dae">
+    {% if value.titre %}<h2 class="text-xl font-bold mb-5 csp-style-a4a1aa46c7f2">{{ value.titre }}</h2>{% endif %}
     <dl class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {% for item in value.elements %}
         <div>
-            <dd class="text-2xl font-bold" style="color: var(--color-navy-800);">{{ item.valeur }}</dd>
-            <dt class="mt-1 font-medium" style="color: var(--color-warm-700);">{{ item.libelle }}</dt>
-            {% if item.precision %}<p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ item.precision }}</p>{% endif %}
+            <dd class="text-2xl font-bold csp-style-9bce6c04a80b">{{ item.valeur }}</dd>
+            <dt class="mt-1 font-medium csp-style-81372cea588f">{{ item.libelle }}</dt>
+            {% if item.precision %}<p class="mt-1 text-sm csp-style-25e866ad732d">{{ item.precision }}</p>{% endif %}
         </div>
         {% endfor %}
     </dl>

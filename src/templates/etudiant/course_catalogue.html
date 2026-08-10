@@ -13,7 +13,7 @@
 <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
     <div>
         <p class="overline mb-2">Choisir sa formation</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Catalogue des formations</h1>
+        <h1 class="csp-style-513ca5addf79">Catalogue des formations</h1>
         <p class="mt-2 max-w-2xl text-sm text-warm-500">Consultez le programme, les modalités, les places et le tarif qui s’applique à votre dossier avant de demander votre inscription.</p>
     </div>
     <a href="{% url 'etudiant:enrollment_requests' %}" class="btn-secondary">Suivre mes demandes</a>
@@ -60,7 +60,7 @@
 </form>
 
 {% if modules_video %}
-<h2 class="text-sm font-bold uppercase tracking-widest mb-4" style="color: var(--color-warm-500);">Cours en session</h2>
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4 csp-style-25e866ad732d">Cours en session</h2>
 {% endif %}
 
 <div class="grid gap-6 xl:grid-cols-2">
@@ -105,7 +105,7 @@
 
 {% comment %}Même catalogue, autre format : la vidéo n'a pas d'écran séparé.{% endcomment %}
 {% if modules_video %}
-<h2 class="text-sm font-bold uppercase tracking-widest mb-4 mt-10" style="color: var(--color-warm-500);">Modules vidéo</h2>
+<h2 class="text-sm font-bold uppercase tracking-widest mb-4 mt-10 csp-style-25e866ad732d">Modules vidéo</h2>
 <div class="grid gap-6 xl:grid-cols-2">
     {% for module in modules_video %}
     <article class="card-elevated flex h-full flex-col">

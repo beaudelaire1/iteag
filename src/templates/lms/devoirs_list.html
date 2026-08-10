@@ -8,7 +8,7 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Espace enseignant</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Devoirs et QCM</h1>
+    <h1 class="csp-style-513ca5addf79">Devoirs et QCM</h1>
     <p class="mt-2 text-sm text-warm-600">
         Créer et suivre les devoirs écrits, dépôts de fichiers et questionnaires à choix multiple.
     </p>
@@ -20,9 +20,9 @@
 {# ── Filtres et création ── #}
 <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <form method="get" class="flex flex-wrap items-end gap-3">
-        <div class="champ" style="margin-bottom: 0;">
+        <div class="champ csp-style-b3a2297a12f5">
             <label class="form-label" for="etat">État</label>
-            <select name="etat" id="etat" class="form-select" style="min-width: 12rem;">
+            <select name="etat" id="etat" class="form-select csp-style-547ce2175898">
                 <option value="">Tous les devoirs</option>
                 <option value="ouverts" {% if etat_courant == 'ouverts' %}selected{% endif %}>Dépôt ouvert</option>
                 <option value="a_corriger" {% if etat_courant == 'a_corriger' %}selected{% endif %}>Copies à corriger</option>
@@ -42,9 +42,9 @@
     {% endcomment %}
     {% if cours_enseignes %}
     <form method="get" action="{% url 'lms:devoir_create' %}" class="flex flex-wrap items-end gap-3">
-        <div class="champ" style="margin-bottom: 0;">
+        <div class="champ csp-style-b3a2297a12f5">
             <label class="form-label" for="cours-devoir">Créer un devoir ou un QCM pour</label>
-            <select name="cours" id="cours-devoir" class="form-select" style="min-width: 16rem;">
+            <select name="cours" id="cours-devoir" class="form-select csp-style-daf3e11f6990">
                 {% for offre in cours_enseignes %}
                 <option value="{{ offre.pk }}">{{ offre.cours.titre }} — {{ offre.session }}</option>
                 {% endfor %}
@@ -93,15 +93,15 @@
 
             <div class="flex shrink-0 gap-6 text-center">
                 <div>
-                    <p class="text-2xl font-semibold num" style="color: var(--color-navy-900);">{{ devoir.nb_a_corriger }}</p>
+                    <p class="text-2xl font-semibold num csp-style-a4a1aa46c7f2">{{ devoir.nb_a_corriger }}</p>
                     <p class="text-xs text-warm-500">à corriger</p>
                 </div>
                 <div>
-                    <p class="text-2xl font-semibold num" style="color: var(--color-navy-600);">{{ devoir.nb_corrigees }}</p>
+                    <p class="text-2xl font-semibold num csp-style-9726ceed6b6d">{{ devoir.nb_corrigees }}</p>
                     <p class="text-xs text-warm-500">corrigées</p>
                 </div>
                 <div>
-                    <p class="text-2xl font-semibold num" style="color: var(--color-warm-400);">{{ devoir.nb_copies }}</p>
+                    <p class="text-2xl font-semibold num csp-style-dba57faf99a4">{{ devoir.nb_copies }}</p>
                     <p class="text-xs text-warm-500">attendues</p>
                 </div>
             </div>
@@ -113,7 +113,7 @@
 {% include "partials/pagination.html" %}
 
 {% else %}
-<div class="card text-center" style="padding: 3rem 1.5rem;">
+<div class="card text-center csp-style-55fafcd2eb9d">
     <p class="text-sm text-warm-600">
         {% if etat_courant %}Aucun devoir ne correspond à ce filtre.
         {% else %}Vous n'avez encore créé ni devoir ni QCM. Choisissez un cours pour commencer.{% endif %}

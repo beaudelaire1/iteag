@@ -6,34 +6,32 @@
 
 {% block corps %}
 {# Une salutation nommée : ce message s'adresse à une personne, pas à une liste. #}
-<p style="margin:0 0 22px;font-size:16px;line-height:1.65;color:#373127;">
+<p class="csp-style-fe97d3ecef3a">
     Bonjour{% if prenom %} {{ prenom }}{% endif %},
 </p>
 
-<h1 style="margin:0 0 18px;font-family:Georgia,'Times New Roman',serif;font-size:26px;
-           font-weight:normal;line-height:1.3;color:#1A2D29;">
+<h1 class="csp-style-9500149a3478">
     {{ titre }}
 </h1>
 
-<p style="margin:0 0 26px;font-size:16px;line-height:1.7;color:#373127;">
+<p class="csp-style-4a8db8a26fd2">
     {{ message|linebreaksbr }}
 </p>
 
 {% if details %}
 {# Les précisions disent de quoi il retourne sans obliger à se connecter. #}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="margin:0 0 28px;background-color:#F0F6F5;border-left:4px solid #457D70;border-radius:0 4px 4px 0;">
+<table class="csp-style-2b42ca7cacc7" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+      >
     <tr>
-        <td style="padding:18px 22px;">
+        <td class="csp-style-3feea47c4745">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 {% for ligne in details %}
                 <tr>
-                    <td width="38%" valign="top"
-                        style="padding:5px 14px 5px 0;font-size:12px;font-weight:bold;letter-spacing:.04em;
-                               text-transform:uppercase;color:#5C7F78;">
+                    <td class="csp-style-28457aeb02a0" width="38%" valign="top"
+                       >
                         {{ ligne.libelle }}
                     </td>
-                    <td valign="top" style="padding:5px 0;font-size:15px;line-height:1.55;color:#1A2D29;">
+                    <td class="csp-style-485d80c957d2" valign="top">
                         {{ ligne.valeur }}
                     </td>
                 </tr>
@@ -45,23 +43,22 @@
 {% endif %}
 
 {% if lien %}
-<p style="margin:0 0 18px;">
-    <a class="button" href="{{ lien }}"
-       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
-              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;letter-spacing:.03em;">
+<p class="csp-style-7b8b5d8af2d9">
+    <a class="button csp-style-b485c735879f" href="{{ lien }}"
+      >
         {{ libelle_lien }}
-        <span style="color:#EEC671;">&nbsp;→</span>
+        <span class="csp-style-ed481f5e6478">&nbsp;→</span>
     </a>
 </p>
 
-<p style="margin:0 0 26px;font-size:11px;line-height:1.55;color:#978B72;">
+<p class="csp-style-83f48bb2f29a">
     Si le bouton ne fonctionne pas, copiez cette adresse dans votre navigateur :<br>
-    <a href="{{ lien }}" style="color:#355952;word-break:break-all;">{{ lien }}</a>
+    <a class="csp-style-f48b1ebfef44" href="{{ lien }}">{{ lien }}</a>
 </p>
 {% endif %}
 
-<p style="margin:0;padding-top:22px;border-top:1px solid #EDE5D0;font-size:15px;line-height:1.7;color:#373127;">
+<p class="csp-style-3f3f0638dad0">
     Bien cordialement,<br>
-    <span style="color:#5C544A;">Le secrétariat de l'ITEAG</span>
+    <span class="csp-style-94a6444bff7a">Le secrétariat de l'ITEAG</span>
 </p>
 {% endblock %}

@@ -1,17 +1,17 @@
-<figure class="my-8 rounded-xl border p-5 sm:p-6" style="border-color: var(--color-warm-200);">
-    <figcaption class="text-lg font-bold mb-5" style="color: var(--color-navy-900);">{{ value.titre }}</figcaption>
+<figure class="my-8 rounded-xl border p-5 sm:p-6 csp-style-2998f592f360">
+    <figcaption class="text-lg font-bold mb-5 csp-style-a4a1aa46c7f2">{{ value.titre }}</figcaption>
     <div class="space-y-4">
         {% for item in barres %}
         <div>
             <div class="flex items-baseline justify-between gap-4 text-sm">
-                <span class="font-medium" style="color: var(--color-warm-700);">{{ item.libelle }}</span>
-                <span style="color: var(--color-navy-800);">{{ item.valeur }}{% if value.unite %} {{ value.unite }}{% endif %}</span>
+                <span class="font-medium csp-style-81372cea588f">{{ item.libelle }}</span>
+                <span class="csp-style-9bce6c04a80b">{{ item.valeur }}{% if value.unite %} {{ value.unite }}{% endif %}</span>
             </div>
-            <div class="mt-1.5 h-2.5 overflow-hidden rounded-full" style="background: var(--color-warm-200);" aria-hidden="true">
+            <div class="mt-1.5 h-2.5 overflow-hidden rounded-full csp-style-1b6944c17eba" aria-hidden="true">
                 <div class="h-full rounded-full" style="width: {{ item.pourcentage }}%; background: var(--color-navy-700);"></div>
             </div>
         </div>
         {% endfor %}
     </div>
-    {% if value.source %}<p class="mt-5 text-xs" style="color: var(--color-warm-500);">Source : {{ value.source }}</p>{% endif %}
+    {% if value.source %}<p class="mt-5 text-xs csp-style-25e866ad732d">Source : {{ value.source }}</p>{% endif %}
 </figure>

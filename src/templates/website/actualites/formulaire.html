@@ -15,11 +15,11 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2"><a href="{% url 'website:actualites_gestion' %}">Actualités</a></p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">
+    <h1 class="csp-style-513ca5addf79">
         {% if actualite %}Modifier l'actualité{% else %}Nouvelle actualité{% endif %}
     </h1>
     {% if actualite %}
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">
+    <p class="mt-1 text-sm csp-style-25e866ad732d">
         <span class="badge{% if actualite.live %} badge-gold{% endif %}">
             {% if actualite.live %}En ligne{% else %}Hors ligne{% endif %}
         </span>
@@ -43,7 +43,7 @@
 
     <div class="card">
         <h2 class="mb-1 text-sm font-bold uppercase tracking-wider text-navy-800">Contenu de l'actualité</h2>
-        <p class="mb-4 text-sm" style="color: var(--color-warm-500);">
+        <p class="mb-4 text-sm csp-style-25e866ad732d">
             Construisez l'annonce avec seulement les blocs nécessaires ; le texte simple reste le choix par défaut.
         </p>
         <div class="streamfield-portail">
@@ -97,7 +97,7 @@
               data-confirmer="Supprimer « {{ actualite.title }} » ? Le texte sera perdu.">
             {% csrf_token %}
             <input type="hidden" name="action" value="supprimer">
-            <button type="submit" class="btn-ghost" style="color: var(--color-danger, #b91c1c);">Supprimer</button>
+            <button type="submit" class="btn-ghost csp-style-a42c11b9db20">Supprimer</button>
         </form>
     </div>
     {% endif %}

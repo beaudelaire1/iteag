@@ -7,20 +7,20 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:questionnaire' question.devoir_id %}" class="inline-flex items-center text-sm font-medium mb-4" style="color: var(--color-navy-600);">
+    <a href="{% url 'lms:questionnaire' question.devoir_id %}" class="inline-flex items-center text-sm font-medium mb-4 csp-style-9726ceed6b6d">
         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
         Retour au questionnaire
     </a>
     <p class="overline mb-2">{{ question.devoir.titre }}</p>
-    <h1 style="font-size: clamp(1.25rem, 3vw, 1.75rem);">Question</h1>
+    <h1 class="csp-style-f11d9f094ef8">Question</h1>
 </div>
 {% endblock %}
 
 {% block portal_content %}
 
 {% if probleme %}
-<div class="mb-6 rounded border p-4" role="alert" style="border-color: var(--color-warm-300); background: var(--color-warm-50);">
-    <p class="text-sm" style="color: var(--color-navy-900);">{{ probleme }}</p>
+<div class="mb-6 rounded border p-4 csp-style-9f0d6dbe15ee" role="alert">
+    <p class="text-sm csp-style-a4a1aa46c7f2">{{ probleme }}</p>
 </div>
 {% endif %}
 
@@ -30,7 +30,7 @@
     <section>
         <form method="post" action="{% url 'lms:question_update' question.pk %}" class="card-elevated space-y-5" novalidate>
             {% csrf_token %}
-            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">Énoncé</h2>
+            <h2 class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">Énoncé</h2>
             {% for field in form_question %}{% include "partials/champ.html" %}{% endfor %}
             <div class="flex flex-wrap gap-3">
                 <button type="submit" class="btn-primary">Enregistrer</button>
@@ -42,21 +42,21 @@
     {# ── Les propositions ── #}
     <section class="space-y-6">
         <div class="card">
-            <h2 class="text-sm font-bold uppercase tracking-wider mb-4" style="color: var(--color-navy-800);">
+            <h2 class="text-sm font-bold uppercase tracking-wider mb-4 csp-style-9bce6c04a80b">
                 Propositions
             </h2>
 
             {% if choix %}
             <ul class="space-y-2">
                 {% for proposition in choix %}
-                <li class="flex items-center justify-between gap-3 rounded border p-3" style="border-color: var(--color-warm-200);">
+                <li class="flex items-center justify-between gap-3 rounded border p-3 csp-style-2998f592f360">
                     <span class="flex items-center gap-2.5 min-w-0">
                         {% if proposition.correct %}
                         <span class="badge badge-success shrink-0">Correcte</span>
                         {% else %}
                         <span class="badge shrink-0">Distracteur</span>
                         {% endif %}
-                        <span class="truncate text-sm" style="color: var(--color-navy-900);">{{ proposition.libelle }}</span>
+                        <span class="truncate text-sm csp-style-a4a1aa46c7f2">{{ proposition.libelle }}</span>
                     </span>
                     <form method="post" action="{% url 'lms:choix_delete' proposition.pk %}" class="shrink-0">
                         {% csrf_token %}
@@ -72,7 +72,7 @@
 
         <form method="post" action="{% url 'lms:choix_create' question.pk %}" class="card-elevated space-y-5" novalidate>
             {% csrf_token %}
-            <h2 class="text-sm font-bold uppercase tracking-wider" style="color: var(--color-navy-800);">
+            <h2 class="text-sm font-bold uppercase tracking-wider csp-style-9bce6c04a80b">
                 Ajouter une proposition
             </h2>
             {% for field in form_choix %}{% include "partials/champ.html" %}{% endfor %}

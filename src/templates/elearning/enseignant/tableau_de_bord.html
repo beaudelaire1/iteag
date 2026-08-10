@@ -9,7 +9,7 @@
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
         <p class="overline mb-2">E-Learning</p>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Bonjour {{ professeur.prenom }}</h1>
+        <h1 class="csp-style-513ca5addf79">Bonjour {{ professeur.prenom }}</h1>
     </div>
     <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Nouveau module</a>
 </div>
@@ -18,19 +18,19 @@
 {% block portal_content %}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
     <div class="card-elevated">
-        <p class="stat-number" style="font-size: 2rem;">{{ nb_publies }}</p>
+        <p class="stat-number csp-style-c5510aee071a">{{ nb_publies }}</p>
         <p class="stat-label">Publiés</p>
     </div>
     <div class="card-elevated">
-        <p class="stat-number" style="font-size: 2rem;">{{ nb_brouillons }}</p>
+        <p class="stat-number csp-style-c5510aee071a">{{ nb_brouillons }}</p>
         <p class="stat-label">Brouillons</p>
     </div>
     <div class="card-elevated">
-        <p class="stat-number" style="font-size: 2rem;">{{ nb_inscrits }}</p>
+        <p class="stat-number csp-style-c5510aee071a">{{ nb_inscrits }}</p>
         <p class="stat-label">Étudiants inscrits</p>
     </div>
     <div class="card-elevated">
-        <p class="stat-number" style="font-size: 2rem;">{{ videos_en_attente }}</p>
+        <p class="stat-number csp-style-c5510aee071a">{{ videos_en_attente }}</p>
         <p class="stat-label">Vidéos en préparation</p>
     </div>
 </div>
@@ -57,7 +57,7 @@
                 <td class="num">{{ module.duree_minutes }} min</td>
                 <td>
                     <a href="{% url 'elearning:enseignant_structure' module.slug %}"
-                       class="text-sm font-medium link-reveal" style="color: var(--color-navy-700);">Ouvrir</a>
+                       class="text-sm font-medium link-reveal csp-style-efbb8610fce7">Ouvrir</a>
                 </td>
             </tr>
             {% endfor %}

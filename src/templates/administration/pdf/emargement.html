@@ -101,7 +101,7 @@
 
     {% include "documents/pdf/_entete_institutionnel.html" %}
 
-    <div class="header-emargement" style="margin-top: 4mm;">
+    <div class="header-emargement csp-style-b8819aae03a4">
         <h1>Feuille d'émargement — {{ cours_session.cours.titre }}</h1>
         <p><strong>{{ cours_session.session.nom }}</strong></p>
     </div>
@@ -120,11 +120,11 @@
     <table class="table-emargement">
         <thead>
             <tr>
-                <th style="width: 5%;">#</th>
-                <th style="width: 35%;">Nom & Prénom de l'étudiant</th>
-                <th style="width: 25%;">Émargement (Matin)</th>
-                <th style="width: 25%;">Émargement (Après-midi)</th>
-                <th style="width: 10%;">Statut</th>
+                <th class="csp-style-dccc34128ff6">#</th>
+                <th class="csp-style-b8b699ddacaf">Nom & Prénom de l'étudiant</th>
+                <th class="csp-style-84a0e8c4b0db">Émargement (Matin)</th>
+                <th class="csp-style-84a0e8c4b0db">Émargement (Après-midi)</th>
+                <th class="csp-style-3d8f225b32ca">Statut</th>
             </tr>
         </thead>
         <tbody>
@@ -133,15 +133,15 @@
                 <td>{{ forloop.counter }}</td>
                 <td>
                     <strong>{{ profil.utilisateur.last_name|upper }}</strong> {{ profil.utilisateur.first_name }}
-                    {% if profil.utilisateur.email %}<br><span style="font-size: 7.5pt; color: #666;">{{ profil.utilisateur.email }}</span>{% endif %}
+                    {% if profil.utilisateur.email %}<br><span class="csp-style-6d6fecb4d731">{{ profil.utilisateur.email }}</span>{% endif %}
                 </td>
                 <td class="signature-box"></td>
                 <td class="signature-box"></td>
-                <td style="font-size: 7.5pt; text-align: center;">Présent / Absent</td>
+                <td class="csp-style-751d3355dbd6">Présent / Absent</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align: center; padding: 10mm; color: #777;">
+                <td class="csp-style-1d52b39455ee" colspan="5">
                     Aucun étudiant inscrit validé pour ce cours de session.
                 </td>
             </tr>
@@ -149,16 +149,16 @@
         </tbody>
     </table>
 
-    <div style="margin-top: 10mm; page-break-inside: avoid;">
-        <table style="width: 100%; font-family: 'Inter', sans-serif; font-size: 8.5pt;">
+    <div class="csp-style-c90ed7f2df81">
+        <table class="csp-style-c1732758079b">
             <tr>
-                <td style="width: 50%; vertical-align: top;">
+                <td class="csp-style-0acc6e85d36e">
                     <strong>Visa de l'enseignant :</strong>
-                    <div style="height: 18mm; border: 0.2mm dashed #aaa; margin-top: 2mm; border-radius: 1mm;"></div>
+                    <div class="csp-style-57743949dd7b"></div>
                 </td>
-                <td style="width: 50%; vertical-align: top; padding-left: 5mm;">
+                <td class="csp-style-8b96c02ad09e">
                     <strong>Visa du secrétariat :</strong>
-                    <div style="height: 18mm; border: 0.2mm dashed #aaa; margin-top: 2mm; border-radius: 1mm;"></div>
+                    <div class="csp-style-57743949dd7b"></div>
                 </td>
             </tr>
         </table>

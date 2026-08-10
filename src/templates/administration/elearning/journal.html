@@ -8,7 +8,7 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">E-Learning</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Journal des accès</h1>
+    <h1 class="csp-style-513ca5addf79">Journal des accès</h1>
 </div>
 {% endblock %}
 
@@ -16,14 +16,14 @@
 
 {# Comptes vus depuis de nombreuses adresses : indice de partage #}
 {% if suspects %}
-<section class="note alert mb-8" style="max-width: none;">
+<section class="note alert mb-8 csp-style-4cd2d700c258">
     <span class="lbl">Comptes à vérifier</span>
     <p class="mb-3">
         Ces comptes ont été utilisés depuis au moins {{ seuil_adresses }} adresses différentes
         en 24 heures. Cela peut venir d'un déplacement ou d'une connexion mobile, mais aussi
         d'un identifiant partagé.
     </p>
-    <div class="tw overflow-x-auto" style="margin: 0;">
+    <div class="tw overflow-x-auto csp-style-02419cffd4a2">
         <table class="table-premium">
             <thead><tr><th>Compte</th><th>Adresses distinctes</th><th>Lectures</th></tr></thead>
             <tbody>
@@ -31,7 +31,7 @@
                 <tr>
                     <td class="font-medium">
                         {{ suspect.utilisateur__first_name }} {{ suspect.utilisateur__last_name }}
-                        <span class="block text-xs" style="color: var(--color-warm-400);">{{ suspect.utilisateur__email }}</span>
+                        <span class="block text-xs csp-style-dba57faf99a4">{{ suspect.utilisateur__email }}</span>
                     </td>
                     <td class="num">{{ suspect.adresses }}</td>
                     <td class="num">{{ suspect.lectures }}</td>
@@ -54,7 +54,7 @@
         </select>
     </div>
     <button type="submit" class="btn-ghost">Filtrer</button>
-    <p class="ml-auto text-sm" style="color: var(--color-warm-500);">
+    <p class="ml-auto text-sm csp-style-25e866ad732d">
         {{ refus_24h }} refus sur les dernières 24 h
     </p>
 </form>
@@ -86,7 +86,7 @@
 
 {% else %}
 <div class="card text-center py-16">
-    <p style="color: var(--color-warm-600);">Aucun accès enregistré pour ce filtre.</p>
+    <p class="csp-style-9a1421a5a90b">Aucun accès enregistré pour ce filtre.</p>
 </div>
 {% endif %}
 {% endblock %}

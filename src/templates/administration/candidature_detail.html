@@ -8,7 +8,7 @@
 <div class="mb-8">
     <a href="{% url 'administration:candidatures' %}" class="mb-4 inline-flex items-center text-sm font-medium text-navy-600">← Retour aux candidatures</a>
     <div class="flex flex-wrap items-center gap-3">
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ dossier.nom_complet }}</h1>
+        <h1 class="csp-style-513ca5addf79">{{ dossier.nom_complet }}</h1>
         <span class="badge {% if dossier.statut == 'soumis' %}badge-info{% elif dossier.statut == 'en_examen' %}badge-warning{% elif dossier.statut == 'accepte' %}badge-success{% elif dossier.statut == 'refuse' %}badge-danger{% else %}badge-gold{% endif %}">{{ dossier.get_statut_display }}</span>
     </div>
     <p class="mt-2 text-sm text-warm-500">{{ dossier.parcours_souhaite }} · dossier reçu le {{ dossier.date_soumission|date:"d/m/Y" }}</p>
@@ -21,7 +21,7 @@
         <section class="card-elevated">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div><p class="overline mb-1">Candidat</p><h2 class="text-lg font-semibold">Identité et candidature</h2></div>
-                <a href="mailto:{{ dossier.email }}" class="btn-ghost" style="padding:.45rem 1rem;">Contacter</a>
+                <a href="mailto:{{ dossier.email }}" class="btn-ghost csp-style-a204f6db467a">Contacter</a>
             </div>
             <dl class="grid gap-5 text-sm sm:grid-cols-2">
                 <div><dt class="text-warm-500">Nom complet</dt><dd class="mt-1 font-medium text-navy-900">{{ dossier.nom_complet }}</dd></div>

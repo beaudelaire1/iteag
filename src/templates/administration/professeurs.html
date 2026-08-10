@@ -12,8 +12,8 @@
 {% block portal_header %}
 <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
     <div>
-        <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Professeurs</h1>
-        <p class="text-sm mt-1" style="color: var(--color-warm-500);">{{ professeurs.paginator.count }} enseignant{{ professeurs.paginator.count|pluralize }}</p>
+        <h1 class="csp-style-513ca5addf79">Professeurs</h1>
+        <p class="text-sm mt-1 csp-style-25e866ad732d">{{ professeurs.paginator.count }} enseignant{{ professeurs.paginator.count|pluralize }}</p>
     </div>
     <a href="{% url 'administration:professeur_create' %}" class="btn-primary text-sm">+ Nouveau professeur</a>
 
@@ -44,18 +44,18 @@
     <div class="card-elevated flex flex-col">
         <div class="flex items-start gap-4">
             {% if prof.photo %}
-            <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="h-14 w-14 rounded-full object-cover shrink-0 border-2" style="border-color: var(--color-warm-200);">
+            <img src="{{ prof.photo.url }}" alt="{{ prof.nom_complet }}" class="h-14 w-14 rounded-full object-cover shrink-0 border-2 csp-style-2998f592f360">
             {% else %}
-            <div class="h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-sm font-bold" style="background: var(--color-navy-100); color: var(--color-navy-600);">
+            <div class="h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-sm font-bold csp-style-f9963fce1c35">
                 {{ prof.prenom.0 }}{{ prof.nom.0 }}
             </div>
             {% endif %}
             <div class="min-w-0">
-                <h3 class="font-semibold truncate" style="color: var(--color-navy-900);">
+                <h3 class="font-semibold truncate csp-style-a4a1aa46c7f2">
                     <a href="{% url 'administration:professeur_detail' prof.pk %}">{{ prof.nom_complet }}</a>
                 </h3>
                 {% if prof.specialite %}
-                <p class="text-xs mt-0.5 truncate" style="color: var(--color-warm-500);">{{ prof.specialite }}</p>
+                <p class="text-xs mt-0.5 truncate csp-style-25e866ad732d">{{ prof.specialite }}</p>
                 {% endif %}
             </div>
             <span class="ml-auto shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs
@@ -67,20 +67,20 @@
         {% if prof.disciplines.all %}
         <div class="flex flex-wrap gap-1.5 mt-4">
             {% for d in prof.disciplines.all %}
-            <span class="text-xs rounded-full px-2.5 py-0.5 font-medium" style="background: var(--color-warm-100); color: var(--color-navy-700);">{{ d.nom }}</span>
+            <span class="text-xs rounded-full px-2.5 py-0.5 font-medium csp-style-fb2a89db1e5b">{{ d.nom }}</span>
             {% endfor %}
         </div>
         {% endif %}
 
         {% if prof.user %}
-        <p class="text-xs mt-3" style="color: var(--color-warm-400);">
+        <p class="text-xs mt-3 csp-style-dba57faf99a4">
             Compte : {{ prof.user.email|default:prof.user.username }}
         </p>
         {% endif %}
 
-        <div class="flex items-center gap-3 mt-4 pt-3" style="border-top: 1px solid var(--color-warm-100);">
-            <a href="{% url 'administration:professeur_detail' prof.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Voir la fiche</a>
-            <a href="{% url 'administration:professeur_update' prof.pk %}" class="text-xs font-medium" style="color: var(--color-navy-600);">Modifier</a>
+        <div class="flex items-center gap-3 mt-4 pt-3 csp-style-b5ceea883241">
+            <a href="{% url 'administration:professeur_detail' prof.pk %}" class="text-xs font-medium csp-style-9726ceed6b6d">Voir la fiche</a>
+            <a href="{% url 'administration:professeur_update' prof.pk %}" class="text-xs font-medium csp-style-9726ceed6b6d">Modifier</a>
             <a href="{% url 'administration:professeur_delete' prof.pk %}" class="lien-danger">Supprimer</a>
         </div>
     </div>
@@ -91,21 +91,21 @@
 {% if professeurs.has_other_pages %}
 <nav class="flex justify-center mt-8 gap-1">
     {% if professeurs.has_previous %}
-    <a href="?page={{ professeurs.previous_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium" style="color: var(--color-navy-600); background: var(--color-warm-100);">‹</a>
+    <a href="?page={{ professeurs.previous_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium csp-style-eb3a04302f2f">‹</a>
     {% endif %}
     {% for num in professeurs.paginator.page_range %}
     <a href="?page={{ num }}" class="px-3 py-1.5 rounded text-sm font-medium {% if professeurs.number == num %}text-white{% endif %}"
        style="{% if professeurs.number == num %}background: var(--color-navy-800); color: #fff;{% else %}color: var(--color-navy-600);{% endif %}">{{ num }}</a>
     {% endfor %}
     {% if professeurs.has_next %}
-    <a href="?page={{ professeurs.next_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium" style="color: var(--color-navy-600); background: var(--color-warm-100);">›</a>
+    <a href="?page={{ professeurs.next_page_number }}" class="px-3 py-1.5 rounded text-sm font-medium csp-style-eb3a04302f2f">›</a>
     {% endif %}
 </nav>
 {% endif %}
 
 {% else %}
 <div class="card-elevated py-12 text-center">
-    <p style="color: var(--color-warm-400);">Aucun professeur trouvé.</p>
+    <p class="csp-style-dba57faf99a4">Aucun professeur trouvé.</p>
 </div>
 {% endif %}
 

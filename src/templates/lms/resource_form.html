@@ -11,10 +11,10 @@
 
 {% block portal_header %}
 <div class="mb-8">
-    <a href="{% url 'lms:course_detail' cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block" style="color: var(--color-navy-600);">← Retour au cours</a>
+    <a href="{% url 'lms:course_detail' cours_session.pk %}" class="text-sm font-medium transition-colors duration-200 mb-3 inline-block csp-style-9726ceed6b6d">← Retour au cours</a>
     <p class="overline mb-2">Ressources</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Ajouter une ressource</h1>
-    <p class="mt-1 text-sm" style="color: var(--color-warm-500);">{{ cours_session.cours.titre }} — {{ cours_session.session.nom }}</p>
+    <h1 class="csp-style-513ca5addf79">Ajouter une ressource</h1>
+    <p class="mt-1 text-sm csp-style-25e866ad732d">{{ cours_session.cours.titre }} — {{ cours_session.session.nom }}</p>
 </div>
 {% endblock %}
 

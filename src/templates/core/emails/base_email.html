@@ -19,34 +19,31 @@
         }
     </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f0e5;font-family:Arial,Helvetica,sans-serif;color:#373127;-webkit-font-smoothing:antialiased;">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+<body class="csp-style-3c2af8cc1d7c">
+    <div class="csp-style-2297dbcb037f">
         {% block preheader %}Information de l'Institut de Théologie Évangélique des Antilles et de la Guyane.{% endblock %}
     </div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f0e5"
-           style="width:100%;background-color:#f4f0e5;">
+    <table class="csp-style-a3914465af46" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f0e5"
+          >
         <tr>
-            <td align="center" style="padding:42px 14px;">
-                <table class="email-shell" role="presentation" width="640" cellpadding="0" cellspacing="0" border="0"
-                       style="width:640px;max-width:640px;background-color:#ffffff;border-collapse:separate;border-spacing:0;
-                              border-radius:8px;box-shadow:0 12px 32px rgba(26,45,41,.12);overflow:hidden;">
+            <td class="csp-style-d4a005bfb199" align="center">
+                <table class="email-shell csp-style-366181f17968" role="presentation" width="640" cellpadding="0" cellspacing="0" border="0"
+                      >
                     <tr>
-                        <td class="email-header" bgcolor="#1A2D29"
-                            style="padding:30px 42px 26px;background-color:#1A2D29;border-bottom:4px solid #EAB63E;">
+                        <td class="email-header csp-style-fc03ec72c6e4" bgcolor="#1A2D29"
+                           >
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td valign="middle">
                                         {% if EMAIL_LOGO_CID %}
-                                        <img class="brand-logo" src="cid:{{ EMAIL_LOGO_CID }}" width="220"
-                                             alt="ITEAG" style="display:block;width:220px;max-width:100%;height:auto;border:0;">
+                                        <img class="brand-logo csp-style-448b07f7b63d" src="cid:{{ EMAIL_LOGO_CID }}" width="220"
+                                             alt="ITEAG">
                                         {% else %}
-                                        <span style="font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:bold;
-                                                     letter-spacing:.08em;color:#ffffff;">ITEAG</span>
+                                        <span class="csp-style-04d80580e695">ITEAG</span>
                                         {% endif %}
                                     </td>
-                                    <td class="header-category" align="right" valign="middle"
-                                        style="font-size:10px;line-height:1.5;font-weight:bold;letter-spacing:.16em;
-                                               text-transform:uppercase;color:#EEC671;">
+                                    <td class="header-category csp-style-941e2c811d8d" align="right" valign="middle"
+                                       >
                                         {% block categorie %}Information officielle{% endblock %}
                                     </td>
                                 </tr>
@@ -54,31 +51,30 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="email-body" style="padding:46px 46px 42px;font-size:16px;line-height:1.65;color:#373127;">
+                        <td class="email-body csp-style-1d5035322d1d">
                             {% block corps %}{% endblock %}
                         </td>
                     </tr>
                     <tr>
-                        <td class="email-footer" bgcolor="#F9F3E2"
-                            style="padding:27px 42px 24px;background-color:#F9F3E2;border-top:1px solid #EDE5D0;">
-                            <p style="margin:0 0 18px;font-size:10px;font-weight:bold;letter-spacing:.15em;
-                                      text-transform:uppercase;color:#A8790C;">Nous contacter</p>
+                        <td class="email-footer csp-style-b063d15a468d" bgcolor="#F9F3E2"
+                           >
+                            <p class="csp-style-72960f3cb492">Nous contacter</p>
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
-                                    <td class="contact-cell" width="42%" valign="top" style="padding:0 18px 0 0;">
-                                        <p style="margin:0 0 4px;font-size:11px;font-weight:bold;color:#736957;">Adresse</p>
-                                        <p style="margin:0;font-size:12px;line-height:1.55;color:#373127;">{{ SITE_ADDRESS }}</p>
+                                    <td class="contact-cell csp-style-c6a61ab480e0" width="42%" valign="top">
+                                        <p class="csp-style-f2d78d659d65">Adresse</p>
+                                        <p class="csp-style-5eb832cb8ad0">{{ SITE_ADDRESS }}</p>
                                     </td>
-                                    <td class="contact-cell" width="29%" valign="top" style="padding:0 18px 0 0;">
-                                        <p style="margin:0 0 4px;font-size:11px;font-weight:bold;color:#736957;">Téléphone</p>
-                                        <p style="margin:0;font-size:12px;line-height:1.55;">
-                                            <a href="tel:{{ SITE_PHONE }}" style="color:#355952;text-decoration:none;">{{ SITE_PHONE }}</a>
+                                    <td class="contact-cell csp-style-c6a61ab480e0" width="29%" valign="top">
+                                        <p class="csp-style-f2d78d659d65">Téléphone</p>
+                                        <p class="csp-style-27c1368644f1">
+                                            <a class="csp-style-8831ac6d2aee" href="tel:{{ SITE_PHONE }}">{{ SITE_PHONE }}</a>
                                         </p>
                                     </td>
                                     <td class="contact-cell" width="29%" valign="top">
-                                        <p style="margin:0 0 4px;font-size:11px;font-weight:bold;color:#736957;">Email</p>
-                                        <p style="margin:0;font-size:12px;line-height:1.55;">
-                                            <a href="mailto:{{ SITE_EMAIL }}" style="color:#355952;text-decoration:none;">{{ SITE_EMAIL }}</a>
+                                        <p class="csp-style-f2d78d659d65">Email</p>
+                                        <p class="csp-style-27c1368644f1">
+                                            <a class="csp-style-8831ac6d2aee" href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -87,31 +83,30 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="email-footer" bgcolor="#0D1815"
-                            style="padding:25px 42px 27px;background-color:#0D1815;text-align:center;">
-                            <p style="margin:0 0 7px;font-family:Georgia,'Times New Roman',serif;font-size:15px;
-                                      font-style:italic;color:#F9ECCE;">{{ SITE_TAGLINE }}</p>
-                            <p style="margin:0 0 12px;font-size:11px;line-height:1.55;color:#B8AC93;">
+                        <td class="email-footer csp-style-32c2e4c56cd1" bgcolor="#0D1815"
+                           >
+                            <p class="csp-style-21ee6f4daba2">{{ SITE_TAGLINE }}</p>
+                            <p class="csp-style-66a2dc2e14e8">
                                 {{ SITE_FULL_NAME }}
                             </p>
-                            <p style="margin:0 0 14px;font-size:11px;">
-                                <a href="{{ SITE_URL }}" style="color:#EEC671;text-decoration:none;">iteag.org</a>
-                                <span style="color:#544B3D;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
-                                <a href="{{ SITE_FACEBOOK }}" style="color:#EEC671;text-decoration:none;">Facebook</a>
-                                <span style="color:#544B3D;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
-                                <a href="{{ SITE_YOUTUBE }}" style="color:#EEC671;text-decoration:none;">YouTube</a>
+                            <p class="csp-style-7889f0e089bb">
+                                <a class="csp-style-e26f6516e759" href="{{ SITE_URL }}">iteag.org</a>
+                                <span class="csp-style-78f2af3a6aff">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+                                <a class="csp-style-e26f6516e759" href="{{ SITE_FACEBOOK }}">Facebook</a>
+                                <span class="csp-style-78f2af3a6aff">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+                                <a class="csp-style-e26f6516e759" href="{{ SITE_YOUTUBE }}">YouTube</a>
                             </p>
-                            <p style="margin:0;font-size:10px;line-height:1.55;color:#736957;">
+                            <p class="csp-style-f3b3ac1a7104">
                                 © {{ ANNEE_COURANTE }} ITEAG · Tous droits réservés.<br>
                                 Message envoyé automatiquement par la plateforme sécurisée de l'institut.
                             </p>
                         </td>
                     </tr>
                 </table>
-                <p style="margin:18px 0 0;font-size:10px;line-height:1.5;color:#978B72;">
+                <p class="csp-style-9a52ca9f37b5">
                     Merci de ne pas répondre directement à ce message automatique.<br>
                     Pour toute demande, écrivez à
-                    <a href="mailto:{{ SITE_EMAIL }}" style="color:#736957;">{{ SITE_EMAIL }}</a>.
+                    <a class="csp-style-5adf660e7004" href="mailto:{{ SITE_EMAIL }}">{{ SITE_EMAIL }}</a>.
                 </p>
             </td>
         </tr>

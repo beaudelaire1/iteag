@@ -8,7 +8,7 @@
 {% block portal_header %}
 <div class="mb-8">
     <p class="overline mb-2">Espace enseignant</p>
-    <h1 style="font-size: clamp(1.5rem, 3vw, 2rem);">Mes étudiants</h1>
+    <h1 class="csp-style-513ca5addf79">Mes étudiants</h1>
     <p class="mt-2 text-sm text-warm-600">
         Les inscrits à vos cours, et comment les joindre. Le dossier administratif
         et financier relève du secrétariat.
@@ -19,14 +19,14 @@
 {% block portal_content %}
 
 <form method="get" class="mb-6 flex flex-wrap items-end gap-3">
-    <div class="champ" style="margin-bottom: 0;">
+    <div class="champ csp-style-b3a2297a12f5">
         <label class="form-label" for="q">Rechercher</label>
-        <input type="search" name="q" id="q" value="{{ query }}" class="form-input" style="min-width: 16rem;"
+        <input type="search" name="q" id="q" value="{{ query }}" class="form-input csp-style-daf3e11f6990"
                placeholder="Nom, prénom, numéro d'étudiant">
     </div>
-    <div class="champ" style="margin-bottom: 0;">
+    <div class="champ csp-style-b3a2297a12f5">
         <label class="form-label" for="cours">Cours</label>
-        <select name="cours" id="cours" class="form-select" style="min-width: 15rem;">
+        <select name="cours" id="cours" class="form-select csp-style-cb4141cee178">
             <option value="">Tous mes cours</option>
             {% for offre in cours_enseignes %}
             <option value="{{ offre.pk }}" {% if current_cours == offre.pk|stringformat:"s" %}selected{% endif %}>
@@ -51,13 +51,13 @@
                     <span class="flex items-center gap-3">
                         {% if profil.utilisateur.photo %}
                         <img src="{{ profil.utilisateur.photo.url }}" alt=""
-                             class="h-9 w-9 shrink-0 rounded-full object-cover" style="border: 1px solid var(--color-warm-200);">
+                             class="h-9 w-9 shrink-0 rounded-full object-cover csp-style-6802a5286497">
                         {% else %}
-                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-bold text-white"
-                              style="background: var(--color-navy-700);" aria-hidden="true">{{ profil.utilisateur.initiales }}</span>
+                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-bold text-white csp-style-8f5d00b0477b"
+                              aria-hidden="true">{{ profil.utilisateur.initiales }}</span>
                         {% endif %}
                         <span class="min-w-0">
-                            <span class="block font-medium" style="color: var(--color-navy-900);">
+                            <span class="block font-medium csp-style-a4a1aa46c7f2">
                                 {{ profil.utilisateur.get_full_name|default:profil.utilisateur.username }}
                             </span>
                             <span class="block text-xs text-warm-400">{{ profil.numero_etudiant }}</span>
@@ -75,7 +75,7 @@
                 <td class="text-sm">
                     {% for inscription in profil.inscriptions_chez_moi %}
                     <a href="{% url 'lms:course_detail' inscription.cours_session.pk %}"
-                       class="block" style="color: var(--color-navy-700);">
+                       class="block csp-style-efbb8610fce7">
                         {{ inscription.cours_session.cours.titre }}
                     </a>
                     <span class="block text-xs text-warm-400 {% if not forloop.last %}mb-1{% endif %}">
@@ -87,14 +87,14 @@
                 </td>
                 <td class="text-sm">
                     {% if profil.utilisateur.email %}
-                    <a href="mailto:{{ profil.utilisateur.email }}" class="link-reveal" style="color: var(--color-navy-700);">
+                    <a href="mailto:{{ profil.utilisateur.email }}" class="link-reveal csp-style-efbb8610fce7">
                         {{ profil.utilisateur.email }}
                     </a>
                     {% else %}<span class="text-warm-400">—</span>{% endif %}
                 </td>
                 <td class="text-sm">
                     {% if profil.utilisateur.phone %}
-                    <a href="tel:{{ profil.utilisateur.phone }}" class="link-reveal" style="color: var(--color-navy-700);">
+                    <a href="tel:{{ profil.utilisateur.phone }}" class="link-reveal csp-style-efbb8610fce7">
                         {{ profil.utilisateur.phone }}
                     </a>
                     {% else %}<span class="text-warm-400">—</span>{% endif %}
@@ -108,7 +108,7 @@
 {% include "partials/pagination.html" %}
 
 {% else %}
-<div class="card text-center" style="padding: 3rem 1.5rem;">
+<div class="card text-center csp-style-55fafcd2eb9d">
     <p class="text-sm text-warm-600">
         {% if query or current_cours %}Aucun étudiant ne correspond à cette recherche.
         {% else %}Aucun étudiant n'est encore inscrit à vos cours.{% endif %}
