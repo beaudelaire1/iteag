@@ -1,0 +1,50 @@
+name: CSP inline style migration
+
+# Workflow ponctuel du chantier agent/mise-a-niveau-go-sans-reserve.
+# Il applique le codemod déterministe aux gabarits puis pousse le résultat sur
+# cette branche uniquement. Il sera supprimé une fois la migration terminée ;
+# le contrôle --check, lui, restera dans la CI normale.
+on:
+  push:
+    branches: [agent/mise-a-niveau-go-sans-reserve]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: csp-inline-migration
+  cancel-in-progress: true
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/mise-a-niveau-go-sans-reserve
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Migrer les styles statiques
+        working-directory: src
+        run: python scripts/migrer_styles_inline.py --write
+
+      - name: Enregistrer uniquement les transformations produites
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "Aucune transformation supplémentaire."
+            exit 0
+          fi
+          git diff --stat
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/templates src/assets/css/inline-migre.css
+          git commit -m "Migrer les styles inline statiques hors des gabarits"
+          git push origin HEAD:agent/mise-a-niveau-go-sans-reserve
