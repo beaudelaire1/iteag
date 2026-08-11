@@ -23,13 +23,26 @@ PRESENTATION_META = (
 
 CHAMPS_CONTACT_PAR_DEFAUT = (
     {"label": "Nom", "field_type": "singleline", "required": True},
+    {"label": "Prénom", "field_type": "singleline", "required": True},
     {"label": "Email", "field_type": "email", "required": True},
+    {
+        "label": "Téléphone",
+        "field_type": "singleline",
+        "required": False,
+        "help_text": "Facultatif",
+    },
+    {
+        "label": "Objet",
+        "field_type": "dropdown",
+        "required": True,
+        "choices": "Renseignements généraux\nInscriptions et admissions\nFormations et cursus\nBibliothèque\nAutre",
+    },
     {"label": "Message", "field_type": "multiline", "required": True},
 )
 
 
 def ajouter_champs_contact_par_defaut(page):
-    """Ajoute le formulaire minimal à une page de contact nouvellement créée."""
+    """Ajoute le formulaire de contact complet à une page nouvellement créée."""
     for sort_order, definition in enumerate(CHAMPS_CONTACT_PAR_DEFAUT):
         page.form_fields.add(FormField(sort_order=sort_order, **definition))
     # Les champs enfants font partie de la révision Wagtail : une nouvelle
