@@ -10,6 +10,7 @@
   "10031": [
     "^/admin/login/",
     "^/bibliotheque/",
+    "^/boutique/\\?",
     "^/contact/",
     "^/django-admin/login/",
     "^/e-learning/"

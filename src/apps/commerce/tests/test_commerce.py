@@ -7,6 +7,7 @@ from django.core import mail
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
+from django.utils.html import escape
 
 from apps.accounts.models import User
 from apps.commerce import panier, services
@@ -94,6 +95,19 @@ def creer_depuis_session(client, livre, quantite=2):
             donnees=donnees_commande(),
             lignes_panier=lignes,
         )
+
+
+@pytest.mark.django_db
+def test_le_catalogue_echappe_la_recherche_dans_l_attribut_value(client):
+    charge = '"><svg/onload=alert("xss")>'
+
+    reponse = client.get(reverse("commerce:catalogue"), {"q": charge, "disponible": "1"})
+    contenu = reponse.content.decode()
+
+    assert reponse.status_code == 200
+    assert charge not in contenu
+    assert escape(charge) in contenu
+    assert "<svg/onload" not in contenu
 
 
 @pytest.mark.django_db
