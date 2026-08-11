@@ -8,9 +8,11 @@
   ],
   "10027": ["^/static/admin/js/vendor/jquery/"],
   "10031": [
+    "^/admissions/candidature/$",
     "^/admin/login/",
     "^/bibliotheque/",
     "^/boutique/\\?",
+    "^/connexion/$",
     "^/contact/",
     "^/django-admin/login/",
     "^/e-learning/"

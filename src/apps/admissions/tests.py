@@ -2,6 +2,7 @@ import pytest
 from django.core import mail
 from django.test import Client
 from django.urls import reverse
+from django.utils.html import escape
 
 from apps.accounts.models import User
 from apps.admissions.forms import CandidatureForm
@@ -235,6 +236,26 @@ class TestCandidatureViews:
         response = client.post(url, data)
         assert response.status_code == 200  # re-renders form
         assert DossierCandidature.objects.filter(email="bot@spam.org").count() == 0
+
+    def test_la_candidature_echappe_les_valeurs_reaffichees(self, client: Client, parcours):
+        charge = '"><svg/onload=alert("xss")>'
+        response = client.post(
+            reverse("admissions:candidature_form"),
+            {
+                "nom": charge,
+                "prenom": "Alice",
+                "email": "adresse-invalide",
+                "parcours_souhaite": parcours.pk,
+                "motivations": "Test de la restitution sécurisée.",
+                "honeypot": "",
+            },
+        )
+        contenu = response.content.decode()
+
+        assert response.status_code == 200
+        assert charge not in contenu
+        assert escape(charge) in contenu
+        assert "<svg/onload" not in contenu
 
     def test_confirmation_view(self, client: Client, dossier):
         url = reverse("admissions:candidature_confirmation", kwargs={"token": dossier.token_suivi})

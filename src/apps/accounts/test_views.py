@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import PBKDF2PasswordHasher, identify_hasher
 from django.core import mail
 from django.test import Client, override_settings
 from django.urls import reverse
+from django.utils.html import escape
 
 from apps.accounts.models import User
 
@@ -27,6 +28,19 @@ class TestLoginView:
         url = reverse("accounts:login")
         response = client.post(url, {"username": "testuser", "password": "wrong"})
         assert response.status_code == 200  # re-renders form
+
+    def test_la_connexion_echappe_l_identifiant_et_ne_reaffiche_pas_le_mot_de_passe(self, client: Client):
+        charge = '"><svg/onload=alert("xss")>'
+        mot_de_passe = "secret-a-ne-jamais-reafficher"
+
+        response = client.post(reverse("accounts:login"), {"username": charge, "password": mot_de_passe})
+        contenu = response.content.decode()
+
+        assert response.status_code == 200
+        assert charge not in contenu
+        assert escape(charge) in contenu
+        assert "<svg/onload" not in contenu
+        assert mot_de_passe not in contenu
 
     @override_settings(
         PASSWORD_HASHERS=[
