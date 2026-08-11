@@ -1,4 +1,5 @@
 from importlib import import_module
+from pathlib import Path
 
 import pytest
 from django.db import connection
@@ -11,6 +12,7 @@ from wagtail.models import Revision, Site
 
 from apps.website.management.commands.setup_initial_pages import ajouter_champs_contact_par_defaut
 from apps.website.models import ContactPage, FormField
+from config.settings import base as base_settings
 
 pytestmark = pytest.mark.django_db
 
@@ -47,6 +49,14 @@ def test_la_confirmation_existante_est_le_gabarit_de_landing():
 
     assert page.get_landing_page_template() == "website/contact_success.html"
     assert get_template(page.get_landing_page_template())
+
+
+def test_la_carte_openstreetmap_est_autorisee_par_la_csp():
+    origine = "https://www.openstreetmap.org"
+    gabarit = Path(base_settings.BASE_DIR, "templates", "website", "contact_page.html").read_text(encoding="utf-8")
+
+    assert f'src="{origine}/export/embed.html?' in gabarit
+    assert origine in base_settings.CONTENT_SECURITY_POLICY["DIRECTIVES"]["frame-src"]
 
 
 def test_un_message_valide_redirige_sans_erreur_de_gabarit(page_contact, client):

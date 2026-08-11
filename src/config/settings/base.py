@@ -673,6 +673,7 @@ SESSION_SAVE_EVERY_REQUEST = True
 _turnstile_origins = ["https://challenges.cloudflare.com"] if CLOUDFLARE_TURNSTILE_ENABLED else []
 _stripe_script_origins = ["https://js.stripe.com"]
 _stripe_frame_origins = ["https://js.stripe.com", "https://hooks.stripe.com", "https://checkout.stripe.com"]
+_openstreetmap_frame_origins = ["https://www.openstreetmap.org"]
 from csp.constants import NONCE  # noqa: E402
 
 CONTENT_SECURITY_POLICY = {
@@ -696,7 +697,7 @@ CONTENT_SECURITY_POLICY = {
         "media-src": ["'self'", "blob:"],
         "font-src": ["'self'"],
         "connect-src": ["'self'", "https://api.stripe.com", "https://m.stripe.network"],
-        "frame-src": [*_turnstile_origins, *_stripe_frame_origins],
+        "frame-src": [*_turnstile_origins, *_stripe_frame_origins, *_openstreetmap_frame_origins],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
         "form-action": ["'self'"],
