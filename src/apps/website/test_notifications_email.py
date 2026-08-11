@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 
 import pytest
+from django import forms
 from django.core import mail
 
 from apps.website.models import ContactPage
@@ -14,10 +15,11 @@ def test_un_message_de_contact_previent_le_secretariat_et_le_visiteur():
     formulaire = SimpleNamespace(
         cleaned_data={
             "nom": "Visiteur test",
-            "email": "visiteur@example.org",
+            "adresse_email": "visiteur@example.org",
             "message": "Bonjour",
             "honeypot": "",
-        }
+        },
+        fields={"adresse_email": forms.EmailField()},
     )
 
     page._send_notification_email(formulaire)

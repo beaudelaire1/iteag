@@ -79,6 +79,26 @@ def test_action_ou_hote_inattendu_est_refuse(post, action, hostname):
 @patch("apps.core.services.turnstile.requests.post", side_effect=Timeout)
 def test_indisponibilite_cloudflare_echoue_fermee(post):
     assert valider_requete(requete_avec_jeton(), action="connexion") is False
+    assert post.call_count == 2
+
+
+@override_settings(**PROTECTION_ACTIVE)
+@patch("apps.core.services.turnstile.requests.post")
+def test_un_timeout_transitoire_est_retente_avec_la_meme_idempotence(post):
+    reponse = Mock()
+    reponse.json.return_value = {
+        "success": True,
+        "action": "connexion",
+        "hostname": "iteag.org",
+        "error-codes": [],
+    }
+    post.side_effect = [Timeout, reponse]
+
+    assert valider_requete(requete_avec_jeton(), action="connexion") is True
+    assert post.call_count == 2
+    assert post.call_args_list[0].kwargs["data"]["idempotency_key"] == post.call_args_list[1].kwargs["data"][
+        "idempotency_key"
+    ]
 
 
 # Les deux refus ci-dessous se ressemblent — même retour `False`, même message
@@ -97,9 +117,8 @@ def test_une_panne_de_siteverify_se_distingue_dans_le_journal(post, caplog):
 
     trace = caplog.records[-1]
     assert "Vérification Turnstile impossible" in trace.getMessage()
-    # Une panne qui bloque toute connexion ne doit pas se ranger au niveau
-    # d'un refus ordinaire, sinon l'alerte ne se déclenche pas.
-    assert trace.levelno >= logging.ERROR
+    assert trace.levelno == logging.WARNING
+    assert trace.exc_info is None
 
 
 @override_settings(**PROTECTION_ACTIVE)

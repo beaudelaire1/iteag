@@ -11,6 +11,7 @@ from apps.website.models import (
     ContentPage,
     EventIndexPage,
     FAQPage,
+    FormField,
     HomePage,
     NewsIndexPage,
 )
@@ -19,6 +20,21 @@ PRESENTATION_META = (
     "Découvrir l'ITEAG, centre de formation en théologie évangélique des Antilles et de la Guyane : "
     "sa vocation, sa forme associative et les principes de sa formation."
 )
+
+CHAMPS_CONTACT_PAR_DEFAUT = (
+    {"label": "Nom", "field_type": "singleline", "required": True},
+    {"label": "Email", "field_type": "email", "required": True},
+    {"label": "Message", "field_type": "multiline", "required": True},
+)
+
+
+def ajouter_champs_contact_par_defaut(page):
+    """Ajoute le formulaire minimal à une page de contact nouvellement créée."""
+    for sort_order, definition in enumerate(CHAMPS_CONTACT_PAR_DEFAUT):
+        page.form_fields.add(FormField(sort_order=sort_order, **definition))
+    # Les champs enfants font partie de la révision Wagtail : une nouvelle
+    # révision est nécessaire pour qu'ils restent attachés à la page publiée.
+    page.save_revision().publish()
 
 
 def contenu_presentation_initial():
@@ -157,7 +173,7 @@ class Command(BaseCommand):
             home, EventIndexPage, "Événements", "evenements", introduction="<p>Les prochains événements de l'ITEAG.</p>"
         )
         self._create_child_page(home, FAQPage, "Questions fréquentes", "faq")
-        self._create_child_page(
+        contact, contact_cree = self._create_child_page(
             home,
             ContactPage,
             "Contact",
@@ -165,15 +181,19 @@ class Command(BaseCommand):
             introduction="<p>Vous avez une question ? Contactez-nous.</p>",
             thank_you_text="<p>Merci pour votre message. Nous reviendrons vers vous rapidement.</p>",
         )
+        if contact_cree:
+            ajouter_champs_contact_par_defaut(contact)
 
         self.stdout.write(self.style.SUCCESS("Done — visit http://localhost:8000/ to see the site."))
 
     def _create_child_page(self, parent, page_class, title, slug, **extra_fields):
         """Create a child page under parent if it doesn't already exist."""
-        if page_class.objects.filter(slug=slug).exists():
+        page_existante = page_class.objects.filter(slug=slug).first()
+        if page_existante is not None:
             self.stdout.write(self.style.WARNING(f"  {page_class.__name__} '{slug}' already exists."))
-            return
+            return page_existante, False
         page = page_class(title=title, slug=slug, **extra_fields)
         parent.add_child(instance=page)
         page.save_revision().publish()
         self.stdout.write(self.style.SUCCESS(f"  {page_class.__name__} created: '{title}' (/{slug}/)"))
+        return page, True

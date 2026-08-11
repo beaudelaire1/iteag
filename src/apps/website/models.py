@@ -1,4 +1,6 @@
+from django import forms as django_forms
 from django.db import models
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils import timezone
 from modelcluster.fields import ParentalKey
@@ -534,6 +536,10 @@ class FormField(AbstractFormField):
 class ContactPage(AbstractForm):
     """Page de contact avec formulaire Wagtail — PUB-010."""
 
+    # Wagtail déduit sinon « website/contact_page_landing.html ». La page de
+    # confirmation existe déjà sous ce nom et sert aussi à son URL dédiée.
+    landing_page_template = "website/contact_success.html"
+
     introduction = RichTextField(blank=True)
     thank_you_text = RichTextField(blank=True, verbose_name="Message de confirmation")
     meta_description = models.CharField(max_length=300, blank=True)
@@ -568,8 +574,10 @@ class ContactPage(AbstractForm):
             form = self.get_form(request.POST, request.FILES, page=self, user=request.user)
             if form.is_valid():
                 if valider_requete(request, action="contact"):
-                    soumission = self.process_form_submission(form)
-                    return self.render_landing_page(request, soumission, *args, **kwargs)
+                    self.process_form_submission(form)
+                    # Post/Redirect/Get : actualiser la confirmation ne doit
+                    # ni recréer la soumission, ni renvoyer les deux emails.
+                    return redirect("website:contact_success")
                 form.add_error(None, MESSAGE_ECHEC)
         else:
             form = self.get_form(page=self, user=request.user)
@@ -606,7 +614,23 @@ class ContactPage(AbstractForm):
         """Envoie un accusé de réception au visiteur."""
         from apps.core.services.emails import envoyer_notification_email
 
-        email = form.cleaned_data.get("email") or form.cleaned_data.get("e-mail") or form.cleaned_data.get("courriel")
+        # Le libellé est éditable dans Wagtail : « Adresse email » devient par
+        # exemple `adresse_email`. On identifie donc le champ par son type,
+        # plutôt que par une courte liste de noms supposés.
+        email = next(
+            (
+                form.cleaned_data.get(nom)
+                for nom, champ in getattr(form, "fields", {}).items()
+                if isinstance(champ, django_forms.EmailField) and form.cleaned_data.get(nom)
+            ),
+            None,
+        )
+        email = (
+            email
+            or form.cleaned_data.get("email")
+            or form.cleaned_data.get("e-mail")
+            or form.cleaned_data.get("courriel")
+        )
         if not email:
             return
         envoyer_notification_email(

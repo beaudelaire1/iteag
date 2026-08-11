@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static wagtailcore_tags %}
 
 {% block title %}Message envoyé — {{ SITE_NAME }}{% endblock %}
 
@@ -11,9 +11,15 @@
             <svg class="h-9 w-9 text-gold-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
         </div>
         <h1 class="text-white mb-5 hero-el hero-el-2 text-[clamp(1.75rem,_3.5vw,_2.75rem)]">Message envoyé !</h1>
+        {% if page.thank_you_text %}
+        <div class="text-lg leading-relaxed mb-10 mx-auto hero-el hero-el-3 text-navy-200 max-w-[28rem]">
+            {{ page.thank_you_text|richtext }}
+        </div>
+        {% else %}
         <p class="text-lg leading-relaxed mb-10 mx-auto hero-el hero-el-3 text-navy-200 max-w-[28rem]">
             Merci pour votre message. Notre équipe vous répondra dans les meilleurs délais.
         </p>
+        {% endif %}
         <div class="flex flex-wrap justify-center gap-4 hero-el hero-el-4">
             <a href="/" class="btn-gold">
                 Retour à l'accueil
