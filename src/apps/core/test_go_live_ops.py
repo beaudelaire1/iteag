@@ -140,6 +140,30 @@ def test_les_controles_live_visent_le_commit_effectivement_deploye():
         assert '--revision "$GITHUB_SHA"' in contenu, nom
 
 
+def test_zap_ne_masque_que_les_alertes_documentees_et_les_url_ciblees():
+    """Une qualification ne doit jamais devenir un interrupteur global."""
+    configuration = (RACINE.parent / ".github" / "zap-baseline.conf").read_text(encoding="utf-8")
+    documentation = (RACINE.parent / "docs" / "exploitation" / "zap-baseline.md").read_text(encoding="utf-8")
+    workflow = (RACINE.parent / ".github" / "workflows" / "predeploy-zap.yml").read_text(encoding="utf-8")
+    lignes = [
+        ligne.split(maxsplit=2)
+        for ligne in configuration.splitlines()
+        if ligne.strip() and not ligne.lstrip().startswith("#")
+    ]
+
+    ignorees = {identifiant for identifiant, action, *_ in lignes if action == "IGNORE"}
+    ciblees = {identifiant for identifiant, action, *_ in lignes if action == "OUTOFSCOPE"}
+
+    assert ignorees == {"10015", "10049", "10109", "10111", "10112", "90004"}
+    assert ciblees == {"10017", "10027", "10031", "10055", "10063", "10098", "10110", "90003"}
+    assert all(action in {"IGNORE", "OUTOFSCOPE"} for _, action, *_ in lignes)
+    assert all(identifiant != "*" for identifiant, *_ in lignes)
+    assert all(identifiant in documentation for identifiant in ignorees | ciblees)
+    assert 'cp "$GITHUB_WORKSPACE/.github/zap-baseline.conf"' in workflow
+    assert "-c zap-baseline.conf" in workflow
+    assert " -I" not in workflow
+
+
 def test_le_gate_d_accessibilite_couvre_les_pages_publiques_a_formulaire():
     """Le seuil était strict, mais aveugle aux pages où le défaut se trouvait."""
     contenu = (RACINE.parent / ".github" / "workflows" / "predeploy-lighthouse.yml").read_text(encoding="utf-8")

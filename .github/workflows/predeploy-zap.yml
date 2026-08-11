@@ -44,6 +44,7 @@ jobs:
           set -u
           mkdir -p "$RUNNER_TEMP/zap"
           chmod 777 "$RUNNER_TEMP/zap"
+          cp "$GITHUB_WORKSPACE/.github/zap-baseline.conf" "$RUNNER_TEMP/zap/zap-baseline.conf"
           set +e
           docker run --rm \
             -v "$RUNNER_TEMP/zap:/zap/wrk/:rw" \
@@ -52,6 +53,7 @@ jobs:
             -t "$TARGET" \
             -T 5 \
             -s \
+            -c zap-baseline.conf \
             -J zap-report.json \
             -w zap-report.md
           code=$?

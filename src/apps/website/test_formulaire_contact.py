@@ -5,6 +5,7 @@ from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.template.loader import get_template
 from django.urls import reverse
+from django.utils.html import escape
 from wagtail.contrib.forms.models import FormSubmission
 from wagtail.models import Revision, Site
 
@@ -66,6 +67,29 @@ def test_un_message_valide_redirige_sans_erreur_de_gabarit(page_contact, client)
     assert reponse.url == reverse("website:contact_success")
     assert FormSubmission.objects.filter(page=page_contact).count() == 1
     assert client.get(reponse.url).status_code == 200
+
+
+def test_le_formulaire_reaffiche_les_valeurs_en_les_echappant(page_contact, client):
+    charge = '"><svg/onload=alert("xss")>'
+
+    reponse = client.post(
+        page_contact.url,
+        {
+            "nom": charge,
+            "prenom": "Alice",
+            "email": "adresse-invalide",
+            "telephone": "",
+            "objet": "Renseignements généraux",
+            "message": "Ce message reste affiché parce que l'adresse est invalide.",
+            "honeypot": "",
+        },
+    )
+    contenu = reponse.content.decode()
+
+    assert reponse.status_code == 200
+    assert charge not in contenu
+    assert escape(charge) in contenu
+    assert "<svg/onload" not in contenu
 
 
 def test_la_migration_complete_un_formulaire_existant_et_sa_revision():
