@@ -1,0 +1,32 @@
+{
+  "10015": ["^/"],
+  "10017": [
+    "^/admissions/candidature/",
+    "^/connexion/",
+    "^/contact/",
+    "^/mot-de-passe/reinitialiser/"
+  ],
+  "10027": ["^/static/admin/js/vendor/jquery/"],
+  "10031": [
+    "^/admin/login/",
+    "^/bibliotheque/",
+    "^/contact/",
+    "^/django-admin/login/",
+    "^/e-learning/"
+  ],
+  "10049": ["^/"],
+  "10055": ["^/django-admin/"],
+  "10063": ["^/static/"],
+  "10098": ["^/static/"],
+  "10109": ["^/"],
+  "10110": ["^/static/js/htmx\\.min\\..*\\.js"],
+  "10111": ["^/admin/login/", "^/connexion/", "^/django-admin/login/"],
+  "10112": ["^/"],
+  "90003": [
+    "^/admissions/candidature/",
+    "^/connexion/",
+    "^/contact/",
+    "^/mot-de-passe/reinitialiser/"
+  ],
+  "90004": ["^/"]
+}

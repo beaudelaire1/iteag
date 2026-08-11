@@ -1,12 +1,14 @@
 """Tests du gate d'exploitation exécuté juste avant la mise en service."""
 
 import ast
+import json
 import re
 import sys
 from pathlib import Path
 
 from django.core.management import call_command
 from django.test import override_settings
+from scripts.verifier_qualifications_zap import verifier_rapport
 
 RACINE = Path(__file__).resolve().parents[2]
 
@@ -143,6 +145,7 @@ def test_les_controles_live_visent_le_commit_effectivement_deploye():
 def test_zap_ne_masque_que_les_alertes_documentees_et_les_url_ciblees():
     """Une qualification ne doit jamais devenir un interrupteur global."""
     configuration = (RACINE.parent / ".github" / "zap-baseline.conf").read_text(encoding="utf-8")
+    politique = json.loads((RACINE.parent / ".github" / "zap-qualifications.json").read_text(encoding="utf-8"))
     documentation = (RACINE.parent / "docs" / "exploitation" / "zap-baseline.md").read_text(encoding="utf-8")
     workflow = (RACINE.parent / ".github" / "workflows" / "predeploy-zap.yml").read_text(encoding="utf-8")
     lignes = [
@@ -152,16 +155,82 @@ def test_zap_ne_masque_que_les_alertes_documentees_et_les_url_ciblees():
     ]
 
     ignorees = {identifiant for identifiant, action, *_ in lignes if action == "IGNORE"}
-    ciblees = {identifiant for identifiant, action, *_ in lignes if action == "OUTOFSCOPE"}
 
-    assert ignorees == {"10015", "10049", "10109", "10111", "10112", "90004"}
-    assert ciblees == {"10017", "10027", "10031", "10055", "10063", "10098", "10110", "90003"}
-    assert all(action in {"IGNORE", "OUTOFSCOPE"} for _, action, *_ in lignes)
+    assert (
+        ignorees
+        == set(politique)
+        == {
+            "10015",
+            "10017",
+            "10027",
+            "10031",
+            "10049",
+            "10055",
+            "10063",
+            "10098",
+            "10109",
+            "10110",
+            "10111",
+            "10112",
+            "90003",
+            "90004",
+        }
+    )
+    assert all(action == "IGNORE" for _, action, *_ in lignes)
     assert all(identifiant != "*" for identifiant, *_ in lignes)
-    assert all(identifiant in documentation for identifiant in ignorees | ciblees)
+    assert all(identifiant in documentation for identifiant in ignorees)
     assert 'cp "$GITHUB_WORKSPACE/.github/zap-baseline.conf"' in workflow
     assert "-c zap-baseline.conf" in workflow
+    assert "verifier_qualifications_zap.py" in workflow
+    assert "zap-qualifications.json" in workflow
     assert " -I" not in workflow
+
+
+def test_qualifications_zap_refusent_une_alerte_hors_surface():
+    rapport = {
+        "site": [
+            {
+                "alerts": [
+                    {
+                        "pluginid": "10031",
+                        "instances": [{"uri": "https://preprod.example.org/compte/prive/"}],
+                    }
+                ]
+            }
+        ]
+    }
+
+    violations = verifier_rapport(
+        rapport,
+        {"10031": [r"^/contact/"]},
+        "https://preprod.example.org",
+    )
+
+    assert violations == ["ZAP 10031: URL hors qualification 'https://preprod.example.org/compte/prive/'."]
+
+
+def test_qualifications_zap_acceptent_une_alerte_sur_la_surface_prouvee():
+    rapport = {
+        "site": [
+            {
+                "alerts": [
+                    {
+                        "pluginid": "10031",
+                        "instances": [{"uri": "https://preprod.example.org/contact/?nom=test"}],
+                    }
+                ]
+            }
+        ]
+    }
+
+    assert (
+        verifier_rapport(
+            rapport,
+            {"10031": [r"^/contact/"]},
+            "https://preprod.example.org",
+        )
+        == []
+    )
 
 
 def test_le_gate_d_accessibilite_couvre_les_pages_publiques_a_formulaire():

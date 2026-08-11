@@ -70,6 +70,10 @@ jobs:
           #     corrigé ou qualifié explicitement avec une preuve reproductible.
           # 3 = erreur d'exécution du scan.
           test "$code" -eq 0
+          python src/scripts/verifier_qualifications_zap.py \
+            --rapport "$RUNNER_TEMP/zap/zap-report.json" \
+            --politique "$GITHUB_WORKSPACE/.github/zap-qualifications.json" \
+            --cible "$TARGET"
 
       - name: Conserver le rapport ZAP brut
         if: always()

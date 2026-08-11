@@ -10,6 +10,7 @@ transverses ajoutés avant production.
 from __future__ import annotations
 
 import pytest
+from django.utils.html import escape
 
 POLITIQUE = {
     "DIRECTIVES": {
@@ -53,3 +54,26 @@ class TestLaDerogationResteCantonnee:
         entete = client.get("/connexion/").headers["Permissions-Policy"]
 
         assert entete == "camera=(), microphone=(), geolocation=(), usb=()"
+
+    @pytest.mark.parametrize(
+        ("chemin", "reaffiche_valeur"),
+        [("/admin/login/", True), ("/django-admin/login/", False)],
+    )
+    def test_les_formulaires_admin_ne_peuvent_pas_injecter_le_parametre_de_redirection(
+        self,
+        client,
+        chemin,
+        reaffiche_valeur,
+    ):
+        charge = '"><svg/onload=alert("xss")>'
+
+        reponse = client.get(chemin, {"next": charge})
+        contenu = reponse.content.decode()
+
+        assert reponse.status_code == 200
+        assert charge not in contenu
+        assert "<svg/onload" not in contenu
+        if reaffiche_valeur:
+            assert escape(charge) in contenu
+        else:
+            assert escape(charge) not in contenu
