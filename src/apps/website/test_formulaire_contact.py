@@ -1,7 +1,8 @@
 from importlib import import_module
 
 import pytest
-from django.apps import apps as django_apps
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
 from django.template.loader import get_template
 from django.urls import reverse
 from wagtail.contrib.forms.models import FormSubmission
@@ -77,7 +78,13 @@ def test_la_migration_complete_un_formulaire_existant_et_sa_revision():
     )
 
     migration = import_module("apps.website.migrations.0012_champs_formulaire_contact")
-    migration.assurer_champs_contact(django_apps, None)
+    # C'est l'état historique que Django fournit réellement à RunPython. Le
+    # modèle ContactPage de cet état ne possède pas la propriété `template` :
+    # l'instancier reproduit l'AttributeError observée en production.
+    historique = MigrationExecutor(connection).loader.project_state(
+        [("website", "0011_remplir_presentation_iteag")]
+    ).apps
+    migration.assurer_champs_contact(historique, None)
 
     champs = list(page.form_fields.order_by("sort_order"))
     assert [(champ.clean_name, champ.field_type) for champ in champs] == [

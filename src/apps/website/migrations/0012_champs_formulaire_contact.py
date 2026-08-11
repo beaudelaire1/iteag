@@ -27,12 +27,18 @@ def assurer_champs_contact(apps, schema_editor):
     FormField = apps.get_model("website", "FormField")
     Revision = apps.get_model("wagtailcore", "Revision")
 
-    for page in ContactPage.objects.all():
-        champs = list(FormField.objects.filter(page_id=page.pk).order_by("sort_order", "pk"))
+    # Ne jamais instancier ici le modèle historique ContactPage : son héritage
+    # FormMixin appelle `self.template` dans __init__, tandis que les modèles
+    # reconstruits par Django pendant une migration n'exposent pas cette
+    # propriété Wagtail. `values()` contourne entièrement cette initialisation.
+    pages = ContactPage.objects.values("pk", "live_revision_id", "latest_revision_id")
+    for page in pages:
+        page_id = page["pk"]
+        champs = list(FormField.objects.filter(page_id=page_id).order_by("sort_order", "pk"))
         if not champs:
             for sort_order, definition in enumerate(CHAMPS_CONTACT_PAR_DEFAUT):
                 FormField.objects.create(
-                    page_id=page.pk,
+                    page_id=page_id,
                     sort_order=sort_order,
                     choices="",
                     default_value="",
@@ -49,7 +55,7 @@ def assurer_champs_contact(apps, schema_editor):
             else:
                 derniers_ordres = [champ.sort_order for champ in champs if champ.sort_order is not None]
                 FormField.objects.create(
-                    page_id=page.pk,
+                    page_id=page_id,
                     sort_order=(max(derniers_ordres) + 1) if derniers_ordres else len(champs),
                     clean_name="message",
                     label="Message",
@@ -65,7 +71,7 @@ def assurer_champs_contact(apps, schema_editor):
         # révision Wagtail restait vide et pouvait les effacer à la prochaine
         # publication. On complète uniquement les révisions qui n'en portent
         # aucun, sans toucher à une ébauche éditoriale déjà configurée.
-        champs = list(FormField.objects.filter(page_id=page.pk).order_by("sort_order", "pk"))
+        champs = list(FormField.objects.filter(page_id=page_id).order_by("sort_order", "pk"))
         champs_serialises = [
             {
                 "pk": champ.pk,
@@ -77,11 +83,11 @@ def assurer_champs_contact(apps, schema_editor):
                 "choices": champ.choices,
                 "default_value": champ.default_value,
                 "help_text": champ.help_text,
-                "page": page.pk,
+                "page": page_id,
             }
             for champ in champs
         ]
-        revision_ids = {page.live_revision_id, page.latest_revision_id} - {None}
+        revision_ids = {page["live_revision_id"], page["latest_revision_id"]} - {None}
         for revision in Revision.objects.filter(pk__in=revision_ids):
             contenu = revision.content
             if contenu.get("form_fields"):
