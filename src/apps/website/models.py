@@ -596,19 +596,42 @@ class ContactPage(AbstractForm):
         return submission
 
     def _send_notification_email(self, form):
-        """Envoie le message au secrétariat."""
+        """Envoie séparément le message aux administrateurs et au secrétariat."""
         from apps.core.services.emails import envoyer_notification_email
 
         data = form.cleaned_data
         lines = [f"{key}: {value}" for key, value in data.items() if key != "honeypot"]
         body = "\n".join(lines)
 
-        envoyer_notification_email(
-            sujet="Nouveau message via le site",
-            titre="Nouveau message via le formulaire de contact",
-            message=body,
-            destinataires=[self.destinataire],
+        # Un message par adresse évite d'exposer les coordonnées des comptes
+        # internes à l'adresse librement configurée dans Wagtail.
+        for destinataire in self._destinataires_notification():
+            envoyer_notification_email(
+                sujet="Nouveau message via le site",
+                titre="Nouveau message via le formulaire de contact",
+                message=body,
+                destinataires=[destinataire],
+            )
+
+    def _destinataires_notification(self) -> list[str]:
+        """Retourne les boîtes à prévenir, sans doublon et sans compte inactif."""
+        from django.db.models import Q
+
+        from apps.accounts.models import User
+
+        emails_personnel = (
+            User.objects.filter(is_active=True)
+            .filter(Q(role__in=[User.Role.ADMIN, User.Role.SECRETARIAT]) | Q(is_superuser=True))
+            .exclude(email="")
+            .order_by("pk")
+            .values_list("email", flat=True)
         )
+        adresses_uniques = {}
+        for adresse in [self.destinataire, *emails_personnel]:
+            adresse = (adresse or "").strip()
+            if adresse:
+                adresses_uniques.setdefault(adresse.casefold(), adresse)
+        return list(adresses_uniques.values())
 
     def _send_confirmation_email(self, form):
         """Envoie un accusé de réception au visiteur."""
