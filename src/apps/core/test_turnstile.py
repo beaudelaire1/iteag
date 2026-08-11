@@ -96,9 +96,10 @@ def test_un_timeout_transitoire_est_retente_avec_la_meme_idempotence(post):
 
     assert valider_requete(requete_avec_jeton(), action="connexion") is True
     assert post.call_count == 2
-    assert post.call_args_list[0].kwargs["data"]["idempotency_key"] == post.call_args_list[1].kwargs["data"][
-        "idempotency_key"
-    ]
+    assert (
+        post.call_args_list[0].kwargs["data"]["idempotency_key"]
+        == post.call_args_list[1].kwargs["data"]["idempotency_key"]
+    )
 
 
 # Les deux refus ci-dessous se ressemblent — même retour `False`, même message

@@ -88,9 +88,9 @@ def test_la_migration_complete_un_formulaire_existant_et_sa_revision():
     # C'est l'état historique que Django fournit réellement à RunPython. Le
     # modèle ContactPage de cet état ne possède pas la propriété `template` :
     # l'instancier reproduit l'AttributeError observée en production.
-    historique = MigrationExecutor(connection).loader.project_state(
-        [("website", "0011_remplir_presentation_iteag")]
-    ).apps
+    historique = (
+        MigrationExecutor(connection).loader.project_state([("website", "0011_remplir_presentation_iteag")]).apps
+    )
     migration.assurer_champs_contact(historique, None)
 
     champs = list(page.form_fields.order_by("sort_order"))
@@ -134,9 +134,9 @@ def test_la_migration_0013_complete_et_ordonne_un_formulaire_existant():
         )
 
     migration = import_module("apps.website.migrations.0013_completer_formulaire_contact")
-    historique = MigrationExecutor(connection).loader.project_state(
-        [("website", "0012_champs_formulaire_contact")]
-    ).apps
+    historique = (
+        MigrationExecutor(connection).loader.project_state([("website", "0012_champs_formulaire_contact")]).apps
+    )
     migration.completer_formulaire_contact(historique, None)
 
     champs = list(page.form_fields.order_by("sort_order"))
