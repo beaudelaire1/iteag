@@ -150,15 +150,11 @@ jobs:
       BACKUP_R2_SECRET_ACCESS_KEY: ci-backup-secret
       BACKUP_R2_BUCKET: ci-backups
       SENTRY_DSN: https://public@example.invalid/1
-      STRIPE_CLE_PUBLIABLE: pk_live_ci_placeholder
-      STRIPE_CLE_SECRETE: sk_live_ci_placeholder
-      STRIPE_SECRET_WEBHOOK: whsec_ci_placeholder
       ITEAG_FORME_JURIDIQUE: ci-forme-juridique
       ITEAG_IMMATRICULATION: ci-immatriculation
       ITEAG_DIRECTEUR_PUBLICATION: ci-directeur-publication
       ITEAG_HEBERGEUR: ci-hebergeur
       ITEAG_HEBERGEUR_ADRESSE: ci-hebergeur-adresse
-      ITEAG_MEDIATEUR: ci-mediateur
       ELEARNING_DIFFUSION_VIDEO: bunny
       BUNNY_ZONE_DIFFUSION: https://video.example.invalid
       BUNNY_CLE_SIGNATURE: ci-video-secret

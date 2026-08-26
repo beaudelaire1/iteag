@@ -92,11 +92,10 @@ jobs:
             [candidature]="/admissions/candidature/"
             [connexion]="/connexion/"
             [bibliotheque]="/bibliotheque/"
-            [boutique]="/boutique/"
             [elearning]="/e-learning/"
           )
 
-          for nom in accueil formations candidature connexion bibliotheque boutique elearning; do
+          for nom in accueil formations candidature connexion bibliotheque elearning; do
             url="${BASE_URL}${pages[$nom]}"
             for tentative in 1 2 3; do
               echo "=== Lighthouse: ${nom} — mesure ${tentative}/3 — ${url} ==="
@@ -133,7 +132,6 @@ jobs:
               "candidature",
               "connexion",
               "bibliotheque",
-              "boutique",
               "elearning",
           )
           SEO_IGNORES_PREPROD = {"is-crawlable"}

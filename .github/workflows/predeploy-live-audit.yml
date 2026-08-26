@@ -50,7 +50,7 @@ jobs:
             /admissions/candidature/ \
             /connexion/ \
             /bibliotheque/ \
-            /boutique/ \
+            /e-learning/ \
             /robots.txt \
             /sitemap.xml \
             /healthz
@@ -120,7 +120,7 @@ jobs:
               urljoin(base, "formations/"),
               urljoin(base, "admissions/candidature/"),
               urljoin(base, "bibliotheque/"),
-              urljoin(base, "boutique/"),
+              urljoin(base, "e-learning/"),
           ]
 
           class Liens(HTMLParser):

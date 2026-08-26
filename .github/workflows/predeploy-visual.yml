@@ -68,7 +68,7 @@ jobs:
             candidature: "/admissions/candidature/",
             connexion: "/connexion/",
             bibliotheque: "/bibliotheque/",
-            boutique: "/boutique/",
+            elearning: "/e-learning/",
           };
           const selecteurAnime = ".reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-fade, .reveal-blur, .text-reveal-line, .border-draw";
 
