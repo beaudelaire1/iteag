@@ -17,7 +17,6 @@ from apps.core import views as views_core
 from apps.website.sitemaps import (
     ArticlesRechercheSitemap,
     CoursSitemap,
-    LivresBoutiqueSitemap,
     ModulesPubliesSitemap,
     NoticesBibliothequeSitemap,
     PagesPubliquesSitemap,
@@ -34,7 +33,6 @@ sitemaps = {
     "professeurs": ProfesseursSitemap,
     "modules": ModulesPubliesSitemap,
     "bibliotheque": NoticesBibliothequeSitemap,
-    "boutique": LivresBoutiqueSitemap,
 }
 
 # Compatibilité passive avec quelques anciennes adresses publiques. Ce bloc ne
@@ -81,8 +79,6 @@ urlpatterns = [
     path("formations/", include("apps.formations.urls", namespace="formations")),
     path("admissions/", include("apps.admissions.urls", namespace="admissions")),
     path("bibliotheque/", include("apps.library.urls", namespace="library")),
-    path("boutique/", include("apps.commerce.urls", namespace="commerce")),
-    path("paiements/", include("apps.paiements.urls", namespace="paiements")),
     path("espace-etudiant/", include("apps.portail_etudiant.urls", namespace="etudiant")),
     path("espace-enseignant/", include("apps.portail_enseignant.urls", namespace="enseignant")),
     path("espace-enseignant/", include("apps.lms.urls", namespace="lms")),

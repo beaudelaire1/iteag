@@ -16,8 +16,8 @@
             <p class="mt-2 text-lg text-warm-600">{{ article.sous_titre }}</p>
             {% endif %}
             <p class="mt-4 text-sm text-warm-500">
-                Par <strong class="text-navy-800">{{ article.auteur.nom_complet }}</strong>
-                {% if article.auteur.specialite %}, {{ article.auteur.specialite }}{% endif %}
+                Par <strong class="text-navy-800">{{ article.nom_auteur }}</strong>
+                {% if article.qualite_auteur %}, {{ article.qualite_auteur }}{% endif %}
                 · <time datetime="{{ article.date_publication|date:'c' }}">
                     {{ article.date_publication|date:"d F Y" }}
                   </time>

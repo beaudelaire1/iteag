@@ -128,7 +128,7 @@ class NoticeDetailView(DetailView):
 #
 # La bibliothèque n'avait aucun écran de gestion : le catalogue se consultait
 # mais ne s'administrait que par l'interface Django. Or tenir le fonds fait
-# partie du travail courant du secrétariat, au même titre que la boutique.
+# partie du travail courant du secrétariat.
 
 
 class GestionNoticesView(StaffRoleRequiredMixin, ListView):

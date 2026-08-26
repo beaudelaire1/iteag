@@ -1,17 +1,14 @@
 """Sitemaps des contenus publics qui ne sont pas gérés par Wagtail.
 
-Ce module vit dans « website » et non dans « core » : il connaît le catalogue
-de quatre domaines — formations, e-learning, bibliothèque, boutique — et le
-socle, lui, ne doit connaître personne. Placé dans « core », il y faisait
-entrer commerce et library, et refermait le cycle
-« accounts → core → commerce → accounts ». Recenser les pages publiques est
+Ce module vit dans « website » et non dans « core » : il connaît les catalogues
+de formations, d'e-learning et de bibliothèque, tandis que le socle ne doit
+connaître aucun domaine. Recenser les pages publiques est
 le travail du portail public, qui agrège les domaines par vocation.
 """
 
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 
-from apps.commerce.models import ProduitLivre
 from apps.elearning.models import ModuleFormation
 from apps.formations.models import Cours, Parcours, Professeur
 from apps.library.models import NoticeBibliographique
@@ -27,12 +24,10 @@ class PagesPubliquesSitemap(Sitemap):
             "website:politique_donnees",
             "website:politique_cookies",
             "website:mentions_legales",
-            "website:conditions_generales_vente",
             "formations:parcours_list",
             "formations:professeur_list",
             "elearning:catalogue",
             "library:catalogue",
-            "commerce:catalogue",
         )
 
     def location(self, item):
@@ -95,18 +90,8 @@ class NoticesBibliothequeSitemap(Sitemap):
         return item.updated_at
 
 
-class LivresBoutiqueSitemap(Sitemap):
-    protocol = "https"
-
-    def items(self):
-        return ProduitLivre.objects.filter(actif=True).only("slug", "updated_at")
-
-    def lastmod(self, item):
-        return item.updated_at
-
-
 class ArticlesRechercheSitemap(Sitemap):
-    """Les travaux des enseignants-chercheurs.
+    """Les travaux des enseignants et des étudiants.
 
     Ils sont publics et destinés à être trouvés : c'est ce qui donne de la
     visibilité aux travaux et à l'institut. Les omettre du plan du site

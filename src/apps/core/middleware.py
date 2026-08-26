@@ -36,7 +36,7 @@ class CSPAvecAdminDjango(CSPMiddleware):
     La politique interdit aussi tout embarquement de l'application via
     ``frame-ancestors 'none'``. C'est la défense CSP moderne qui complète
     ``X-Frame-Options: DENY`` sans toucher aux iframes que l'application charge
-    elle-même via ``frame-src`` (Stripe, Turnstile).
+    elle-même via ``frame-src`` (Turnstile et la carte OpenStreetMap).
 
     Toute origine autre que les deux domaines publics reçoit enfin un
     X-Robots-Tag bloquant l'indexation : une préproduction sslip.io ne peut pas

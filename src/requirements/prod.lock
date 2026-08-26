@@ -1,22 +1,12 @@
 # ═══════════════════════════════════════════════════════════════
 # VERROU DE DÉPENDANCES — NE PAS MODIFIER À LA MAIN
 # ═══════════════════════════════════════════════════════════════
-# Généré depuis « requirements/prod.txt ». Les versions y sont exactes et chaque
-# archive porte son empreinte : deux constructions à six mois d'écart
-# installent rigoureusement les mêmes octets, et une archive substituée
-# sur l'index est refusée par pip.
-#
-# Résolu pour la cible, pas pour le poste qui l'a produit :
-#     Python 3.12, Linux — ce que fait tourner Dockerfile.prod.
-#
-# Pour régénérer après avoir touché « requirements/prod.txt » :
-#
-#     cd src
-#     python -m uv pip compile requirements/prod.txt #         --python-version 3.12 --python-platform linux #         --generate-hashes --no-header -o requirements/prod.lock
-#
-# « uv » est déclaré dans requirements/dev.txt. Il résout pour une autre
-# plateforme que la sienne, ce que pip ne sait pas faire : un verrou
-# produit sous Windows en Python 3.14 serait faux.
+# Généré depuis « requirements/prod.txt » pour Python 3.12 sous Linux.
+# Régénération :
+#   cd src
+#   python -m uv pip compile requirements/prod.txt \
+#     --python-version 3.12 --python-platform linux \
+#     --generate-hashes --no-header -o requirements/prod.lock
 # ═══════════════════════════════════════════════════════════════
 
 amqp==5.3.1 \
@@ -865,7 +855,6 @@ requests==2.34.2 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via
     #   -r requirements/base.txt
-    #   stripe
     #   wagtail
 s3transfer==0.19.2 \
     --hash=sha256:ba0309fd86be3c27dbf78cdd813c13c5e1df16e5874b99d2535ebbdfb9892993 \
@@ -887,10 +876,6 @@ sqlparse==0.5.5 \
     --hash=sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba \
     --hash=sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e
     # via django
-stripe==13.2.0 \
-    --hash=sha256:e7d18bd44bab1812bc4e9e75da4ceacedd587f71737bb9193955edf420605f88 \
-    --hash=sha256:ed6ad1c27725e1e32a336fa9d835cfa8f0bd6dafcc98b3ab7bc7e8791390453b
-    # via -r requirements/base.txt
 telepath==0.3.1 \
     --hash=sha256:925c0609e0a8a6488ec4a55b19d485882cf72223b2b19fe2359a50fddd813c9c \
     --hash=sha256:c280aa8e77ad71ce80e96500a4e4d4a32f35b7e0b52e896bb5fde9a5bcf0699a
@@ -913,7 +898,6 @@ typing-extensions==4.16.0 \
     #   django-stubs-ext
     #   django-tasks
     #   psycopg
-    #   stripe
 tzdata==2026.3 \
     --hash=sha256:4a1518b8993086a7982523e071643f3c0e5f213e75b21318e78bcabfff9d1415 \
     --hash=sha256:dc096730c87af6cab1b171c9d532be840741ff5d459015e7f6947bd7d7e54931

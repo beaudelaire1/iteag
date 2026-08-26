@@ -60,7 +60,7 @@ class Command(BaseCommand):
                 defaults={
                     "source": InscriptionModule.SourceAcces.PARCOURS
                     if index % 3
-                    else InscriptionModule.SourceAcces.ACHAT,
+                    else InscriptionModule.SourceAcces.OCTROI_MANUEL,
                     "statut": statut,
                     "progression_percent": avancement,
                     "date_debut_acces": timezone.localdate() - timedelta(days=30 + index),

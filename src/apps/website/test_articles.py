@@ -1,7 +1,7 @@
 """Articles de recherche — rédaction, relecture, lecture publique.
 
 Le point le plus sensible n'est pas le confort de rédaction mais **ce qui entre
-en base** : un enseignant compose dans un éditeur visuel, donc le navigateur
+en base** : un auteur compose dans un éditeur visuel, donc le navigateur
 envoie du balisage, et ce balisage finit sur une page publique servie sous le
 nom de l'institut. Sans liste blanche, un compte compromis — ou une simple
 copie depuis un site tiers — suffirait à y injecter du script.
@@ -58,6 +58,18 @@ def relecteur(db):
 def secretaire(db):
     return User.objects.create_user(
         username="sec_art", email="sa@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+    )
+
+
+@pytest.fixture
+def etudiant(db):
+    return User.objects.create_user(
+        username="etu_art",
+        email="ea@iteag.org",
+        password=MOT_DE_PASSE,
+        first_name="Maya",
+        last_name="Jean",
+        role=User.Role.ETUDIANT,
     )
 
 
@@ -397,12 +409,50 @@ class TestEcransEnseignant:
         article.refresh_from_db()
         assert not article.retrait_demande
 
-    def test_un_etudiant_n_accede_pas_a_la_redaction(self, client, db):
-        etudiant = User.objects.create_user(
-            username="etu_art", email="ea@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+    def test_un_etudiant_redige_son_article(self, client, etudiant):
+        client.force_login(etudiant)
+        assert client.get(reverse("website:mes_articles")).status_code == 200
+
+        reponse = client.post(
+            reverse("website:article_creation"),
+            {
+                "titre": "Regard étudiant",
+                "sous_titre": "",
+                "chapeau": "",
+                "corps": "<p>Une réflexion étudiante.</p>",
+                "credit_image": "",
+                "mots_cles": "",
+            },
+        )
+
+        assert reponse.status_code == 302
+        article_etudiant = Article.objects.get(titre="Regard étudiant")
+        assert article_etudiant.auteur_etudiant == etudiant
+        assert article_etudiant.auteur is None
+        assert article_etudiant.nom_auteur == "Maya Jean"
+
+    def test_un_etudiant_ne_modifie_pas_l_article_d_un_enseignant(self, client, etudiant, article):
+        client.force_login(etudiant)
+        assert client.get(reverse("website:article_edition", args=[article.pk])).status_code == 404
+
+    def test_l_article_etudiant_suit_la_meme_relecture(self, client, etudiant, relecteur):
+        article_etudiant = Article.objects.create(
+            titre="Article étudiant",
+            auteur_etudiant=etudiant,
+            corps="<p>Texte soumis.</p>",
         )
         client.force_login(etudiant)
-        assert client.get(reverse("website:mes_articles")).status_code in (302, 403)
+        client.post(reverse("website:article_soumettre", args=[article_etudiant.pk]))
+
+        article_etudiant.refresh_from_db()
+        assert article_etudiant.statut == Article.Statut.RELECTURE
+        assert Notification.objects.filter(destinataire=relecteur).exists()
+
+        client.force_login(relecteur)
+        client.post(reverse("website:article_decision", args=[article_etudiant.pk]), {"action": "publier"})
+        article_etudiant.refresh_from_db()
+        assert article_etudiant.est_public
+        assert Notification.objects.filter(destinataire=etudiant, titre="Votre article est publié").exists()
 
 
 class TestEcransRelecture:

@@ -24,14 +24,3 @@ def mentions_legales(request):
     chaîne de déploiement s'en aperçoive.
     """
     return render(request, "website/mentions_legales.html")
-
-
-def conditions_generales_vente(request):
-    """Conditions générales de vente des livres, modules et frais de scolarité.
-
-    Le tunnel de commande fait cocher « J'accepte les conditions de vente » :
-    ce document est ce que cette case engage. Il est versionné avec le code,
-    et sa date de révision est affichée pour qu'on sache quelle version a été
-    acceptée à une date donnée.
-    """
-    return render(request, "website/conditions_generales_vente.html")

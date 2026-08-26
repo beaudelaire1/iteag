@@ -56,13 +56,6 @@
         <div><p class="overline mb-1">Étape 4</p><h2 class="text-lg font-semibold">Choisir les conditions d’accès</h2>
         <p class="mt-1 text-sm text-warm-500">Indiquez qui pourra consulter le module. Les aperçus se règlent leçon par leçon.</p></div>
         {% include "partials/champ.html" with field=form.politique_acces %}
-        <div class="space-y-5 border-t border-warm-100 pt-5" data-prix-module>
-            <p class="text-sm font-semibold text-navy-800">Tarification — uniquement pour un module vendu à l’unité</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {% include "partials/champ.html" with field=form.prix_ttc %}
-                {% include "partials/champ.html" with field=form.taux_tva %}
-            </div>
-        </div>
     </section>
 
     <div class="flex flex-wrap gap-4">

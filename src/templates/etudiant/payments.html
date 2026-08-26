@@ -34,10 +34,7 @@
             <div class="flex flex-wrap items-center gap-3 sm:justify-end">
                 <p class="text-lg font-bold text-navy-900">{{ demande.montant_du }} €</p>
                 {% if not demande.paiement or demande.paiement.statut != 'confirme' %}
-                <form method="post" action="{% url 'paiements:payer_inscription' demande.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-primary text-sm">Payer maintenant</button>
-                </form>
+                <span class="badge badge-warning">À régler auprès de l'institut</span>
                 {% else %}
                 <span class="badge badge-success">Réglé</span>
                 {% endif %}
@@ -45,7 +42,10 @@
         </div>
         {% endfor %}
     </div>
-    <p class="mt-4 text-sm leading-6 text-amber-900">Le paiement par carte est disponible directement depuis cette page. Pour un virement, un chèque ou un règlement sur place, utilisez les coordonnées communiquées par l’institut ; le secrétariat validera ensuite l’inscription.</p>
+    <p class="mt-4 text-sm leading-6 text-amber-900">
+        Les règlements se font uniquement par virement ou en espèces sur place. Une exonération peut être accordée
+        pour une formation par le secrétariat, avec justification. Aucun paiement n'est encaissé sur ce site.
+    </p>
 </section>
 {% endif %}
 

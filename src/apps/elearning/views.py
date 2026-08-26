@@ -409,7 +409,7 @@ class RessourceTelechargementView(View):
     Remet un support pédagogique de leçon, après revérification du droit.
 
     La même autorité décide pour la vidéo et pour ses supports : un module
-    vendu dont les PDF seraient en accès libre n'aurait de protégé que la
+    réservé dont les PDF seraient en accès libre n'aurait de protégé que la
     vidéo. L'adresse de stockage du fichier n'apparaît donc jamais dans une
     page — seule cette vue, qui revérifie à chaque demande, sait le servir.
     """

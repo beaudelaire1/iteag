@@ -4,7 +4,7 @@ Le journal de production doit rester lisible par machine.
 Une ligne mal formée n'est pas seulement inesthétique : l'agrégateur la
 rejette, et l'incident qu'elle décrivait disparaît au moment précis où on le
 cherche. Les cas ci-dessous sont ceux qui cassaient l'ancien format à trous —
-un guillemet dans un message Stripe, une trace d'exception.
+un guillemet dans un message applicatif, une trace d'exception.
 """
 
 import json
@@ -19,7 +19,7 @@ def _ligne(record: logging.LogRecord) -> dict:
 
 def _record(message: str, *args, exc_info=None) -> logging.LogRecord:
     return logging.LogRecord(
-        name="apps.paiements",
+        name="apps.core",
         level=logging.ERROR,
         pathname=__file__,
         lineno=1,
@@ -30,7 +30,7 @@ def _record(message: str, *args, exc_info=None) -> logging.LogRecord:
 
 
 def test_un_guillemet_dans_le_message_ne_casse_pas_la_ligne():
-    """Le message réel de Stripe en contient : c'est ce qui a été reproduit."""
+    """Un message applicatif réel peut contenir des guillemets."""
     message = 'No such customer: "cus_123"'
     assert _ligne(_record(message))["message"] == message
 
@@ -77,7 +77,7 @@ def test_une_exception_tient_sur_une_seule_ligne():
 def test_le_niveau_et_le_journal_sont_nommes():
     ligne = _ligne(_record("Peu importe"))
     assert ligne["level"] == "ERROR"
-    assert ligne["name"] == "apps.paiements"
+    assert ligne["name"] == "apps.core"
     assert ligne["time"]
 
 

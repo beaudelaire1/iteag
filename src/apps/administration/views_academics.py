@@ -21,7 +21,6 @@ from apps.academics.models import (
     InscriptionSession,
     Paiement,
     PresenceEtudiant,
-    ProfilEtudiant,
     Promotion,
     SessionAcademique,
     Stage,
@@ -65,25 +64,36 @@ def _notifier_cours_disponible(cours_session):
         return 0
     destinataires = User.objects.filter(
         is_active=True,
-        profil_etudiant__parcours__in=cours_session.cours.parcours.all(),
-        profil_etudiant__statut_inscription__in=[
-            ProfilEtudiant.StatutInscription.PRE_INSCRIT,
-            ProfilEtudiant.StatutInscription.PAIEMENT_ATTENTE,
-            ProfilEtudiant.StatutInscription.INSCRIT,
-            ProfilEtudiant.StatutInscription.ACTIF,
-        ],
-    ).distinct()
+        role=User.Role.ETUDIANT,
+    )
     return notifier_plusieurs(
         destinataires,
         f"Cours disponible — {cours_session.cours.titre}",
         type_notification=Notification.Type.NOUVEAU_MODULE,
         message=(
             f"Le cours « {cours_session.cours.titre} » est ouvert aux inscriptions pour la session "
-            f"« {cours_session.session.nom} ». Il correspond à votre parcours ; vous pouvez demander "
-            "à le suivre depuis votre espace étudiant."
+            f"« {cours_session.session.nom} ». Consultez le catalogue depuis votre espace étudiant "
+            "pour vérifier les conditions et demander à le suivre."
         ),
         details=_details_programmation(cours_session),
-        url_cible=reverse("etudiant:course_offering_detail", kwargs={"pk": cours_session.pk}),
+        url_cible=reverse("etudiant:course_catalogue"),
+    )
+
+
+def _notifier_creation_cours(cours):
+    return notifier_plusieurs(
+        User.objects.filter(is_active=True, role=User.Role.ETUDIANT),
+        f"Nouvelle formation créée — {cours.titre}",
+        type_notification=Notification.Type.NOUVEAU_MODULE,
+        message=(
+            f"La formation « {cours.titre} » vient d'être ajoutée au catalogue de l'ITEAG. "
+            "Vous serez informé lorsqu'une session ouvrira ses inscriptions."
+        ),
+        details=[
+            {"libelle": "Formation", "valeur": cours.titre},
+            {"libelle": "Discipline", "valeur": cours.discipline.nom},
+        ],
+        url_cible=cours.get_absolute_url(),
     )
 
 
@@ -551,8 +561,13 @@ class CourseCreateView(StaffRoleRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, "Le cours a été créé dans le référentiel.")
-        return super().form_valid(form)
+        reponse = super().form_valid(form)
+        nombre = _notifier_creation_cours(self.object)
+        messages.success(
+            self.request,
+            f"Le cours a été créé dans le référentiel. {nombre} étudiant(s) ont été averti(s).",
+        )
+        return reponse
 
 
 class CourseUpdateView(StaffRoleRequiredMixin, UpdateView):

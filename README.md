@@ -2,8 +2,8 @@
 
 Refonte du site de l'Institut de Théologie Évangélique des Antilles et de la Guyane :
 migration WordPress → Django 5 / Wagtail 7, avec quatre portails (public, étudiant,
-enseignant, administratif), un espace E-Learning à accès contrôlé et une
-boutique de livres avec commandes, suivi et gestion de stock.
+enseignant, administratif), un espace E-Learning à accès contrôlé, une
+bibliothèque et un suivi administratif des formations.
 
 **Maître d'ouvrage** : ITEAG · **Maître d'œuvre** : Trait d'Union Studio
 
@@ -19,10 +19,9 @@ boutique de livres avec commandes, suivi et gestion de stock.
 | [`docs/plan/plan-finalisation.md`](docs/plan/plan-finalisation.md) | Plan de finalisation par lots |
 | [`docs/plan/plan-correction-audit.md`](docs/plan/plan-correction-audit.md) | Correction des constats de l'audit du 3 août 2026 |
 | [`docs/architecture/adr/ADR-005-fournisseurs-video-externes.md`](docs/architecture/adr/ADR-005-fournisseurs-video-externes.md) | Choix du fournisseur de diffusion vidéo |
-| [`docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md`](docs/architecture/adr/ADR-006-paiement-en-ligne-stripe.md) | Paiement en ligne : Stripe, webhook, TVA |
 | [`docs/exploitation/runbook.md`](docs/exploitation/runbook.md) | Manuel d'exploitation — sauvegardes, supervision, incidents |
 | [`docs/exploitation/cloudflare.md`](docs/exploitation/cloudflare.md) | Activation Turnstile, proxy DNS, TLS et WAF Cloudflare |
-| [`docs/exploitation/coolify.md`](docs/exploitation/coolify.md) | Déploiement OVH Cloud via Coolify, variables secrètes, R2 et Stripe live |
+| [`docs/exploitation/coolify.md`](docs/exploitation/coolify.md) | Déploiement OVH Cloud via Coolify, variables secrètes et R2 |
 | [`docs/exploitation/notifications.md`](docs/exploitation/notifications.md) | Événements notifiés, destinataires et contrôle SMTP |
 
 ---
@@ -92,7 +91,7 @@ python manage.py seed_profs_detail     # fiches professeurs détaillées
 ### Jeu de démonstration complet
 
 Une seule commande peuple toute la plateforme — comptes, candidatures,
-étudiants, sessions, classes, copies à corriger, bibliothèque, boutique,
+étudiants, sessions, classes, copies à corriger, bibliothèque,
 accès e-learning :
 
 ```bash
@@ -101,8 +100,8 @@ python manage.py seed_demo --sans-referentiel   # si seed_formations est déjà 
 ```
 
 Elle est **idempotente** : la relancer complète le jeu sans le dupliquer.
-Chaque sous-commande reste utilisable seule (`seed_boutique`,
-`seed_vie_academique`, `seed_lms`, `seed_candidatures`, `seed_bibliotheque`,
+Chaque sous-commande reste utilisable seule (`seed_vie_academique`,
+`seed_lms`, `seed_candidatures`, `seed_bibliotheque`,
 `seed_comptes`, `seed_elearning_demo`).
 
 Le jeu est composé pour que **chaque écran montre au moins un cas de chaque
@@ -131,8 +130,6 @@ src/
 │   ├── academics/           Sessions, promotions, ECTS, stages, VAE, paiements
 │   ├── lms/                 Ressources, évaluations, annonces (présentiel)
 │   ├── library/             Catalogue de la bibliothèque
-│   ├── commerce/            Boutique, commandes, stocks et alertes
-│   ├── paiements/           Encaissement Stripe — modules, frais, commandes
 │   ├── documents/           Documents administratifs PDF
 │   ├── website/             Pages éditoriales Wagtail — et plan du site
 │   ├── elearning/           E-Learning — modules, accès, progression
@@ -240,7 +237,7 @@ La production tourne sur **OVH Cloud, administrée par Coolify**. Le déploiemen
 est décrit par `src/docker-compose.prod.yml` — PostgreSQL, Redis, une tâche de
 migration, l'application, le worker Celery et le planificateur. Coolify y ajoute
 ce que le dépôt ne contient volontairement pas : le proxy, le certificat TLS et
-les variables secrètes (Stripe, Cloudflare R2, Turnstile, Sentry, Bunny, SMTP).
+les variables secrètes (Cloudflare R2, Turnstile, Sentry, Bunny, SMTP).
 
 > Le fichier Compose doit rester lisible par Docker Compose seul :
 > ```bash

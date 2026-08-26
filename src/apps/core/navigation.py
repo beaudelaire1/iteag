@@ -93,11 +93,6 @@ def rubriques() -> list[Rubrique]:
             libelle="Bibliothèque",
             url=reverse("library:catalogue"),
         ),
-        Rubrique(
-            cle="boutique",
-            libelle="Boutique",
-            url=reverse("commerce:catalogue"),
-        ),
     ]
 
 

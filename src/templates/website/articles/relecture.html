@@ -32,7 +32,7 @@ même article, deux raisons de le regarder.
         <p class="flex flex-wrap items-center gap-2">
             <span class="badge badge-gold">Retrait demandé</span>
             <span class="text-xs text-warm-500">
-                {{ article.auteur.nom_complet }} · le {{ article.retrait_demande_le|date:"d/m/Y" }}
+                {{ article.nom_auteur }} · le {{ article.retrait_demande_le|date:"d/m/Y" }}
             </span>
         </p>
         <h3 class="mt-2 text-lg font-semibold text-navy-900">
@@ -73,7 +73,7 @@ même article, deux raisons de le regarder.
         <p class="flex flex-wrap items-center gap-2">
             <span class="badge badge-gold">À décider</span>
             <span class="text-xs text-warm-500">
-                {{ article.auteur.nom_complet }} · soumis le {{ article.date_soumission|date:"d/m/Y" }}
+                {{ article.nom_auteur }} · soumis le {{ article.date_soumission|date:"d/m/Y" }}
             </span>
         </p>
         <h3 class="mt-2 text-lg font-semibold text-navy-900">{{ article.titre }}</h3>
@@ -127,7 +127,7 @@ même article, deux raisons de le regarder.
         <span class="min-w-0">
             <a href="{{ article.get_absolute_url }}" class="font-medium text-navy-900">{{ article.titre }}</a>
             <span class="block text-xs text-warm-500">
-                {{ article.auteur.nom_complet }} · {{ article.date_publication|date:"d/m/Y" }}
+                {{ article.nom_auteur }} · {{ article.date_publication|date:"d/m/Y" }}
                 {% if article.retrait_demande %} · <strong>retrait demandé</strong>{% endif %}
             </span>
         </span>

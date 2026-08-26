@@ -85,11 +85,6 @@
                         <a href="{% url 'library:notice_detail' notice.pk %}" class="btn btn-sm btn-outline">
                             Fiche bibliothèque
                         </a>
-                        {% if notice.produit_boutique and notice.produit_boutique.actif %}
-                        <a href="{{ notice.produit_boutique.get_absolute_url }}" class="btn btn-sm btn-primary">
-                            Acheter en boutique ({{ notice.produit_boutique.prix_ttc }} €)
-                        </a>
-                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

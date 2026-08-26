@@ -25,7 +25,7 @@ class Command(BaseCommand):
         site_url = settings.SITE_URL.rstrip("/")
         controles_html = [
             (
-                "1/7 — Notification d'une action sur le site",
+                "1/4 — Notification d'une action sur le site",
                 "core/emails/notification.html",
                 {
                     "titre": "Une action requiert votre attention",
@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 },
             ),
             (
-                "2/7 — Inscription à la newsletter",
+                "2/4 — Inscription à la newsletter",
                 "core/emails/newsletter_confirmation.html",
                 {
                     "email": destinataire,
@@ -46,42 +46,7 @@ class Command(BaseCommand):
                 },
             ),
             (
-                "3/7 — Confirmation de commande",
-                "commerce/emails/confirmation_commande.html",
-                {
-                    "numero": "TEST-0001",
-                    "nom": "Destinataire test",
-                    "total": "49.80",
-                    "mode_paiement": "Carte bancaire",
-                    "suivi_url": f"{site_url}/test/suivi-commande/",
-                },
-            ),
-            (
-                "4/7 — Changement de statut d'une commande",
-                "commerce/emails/statut_commande.html",
-                {
-                    "numero": "TEST-0001",
-                    "nom": "Destinataire test",
-                    "statut": "Expédiée",
-                    "message": "Votre commande a quitté nos locaux.",
-                    "transporteur": "La Poste",
-                    "numero_suivi": "TEST-SUIVI",
-                    "url_suivi_transporteur": "https://www.laposte.fr/outils/suivre-vos-envois",
-                    "suivi_url": f"{site_url}/test/suivi-commande/",
-                },
-            ),
-            (
-                "5/7 — Alerte de stock",
-                "commerce/emails/alerte_stock.html",
-                {
-                    "titre": "Livre de test",
-                    "sku": "TEST-001",
-                    "stock_disponible": 2,
-                    "seuil": 3,
-                },
-            ),
-            (
-                "6/7 — Bienvenue étudiant",
+                "3/4 — Bienvenue étudiant",
                 "administration/emails/bienvenue_etudiant.html",
                 {
                     "prenom": "Étudiant test",
@@ -90,7 +55,7 @@ class Command(BaseCommand):
                 },
             ),
             (
-                "7/7 — Réinitialisation du mot de passe",
+                "4/4 — Réinitialisation du mot de passe",
                 "accounts/password_reset_email.html",
                 {
                     "protocol": "https",
@@ -106,7 +71,7 @@ class Command(BaseCommand):
                 raise CommandError(f"Échec du contrôle « {sujet} ».")
             self.stdout.write(self.style.SUCCESS(f"OK — {sujet}"))
 
-        self.stdout.write(self.style.SUCCESS(f"7 notifications de contrôle envoyées à {destinataire}."))
+        self.stdout.write(self.style.SUCCESS(f"4 notifications de contrôle envoyées à {destinataire}."))
 
     def _verifier_configuration(self, destinataire):
         if not destinataire:

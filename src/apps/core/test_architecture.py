@@ -37,13 +37,6 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
         # portail qui agrège les domaines — c'est sa raison d'être.
         "documents",
         "elearning",
-        # La page de statistiques rend compte de TOUTES les applications :
-        # une page de pilotage qui laisserait la boutique et les encaissements
-        # hors champ obligerait à ouvrir deux autres écrans pour se faire une
-        # idée. Ni « commerce » ni « paiements » ne connaissent
-        # « administration » en retour.
-        "commerce",
-        "paiements",
     },
     "formations": {"core", "library"},
     "admissions": {"core", "formations", "accounts"},
@@ -51,26 +44,20 @@ DEPENDANCES_AUTORISEES: dict[str, set[str]] = {
     "lms": {"core", "academics", "formations", "library"},
     "elearning": {"core", "accounts", "formations", "academics", "documents"},
     "library": {"core", "formations", "accounts"},
-    "commerce": {"core", "accounts", "library"},
-    # « paiements » encaisse pour le compte des domaines vendeurs : il les
-    # connaît tous les trois, et aucun ne le connaît en retour. Le sens de la
-    # flèche est le point important — un domaine qui appellerait le paiement
-    # deviendrait indissociable de Stripe.
-    "paiements": {"core", "academics", "commerce", "elearning"},
     "documents": {"core", "accounts", "academics"},
     # Les portails agrègent plusieurs domaines : c'est leur raison d'être, et
     # c'est pourquoi ils vivent hors des applications de domaine.
     "portail_etudiant": {"core", "accounts", "formations", "academics", "lms", "documents", "elearning", "library"},
     "portail_enseignant": {"core", "accounts", "formations", "academics", "lms", "elearning"},
     # website est un portail : comme administration, il agrège des domaines.
-    # « library » et « commerce » s'y ajoutent pour le plan du site, qui recense
-    # les pages publiques des quatre catalogues. Aucun de ces domaines ne
+    # « library » s'y ajoute pour le plan du site, qui recense
+    # les pages publiques des catalogues. Aucun de ces domaines ne
     # connaît « website » en retour : la flèche ne se referme pas.
     #
     # « accounts » s'y ajoute avec les articles de recherche : la soumission
     # d'un article avertit les relecteurs, qui se désignent par leur rôle. Le
     # sens de la flèche reste sain — « accounts » ne connaît que « core ».
-    "website": {"core", "accounts", "formations", "elearning", "library", "commerce"},
+    "website": {"core", "accounts", "formations", "elearning", "library"},
 }
 
 

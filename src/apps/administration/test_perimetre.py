@@ -37,8 +37,6 @@ GESTION = [
     ("administration:utilisateurs", "tenir les comptes"),
     ("administration:user_create", "ouvrir un compte"),
     ("library:gestion", "tenir le fonds documentaire"),
-    ("commerce:gestion_commandes", "traiter les commandes de livres"),
-    ("commerce:gestion_stock", "tenir le stock de livres"),
 ]
 
 # Écrans réservés à la direction : le pilotage.

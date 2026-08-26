@@ -38,8 +38,7 @@ Si un DPO est désigné ultérieurement, ses coordonnées remplacent ce point de
 | Scolarité | étudiants | numéro étudiant, parcours, promotion, statut, église, inscriptions, ECTS, stages, VAE | gérer la formation et le dossier académique | exécution de la relation de formation | direction, secrétariat, enseignants selon besoin | durée du cursus + 5 ans, sous réserve d'une obligation particulière | `apps/academics/models.py` |
 | Assiduité, devoirs et évaluations | étudiants, enseignants | présences, copies, fichiers corrigés, notes, appréciations, révisions, échéances | enseignement, évaluation et suivi pédagogique | exécution de la relation de formation / intérêt légitime pédagogique | enseignant du cours, direction, secrétariat selon besoin | alignée sur le dossier académique : cursus + 5 ans | `apps/academics/*`, `apps/lms/models.py` |
 | Bibliothèque | emprunteurs | identité via compte, ouvrage, dates, statut, remarques | gérer prêts, retours et réservations | exécution du service demandé / intérêt légitime | secrétariat / bibliothèque | durée du prêt puis historique utile au plus 2 ans, sauf litige ou dette non soldée | `apps/library/models.py` |
-| Boutique et livraison | clients | identité, contact, adresse, commande, suivi, commentaire | exécuter la commande et la livraison | contrat | secrétariat, préparation, transporteur pour les données nécessaires | relation active puis pièces comptables 10 ans | `apps/commerce/models.py` |
-| Paiement | payeurs | email, montant, référence, identifiants Stripe, statut, événements techniques | encaisser, rapprocher, rembourser, traiter un litige | contrat et obligations comptables | secrétariat, direction habilitée | référence comptable 10 ans ; charge utile technique Stripe effacée automatiquement au-delà de 90 jours (§3 bis, décision 3) | `apps/paiements/models.py`, `apps/paiements/tasks.py` |
+| Règlements de formation | étudiants | montant, date, mode hors ligne, session, statut et éventuelle exonération | suivre les règlements reçus par virement ou espèces sur place et les exonérations | exécution de la relation de formation et obligations comptables | secrétariat, direction habilitée | pièces comptables 10 ans | `apps/academics/models.py` |
 | Lecture de vidéos protégées | étudiants inscrits à un module | adresse IP, empreinte du navigateur, résultat de la demande, durée du jeton accordé | délivrer l'accès, détecter le partage d'un compte, diagnostiquer un refus de lecture | intérêt légitime | administration technique, personnes habilitées | 90 jours (§3 bis, décision 2) | `apps/elearning/models.py` (`JournalAccesVideo`), `apps/elearning/tasks.py` |
 | Témoignages étudiants | étudiants volontaires | nom, promotion, texte, photo éventuelle, consentement, statut | publier un témoignage choisi par l'étudiant | consentement | direction pour validation ; public après publication | publication jusqu'au retrait ; preuve du consentement et du retrait limitée à la durée nécessaire pour démontrer le respect de la demande | `apps/website/models_publications.py` / témoignages |
 | Notifications internes | utilisateurs | destinataire, type, message, lien, lecture | informer l'utilisateur d'un événement métier | exécution du service / intérêt légitime | destinataire et personnels habilités | à purger avec le compte ou au plus tard selon le dossier métier lié | `apps/core/models.py` |
@@ -56,9 +55,8 @@ absentes du code. Elles sont arbitrées ci-dessous, et une seule ligne de
 |---|---|---|---|---|
 | 1 | Journal d'audit (`core.JournalAudit`) | **12 mois — 365 jours** | `RETENTION_JOURNAL_AUDIT_JOURS` | Le cahier des charges engage l'ITEAG sur douze mois de journaux de sécurité, et la politique publiée l'annonçait déjà. Le code appliquait 730 jours : c'est lui qui s'aligne, pas la promesse faite aux personnes. |
 | 2 | Journal d'accès vidéo (`elearning.JournalAccesVideo`) | **90 jours** | `RETENTION_JOURNAL_ACCES_VIDEO_JOURS` | La finalité codée — repérer un compte partagé — n'exploite qu'une fenêtre de quelques heures. Trois mois laissent de quoi instruire un signalement tardif ; au-delà, on conserverait des adresses IP nominatives dont aucun usage n'est prévu. |
-| 3 | Charge utile des notifications Stripe (`paiements.EvenementStripe.charge_utile`) | **90 jours après traitement** | `RETENTION_CHARGE_UTILE_STRIPE_JOURS` | Très supérieur à la fenêtre de redélivrance de Stripe (quelques jours), et couvre un trimestre de rapprochement comptable. Les éléments comptables eux-mêmes — montant, référence, identifiant d'événement — ne sont pas concernés et restent soumis à l'obligation de dix ans. |
 
-**Statut de ces valeurs.** Elles sont appliquées et testées. Les décisions 2 et 3
+**Statut de ces valeurs.** Elles sont appliquées et testées. La décision 2
 relèvent de l'appréciation du responsable de traitement : l'ITEAG les ratifie ou
 les remplace, auquel cas seule la valeur du réglage et la ligne correspondante
 de ce tableau changent. La décision 1 est contrainte par un engagement déjà pris
@@ -86,7 +84,6 @@ Le champ « église d'appartenance » et certaines informations librement fourni
 | OVHcloud | hébergement de l'infrastructure | données hébergées par l'application | conserver le contrat/DPA et la localisation choisie |
 | Cloudflare R2 | médias et sauvegardes | fichiers, sauvegardes de base | conserver DPA, vérifier région/configuration et accès aux buckets |
 | Cloudflare Turnstile | anti-abus sur formulaires | IP, navigateur, signaux techniques | documenter le service dans l'information des formulaires |
-| Stripe | paiement carte | données de paiement et de transaction | conserver DPA ; ITEAG ne doit pas stocker les numéros complets de carte |
 | Sentry | erreurs applicatives | traces techniques, URL, identifiants si mauvaise configuration | `send_default_pii=False` doit rester le défaut ; vérifier le projet/région et le DPA |
 | Bunny.net | diffusion vidéo protégée | IP, requêtes de lecture, jetons | conserver DPA et vérifier la configuration de journalisation |
 | Fournisseur de messagerie | emails transactionnels | adresses et contenu des emails | identifier le compte réellement utilisé et conserver le DPA/contrat pertinent |
@@ -110,7 +107,6 @@ Priorité haute :
 
 - ~~mettre en place une purge périodique du `JournalAudit` au-delà de 12 mois~~ — fait le 9 août 2026 : `core.purger_journal_audit`, planifiée mensuellement, 365 jours ; l'exception en cas d'incident relève de l'archivage intermédiaire du §6 ;
 - définir puis automatiser la purge des candidatures refusées au-delà de 2 ans, y compris leurs fichiers dans R2 ;
-- ~~supprimer ou réduire la `charge_utile` des événements Stripe une fois la période technique utile écoulée~~ — fait le 9 août 2026 : `paiements.minimiser_charges_utiles`, quotidienne, 90 jours ; l'identifiant, le type, le règlement et l'indicateur de traitement survivent, donc l'idempotence et la piste comptable aussi ;
 - ~~purger le journal d'accès vidéo~~ — fait le 9 août 2026 : `elearning.purger_journal_acces`, mensuelle, 90 jours ;
 - définir la purge des soumissions du formulaire de contact au-delà de 12 mois ;
 - définir le traitement des comptes étudiants arrivés à `promotion.annee_fin + 5 ans` sans supprimer les pièces comptables encore soumises à une obligation de 10 ans ;
@@ -132,5 +128,4 @@ Références externes à contrôler lors des révisions :
 - RGPD, articles 5, 6, 9, 12 à 22, 28, 32 et chapitre V ;
 - CNIL — informer les personnes ;
 - CNIL — durées de conservation ;
-- CNIL — paiement à distance par carte bancaire ;
 - Code de commerce, obligations de conservation des pièces comptables.

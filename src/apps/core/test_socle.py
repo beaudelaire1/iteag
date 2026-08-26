@@ -362,36 +362,6 @@ class TestServiceEmail:
                 "Confirmez votre inscription",
             ),
             (
-                "commerce/emails/confirmation_commande.html",
-                {
-                    "numero": "TEST-1",
-                    "nom": "Test",
-                    "total": "49.80",
-                    "mode_paiement": "Carte",
-                    "suivi_url": "https://example.org/suivi/",
-                },
-                "Merci pour votre commande",
-            ),
-            (
-                "commerce/emails/statut_commande.html",
-                {
-                    "numero": "TEST-1",
-                    "nom": "Test",
-                    "statut": "Expédiée",
-                    "message": "Commande expédiée.",
-                    "transporteur": "La Poste",
-                    "numero_suivi": "TEST",
-                    "url_suivi_transporteur": "https://example.org/transport/",
-                    "suivi_url": "https://example.org/suivi/",
-                },
-                "Commande expédiée.",
-            ),
-            (
-                "commerce/emails/alerte_stock.html",
-                {"titre": "Livre test", "sku": "TEST", "stock_disponible": 2, "seuil": 3},
-                "Livre test",
-            ),
-            (
                 "administration/emails/bienvenue_etudiant.html",
                 {
                     "prenom": "Test",
@@ -424,7 +394,7 @@ class TestCommandeNotificationsEmail:
         EMAIL_HOST_PASSWORD="mot-de-passe-application",
         EMAIL_TEST_RECIPIENT="reception@example.org",
     )
-    def test_envoie_les_sept_notifications_de_controle(self):
+    def test_envoie_les_quatre_notifications_de_controle(self):
         sortie = StringIO()
         with mock.patch(
             "apps.core.management.commands.tester_notifications_email.envoyer_maintenant",
@@ -432,8 +402,8 @@ class TestCommandeNotificationsEmail:
         ) as envoi_html:
             call_command("tester_notifications_email", stdout=sortie)
 
-        assert envoi_html.call_count == 7
-        assert "7 notifications de contrôle envoyées" in sortie.getvalue()
+        assert envoi_html.call_count == 4
+        assert "4 notifications de contrôle envoyées" in sortie.getvalue()
 
     def test_refuse_un_faux_controle_sans_configuration_smtp(self):
         with pytest.raises(CommandError, match="SMTP"):

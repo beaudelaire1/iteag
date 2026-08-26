@@ -54,20 +54,14 @@ def site_context(request):
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
         "ASSET_VERSION": asset_version,
         "HOTE_INDEXABLE": _hote_indexable(request),
-        # Identité légale de l'éditeur. Exposée globalement parce que le pied de
-        # page y renvoie depuis toutes les pages, et que la case d'acceptation
-        # des conditions de vente doit pouvoir lier le document depuis la
-        # boutique comme depuis le paiement d'un module.
+        # Identité légale de l'éditeur, exposée globalement parce que le pied de
+        # page y renvoie depuis toutes les pages.
         "ITEAG_FORME_JURIDIQUE": settings.ITEAG_FORME_JURIDIQUE,
         "ITEAG_IMMATRICULATION": settings.ITEAG_IMMATRICULATION,
         "ITEAG_DIRECTEUR_PUBLICATION": settings.ITEAG_DIRECTEUR_PUBLICATION,
         "ITEAG_NUMERO_DECLARATION_ACTIVITE": settings.ITEAG_NUMERO_DECLARATION_ACTIVITE,
         "ITEAG_HEBERGEUR": settings.ITEAG_HEBERGEUR,
         "ITEAG_HEBERGEUR_ADRESSE": settings.ITEAG_HEBERGEUR_ADRESSE,
-        "ITEAG_MEDIATEUR": settings.ITEAG_MEDIATEUR,
-        "ITEAG_MEDIATEUR_ADRESSE": settings.ITEAG_MEDIATEUR_ADRESSE,
-        "ITEAG_MEDIATEUR_URL": settings.ITEAG_MEDIATEUR_URL,
-        "ITEAG_CGV_VERSION": settings.ITEAG_CGV_VERSION,
         "ITEAG_MENTIONS_VERSION": settings.ITEAG_MENTIONS_VERSION,
         "DEBUG": settings.DEBUG,
         "CLOUDFLARE_TURNSTILE_ENABLED": settings.CLOUDFLARE_TURNSTILE_ENABLED,

@@ -48,11 +48,9 @@
                 {% if demande.paiement and demande.paiement.statut == 'confirme' %}
                 <span class="inline-flex items-center rounded bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">Règlement confirmé</span>
                 {% else %}
-                <form method="post" action="{% url 'paiements:payer_inscription' demande.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-primary text-sm">Payer maintenant · {{ demande.montant_du }} €</button>
-                </form>
-                <a href="{% url 'etudiant:payments' %}" class="btn-secondary text-sm">Autres moyens de paiement</a>
+                <a href="{% url 'etudiant:payments' %}" class="btn-secondary text-sm">
+                    Régler par virement ou en espèces sur place
+                </a>
                 {% endif %}
             {% endif %}
             {% if demande.peut_etre_annulee %}

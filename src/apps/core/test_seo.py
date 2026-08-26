@@ -10,14 +10,12 @@ from django.contrib.sitemaps.views import sitemap
 from django.template.loader import render_to_string
 from django.test import RequestFactory, override_settings
 
-from apps.commerce.models import ProduitLivre
 from apps.core.context_processors import site_context
 from apps.elearning.models import ModuleFormation
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.library.models import NoticeBibliographique
 from apps.website.sitemaps import (
     CoursSitemap,
-    LivresBoutiqueSitemap,
     ModulesPubliesSitemap,
     NoticesBibliothequeSitemap,
     PagesPubliquesSitemap,
@@ -185,21 +183,6 @@ def test_sitemap_xml_couvre_tous_les_catalogues_publics():
         statut=ModuleFormation.StatutPublication.BROUILLON,
     )
     notice = NoticeBibliographique.objects.create(titre="Ouvrage public")
-    livre = ProduitLivre.objects.create(
-        titre="Livre public",
-        slug="livre-public",
-        sku="SEO-LIVRE-1",
-        prix_ttc="20.00",
-        actif=True,
-    )
-    livre_inactif = ProduitLivre.objects.create(
-        titre="Livre retiré",
-        slug="livre-retire",
-        sku="SEO-LIVRE-2",
-        prix_ttc="20.00",
-        actif=False,
-    )
-
     requete = RequestFactory().get("/sitemap.xml", secure=True, HTTP_HOST="iteag.org")
     reponse = sitemap(
         requete,
@@ -210,7 +193,6 @@ def test_sitemap_xml_couvre_tous_les_catalogues_publics():
             "professeurs": ProfesseursSitemap,
             "modules": ModulesPubliesSitemap,
             "bibliotheque": NoticesBibliothequeSitemap,
-            "boutique": LivresBoutiqueSitemap,
         },
     )
     reponse.render()
@@ -221,20 +203,17 @@ def test_sitemap_xml_couvre_tous_les_catalogues_publics():
         "https://iteag.org/formations/professeurs/",
         "https://iteag.org/e-learning/",
         "https://iteag.org/bibliotheque/",
-        "https://iteag.org/boutique/",
         f"https://iteag.org{parcours.get_absolute_url()}",
         f"https://iteag.org{cours.get_absolute_url()}",
         f"https://iteag.org{professeur.get_absolute_url()}",
         f"https://iteag.org{module.get_absolute_url()}",
         f"https://iteag.org/bibliotheque/notice/{notice.pk}/",
-        f"https://iteag.org{livre.get_absolute_url()}",
     }
     exclues = {
         f"https://iteag.org{parcours_inactif.get_absolute_url()}",
         f"https://iteag.org{cours_inactif.get_absolute_url()}",
         f"https://iteag.org{professeur_inactif.get_absolute_url()}",
         f"https://iteag.org{module_brouillon.get_absolute_url()}",
-        f"https://iteag.org{livre_inactif.get_absolute_url()}",
     }
 
     assert attendues <= urls

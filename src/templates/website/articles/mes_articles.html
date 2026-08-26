@@ -2,8 +2,8 @@
 
 {% block title %}Mes articles — {{ SITE_NAME }}{% endblock %}
 
-{% block portal_nav %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
-{% block portal_nav_mobile %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
+{% block portal_nav %}{% if user.is_etudiant %}{% with nav='articles' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}{% else %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endif %}{% endblock %}
+{% block portal_nav_mobile %}{% if user.is_etudiant %}{% with nav='articles' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}{% else %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endif %}{% endblock %}
 
 {% block portal_header %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -11,7 +11,7 @@
         <p class="overline mb-2">Publications</p>
         <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mes articles</h1>
         <p class="mt-1 text-sm text-warm-500">
-            Vos travaux, du brouillon à la publication sur le site public.
+            Vos textes, du brouillon à la publication sur le site public.
         </p>
     </div>
     <a href="{% url 'website:article_creation' %}" class="btn-primary">Nouvel article</a>
@@ -118,7 +118,7 @@
 <div class="card py-12 text-center">
     <p class="text-warm-600">Vous n'avez encore écrit aucun article.</p>
     <p class="mt-1 text-sm text-warm-500">
-        Vos travaux de recherche paraîtront sur le site public de l'institut, sous votre signature.
+        Vos articles pourront paraître sur le site public de l'institut, sous votre signature, après relecture.
     </p>
     <a href="{% url 'website:article_creation' %}" class="btn-primary mt-5">Écrire mon premier article</a>
 </div>

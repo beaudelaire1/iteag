@@ -102,7 +102,7 @@ STORAGES["default"] = {
 }
 
 # Les médias (images Wagtail, pièces jointes) sont servis depuis l'origine du
-# bucket R2 en URL signée : la CSP globale ne connaît que 'self' et Stripe,
+# bucket R2 en URL signée : la CSP globale reste fermée aux origines imprévues,
 # le navigateur bloquerait chaque <img> sans cette ouverture.
 _origine_medias = f"https://{AWS_S3_CUSTOM_DOMAIN}" if AWS_S3_CUSTOM_DOMAIN else AWS_S3_ENDPOINT_URL
 if _origine_medias:

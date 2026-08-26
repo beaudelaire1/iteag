@@ -13,7 +13,7 @@ from apps.website.editorial import CorpsActualiteBlock
 
 
 class Article(TimeStampedModel):
-    """Un article de recherche signé par un enseignant."""
+    """Un article signé par un enseignant ou un étudiant."""
 
     class Statut(models.TextChoices):
         BROUILLON = "brouillon", "Brouillon"
@@ -28,7 +28,18 @@ class Article(TimeStampedModel):
     auteur = models.ForeignKey(
         "formations.Professeur",
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="articles",
+    )
+    auteur_etudiant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="articles_rediges",
+        limit_choices_to={"role": "etudiant"},
+        verbose_name="Auteur étudiant",
     )
     chapeau = models.TextField(
         blank=True,
@@ -72,6 +83,19 @@ class Article(TimeStampedModel):
         indexes = [
             models.Index(fields=["statut", "-date_publication"]),
             models.Index(fields=["auteur", "statut"]),
+            models.Index(
+                fields=["auteur_etudiant", "statut"],
+                name="website_ar_auteur__30c162_idx",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(auteur__isnull=False, auteur_etudiant__isnull=True)
+                    | models.Q(auteur__isnull=True, auteur_etudiant__isnull=False)
+                ),
+                name="article_exactement_un_auteur",
+            ),
         ]
 
     def __str__(self):
@@ -93,6 +117,28 @@ class Article(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse("website:article_detail", kwargs={"slug": self.slug})
+
+    @property
+    def utilisateur_auteur(self):
+        if self.auteur_etudiant_id:
+            return self.auteur_etudiant
+        if self.auteur_id:
+            return self.auteur.user
+        return None
+
+    @property
+    def nom_auteur(self) -> str:
+        if self.auteur_id:
+            return self.auteur.nom_complet
+        if self.auteur_etudiant_id:
+            return self.auteur_etudiant.get_full_name() or self.auteur_etudiant.username
+        return "Auteur inconnu"
+
+    @property
+    def qualite_auteur(self) -> str:
+        if self.auteur_id:
+            return self.auteur.specialite
+        return "Étudiant de l'ITEAG"
 
     @property
     def est_public(self) -> bool:

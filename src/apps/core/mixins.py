@@ -9,7 +9,7 @@ direction pour un acte courant.
 
 * `StaffRoleRequiredMixin` — **toute la gestion** : dossiers, étudiants,
   professeurs, cours, sessions, inscriptions, encaissements, tarifs, stages,
-  VAE, comptes utilisateurs, suppressions, bibliothèque, boutique.
+  VAE, comptes utilisateurs, suppressions et bibliothèque.
 * `AdminRoleRequiredMixin` — **le pilotage** : les tableaux de bord et
   indicateurs de direction, ainsi que l'administration Django avancée.
 

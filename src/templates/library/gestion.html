@@ -70,9 +70,6 @@
                 </td>
                 <td class="py-3 pr-4">
                     <a href="{% url 'library:notice_detail' notice.pk %}" class="font-medium text-navy-900 link-reveal">{{ notice.titre }}</a>
-                    {% if notice.produit_boutique %}
-                    <span class="badge badge-gold ml-2">En vente</span>
-                    {% endif %}
                 </td>
                 <td class="py-3 pr-4 text-warm-600">{{ notice.auteur|default:"—" }}</td>
                 <td class="py-3 pr-4 text-warm-600">{{ notice.discipline|default:"—" }}</td>

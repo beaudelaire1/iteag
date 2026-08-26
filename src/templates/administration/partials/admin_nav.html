@@ -88,16 +88,6 @@
     Emprunts et réservations
 </a>
 
-<p class="portal-nav-group">Boutique</p>
-<a href="{% url 'commerce:gestion_commandes' %}" class="portal-nav-link {% if nav == 'commandes' %}active{% endif %}">
-    {% include "partials/nav_icon.html" with name="cart" only %}
-    Commandes
-</a>
-<a href="{% url 'commerce:gestion_stock' %}" class="portal-nav-link {% if nav == 'stock' %}active{% endif %}">
-    {% include "partials/nav_icon.html" with name="box" only %}
-    Stocks
-</a>
-
 <p class="portal-nav-group">Finances</p>
 <a href="{% url 'administration:payments' %}" class="portal-nav-link {% if nav == 'payments' %}active{% endif %}">
     {% include "partials/nav_icon.html" with name="card" only %}

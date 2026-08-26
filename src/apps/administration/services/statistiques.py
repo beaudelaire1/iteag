@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.urls import reverse
 from django.utils import timezone
@@ -37,11 +37,9 @@ from apps.academics.models import (
 )
 from apps.accounts.models import User
 from apps.admissions.models import DossierCandidature
-from apps.commerce.models import Commande, ProduitLivre
 from apps.elearning.models import InscriptionModule, ModuleFormation, ProgressionLecon
 from apps.formations.models import Cours, Professeur
 from apps.library.models import NoticeBibliographique
-from apps.paiements.models import Reglement
 
 ZERO = Decimal("0.00")
 MOIS_COURTS = (
@@ -331,99 +329,6 @@ def formation_video() -> Domaine:
     )
 
 
-def paiements_en_ligne() -> Domaine:
-    """Le tunnel de paiement : ce qui aboutit et ce qui se perd en route."""
-    reglements = Reglement.objects.all()
-    compte = reglements.aggregate(
-        payes=Count("id", filter=Q(statut=Reglement.Statut.PAYE)),
-        encaisse=Sum("montant_ttc", filter=Q(statut=Reglement.Statut.PAYE), default=ZERO),
-        rembourse=Sum("montant_ttc", filter=Q(statut=Reglement.Statut.REMBOURSE), default=ZERO),
-        engages=Count(
-            "id",
-            filter=Q(
-                statut__in=[
-                    Reglement.Statut.PAYE,
-                    Reglement.Statut.ECHOUE,
-                    Reglement.Statut.ABANDONNE,
-                ]
-            ),
-        ),
-        abandons=Count("id", filter=Q(statut=Reglement.Statut.ABANDONNE)),
-    )
-    return Domaine(
-        cle="paiements",
-        titre="Paiements en ligne",
-        explication="Règlements par carte, quelle que soit leur nature : module, frais ou commande.",
-        indicateurs=[
-            Indicateur("Encaissé", _euros(compte["encaisse"]), f"{_nombre(compte['payes'])} règlement(s)"),
-            Indicateur(
-                "Taux d'aboutissement",
-                _pourcent(compte["payes"], compte["engages"]),
-                f"{_nombre(compte['abandons'])} abandon(s) en cours de paiement",
-            ),
-            Indicateur("Panier moyen", _euros(compte["encaisse"] / compte["payes"] if compte["payes"] else ZERO)),
-            Indicateur("Remboursé", _euros(compte["rembourse"])),
-        ],
-        repartition_titre="Nature des règlements aboutis",
-        repartition=_repartition(
-            reglements.filter(statut=Reglement.Statut.PAYE),
-            "nature",
-            dict(Reglement.Nature.choices),
-        ),
-        serie_titre="Montant encaissé par mois",
-        serie=_serie(
-            reglements.filter(statut=Reglement.Statut.PAYE),
-            "date_paiement",
-            agregat=Sum("montant_ttc"),
-            monnaie=True,
-        ),
-    )
-
-
-def boutique() -> Domaine:
-    """La librairie : commandes, chiffre d'affaires et stock qui s'épuise."""
-    commandes = Commande.objects.all()
-    reglees = Q(statut_paiement=Commande.StatutPaiement.CONFIRME)
-    compte = commandes.aggregate(
-        # L'alias ne peut pas s'appeler « total » : le modèle porte déjà ce champ,
-        # et l'agrégat suivant croirait sommer un agrégat.
-        nombre=Count("id"),
-        reglees=Count("id", filter=reglees),
-        chiffre=Sum("total", filter=reglees, default=ZERO),
-        a_expedier=Count(
-            "id",
-            filter=reglees
-            & Q(
-                statut__in=[
-                    Commande.Statut.CONFIRMEE,
-                    Commande.Statut.PREPARATION,
-                ]
-            ),
-        ),
-    )
-    alerte = ProduitLivre.objects.filter(actif=True, stock_physique__lte=F("stock_reserve") + F("seuil_alerte")).count()
-    return Domaine(
-        cle="boutique",
-        titre="Boutique",
-        explication="Commandes d'ouvrages, encaissements associés et tension sur les stocks.",
-        indicateurs=[
-            Indicateur("Commandes", _nombre(compte["nombre"]), f"dont {_nombre(compte['reglees'])} réglée(s)"),
-            Indicateur("Chiffre d'affaires", _euros(compte["chiffre"]), "commandes réglées"),
-            Indicateur(
-                "Panier moyen",
-                _euros(compte["chiffre"] / compte["reglees"] if compte["reglees"] else ZERO),
-            ),
-            Indicateur(
-                "À préparer", _nombre(compte["a_expedier"]), f"{_nombre(alerte)} produit(s) sous seuil d'alerte"
-            ),
-        ],
-        repartition_titre="État des commandes",
-        repartition=_repartition(commandes, "statut", dict(Commande.Statut.choices)),
-        serie_titre="Chiffre d'affaires par mois",
-        serie=_serie(commandes.filter(reglees), "created_at", agregat=Sum("total"), monnaie=True),
-    )
-
-
 def bibliotheque() -> Domaine:
     """Le catalogue documentaire.
 
@@ -486,14 +391,12 @@ def comptes() -> Domaine:
 
 
 def tous_les_domaines() -> list[Domaine]:
-    """L'ordre suit le parcours d'un étudiant : il entre, il étudie, il paie."""
+    """L'ordre suit le parcours d'un étudiant, de l'admission aux ressources."""
     return [
         admissions(),
         scolarite(),
         enseignement(),
         formation_video(),
-        paiements_en_ligne(),
-        boutique(),
         bibliotheque(),
         comptes(),
     ]

@@ -9,11 +9,6 @@ urlpatterns = [
     path("protection-des-donnees/", views.politique_donnees, name="politique_donnees"),
     path("cookies/", views.politique_cookies, name="politique_cookies"),
     path("mentions-legales/", views.mentions_legales, name="mentions_legales"),
-    path(
-        "conditions-generales-de-vente/",
-        views.conditions_generales_vente,
-        name="conditions_generales_vente",
-    ),
     # ── Articles de recherche — lecture publique ──
     path("articles/", vues_articles.ArticlesPublicsView.as_view(), name="articles"),
     path("articles/<slug:slug>/", vues_articles.ArticlePublicView.as_view(), name="article_detail"),
@@ -23,40 +18,40 @@ urlpatterns = [
         vues_temoignages.TemoignagePublicView.as_view(),
         name="temoignage_public",
     ),
-    # ── Rédaction, côté enseignant ──
-    path("espace-enseignant/articles/", vues_articles.MesArticlesView.as_view(), name="mes_articles"),
+    # ── Rédaction, côté enseignants et étudiants ──
+    path("publications/mes-articles/", vues_articles.MesArticlesView.as_view(), name="mes_articles"),
     path(
-        "espace-enseignant/articles/nouveau/",
+        "publications/mes-articles/nouveau/",
         vues_articles.ArticleEditionView.as_view(),
         name="article_creation",
     ),
     path(
-        "espace-enseignant/articles/<int:pk>/",
+        "publications/mes-articles/<int:pk>/",
         vues_articles.ArticleEditionView.as_view(),
         name="article_edition",
     ),
     path(
-        "espace-enseignant/articles/<int:pk>/soumettre/",
+        "publications/mes-articles/<int:pk>/soumettre/",
         vues_articles.ArticleSoumettreView.as_view(),
         name="article_soumettre",
     ),
     path(
-        "espace-enseignant/articles/<int:pk>/demander-le-retrait/",
+        "publications/mes-articles/<int:pk>/demander-le-retrait/",
         vues_articles.ArticleDemandeRetraitView.as_view(),
         name="article_demande_retrait",
     ),
     path(
-        "espace-enseignant/articles/<int:pk>/supprimer/",
+        "publications/mes-articles/<int:pk>/supprimer/",
         vues_articles.ArticleSupprimerView.as_view(),
         name="article_supprimer",
     ),
     path(
-        "espace-enseignant/articles/<int:pk>/illustration/",
+        "publications/mes-articles/<int:pk>/illustration/",
         vues_articles.IllustrationCreateView.as_view(),
         name="article_illustration",
     ),
     path(
-        "espace-enseignant/illustrations/<int:pk>/supprimer/",
+        "publications/illustrations/<int:pk>/supprimer/",
         vues_articles.IllustrationDeleteView.as_view(),
         name="illustration_supprimer",
     ),

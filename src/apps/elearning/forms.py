@@ -1,7 +1,6 @@
 """Formulaires de production de contenu — portail enseignant."""
 
 import re
-from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
 
 from django import forms
@@ -36,8 +35,6 @@ class ModuleForm(FormulaireModeleITEAG):
             # la politique restait invisible, subie, et jamais confrontée aux
             # aperçus qu'il cochait par ailleurs.
             "politique_acces",
-            "prix_ttc",
-            "taux_tva",
             "certifiant",
             "seuil_completion",
             "autorise_revision",
@@ -53,8 +50,6 @@ class ModuleForm(FormulaireModeleITEAG):
             "image_couverture": forms.ClearableFileInput(attrs={"class": FICHIER}),
             "ects": forms.NumberInput(attrs={"class": INPUT, "min": 0, "step": "0.5"}),
             "politique_acces": forms.Select(attrs={"class": SELECT}),
-            "prix_ttc": forms.NumberInput(attrs={"class": INPUT, "min": 0, "step": "0.01"}),
-            "taux_tva": forms.NumberInput(attrs={"class": INPUT, "min": 0, "max": 100, "step": "0.01"}),
             "seuil_completion": forms.NumberInput(attrs={"class": INPUT, "min": 50, "max": 100}),
         }
         help_texts = {
@@ -65,8 +60,6 @@ class ModuleForm(FormulaireModeleITEAG):
                 "les autres exigent un droit, que le secrétariat octroie. Une leçon cochée "
                 "« aperçu gratuit » échappe à ce choix, quelle que soit la politique retenue."
             ),
-            "prix_ttc": "Prix payé par l'étudiant, toutes taxes comprises. L'accès acheté est définitif.",
-            "taux_tva": "Appliqué à ce module seul. 0 en cas d'exonération de formation professionnelle.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -75,24 +68,6 @@ class ModuleForm(FormulaireModeleITEAG):
         # « ouvert » : `clean_politique_acces` retombe sur la valeur en place,
         # à défaut sur le défaut du modèle, qui est le plus fermé.
         self.fields["politique_acces"].required = False
-        self.fields["prix_ttc"].required = False
-        self.fields["taux_tva"].required = False
-        if self.instance.pk is None:
-            self.fields["taux_tva"].initial = getattr(settings, "PAIEMENTS_TAUX_TVA_DEFAUT", "0.00")
-
-    def clean_prix_ttc(self):
-        return self.cleaned_data.get("prix_ttc") or Decimal("0")
-
-    def clean_taux_tva(self):
-        return self.cleaned_data.get("taux_tva") or Decimal("0")
-
-    def clean(self):
-        donnees = super().clean()
-        # Annoncer un module « vendu à l'unité » sans prix produirait un bouton
-        # d'achat à zéro euro : l'accès s'ouvrirait pour rien.
-        if donnees.get("politique_acces") == ModuleFormation.PolitiqueAcces.ACHAT and not donnees.get("prix_ttc"):
-            self.add_error("prix_ttc", "Un module vendu à l'unité doit porter un prix.")
-        return donnees
 
     def clean_politique_acces(self):
         """Resserrer la politique ne doit pas rendre le module inlisible.

@@ -8,8 +8,8 @@ données de chaque application, dans l'ordre où ils dépendent les uns des
 autres — le référentiel des formations d'abord, puisque tout s'y rattache.
 
 L'orchestration passe par `call_command`, qui prend un **nom**, pas un import :
-cette application n'acquiert donc aucune dépendance vers la boutique ou vers
-les paiements, et l'invariant d'architecture reste vérifié.
+cette application n'acquiert donc aucune dépendance métier supplémentaire et
+l'invariant d'architecture reste vérifié.
 
 Chaque sous-commande est idempotente : relancer `seed_demo` complète le jeu
 sans le dupliquer. C'est ce qui permet de la relancer sereinement cinq minutes
@@ -26,7 +26,6 @@ ETAPES = [
     ("seed_comptes", "Comptes de connexion : secrétariat, direction, enseignants"),
     ("seed_candidatures", "Dossiers de candidature à l'admission"),
     ("seed_bibliotheque", "Catalogue de la bibliothèque"),
-    ("seed_boutique", "Boutique : livres, stock et commandes"),
     ("seed_vie_academique", "Étudiants, sessions, inscriptions, paiements, stages, VAE, ECTS"),
     ("seed_lms", "Ressources, évaluations et annonces de cours"),
     ("seed_elearning_demo", "Accès aux modules vidéo et progressions"),

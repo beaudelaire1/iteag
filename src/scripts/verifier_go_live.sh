@@ -152,6 +152,6 @@ certifier à lui seul :
 - constater l'événement de test dans Sentry ;
 - valider un Turnstile avec un navigateur humain sur un formulaire public ;
 - vérifier la politique de cycle de vie / verrouillage du bucket de sauvegarde ;
-- si la carte bancaire est ouverte au lancement : paiement Stripe live réel,
+- règlement de formation enregistré par virement ou espèces sur place,
   réception du webhook, rapprochement métier puis remboursement.
 EOF

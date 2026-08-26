@@ -1,9 +1,9 @@
 """
 Le secrétariat gère l'ensemble du service scolarité.
 
-Ces cas couvrent les trois gestes qui lui manquaient ou dont on doutait :
-traiter une demande d'inscription, ouvrir la fiche d'un étudiant, et
-administrer la boutique. Ils sont joués avec un vrai compte de rôle
+Ces cas couvrent les gestes qui lui manquaient ou dont on doutait :
+traiter une demande d'inscription et ouvrir la fiche d'un étudiant.
+Ils sont joués avec un vrai compte de rôle
 « secrétariat », et non avec un compte d'administration.
 """
 
@@ -22,7 +22,7 @@ from apps.academics.models import (
     SessionAcademique,
 )
 from apps.accounts.models import User
-from apps.commerce.models import ProduitLivre
+from apps.core.models import Notification
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 
 pytestmark = pytest.mark.django_db
@@ -157,7 +157,7 @@ def test_la_pastille_retient_une_demande_mise_en_attente_de_paiement(client, sec
 
 
 # ──────────────────────────────────────────────
-# Fiche étudiant et boutique
+# Fiche étudiant
 # ──────────────────────────────────────────────
 
 
@@ -168,28 +168,42 @@ def test_le_secretariat_ouvre_la_fiche_d_un_etudiant(client, secretaire, demande
     assert "ETU-SEC-001" in reponse.content.decode()
 
 
-def test_le_secretariat_gere_les_commandes_et_le_stock(client, secretaire):
-    ProduitLivre.objects.create(
-        titre="Théologie systématique",
-        slug="theologie-systematique",
-        sku="LIV-001",
-        prix_ttc=Decimal("35.00"),
-        stock_physique=10,
+def test_la_creation_d_une_formation_avertit_tous_les_etudiants_actifs(client, secretaire, demande):
+    autre_etudiant = User.objects.create_user(
+        username="autre_etudiant_formation",
+        email="autre-formation@iteag.org",
+        password=MOT_DE_PASSE,
+        role=User.Role.ETUDIANT,
     )
+    etudiant_inactif = User.objects.create_user(
+        username="etudiant_inactif_formation",
+        email="inactif-formation@iteag.org",
+        password=MOT_DE_PASSE,
+        role=User.Role.ETUDIANT,
+        is_active=False,
+    )
+    discipline = Discipline.objects.create(nom="Formation nouvelle", slug="formation-nouvelle")
     client.force_login(secretaire)
 
-    assert client.get(reverse("commerce:gestion_commandes")).status_code == 200
-    reponse_stock = client.get(reverse("commerce:gestion_stock"))
-    assert reponse_stock.status_code == 200
-    assert "Théologie systématique" in reponse_stock.content.decode()
+    reponse = client.post(
+        reverse("administration:course_create"),
+        {
+            "titre": "Histoire de l'Église",
+            "slug": "histoire-eglise-notification",
+            "code": "HIS101",
+            "discipline": discipline.pk,
+            "description": "",
+            "objectifs": "",
+            "ects": "2.5",
+            "actif": "on",
+        },
+    )
 
-
-def test_la_boutique_est_atteignable_depuis_la_barre_du_secretariat(client, secretaire):
-    """Le droit existait déjà ; c'est le chemin pour y arriver qui manquait."""
-    client.force_login(secretaire)
-    corps = client.get(reverse("secretariat:dashboard")).content.decode()
-    assert reverse("commerce:gestion_commandes") in corps
-    assert reverse("commerce:gestion_stock") in corps
+    assert reponse.status_code == 302
+    titre = "Nouvelle formation créée — Histoire de l'Église"
+    assert Notification.objects.filter(destinataire=demande.etudiant.utilisateur, titre=titre).exists()
+    assert Notification.objects.filter(destinataire=autre_etudiant, titre=titre).exists()
+    assert not Notification.objects.filter(destinataire=etudiant_inactif, titre=titre).exists()
 
 
 def test_le_secretariat_genere_une_feuille_d_emargement_pdf(client, secretaire, db):

@@ -84,8 +84,6 @@ LOCAL_APPS = [
     "apps.library",
     "apps.documents",
     "apps.elearning",
-    "apps.commerce",
-    "apps.paiements",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -140,7 +138,6 @@ TEMPLATES = [
                 "apps.core.context_processors.notifications_context",
                 "apps.administration.context_processors.taches_en_attente",
                 "apps.portail_enseignant.context_processors.propositions_en_attente",
-                "apps.commerce.context_processors.panier_context",
             ],
         },
     },
@@ -282,10 +279,6 @@ JAZZMIN_SETTINGS = {
         "admissions.DossierCandidature": "fas fa-file-alt",
         "library.NoticeBibliographique": "fas fa-book-open",
         "documents.DocumentAdministratif": "fas fa-folder-open",
-        "commerce.ProduitLivre": "fas fa-book",
-        "commerce.Commande": "fas fa-shopping-cart",
-        "commerce.MouvementStock": "fas fa-boxes",
-        "commerce.AlerteStock": "fas fa-exclamation-triangle",
     },
     "default_icon_parents": "fas fa-folder",
     "default_icon_children": "fas fa-circle",
@@ -412,7 +405,7 @@ EMAIL_TEST_RECIPIENT = env("EMAIL_TEST_RECIPIENT", default="")
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
 
 # ──────────────────────────────────────────────
-# Identité légale de l'éditeur — mentions légales et CGV
+# Identité légale de l'éditeur — mentions légales
 # ──────────────────────────────────────────────
 #
 # Ces valeurs ne sont pas des réglages techniques : ce sont les informations que
@@ -438,18 +431,7 @@ ITEAG_NUMERO_DECLARATION_ACTIVITE = env("ITEAG_NUMERO_DECLARATION_ACTIVITE", def
 ITEAG_HEBERGEUR = env("ITEAG_HEBERGEUR", default="OVH SAS")
 ITEAG_HEBERGEUR_ADRESSE = env("ITEAG_HEBERGEUR_ADRESSE", default="2 rue Kellermann, 59100 Roubaix, France")
 
-# Médiateur de la consommation. Tout professionnel qui vend à des consommateurs
-# doit en désigner un et publier ses coordonnées (code de la consommation,
-# art. L612-1). La section correspondante des CGV ne s'affiche que si le nom est
-# renseigné : mieux vaut une section absente qu'un médiateur inventé.
-ITEAG_MEDIATEUR = env("ITEAG_MEDIATEUR", default="")
-ITEAG_MEDIATEUR_ADRESSE = env("ITEAG_MEDIATEUR_ADRESSE", default="")
-ITEAG_MEDIATEUR_URL = env("ITEAG_MEDIATEUR_URL", default="")
-
-# Date de dernière révision des documents contractuels, affichée sur les pages
-# publiques. Une CGV sans date ne permet pas de savoir quelle version a été
-# acceptée lors d'une commande.
-ITEAG_CGV_VERSION = env("ITEAG_CGV_VERSION", default="9 août 2026")
+# Date de dernière révision des mentions légales, affichée sur la page publique.
 ITEAG_MENTIONS_VERSION = env("ITEAG_MENTIONS_VERSION", default="9 août 2026")
 
 # ──────────────────────────────────────────────
@@ -492,12 +474,6 @@ RETENTION_JOURNAL_AUDIT_JOURS = env.int("RETENTION_JOURNAL_AUDIT_JOURS", default
 # sans conserver un an d'adresses IP nominatives dont personne ne fait rien.
 RETENTION_JOURNAL_ACCES_VIDEO_JOURS = env.int("RETENTION_JOURNAL_ACCES_VIDEO_JOURS", default=90)
 
-# Corps des notifications Stripe. À ne pas confondre avec la conservation des
-# pièces comptables (10 ans), qui porte sur le montant et la référence — eux
-# survivent à la minimisation. Trois mois couvrent très largement la fenêtre de
-# redélivrance de Stripe (quelques jours) et un trimestre de rapprochement.
-RETENTION_CHARGE_UTILE_STRIPE_JOURS = env.int("RETENTION_CHARGE_UTILE_STRIPE_JOURS", default=90)
-
 # ──────────────────────────────────────────────
 # Celery
 # ──────────────────────────────────────────────
@@ -524,10 +500,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "elearning.expirer_acces",
         "schedule": 24 * 60 * 60,
     },
-    "commerce-verifier-stocks": {
-        "task": "commerce.verifier_stocks",
-        "schedule": 6 * 60 * 60,
-    },
     "core-purger-notifications": {
         "task": "core.purger_notifications",
         "schedule": 7 * 24 * 60 * 60,
@@ -546,65 +518,13 @@ CELERY_BEAT_SCHEDULE = {
         "task": "elearning.purger_journal_acces",
         "schedule": 30 * 24 * 60 * 60,
     },
-    # Le filet du paiement : un encaissement dont la contrepartie n'est pas
-    # partie doit se rattraper tout seul, et se dire s'il ne se rattrape pas.
-    # Un quart d'heure est assez court pour que l'étudiant ne s'en aperçoive
-    # pas, assez long pour ne pas courir derrière une livraison en cours.
-    "paiements-reparer-livraisons": {
-        "task": "paiements.reparer_livraisons",
-        "schedule": 15 * 60,
-    },
-    "paiements-minimiser-charges-utiles": {
-        "task": "paiements.minimiser_charges_utiles",
-        "schedule": 24 * 60 * 60,
-    },
 }
-
-# Boutique de livres
-COMMERCE_SEUIL_LIVRAISON_OFFERTE = env("COMMERCE_SEUIL_LIVRAISON_OFFERTE", default="150.00")
-COMMERCE_ALERTE_EMAIL = env("COMMERCE_ALERTE_EMAIL", default="")
-COMMERCE_REMISE_ETUDIANT = env("COMMERCE_REMISE_ETUDIANT", default="0.10")  # 10 %
-
-# ──────────────────────────────────────────────
-# Paiement en ligne — Stripe
-# ──────────────────────────────────────────────
-#
-# Aucune donnée bancaire ne transite par nos serveurs : le paiement se fait sur
-# une page hébergée par Stripe (Checkout). L'application ne voit jamais un
-# numéro de carte, ce qui ramène le périmètre PCI au plus simple et laisse
-# l'authentification forte à Stripe.
-#
-# La clé secrète et le secret de signature ne quittent jamais le serveur. Le
-# secret de signature est ce qui distingue une notification réellement émise
-# par Stripe d'un appel forgé : sans lui, n'importe qui pourrait déclarer un
-# paiement abouti.
-# Réparation des livraisons manquées. Le délai de grâce évite de rejouer une
-# livraison qui est simplement en train de s'exécuter ; le seuil d'alerte est
-# le nombre de tentatives infructueuses au-delà duquel le secrétariat est
-# prévenu — parce qu'un rattrapage qui échoue en boucle est un silence de plus.
-PAIEMENTS_DELAI_REPARATION_MINUTES = env.int("PAIEMENTS_DELAI_REPARATION_MINUTES", default=15)
-PAIEMENTS_SEUIL_ALERTE_LIVRAISON = env.int("PAIEMENTS_SEUIL_ALERTE_LIVRAISON", default=2)
-
-STRIPE_CLE_PUBLIABLE = env("STRIPE_CLE_PUBLIABLE", default="")
-STRIPE_CLE_SECRETE = env("STRIPE_CLE_SECRETE", default="")
-STRIPE_SECRET_WEBHOOK = env("STRIPE_SECRET_WEBHOOK", default="")
-STRIPE_DEVISE = env("STRIPE_DEVISE", default="EUR")
-
-# Taux de TVA proposé par défaut dans les formulaires de tarification. Il est
-# saisi article par article : l'ITEAG peut relever de l'exonération de la
-# formation professionnelle (taux 0) pour ses modules tout en facturant la TVA
-# sur les livres.
-PAIEMENTS_TAUX_TVA_DEFAUT = env("PAIEMENTS_TAUX_TVA_DEFAUT", default="0.00")
 
 # Sonde de santé. Vide — le défaut — la sonde publie son détail par dépendance
 # à qui la consulte : deux booléens, une position tenable et assumée. Renseigné,
 # le code de réponse reste public (la supervision et le HEALTHCHECK en vivent)
 # mais le détail exige l'en-tête « X-Healthz-Token ». Voir apps/core/views.py.
 HEALTHZ_JETON = env("HEALTHZ_JETON", default="")
-
-# Réservé aux instances de recette : laisse démarrer avec des clés « sk_test_ »
-# hors DEBUG. Absent en production, où le contrôle paiements.E003 s'applique.
-PAIEMENTS_AUTORISER_CLES_TEST = env.bool("PAIEMENTS_AUTORISER_CLES_TEST", default=False)
 
 # ──────────────────────────────────────────────
 # Formation vidéo (voir ADR-001 et ADR-002)
@@ -671,8 +591,6 @@ SESSION_SAVE_EVERY_REQUEST = True
 # ──────────────────────────────────────────────
 
 _turnstile_origins = ["https://challenges.cloudflare.com"] if CLOUDFLARE_TURNSTILE_ENABLED else []
-_stripe_script_origins = ["https://js.stripe.com"]
-_stripe_frame_origins = ["https://js.stripe.com", "https://hooks.stripe.com", "https://checkout.stripe.com"]
 _openstreetmap_frame_origins = ["https://www.openstreetmap.org"]
 from csp.constants import NONCE  # noqa: E402
 
@@ -689,15 +607,15 @@ CONTENT_SECURITY_POLICY = {
         # django-csp 3. La version 4 l'ignore **en silence** : le bloc portait
         # bien son attribut, l'en-tête ne le reprenait pas, et le navigateur
         # continuait de l'écarter.
-        "script-src": [NONCE, "'self'", *_turnstile_origins, *_stripe_script_origins],
+        "script-src": [NONCE, "'self'", *_turnstile_origins],
         "style-src": ["'self'"],
         "style-src-elem": ["'self'"],
         "style-src-attr": ["'none'"],
-        "img-src": ["'self'", "data:", "https://*.stripe.com"],
+        "img-src": ["'self'", "data:"],
         "media-src": ["'self'", "blob:"],
         "font-src": ["'self'"],
-        "connect-src": ["'self'", "https://api.stripe.com", "https://m.stripe.network"],
-        "frame-src": [*_turnstile_origins, *_stripe_frame_origins, *_openstreetmap_frame_origins],
+        "connect-src": ["'self'"],
+        "frame-src": [*_turnstile_origins, *_openstreetmap_frame_origins],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
         "form-action": ["'self'"],

@@ -1,4 +1,4 @@
-"""Les deux documents que la loi impose de publier.
+"""La page qui identifie légalement l'éditeur du site.
 
 Ces pages ne sont pas éditoriales : elles sont servies par du code, référencées
 dans le plan du site et liées depuis toutes les pages. Un test les tient à ce
@@ -23,12 +23,8 @@ def texte_visible(reponse) -> str:
 
 @pytest.mark.django_db
 class TestLesPagesLegalesSontPubliques:
-    @pytest.mark.parametrize(
-        "route",
-        ["website:mentions_legales", "website:conditions_generales_vente"],
-    )
-    def test_la_page_repond_sans_compte(self, client, route):
-        reponse = client.get(reverse(route))
+    def test_la_page_repond_sans_compte(self, client):
+        reponse = client.get(reverse("website:mentions_legales"))
         assert reponse.status_code == 200
 
     def test_les_mentions_identifient_l_editeur_et_l_hebergeur(self, client):
@@ -59,63 +55,19 @@ class TestLesPagesLegalesSontPubliques:
         ):
             assert attendu in contenu
 
-    def test_les_cgv_couvrent_les_obligations_de_vente_a_distance(self, client):
-        # Le texte rendu, débarrassé de son balisage : une expression coupée par
-        # un retour à la ligne ou entourée d'un <strong> reste la même phrase
-        # pour qui lit la page.
-        contenu = texte_visible(client.get(reverse("website:conditions_generales_vente")))
-
-        for attendu in (
-            "Droit de rétractation",
-            "quatorze jours",
-            "garantie légale de conformité",
-            "vices cachés",
-            "médiation",
-            "formulaire de rétractation",
-        ):
-            assert attendu.lower() in contenu.lower(), attendu
-
-    @override_settings(
-        ITEAG_MEDIATEUR="Médiation Exemple",
-        ITEAG_MEDIATEUR_URL="https://mediation.example.test",
-    )
-    def test_le_mediateur_est_publie_quand_il_est_designe(self, client):
-        contenu = client.get(reverse("website:conditions_generales_vente")).content.decode()
-
-        assert "Médiation Exemple" in contenu
-        assert "https://mediation.example.test" in contenu
-
-    @override_settings(ITEAG_MEDIATEUR="")
-    def test_aucun_mediateur_n_est_invente_faute_de_designation(self, client):
-        """Mieux vaut une section absente qu'un médiateur qui n'existe pas."""
-        contenu = client.get(reverse("website:conditions_generales_vente")).content.decode()
-
-        assert "médiateur de la consommation dont relève" not in contenu
-
 
 @pytest.mark.django_db
 class TestLesPagesLegalesSontAtteignables:
-    def test_le_pied_de_page_lie_les_deux_documents(self, client):
+    def test_le_pied_de_page_lie_les_mentions(self, client):
         """Une page légale que rien ne lie n'est pas « publiée » au sens utile."""
         contenu = client.get("/connexion/").content.decode()
 
         assert reverse("website:mentions_legales") in contenu
-        assert reverse("website:conditions_generales_vente") in contenu
 
     def test_le_plan_du_site_les_recense(self, client):
         contenu = client.get("/sitemap.xml").content.decode()
 
         assert reverse("website:mentions_legales") in contenu
-        assert reverse("website:conditions_generales_vente") in contenu
-
-    def test_la_case_de_commande_lie_le_document_accepte(self):
-        """« J'accepte les conditions de vente » doit pouvoir mener au texte accepté."""
-        from apps.commerce.forms import CommandeForm
-
-        libelle = str(CommandeForm().fields["accepte_conditions"].label)
-
-        assert reverse("website:conditions_generales_vente") in libelle
-        assert "conditions générales de vente" in libelle
 
 
 @pytest.mark.django_db
@@ -124,7 +76,6 @@ class TestLeContratDeProductionExigeLesMentions:
         settings.ITEAG_FORME_JURIDIQUE = ""
         settings.ITEAG_IMMATRICULATION = ""
         settings.ITEAG_DIRECTEUR_PUBLICATION = ""
-        settings.ITEAG_MEDIATEUR = ""
 
         anomalies = anomalies_configuration_production()
 
@@ -132,6 +83,5 @@ class TestLeContratDeProductionExigeLesMentions:
             "ITEAG_FORME_JURIDIQUE",
             "ITEAG_IMMATRICULATION",
             "ITEAG_DIRECTEUR_PUBLICATION",
-            "ITEAG_MEDIATEUR",
         ):
             assert any(nom in anomalie for anomalie in anomalies), nom

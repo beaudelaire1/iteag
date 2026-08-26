@@ -27,8 +27,6 @@ from apps.core.models import JournalAudit
 from apps.core.tasks import purger_journal_audit
 from apps.elearning.models import JournalAccesVideo
 from apps.elearning.tasks import purger_journal_acces
-from apps.paiements.models import EvenementStripe
-from apps.paiements.tasks import minimiser_charges_utiles
 
 DOCS = Path(__file__).resolve().parents[3] / "docs"
 REGISTRE = DOCS / "conformite" / "registre_traitements.md"
@@ -47,12 +45,11 @@ def _lire(chemin: Path) -> str:
 
 
 class TestLesDocumentsAnnoncentLaDureeAppliquee:
-    def test_le_registre_porte_les_trois_durees_arbitrees(self):
-        """Le §3 bis est la source documentaire : il doit citer les trois valeurs."""
+    def test_le_registre_porte_les_deux_durees_arbitrees(self):
+        """Le §3 bis est la source documentaire : il doit citer les deux valeurs."""
         registre = _lire(REGISTRE)
         assert f"{settings.RETENTION_JOURNAL_AUDIT_JOURS} jours" in registre
         assert f"**{settings.RETENTION_JOURNAL_ACCES_VIDEO_JOURS} jours**" in registre
-        assert f"**{settings.RETENTION_CHARGE_UTILE_STRIPE_JOURS} jours" in registre
 
     def test_le_journal_d_audit_est_annonce_en_mois_partout(self):
         """
@@ -75,10 +72,6 @@ class TestLesDocumentsAnnoncentLaDureeAppliquee:
         runbook = _lire(RUNBOOK)
         attendu = f"rétention de {settings.RETENTION_JOURNAL_ACCES_VIDEO_JOURS} jours du journal d'accès vidéo"
         assert attendu in runbook
-
-    def test_le_runbook_annonce_la_minimisation_stripe(self):
-        runbook = _lire(RUNBOOK)
-        assert f"plus de {settings.RETENTION_CHARGE_UTILE_STRIPE_JOURS} jours" in runbook
 
     def test_aucun_document_ne_promet_encore_deux_ans_de_journal(self):
         """
@@ -135,74 +128,6 @@ class TestLesTachesAppliquentLaDureeAnnoncee:
         assert JournalAccesVideo.objects.filter(pk=ancien.pk).exists() is False
         assert JournalAccesVideo.objects.filter(pk=recent.pk).exists() is True
 
-    def test_la_charge_utile_stripe_est_videe_au_seuil_et_pas_avant(self):
-        jours = settings.RETENTION_CHARGE_UTILE_STRIPE_JOURS
-        charge = {"customer_details": {"email": "payeur@example.org", "name": "Une personne"}}
-        ancien = EvenementStripe.objects.create(
-            identifiant="evt_ancien",
-            type_evenement="checkout.session.completed",
-            charge_utile=charge,
-            traite=True,
-        )
-        recent = EvenementStripe.objects.create(
-            identifiant="evt_recent",
-            type_evenement="checkout.session.completed",
-            charge_utile=charge,
-            traite=True,
-        )
-        EvenementStripe.objects.filter(pk=ancien.pk).update(created_at=timezone.now() - timedelta(days=jours + 1))
-        EvenementStripe.objects.filter(pk=recent.pk).update(created_at=timezone.now() - timedelta(days=jours - 1))
-
-        assert minimiser_charges_utiles() == 1
-
-        ancien.refresh_from_db()
-        recent.refresh_from_db()
-        assert ancien.charge_utile == {}
-        assert recent.charge_utile == charge
-
-    def test_la_minimisation_preserve_ce_qui_sert_a_la_comptabilite(self):
-        """
-        Vider la charge utile ne doit rien coûter à l'idempotence ni à la piste
-        d'audit : l'identifiant, le type et l'indicateur de traitement restent.
-        """
-        jours = settings.RETENTION_CHARGE_UTILE_STRIPE_JOURS
-        evenement = EvenementStripe.objects.create(
-            identifiant="evt_comptable",
-            type_evenement="checkout.session.completed",
-            charge_utile={"customer_details": {"email": "payeur@example.org"}},
-            traite=True,
-        )
-        EvenementStripe.objects.filter(pk=evenement.pk).update(created_at=timezone.now() - timedelta(days=jours + 1))
-
-        minimiser_charges_utiles()
-
-        evenement.refresh_from_db()
-        assert evenement.identifiant == "evt_comptable"
-        assert evenement.type_evenement == "checkout.session.completed"
-        assert evenement.traite is True
-        assert evenement.charge_utile == {}
-
-    def test_un_evenement_non_traite_n_est_jamais_vide(self):
-        """
-        Sa charge utile est encore ce qui permettrait de le rejouer. La vider
-        rendrait irrattrapable exactement le cas que la réparation du webhook
-        est censée couvrir.
-        """
-        jours = settings.RETENTION_CHARGE_UTILE_STRIPE_JOURS
-        charge = {"data": {"object": {"client_reference_id": "quelque-chose"}}}
-        evenement = EvenementStripe.objects.create(
-            identifiant="evt_non_traite",
-            type_evenement="checkout.session.completed",
-            charge_utile=charge,
-            traite=False,
-        )
-        EvenementStripe.objects.filter(pk=evenement.pk).update(created_at=timezone.now() - timedelta(days=jours + 365))
-
-        assert minimiser_charges_utiles() == 0
-
-        evenement.refresh_from_db()
-        assert evenement.charge_utile == charge
-
 
 # ══════════════════════════════════════════════
 # Les purges sont réellement planifiées
@@ -217,8 +142,6 @@ class TestLesPurgesSontPlanifiees:
         [
             "core.purger_journal_audit",
             "elearning.purger_journal_acces",
-            "paiements.minimiser_charges_utiles",
-            "paiements.reparer_livraisons",
         ],
     )
     def test_la_tache_figure_au_planificateur(self, tache):
@@ -242,7 +165,6 @@ class TestLesPurgesSontPlanifiees:
     [
         ("core", "purger_journal_audit"),
         ("elearning", "purger_journal_acces"),
-        ("paiements", "minimiser_charges_utiles"),
     ],
 )
 def test_aucune_duree_arbitree_n_est_figee_dans_une_signature(module, fonction):
@@ -250,7 +172,7 @@ def test_aucune_duree_arbitree_n_est_figee_dans_une_signature(module, fonction):
     Le défaut d'origine était un littéral dans la signature de la tâche —
     `purger_journal_audit(jours=730)` — que rien ne reliait au registre. Une
     valeur par défaut réintroduite ici rouvrirait la divergence que ce fichier
-    vient fermer : les trois durées du §3 bis doivent venir des réglages.
+    vient fermer : les durées du §3 bis doivent venir des réglages.
     """
     source = (Path(__file__).resolve().parents[1] / module / "tasks.py").read_text(encoding="utf-8")
     signature = re.search(rf"def {fonction}\(([^)]*)\)", source)

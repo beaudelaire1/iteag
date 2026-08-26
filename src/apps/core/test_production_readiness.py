@@ -47,9 +47,6 @@ CONFIGURATION_PRODUCTION = {
     "AWS_QUERYSTRING_AUTH": True,
     "SENTRY_DSN": "https://public@example.test/1",
     "SENTRY_SEND_DEFAULT_PII": False,
-    "STRIPE_CLE_PUBLIABLE": "pk_live_test",
-    "STRIPE_CLE_SECRETE": "sk_live_test",
-    "STRIPE_SECRET_WEBHOOK": "whsec_test",
     "ELEARNING_DIFFUSION_VIDEO": "bunny",
     "BUNNY_ZONE_DIFFUSION": "https://video.example.test",
     "BUNNY_CLE_SIGNATURE": "video-secret",
@@ -63,7 +60,6 @@ CONFIGURATION_PRODUCTION = {
     "ITEAG_DIRECTEUR_PUBLICATION": "La direction de l'ITEAG",
     "ITEAG_HEBERGEUR": "OVH SAS",
     "ITEAG_HEBERGEUR_ADRESSE": "2 rue Kellermann, 59100 Roubaix, France",
-    "ITEAG_MEDIATEUR": "Médiateur de la consommation",
 }
 
 
@@ -73,7 +69,6 @@ MENTIONS_LEGALES_OBLIGATOIRES = [
     "ITEAG_DIRECTEUR_PUBLICATION",
     "ITEAG_HEBERGEUR",
     "ITEAG_HEBERGEUR_ADRESSE",
-    "ITEAG_MEDIATEUR",
 ]
 
 
@@ -127,20 +122,6 @@ def test_une_origine_non_securisee_est_refusee(moteur_postgresql):
     assert any("CSRF_TRUSTED_ORIGINS" in anomalie for anomalie in anomalies)
 
 
-@override_settings(
-    **{
-        **CONFIGURATION_PRODUCTION,
-        "STRIPE_CLE_PUBLIABLE": "pk_test_123",
-        "STRIPE_CLE_SECRETE": "sk_test_123",
-    }
-)
-def test_les_cles_stripe_de_test_sont_refusees(moteur_postgresql):
-    anomalies = anomalies_configuration_production()
-
-    assert any("STRIPE_CLE_PUBLIABLE" in anomalie and "pk_live_" in anomalie for anomalie in anomalies)
-    assert any("STRIPE_CLE_SECRETE" in anomalie and "sk_live_" in anomalie for anomalie in anomalies)
-
-
 @override_settings(**CONFIGURATION_PRODUCTION)
 def test_la_commande_reussit_sur_une_configuration_complete(capsys, moteur_postgresql):
     call_command("verifier_production", sans_base=True)
@@ -157,7 +138,6 @@ def test_la_commande_reussit_sur_une_configuration_complete(capsys, moteur_postg
         ("BUNNY_STREAM_LIBRARY_ID", ""),
         ("BUNNY_STREAM_API_KEY", ""),
         ("EMAIL_HOST_PASSWORD", ""),
-        ("STRIPE_SECRET_WEBHOOK", ""),
     ],
 )
 def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, moteur_postgresql, nom, valeur):
@@ -171,7 +151,7 @@ def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, moteur_pos
 
 @pytest.mark.parametrize("nom", MENTIONS_LEGALES_OBLIGATOIRES)
 def test_une_mention_legale_manquante_refuse_l_ouverture(settings, moteur_postgresql, nom):
-    """Publier un site marchand sans identifier son éditeur n'est pas une option.
+    """Publier le site sans identifier son éditeur n'est pas une option.
 
     Ces valeurs ne sont connues que de l'ITEAG : le contrat de production est le
     seul endroit où leur absence peut être constatée avant l'ouverture publique

@@ -181,7 +181,7 @@ graph TB
     elearning --> core & accounts & formations & academics
     library --> core & formations
     documents --> core & accounts
-    website --> core & formations & elearning & library & commerce
+    website --> core & formations & elearning & library
     administration --> core & accounts & formations & admissions & academics & library
 
     classDef nouveau fill:#DCFCE7,stroke:#15803D,stroke-width:2px,color:#0E3F27
@@ -1359,60 +1359,6 @@ def verifier_acces(user, lecon) -> DecisionAcces:
 
 Aucune vue ne réimplémente cette règle. C'est ce qui rend le contrôle d'accès
 **testable exhaustivement** (une table de vérité, un test par ligne) et **auditable**.
-
-### 7.3 Commandes et stock de la boutique
-
-```mermaid
-erDiagram
-    ProduitLivre ||--o{ LigneCommande : "est commandé dans"
-    Commande ||--|{ LigneCommande : contient
-    ProduitLivre ||--o{ MouvementStock : journalise
-    Commande o|--o{ MouvementStock : motive
-    ProduitLivre ||--o{ AlerteStock : déclenche
-
-    ProduitLivre {
-        uuid id PK
-        string sku UK
-        decimal prix_ttc
-        int stock_physique
-        int stock_reserve
-        int seuil_alerte
-    }
-    Commande {
-        uuid id PK
-        string numero UK
-        uuid jeton_suivi UK
-        string statut
-        string statut_paiement
-        decimal total
-        bool stock_sorti
-    }
-    LigneCommande {
-        int id PK
-        int quantite
-        decimal prix_unitaire
-        decimal total_ligne
-    }
-    MouvementStock {
-        int id PK
-        string type_mouvement
-        int variation_physique
-        int variation_reserve
-    }
-    AlerteStock {
-        int id PK
-        int stock_disponible_detecte
-        int seuil
-        bool resolue
-    }
-```
-
-Le panier reste en session et ne réserve rien. La réservation est atomique au
-moment de créer `Commande`, après verrouillage des livres concernés. Le stock
-physique ne sort qu'à l'expédition ; une annulation antérieure libère la
-réservation. Une contrainte garantit une seule alerte ouverte par livre.
-
----
 
 ## 8. Traçabilité — exigences CDC ↔ modèle
 

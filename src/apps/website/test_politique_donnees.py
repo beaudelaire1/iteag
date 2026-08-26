@@ -31,8 +31,7 @@ def test_politique_couvre_les_traitements_reellement_presents():
         "Candidatures",
         "Comptes, scolarité et activités pédagogiques",
         "Bibliothèque",
-        "Boutique, règlements et facturation",
-        "Stripe",
+        "Règlements de formation et facturation",
         "Cloudflare",
         "Bunny.net",
         "Sentry",
@@ -43,11 +42,9 @@ def test_politique_couvre_les_traitements_reellement_presents():
 def test_les_formulaires_principaux_informent_sur_les_donnees():
     templates = Path(settings.BASE_DIR) / "templates"
     candidature = (templates / "admissions" / "candidature_form.html").read_text(encoding="utf-8")
-    commande = (templates / "commerce" / "commander.html").read_text(encoding="utf-8")
     footer = (templates / "partials" / "footer.html").read_text(encoding="utf-8")
 
     assert "partials/information_donnees.html" in candidature
-    assert "partials/information_donnees.html" in commande
     assert "website:politique_donnees" in footer
     assert "Votre adresse est utilisée uniquement pour cette lettre d'information" in footer
 

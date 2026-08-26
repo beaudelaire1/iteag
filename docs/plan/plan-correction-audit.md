@@ -56,24 +56,7 @@
 
 ## LOT 2 — Sécurité et données personnelles
 
-### 2.1 Cloisonnement des pages de retour de paiement *(constat n° 4 — Mineur)*
-
-**Le défaut constaté** : `SuccesView` et `AnnulationView` font un `get_object_or_404(Reglement, pk=pk)` nu ; un tiers connecté porteur de l'UUID voit courriel, montant et libellé du payeur (statut 200 reproduit). Portée limitée par la PK UUID non énumérable.
-
-**Fichier** : `src/apps/paiements/views.py` (lignes ~107 et ~117).
-
-**À faire** :
-
-1. Remplacer `get_object_or_404(Reglement, pk=pk)` par `_reglement_visible(request, pk)` dans `SuccesView.get` et `AnnulationView.get` — le filtre existe déjà et est utilisé par `CheckoutView`/`SessionCheckoutView`.
-2. Vérifier le cas nominal : le retour Stripe peut arriver avec une session anonyme (cookie perdu, autre navigateur) ; `_reglement_visible` autorise déjà le cas anonyme — confirmer que le propriétaire connecté reste servi après redirection Stripe.
-
-**Tests à ajouter** : tiers connecté → 404 ; propriétaire → 200 ; anonyme sur règlement anonyme → 200.
-
-**Critère d'acceptation** : la reproduction [D] renvoie 404.
-
----
-
-### 2.2 Purge des sessions expirées *(constat n° 5 — Mineur)*
+### 2.1 Purge des sessions expirées *(constat n° 5 — Mineur)*
 
 **Le défaut constaté** : sessions en base + `SESSION_SAVE_EVERY_REQUEST = True` + aucune occurrence de `clearsessions` dans le dépôt → `django_session` croît sans borne.
 
@@ -97,7 +80,7 @@
 
 ### 3.1 Format de journal JSON de production *(constat n° 3 — Mineur)*
 
-**Le défaut constaté** : le formateur « json » de `prod.py` est une chaîne à trous — un guillemet dans le message casse le JSON (reproduit avec le message réel de Stripe), et `logger.exception` émet la trace **après** l'accolade fermante (5 lignes reproduites).
+**Le défaut constaté** : le formateur « json » de `prod.py` est une chaîne à trous — un guillemet dans un message réel casse le JSON, et `logger.exception` émet la trace **après** l'accolade fermante (5 lignes reproduites).
 
 **Fichier** : `src/config/settings/prod.py` (LOGGING, lignes ~113-137).
 

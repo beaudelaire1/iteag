@@ -154,17 +154,6 @@ def anomalies_configuration_production() -> list[str]:
     if getattr(settings, "SENTRY_SEND_DEFAULT_PII", False):
         anomalies.append("SENTRY_SEND_DEFAULT_PII doit rester False par défaut en production.")
 
-    stripe = {
-        "STRIPE_CLE_PUBLIABLE": ("pk_live_", getattr(settings, "STRIPE_CLE_PUBLIABLE", "")),
-        "STRIPE_CLE_SECRETE": ("sk_live_", getattr(settings, "STRIPE_CLE_SECRETE", "")),
-        "STRIPE_SECRET_WEBHOOK": ("whsec_", getattr(settings, "STRIPE_SECRET_WEBHOOK", "")),
-    }
-    for nom, (prefixe, valeur) in stripe.items():
-        if not valeur:
-            anomalies.append(f"{nom} doit être renseigné pour le paiement en ligne.")
-        elif not valeur.startswith(prefixe):
-            anomalies.append(f"{nom} doit être une valeur de production commençant par « {prefixe} ».")
-
     if getattr(settings, "ELEARNING_DIFFUSION_VIDEO", "") == "bunny":
         for nom in ("BUNNY_ZONE_DIFFUSION", "BUNNY_CLE_SIGNATURE"):
             if not getattr(settings, nom, ""):
@@ -195,7 +184,6 @@ def anomalies_configuration_production() -> list[str]:
         "ITEAG_DIRECTEUR_PUBLICATION": "le nom du directeur de la publication",
         "ITEAG_HEBERGEUR": "la raison sociale de l'hébergeur",
         "ITEAG_HEBERGEUR_ADRESSE": "l'adresse de l'hébergeur",
-        "ITEAG_MEDIATEUR": "le médiateur de la consommation",
     }
     for nom, description in mentions.items():
         if not str(getattr(settings, nom, "") or "").strip():

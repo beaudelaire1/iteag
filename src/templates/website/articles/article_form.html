@@ -11,8 +11,8 @@
 {{ form.media.js }}
 {% endblock %}
 
-{% block portal_nav %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
-{% block portal_nav_mobile %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
+{% block portal_nav %}{% if user.is_etudiant %}{% with nav='articles' %}{% include "etudiant/partials/student_nav.html" %}{% endwith %}{% else %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endif %}{% endblock %}
+{% block portal_nav_mobile %}{% if user.is_etudiant %}{% with nav='articles' %}{% include "etudiant/partials/student_nav_mobile.html" %}{% endwith %}{% else %}{% with nav='articles' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endif %}{% endblock %}
 
 {% block portal_header %}
 <div class="mb-8">

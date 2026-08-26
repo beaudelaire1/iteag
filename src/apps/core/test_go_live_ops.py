@@ -237,7 +237,7 @@ def test_le_gate_d_accessibilite_couvre_les_pages_publiques_a_formulaire():
     """Le seuil était strict, mais aveugle aux pages où le défaut se trouvait."""
     contenu = (RACINE.parent / ".github" / "workflows" / "predeploy-lighthouse.yml").read_text(encoding="utf-8")
 
-    for chemin in ("/bibliotheque/", "/boutique/", "/e-learning/"):
+    for chemin in ("/bibliotheque/", "/formations/", "/e-learning/"):
         assert chemin in contenu, chemin
 
 

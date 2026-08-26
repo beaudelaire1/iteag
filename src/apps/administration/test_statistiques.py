@@ -7,7 +7,6 @@ chose qui se casse, et sur l'absence de fuite vers un compte non habilité.
 """
 
 from datetime import timedelta
-from decimal import Decimal
 
 import pytest
 from django.urls import reverse
@@ -23,9 +22,7 @@ from apps.academics.models import (
 from apps.accounts.models import User
 from apps.administration.services import statistiques
 from apps.admissions.models import DossierCandidature
-from apps.commerce.models import Commande
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
-from apps.paiements.models import Reglement
 
 
 @pytest.fixture
@@ -118,38 +115,6 @@ class TestLesTauxNeMententPas:
         assert "10" in indicateurs["Remplissage des cours"].precision
 
 
-class TestLesMontantsSontLisibles:
-    def test_seuls_les_reglements_aboutis_comptent_dans_l_encaisse(self, db):
-        for statut in [Reglement.Statut.PAYE, Reglement.Statut.ECHOUE, Reglement.Statut.ABANDONNE]:
-            Reglement.objects.create(
-                montant_ttc=Decimal("100.00"),
-                statut=statut,
-                nature=Reglement.Nature.FRAIS_INSCRIPTION,
-                date_paiement=timezone.now() if statut == Reglement.Statut.PAYE else None,
-            )
-        indicateurs = {i.libelle: i.valeur for i in statistiques.paiements_en_ligne().indicateurs}
-        assert indicateurs["Encaissé"] == "100,00\u00a0€"
-        # Un abouti sur trois tentatives.
-        assert indicateurs["Taux d'aboutissement"] == "33\u00a0%"
-
-    def test_une_commande_non_reglee_ne_fait_pas_de_chiffre_d_affaires(self, db):
-        Commande.objects.create(
-            numero="CMD-0001",
-            email="client@exemple.org",
-            total=Decimal("50.00"),
-            statut_paiement=Commande.StatutPaiement.CONFIRME,
-        )
-        Commande.objects.create(
-            numero="CMD-0002",
-            email="client@exemple.org",
-            total=Decimal("999.00"),
-            statut_paiement=Commande.StatutPaiement.EN_ATTENTE,
-        )
-        indicateurs = {i.libelle: i.valeur for i in statistiques.boutique().indicateurs}
-        assert indicateurs["Commandes"] == "2"
-        assert indicateurs["Chiffre d'affaires"] == "50,00\u00a0€"
-
-
 class TestLaSerieCouvreDouzeMoisPleins:
     def test_les_mois_sans_activite_restent_visibles(self, db, parcours):
         DossierCandidature.objects.create(
@@ -180,8 +145,6 @@ class TestLaPageEstReserveeALaDirection:
             "scolarite",
             "enseignement",
             "formation_video",
-            "paiements",
-            "boutique",
             "bibliotheque",
             "comptes",
         }

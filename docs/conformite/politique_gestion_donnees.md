@@ -6,7 +6,7 @@ Version : 7 août 2026
 
 Cette politique fixe les règles appliquées aux données personnelles et aux données métier traitées par la plateforme ITEAG, depuis leur collecte jusqu'à leur suppression. Elle complète la politique publique de protection des données et le registre des traitements.
 
-Elle s'applique aux données des candidats, étudiants, enseignants, personnels, visiteurs, abonnés à la lettre d'information, emprunteurs de la bibliothèque et clients de la boutique.
+Elle s'applique aux données des candidats, étudiants, enseignants, personnels, visiteurs, abonnés à la lettre d'information et emprunteurs de la bibliothèque.
 
 ## 2. Responsabilités
 
@@ -97,7 +97,7 @@ Avant activation d'un prestataire manipulant des données personnelles, l'ITEAG 
 - les réglages permettant de minimiser les données transmises ;
 - la procédure de restitution ou suppression en fin de contrat.
 
-Le registre interne recense les services actuellement prévus : OVHcloud, Cloudflare, Stripe, Sentry, Bunny.net, messagerie et, selon les contenus publics, YouTube/Vimeo.
+Le registre interne recense les services actuellement prévus : OVHcloud, Cloudflare, Sentry, Bunny.net, messagerie et, selon les contenus publics, YouTube/Vimeo.
 
 ## 11. Demandes d'exercice des droits
 

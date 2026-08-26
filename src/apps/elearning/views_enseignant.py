@@ -67,6 +67,25 @@ def _notifier_inscrits_module(module, titre, message, details=None):
     )
 
 
+def _notifier_nouveau_module_a_tous(module):
+    from apps.accounts.models import User
+
+    return notifier_plusieurs(
+        User.objects.filter(is_active=True, role=User.Role.ETUDIANT),
+        f"Nouvelle formation E-Learning — {module.titre}",
+        type_notification=Notification.Type.NOUVEAU_MODULE,
+        message=(
+            f"Le module « {module.titre} » vient d'être publié dans le catalogue E-Learning. "
+            "Consultez sa présentation et demandez un accès depuis votre espace étudiant."
+        ),
+        details=[
+            {"libelle": "Module", "valeur": module.titre},
+            {"libelle": "Responsable", "valeur": str(module.responsable) if module.responsable_id else "—"},
+        ],
+        url_cible=module.get_absolute_url(),
+    )
+
+
 class ProfesseurMixin(TeacherRoleRequiredMixin):
     """Restreint l'accès aux modules dont l'utilisateur est responsable."""
 
@@ -184,16 +203,11 @@ class ModulePublierView(ProfesseurMixin, View):
             messages.error(request, f"Publication impossible — {erreur.messages[0]}")
         else:
             journaliser("modification", request=request, objet=module, objet_libelle=f"Publication : {module.titre}")
-            _notifier_inscrits_module(
-                module,
-                f"Module disponible — {module.titre}",
-                (
-                    f"Le module « {module.titre} » est publié : son contenu est désormais "
-                    "consultable dans votre espace E-Learning. Vous pouvez le suivre à votre rythme, "
-                    "votre progression étant enregistrée d'une séance à l'autre."
-                ),
+            nombre = _notifier_nouveau_module_a_tous(module)
+            messages.success(
+                request,
+                f"Module publié. Il est visible au catalogue et {nombre} étudiant(s) ont été averti(s).",
             )
-            messages.success(request, "Module publié. Il est désormais visible au catalogue.")
         return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": slug}))
 
 

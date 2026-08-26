@@ -323,8 +323,6 @@ class Command(BaseCommand):
     def _seed_paiements(self, etudiants, sessions) -> None:
         modes = [
             Paiement.ModePaiement.VIREMENT,
-            Paiement.ModePaiement.CARTE,
-            Paiement.ModePaiement.CHEQUE,
             Paiement.ModePaiement.ESPECES,
         ]
         aujourdhui = timezone.localdate()

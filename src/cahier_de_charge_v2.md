@@ -318,7 +318,7 @@ Chaque fonctionnalité est classée selon la méthode MoSCoW :
 |----|---------------|----------|----------------------|
 | ADM-001 | Gestion des admissions (workflow complet) | Must | Le secrétariat voit tous les dossiers de candidature dans une vue filtrée par statut. Il peut changer le statut (cf. section 7.1). Email automatique à chaque changement de statut. Export CSV de la liste. |
 | ADM-002 | Gestion des inscriptions | Must | Après acceptation d'un dossier, l'admin inscrit l'étudiant à un parcours et une promotion. L'inscription crée le compte étudiant et l'associe aux sessions/cours. |
-| ADM-003 | Suivi des paiements | Should | Enregistrement des paiements par étudiant (montant, date, mode, session concernée). Vue des impayés. Export. Pas de paiement en ligne en V1 (cf. section 6). |
+| ADM-003 | Suivi des règlements | Should | Enregistrement administratif par étudiant (montant, date, mode, session concernée). Modes autorisés : virement, espèces sur place ou exonération de formation. Vue des sommes dues et export. Aucun encaissement n'est réalisé par le site. |
 | ADM-004 | Gestion académique | Must | Organisation des sessions (dates, cours rattachés, enseignants assignés). Affectation des étudiants aux sessions. Vue planning global. |
 | ADM-005 | Gestion des utilisateurs et rôles | Must | CRUD utilisateurs. Attribution de rôles : étudiant, enseignant, admin, secrétariat. Permissions séparées par rôle. Un utilisateur = un seul rôle principal. |
 | ADM-006 | Communication ciblée | Should | Envoi d'emails ciblés par promotion, parcours, ou session. Templates email administrables. Envoi via Celery (asynchrone). |
@@ -346,7 +346,7 @@ Les éléments suivants sont EXCLUS de la V1. Ils pourront être intégrés dans
 
 | Élément | Justification |
 |---------|--------------|
-| Paiement en ligne (Stripe, PayPal) | Complexité réglementaire et technique. V1 = suivi manuel des paiements. À arbitrer en V2. |
+| Service d'encaissement électronique | Exclu durablement pour raisons fiscales. Le site conserve uniquement le suivi administratif des règlements hors ligne et des exonérations. |
 | Multi-langue | Le public cible est francophone. À évaluer si la demande anglophone se confirme. |
 | Multi-sites / multi-antennes | L'ITEAG opère depuis un seul site physique. Le distanciel est géré par la même instance. |
 | Forum / espace communautaire | Usage réel non confirmé. Les échanges de classe se font via annonces enseignant en V1. |
@@ -731,7 +731,6 @@ Promotion      1 ──── N  ProfilÉtudiant
 | `documents` | Génération PDF (attestations, relevés, reçus), stockage documents admin |
 
 Apps reportées en phases ultérieures :
-- `billing` (paiement en ligne) → V2
 - `partners` (portail partenaire FLTE) → V2+
 - `analytics` (reporting avancé) → V2+
 
@@ -1147,7 +1146,6 @@ Critère de passage à la Phase 4 :
 Objectif : enrichir et stabiliser l'écosystème.
 
 Livrables possibles (à arbitrer) :
-- Paiement en ligne (Stripe ou équivalent).
 - Reporting avancé (ADM-007, ADM-010).
 - Communication ciblée (ADM-006).
 - Portail partenaire FLTE.
@@ -1196,7 +1194,7 @@ Les éléments suivants restent à confirmer ou arbitrer en cours de projet :
 | # | Point | Impact | Décision attendue |
 |---|-------|--------|-------------------|
 | V1 | Stratégie vidéo (hébergement, CDN, transcodage) | Coût + infra | À arbitrer quand le volume vidéo sera connu. V1 = upload direct enseignant, stockage S3, lecture native HTML5. Pas de transcodage. |
-| V2 | Solution de paiement en ligne | Phase 4 | Stripe recommandé (maturité, coût raisonnable). À confirmer par l'ITEAG. |
+| V2 | Modes de règlement des formations | Phase 4 | Décision arrêtée : virement, espèces sur place ou exonération, sans encaissement par le site. |
 | V3 | Demande multi-langue réelle | Phase 4 | Non confirmée. À évaluer si un public anglophone significatif est identifié. |
 | V4 | Format d'export du catalogue bibliothèque | Phase 3 | L'ITEAG doit fournir un export structuré (CSV minimum) pour le script d'import. |
 | V5 | Validation des exigences FLTE pour le bachelor | Phase 2 | Le suivi des 30 ECTS FLTE externes repose sur une saisie manuelle ou un import CSV. Pas d'interconnexion système en V1. |

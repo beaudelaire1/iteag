@@ -3,7 +3,7 @@
 Trois publics dans un seul module, parce qu'ils portent sur le même objet et
 que les séparer obligerait à répéter les mêmes gardes trois fois :
 
-- l'**auteur** rédige, soumet, supprime ce qui n'engage que lui, et demande le
+- l'**auteur**, enseignant ou étudiant, rédige, soumet, supprime ce qui n'engage que lui, et demande le
   retrait de ce qui est en ligne ;
 - le **relecteur** — la direction, et elle seule — publie, renvoie ou retire ;
 - le **visiteur** ne voit que ce qui est publié.
@@ -23,7 +23,7 @@ from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 
-from apps.core.mixins import AdminRoleRequiredMixin, TeacherRoleRequiredMixin
+from apps.core.mixins import AdminRoleRequiredMixin, RoleRequiredMixin
 from apps.core.models import JournalAudit, Notification
 from apps.core.services.audit import journaliser
 from apps.core.services.notifications import notifier, notifier_plusieurs
@@ -38,24 +38,38 @@ def _fiche_enseignant(utilisateur):
     return professeur
 
 
+class AuteurArticleRequiredMixin(RoleRequiredMixin):
+    allowed_roles = ("enseignant", "etudiant")
+
+
+def _identite_auteur(utilisateur) -> dict:
+    if utilisateur.is_etudiant:
+        return {"auteur_etudiant": utilisateur}
+    return {"auteur": _fiche_enseignant(utilisateur)}
+
+
+def _identite_auteur_liee(utilisateur, prefixe: str) -> dict:
+    return {f"{prefixe}__{champ}": valeur for champ, valeur in _identite_auteur(utilisateur).items()}
+
+
 # ══════════════════════════════════════════════
 # L'auteur
 # ══════════════════════════════════════════════
 
 
-class MesArticlesView(TeacherRoleRequiredMixin, ListView):
+class MesArticlesView(AuteurArticleRequiredMixin, ListView):
     template_name = "website/articles/mes_articles.html"
     context_object_name = "articles"
     paginate_by = 20
 
     def get_queryset(self):
-        return Article.objects.filter(auteur=_fiche_enseignant(self.request.user))
+        return Article.objects.filter(**_identite_auteur(self.request.user))
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), "nav": "articles"}
 
 
-class ArticleEditionView(TeacherRoleRequiredMixin, TemplateView):
+class ArticleEditionView(AuteurArticleRequiredMixin, TemplateView):
     """Création et modification, sur le même écran.
 
     Un article publié n'est pas modifiable : il faut le retirer d'abord. Le
@@ -71,7 +85,7 @@ class ArticleEditionView(TeacherRoleRequiredMixin, TemplateView):
         return get_object_or_404(
             Article.objects.prefetch_related("illustrations"),
             pk=self.kwargs["pk"],
-            auteur=_fiche_enseignant(self.request.user),
+            **_identite_auteur(self.request.user),
         )
 
     def get_context_data(self, **kwargs):
@@ -96,21 +110,22 @@ class ArticleEditionView(TeacherRoleRequiredMixin, TemplateView):
             return self.render_to_response(self.get_context_data(form=formulaire))
 
         article = formulaire.save(commit=False)
-        if article.auteur_id is None:
-            article.auteur = _fiche_enseignant(request.user)
+        if article.auteur_id is None and article.auteur_etudiant_id is None:
+            for champ, valeur in _identite_auteur(request.user).items():
+                setattr(article, champ, valeur)
         article.save()
 
         messages.success(request, "Article enregistré. Il reste en brouillon tant que vous ne l'avez pas soumis.")
         return redirect("website:article_edition", pk=article.pk)
 
 
-class IllustrationCreateView(TeacherRoleRequiredMixin, View):
+class IllustrationCreateView(AuteurArticleRequiredMixin, View):
     """Dépôt d'une figure, que l'auteur insère ensuite où il veut dans le texte."""
 
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        article = get_object_or_404(Article, pk=pk, auteur=_fiche_enseignant(request.user))
+        article = get_object_or_404(Article, pk=pk, **_identite_auteur(request.user))
         formulaire = IllustrationForm(request.POST, request.FILES)
         if formulaire.is_valid():
             illustration = formulaire.save(commit=False)
@@ -122,14 +137,14 @@ class IllustrationCreateView(TeacherRoleRequiredMixin, View):
         return redirect("website:article_edition", pk=article.pk)
 
 
-class IllustrationDeleteView(TeacherRoleRequiredMixin, View):
+class IllustrationDeleteView(AuteurArticleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
         illustration = get_object_or_404(
             ImageArticle.objects.select_related("article"),
             pk=pk,
-            article__auteur=_fiche_enseignant(request.user),
+            **_identite_auteur_liee(request.user, "article"),
         )
         article_pk = illustration.article_id
         illustration.delete()
@@ -137,11 +152,11 @@ class IllustrationDeleteView(TeacherRoleRequiredMixin, View):
         return redirect("website:article_edition", pk=article_pk)
 
 
-class ArticleSoumettreView(TeacherRoleRequiredMixin, View):
+class ArticleSoumettreView(AuteurArticleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        article = get_object_or_404(Article, pk=pk, auteur=_fiche_enseignant(request.user))
+        article = get_object_or_404(Article, pk=pk, **_identite_auteur(request.user))
         try:
             article.soumettre()
         except ValidationError as erreur:
@@ -155,13 +170,13 @@ class ArticleSoumettreView(TeacherRoleRequiredMixin, View):
             f"Article à relire — {article.titre}",
             type_notification=Notification.Type.SYSTEME,
             message=(
-                f"{article.auteur.nom_complet} soumet l'article « {article.titre} » à relecture. "
+                f"{article.nom_auteur} soumet l'article « {article.titre} » à relecture. "
                 "Rien ne paraît sous le nom de l'institut sans ce second regard : le texte attend "
                 "votre décision, publication ou renvoi en brouillon."
             ),
             details=[
                 {"libelle": "Article", "valeur": article.titre},
-                {"libelle": "Auteur", "valeur": article.auteur.nom_complet},
+                {"libelle": "Auteur", "valeur": article.nom_auteur},
             ],
             url_cible=reverse("website:articles_relecture"),
         )
@@ -169,7 +184,7 @@ class ArticleSoumettreView(TeacherRoleRequiredMixin, View):
         return redirect("website:mes_articles")
 
 
-class ArticleDemandeRetraitView(TeacherRoleRequiredMixin, View):
+class ArticleDemandeRetraitView(AuteurArticleRequiredMixin, View):
     """L'auteur demande que son article publié redescende.
 
     Il ne dépublie pas lui-même : la page est en ligne, indexée, peut-être
@@ -180,7 +195,7 @@ class ArticleDemandeRetraitView(TeacherRoleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        article = get_object_or_404(Article, pk=pk, auteur=_fiche_enseignant(request.user))
+        article = get_object_or_404(Article, pk=pk, **_identite_auteur(request.user))
         try:
             article.demander_le_retrait(request.POST.get("motif", ""))
         except ValidationError as erreur:
@@ -194,12 +209,12 @@ class ArticleDemandeRetraitView(TeacherRoleRequiredMixin, View):
             f"Retrait demandé — {article.titre}",
             type_notification=Notification.Type.SYSTEME,
             message=(
-                f"{article.auteur.nom_complet} demande le retrait de son article « {article.titre} », "
+                f"{article.nom_auteur} demande le retrait de son article « {article.titre} », "
                 "aujourd'hui en ligne. La page reste publiée tant que vous n'avez pas tranché."
             ),
             details=[
                 {"libelle": "Article", "valeur": article.titre},
-                {"libelle": "Auteur", "valeur": article.auteur.nom_complet},
+                {"libelle": "Auteur", "valeur": article.nom_auteur},
                 {"libelle": "Motif", "valeur": article.motif_retrait},
             ],
             url_cible=reverse("website:articles_relecture"),
@@ -211,7 +226,7 @@ class ArticleDemandeRetraitView(TeacherRoleRequiredMixin, View):
         return redirect("website:mes_articles")
 
 
-class ArticleSupprimerView(TeacherRoleRequiredMixin, View):
+class ArticleSupprimerView(AuteurArticleRequiredMixin, View):
     """Suppression par l'auteur, et seulement de ce qui n'engage personne.
 
     Un brouillon ou un article retiré ne sont lus que par lui. Un article
@@ -222,7 +237,7 @@ class ArticleSupprimerView(TeacherRoleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        article = get_object_or_404(Article, pk=pk, auteur=_fiche_enseignant(request.user))
+        article = get_object_or_404(Article, pk=pk, **_identite_auteur(request.user))
         if not article.est_supprimable:
             messages.error(
                 request,
@@ -261,7 +276,7 @@ class ArticlesRelectureView(AdminRoleRequiredMixin, ListView):
     def get_queryset(self):
         return Article.objects.filter(
             Q(statut=Article.Statut.RELECTURE) | Q(statut=Article.Statut.PUBLIE)
-        ).select_related("auteur")
+        ).select_related("auteur", "auteur__user", "auteur_etudiant")
 
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
@@ -280,7 +295,10 @@ class ArticleDecisionView(AdminRoleRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        article = get_object_or_404(Article.objects.select_related("auteur__user"), pk=pk)
+        article = get_object_or_404(
+            Article.objects.select_related("auteur__user", "auteur_etudiant"),
+            pk=pk,
+        )
         action = request.POST.get("action")
 
         try:
@@ -318,9 +336,9 @@ class ArticleDecisionView(AdminRoleRequiredMixin, View):
             objet=article,
             objet_libelle=f"Article « {article.titre} » → {article.get_statut_display()}",
         )
-        if article.auteur.user_id:
+        if article.utilisateur_auteur:
             notifier(
-                article.auteur.user,
+                article.utilisateur_auteur,
                 titre_avis,
                 type_notification=Notification.Type.SYSTEME,
                 message=message_avis,
@@ -341,7 +359,7 @@ class ArticlesPublicsView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        requete = Article.objects.filter(statut=Article.Statut.PUBLIE).select_related("auteur")
+        requete = Article.objects.filter(statut=Article.Statut.PUBLIE).select_related("auteur", "auteur_etudiant")
         recherche = self.request.GET.get("q", "").strip()
         if recherche:
             requete = requete.filter(
@@ -349,6 +367,8 @@ class ArticlesPublicsView(ListView):
                 | Q(sous_titre__icontains=recherche)
                 | Q(mots_cles__icontains=recherche)
                 | Q(auteur__nom__icontains=recherche)
+                | Q(auteur_etudiant__first_name__icontains=recherche)
+                | Q(auteur_etudiant__last_name__icontains=recherche)
             )
         return requete
 
@@ -365,6 +385,6 @@ class ArticlePublicView(DetailView):
         # doit pas être lisible pour autant.
         return (
             Article.objects.filter(statut=Article.Statut.PUBLIE)
-            .select_related("auteur")
+            .select_related("auteur", "auteur_etudiant")
             .prefetch_related("illustrations")
         )

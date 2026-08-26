@@ -4,7 +4,7 @@ Un `<input>` sans étiquette ne provoque aucune erreur : la page s'affiche, le
 formulaire fonctionne à la souris, et rien ne signale que le champ s'annonce
 « zone d'édition, vide » à un lecteur d'écran. C'est exactement ce qui est
 arrivé à la recherche du catalogue public, pendant que la page voisine de la
-boutique, elle, étiquetait correctement son champ.
+les autres formulaires étiquetaient correctement leur champ.
 
 Ce test balaie les gabarits plutôt que les pages rendues : il n'exige aucune
 donnée en base et couvre les écrans du back-office, que peu de tests visitent.

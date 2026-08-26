@@ -110,57 +110,6 @@ les parcours, pour que les trois se décrivent de la même façon.
                         <a href="{% url 'elearning:attestation_telecharger' attestation.pk %}"
                            class="btn-gold w-full justify-center mt-3">Télécharger l'attestation</a>
                         {% endif %}
-                    {% elif module.est_vendu %}
-                        {% comment %}
-                            Module vendu à l'unité. L'achat n'est proposé qu'à un
-                            étudiant identifié : c'est son dossier qui portera
-                            l'accès, et l'accès acheté ne s'éteint jamais.
-                        {% endcomment %}
-                        <p class="text-3xl font-semibold text-navy-900">
-                            {{ module.prix_ttc|floatformat:2 }} €
-                        </p>
-                        <p class="mt-1 text-xs text-warm-500">
-                            {% if module.taux_tva %}TTC, dont {{ module.taux_tva|floatformat:2 }} % de TVA{% else %}Exonéré de TVA{% endif %}
-                            · accès à vie
-                        </p>
-
-                        {% if profil_etudiant %}
-                        <form method="post" action="{% url 'paiements:acheter_module' module.slug %}" class="mt-4">
-                            {% csrf_token %}
-                            {% comment %}
-                            Renonciation expresse au droit de rétractation : sans elle, un
-                            contenu numérique déjà consultable resterait remboursable quatorze
-                            jours (code de la consommation, art. L221-28).
-                            {% endcomment %}
-                            <label for="renonce-retractation"
-                                   class="flex items-start gap-2.5 cursor-pointer text-left">
-                                <input type="checkbox" name="renonce_retractation" id="renonce-retractation"
-                                       value="1" required class="form-checkbox mt-0.5">
-                                <span class="text-xs leading-5 text-warm-600">
-                                    Je demande l'ouverture immédiate de l'accès à ce module et je reconnais
-                                    qu'à ce titre je renonce à mon droit de rétractation, comme le précisent les
-                                    <a href="{% url 'website:conditions_generales_vente' %}" target="_blank"
-                                       rel="noopener" class="underline underline-offset-2">conditions générales de vente</a>.
-                                </span>
-                            </label>
-                            <button type="submit" class="btn-primary w-full justify-center mt-4">
-                                Acheter cette formation
-                            </button>
-                        </form>
-                        <p class="mt-3 text-xs text-warm-500">
-                            Paiement sécurisé par Stripe. Aucune donnée bancaire ne transite par nos serveurs.
-                        </p>
-                        {% elif user.is_authenticated %}
-                        <p class="mt-4 text-sm text-warm-600">
-                            Un dossier étudiant est nécessaire pour acheter un module.
-                            Contactez le secrétariat pour le rattacher à votre compte.
-                        </p>
-                        {% else %}
-                        <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}"
-                           class="btn-primary w-full justify-center mt-4">
-                            Se connecter pour acheter
-                        </a>
-                        {% endif %}
                     {% elif demande_en_attente %}
                         <p class="text-sm font-semibold text-navy-900">Demande transmise</p>
                         <p class="mt-1 text-sm text-warm-600">

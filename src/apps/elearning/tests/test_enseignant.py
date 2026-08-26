@@ -316,6 +316,12 @@ class TestPublicationControlee:
         assert "préparation" in reponse.content.decode()
 
     def test_un_module_complet_se_publie(self, client, enseignant, module, lecon, acces):
+        autre_etudiant = User.objects.create_user(
+            username="etudiant_sans_acces_module",
+            email="autre-etudiant@iteag.org",
+            password="motdepasse-long-12",
+            role=User.Role.ETUDIANT,
+        )
         module.statut = ModuleFormation.StatutPublication.BROUILLON
         module.save(update_fields=["statut"])
         client.force_login(enseignant.user)
@@ -326,7 +332,11 @@ class TestPublicationControlee:
         assert module.date_publication is not None
         assert Notification.objects.filter(
             destinataire=acces.etudiant.utilisateur,
-            titre=f"Module disponible — {module.titre}",
+            titre=f"Nouvelle formation E-Learning — {module.titre}",
+        ).exists()
+        assert Notification.objects.filter(
+            destinataire=autre_etudiant,
+            titre=f"Nouvelle formation E-Learning — {module.titre}",
         ).exists()
 
     def test_depublication(self, client, enseignant, module, lecon):

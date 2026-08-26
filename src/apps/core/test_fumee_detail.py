@@ -23,7 +23,6 @@ Trois propriétés sont vérifiées :
    le seul contrôle de rôle laisse passer.
 """
 
-import uuid
 from datetime import time, timedelta
 from decimal import Decimal
 
@@ -48,7 +47,6 @@ from apps.academics.models import (
 from apps.academics.models_assiduite import SeanceCours
 from apps.accounts.models import User
 from apps.admissions.models import DossierCandidature, PieceDemandee
-from apps.commerce.models import Commande, DestinationLivraison, ProduitLivre, TarifLivraison, TypeLivraison
 from apps.core.models import AbonneNewsletter
 from apps.core.services.notifications import notifier
 from apps.documents.models import DocumentAdministratif, DocumentRedige
@@ -72,7 +70,6 @@ from apps.lms.models import (
     Question,
     RessourcePedagogique,
 )
-from apps.paiements.models import Reglement
 from apps.website.models import NewsIndexPage, NewsPage
 from apps.website.models_publications import Article, ImageArticle, TemoignageEtudiant
 
@@ -323,41 +320,6 @@ def univers(db, settings, tmp_path):
         date_debut=timezone.localdate(),
         date_fin=timezone.localdate() + timedelta(days=2),
     )
-    monde["produit"] = ProduitLivre.objects.create(
-        titre="Institution chrétienne",
-        slug="institution-chretienne",
-        sku="LIV-001",
-        prix_ttc=Decimal("35.00"),
-        stock_physique=3,
-    )
-    # Les tarifs de référence sont posés par une migration : on en ajoute un
-    # dont le poids ne peut heurter aucun d'eux plutôt que d'en supposer un.
-    monde["tarif_livraison"] = TarifLivraison.objects.create(
-        destination=DestinationLivraison.GUADELOUPE,
-        type_livraison=TypeLivraison.STANDARD,
-        poids_max_grammes=999_999,
-        prix_ttc=Decimal("6.50"),
-    )
-    monde["commande"] = Commande.objects.create(
-        numero="CMD-DETAIL-1",
-        prenom="Marc",
-        nom="Céleste",
-        email="marc.celeste@example.org",
-        adresse="1 rue du Temple",
-        code_postal="97110",
-        ville="Pointe-à-Pitre",
-    )
-
-    # ── Paiement en ligne ──
-    monde["reglement"] = Reglement.objects.create(
-        nature=Reglement.Nature.FRAIS_INSCRIPTION,
-        utilisateur=monde[ETUDIANT],
-        etudiant=monde["profil"],
-        email=monde[ETUDIANT].email,
-        libelle="Frais d'inscription",
-        montant_ttc=Decimal("50.00"),
-    )
-
     # ── Publications ──
     monde["article"] = Article.objects.create(
         titre="La révélation chez Calvin",
@@ -487,17 +449,6 @@ FABRIQUES = {
     # ── Redirections d'anciennes adresses ──
     "ancienne_url_elearning": (PUBLIC, lambda m: {"chemin": "catalogue/"}),
     "ancienne_url_enseignant": (PUBLIC, lambda m: {"chemin": "cours/"}),
-    # ── Boutique ──
-    "commerce:produit_detail": (PUBLIC, lambda m: {"slug": m["produit"].slug}),
-    "commerce:panier_ajouter": (PUBLIC, lambda m: {"pk": m["produit"].pk}),
-    "commerce:panier_modifier": (PUBLIC, lambda m: {"pk": m["produit"].pk}),
-    "commerce:panier_retirer": (PUBLIC, lambda m: {"pk": m["produit"].pk}),
-    "commerce:commande_suivi": (PUBLIC, lambda m: {"jeton": m["commande"].jeton_suivi}),
-    "commerce:commande_action": (SECRETARIAT, lambda m: {"pk": m["commande"].pk}),
-    "commerce:produit_modifier": (SECRETARIAT, lambda m: {"pk": m["produit"].pk}),
-    "commerce:stock_ajuster": (SECRETARIAT, lambda m: {"pk": m["produit"].pk}),
-    "commerce:tarif_livraison_modifier": (SECRETARIAT, lambda m: {"pk": m["tarif_livraison"].pk}),
-    "commerce:tarif_livraison_supprimer": (SECRETARIAT, lambda m: {"pk": m["tarif_livraison"].pk}),
     # ── Socle ──
     "core:newsletter_confirmation": (PUBLIC, lambda m: {"token": m["abonne"].token_confirmation}),
     "core:newsletter_desinscription": (PUBLIC, lambda m: {"token": m["abonne"].token_desinscription}),
@@ -614,15 +565,6 @@ FABRIQUES = {
     "lms:groupe_update": (ENSEIGNANT, lambda m: {"pk": m["groupe"].pk}),
     "lms:groupe_delete": (ENSEIGNANT, lambda m: {"pk": m["groupe"].pk}),
     "lms:groupe_message": (ENSEIGNANT, lambda m: {"pk": m["groupe"].pk}),
-    # ── Paiement en ligne ──
-    "paiements:acheter_module": (ETUDIANT, lambda m: {"slug": m["module"].slug}),
-    "paiements:checkout": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
-    "paiements:session_checkout": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
-    "paiements:succes": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
-    "paiements:annulation": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
-    "paiements:recu": (ETUDIANT, lambda m: {"pk": m["reglement"].pk}),
-    "paiements:payer_commande": (PUBLIC, lambda m: {"jeton": m["commande"].jeton_suivi}),
-    "paiements:payer_inscription": (ETUDIANT, lambda m: {"pk": m["demande"].pk}),
     # ── Articles de recherche ──
     "website:article_detail": (PUBLIC, lambda m: {"slug": m["article"].slug}),
     "website:article_edition": (ENSEIGNANT, lambda m: {"pk": m["article"].pk}),
@@ -655,9 +597,8 @@ PROPRIETE_NON_APPLICABLE = {
     "etudiant:course_offering_detail",
     "etudiant:enrollment_request_create",
     # Le module est en accès public dans ce jeu de données : c'est ce qui est
-    # testé, et sa page de vente s'adresse à qui n'y a pas encore accès.
+    # testé, et la demande d'accès s'adresse à qui n'y a pas encore accès.
     "elearning:module_demander_acces",
-    "paiements:acheter_module",
     # Le type de document est un choix, pas un objet : chaque étudiant génère
     # le sien. Le cloisonnement porte sur « documents:download ».
     "documents:generate",
@@ -840,28 +781,6 @@ def test_un_tiers_du_meme_role_n_atteint_pas_le_bien_d_un_autre(client, univers)
 
 
 @pytest.mark.django_db
-def test_le_reglement_d_un_autre_reste_fermé(client, univers):
-    """
-    Le cas qui a motivé l'extension de ce fichier.
-
-    Les pages de retour de paiement chargeaient le règlement par son seul
-    identifiant. Le test est écrit à part pour qu'il nomme le défaut plutôt que
-    de se fondre dans une liste.
-    """
-    curieux = User.objects.create_user(
-        username="curieux_paiement",
-        email="curieux_paiement@iteag.org",
-        password="motdepasse-long-12",
-        role=ETUDIANT,
-    )
-    client.force_login(curieux)
-
-    for nom_route in ("paiements:succes", "paiements:annulation", "paiements:recu"):
-        reponse = client.get(reverse(nom_route, kwargs={"pk": univers["reglement"].pk}))
-        assert reponse.status_code == 404, f"{nom_route} → {reponse.status_code}"
-
-
-@pytest.mark.django_db
 def test_une_adresse_inexistante_ne_fait_pas_tomber_le_serveur(client, univers):
     """Un identifiant périmé — signet, lien recopié — se solde par un 404, pas par un 500."""
     client.force_login(univers[SECRETARIAT])
@@ -869,8 +788,6 @@ def test_une_adresse_inexistante_ne_fait_pas_tomber_le_serveur(client, univers):
         ("administration:candidature_detail", {"pk": 999_999}),
         ("administration:etudiant_detail", {"pk": 999_999}),
         ("library:notice_detail", {"pk": 999_999}),
-        ("paiements:succes", {"pk": uuid.uuid4()}),
-        ("commerce:commande_suivi", {"jeton": uuid.uuid4()}),
         ("formations:cours_detail", {"slug": "cours-disparu"}),
     ):
         reponse = client.get(reverse(nom_route, kwargs=parametres))

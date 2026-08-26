@@ -1009,7 +1009,6 @@ requests==2.34.2 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via
     #   -r requirements/base.txt
-    #   stripe
     #   wagtail
 ruff==0.16.1 \
     --hash=sha256:07bf434b1c95f4e093be4532068ef4fcf00924eb2ade8796075980902d6fd54a \
@@ -1049,10 +1048,6 @@ sqlparse==0.5.5 \
     # via
     #   django
     #   django-debug-toolbar
-stripe==13.2.0 \
-    --hash=sha256:e7d18bd44bab1812bc4e9e75da4ceacedd587f71737bb9193955edf420605f88 \
-    --hash=sha256:ed6ad1c27725e1e32a336fa9d835cfa8f0bd6dafcc98b3ab7bc7e8791390453b
-    # via -r requirements/base.txt
 telepath==0.3.1 \
     --hash=sha256:925c0609e0a8a6488ec4a55b19d485882cf72223b2b19fe2359a50fddd813c9c \
     --hash=sha256:c280aa8e77ad71ce80e96500a4e4d4a32f35b7e0b52e896bb5fde9a5bcf0699a
@@ -1075,7 +1070,6 @@ typing-extensions==4.16.0 \
     #   django-stubs-ext
     #   django-tasks
     #   psycopg
-    #   stripe
 tzdata==2026.3 \
     --hash=sha256:4a1518b8993086a7982523e071643f3c0e5f213e75b21318e78bcabfff9d1415 \
     --hash=sha256:dc096730c87af6cab1b171c9d532be840741ff5d459015e7f6947bd7d7e54931
