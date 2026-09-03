@@ -207,15 +207,28 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
             {% for news in latest_news %}
-            <article class="card relative group reveal">
-                <time class="text-xs font-medium uppercase tracking-wider text-warm-600" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
-                <h3 class="text-lg mt-3 mb-3 text-navy-900">{{ news.title }}</h3>
-                {% if news.excerpt %}
-                <p class="text-sm leading-relaxed line-clamp-3 text-warm-600">{{ news.excerpt }}</p>
+            <article class="card relative group reveal overflow-hidden [padding:0]">
+                {% if news.image %}
+                    {% image news.image fill-720x405 as news_cover %}
+                    <div class="h-48 overflow-hidden bg-warm-100">
+                        <img src="{{ news_cover.url }}"
+                             alt="{{ news.title }}"
+                             class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+                             width="{{ news_cover.width }}"
+                             height="{{ news_cover.height }}"
+                             loading="lazy">
+                    </div>
                 {% endif %}
-                <a href="{{ news.url }}" class="stretched-link mt-4 inline-block text-sm font-semibold uppercase tracking-wider text-navy-700">
-                    Lire la suite →
-                </a>
+                <div class="p-7">
+                    <time class="text-xs font-medium uppercase tracking-wider text-warm-600" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
+                    <h3 class="text-lg mt-3 mb-3 text-navy-900">{{ news.title }}</h3>
+                    {% if news.excerpt %}
+                    <p class="text-sm leading-relaxed line-clamp-3 text-warm-600">{{ news.excerpt }}</p>
+                    {% endif %}
+                    <a href="{{ news.url }}" class="stretched-link mt-4 inline-block text-sm font-semibold uppercase tracking-wider text-navy-700">
+                        Lire la suite →
+                    </a>
+                </div>
             </article>
             {% endfor %}
         </div>
