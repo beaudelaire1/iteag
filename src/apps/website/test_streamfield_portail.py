@@ -120,6 +120,14 @@ def test_picker_adapte_le_tippy_officiel_sans_reimplementer_le_composant():
     assert "position: fixed" not in script
     assert "style.transform" not in script
 
+    # Le balayage seul laissait passer les boutons dont Tippy n'était pas encore
+    # attaché au moment de l'insertion : « configurer » sortait sans rien faire,
+    # rien ne repassait, et ces boutons gardaient le placement d'origine — leur
+    # panneau s'ouvrait alors hors de l'écran. La reconfiguration à l'ouverture,
+    # en phase de capture, rattrape ce cas.
+    assert "'mousedown', 'focusin', 'keydown'" in script
+    assert "configurerAvantOuverture, true" in script
+
 
 def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():
     tableau = TableauEditorialBlock()
