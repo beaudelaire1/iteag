@@ -55,6 +55,18 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
         INTERMEDIAIRE = "intermediaire", "Intermédiaire"
         AVANCE = "avance", "Avancé"
 
+    class Genre(models.TextChoices):
+        """Ce que le module est, au-delà de sa mécanique.
+
+        Un atelier de prédication se compose exactement comme un module —
+        chapitres, leçons vidéo, ressources — mais ne se cherche pas au même
+        endroit et ne se présente pas de la même façon. Les confondre dans une
+        liste unique obligeait à lire les titres pour les distinguer.
+        """
+
+        FORMATION = "formation", "Module de formation"
+        ATELIER = "atelier", "Atelier de prédication"
+
     titre = models.CharField(max_length=250)
     slug = models.SlugField(max_length=250, unique=True)
     code = models.CharField(max_length=20, blank=True, verbose_name="Code module")
@@ -97,6 +109,13 @@ class ModuleFormation(UUIDModel, TimeStampedModel):
     description = models.TextField(blank=True)
     objectifs = models.TextField(blank=True, verbose_name="Objectifs pédagogiques")
     niveau = models.CharField(max_length=20, choices=Niveau.choices, default=Niveau.INITIATION)
+    genre = models.CharField(
+        max_length=20,
+        choices=Genre.choices,
+        default=Genre.FORMATION,
+        verbose_name="Nature",
+        help_text="Un atelier se compose comme un module, mais se présente séparément.",
+    )
     image_couverture = models.ImageField(upload_to="elearning/couvertures/", blank=True)
 
     duree_totale_secondes = models.PositiveIntegerField(default=0, editable=False, verbose_name="Durée totale")

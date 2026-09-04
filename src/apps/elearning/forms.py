@@ -25,10 +25,15 @@ class ModuleForm(FormulaireModeleITEAG):
         fields = [
             "titre",
             "code",
+            "genre",
             "description",
             "objectifs",
             "discipline",
             "cours",
+            # Le secrétariat saisit pour le compte d'un enseignant : il désigne
+            # qui porte le module. Le champ disparaît pour l'enseignant, qui en
+            # est le responsable d'office.
+            "responsable",
             "niveau",
             "image_couverture",
             "ects",
@@ -47,6 +52,8 @@ class ModuleForm(FormulaireModeleITEAG):
             "objectifs": forms.Textarea(attrs={"class": INPUT, "rows": 4}),
             "discipline": forms.Select(attrs={"class": SELECT}),
             "cours": forms.Select(attrs={"class": SELECT}),
+            "genre": forms.Select(attrs={"class": SELECT}),
+            "responsable": forms.Select(attrs={"class": SELECT}),
             "niveau": forms.Select(attrs={"class": SELECT}),
             "image_couverture": forms.ClearableFileInput(attrs={"class": FICHIER}),
             "ects": forms.NumberInput(attrs={"class": INPUT, "min": 0, "step": "0.5"}),
@@ -63,12 +70,29 @@ class ModuleForm(FormulaireModeleITEAG):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, personnel=False, **kwargs):
         super().__init__(*args, **kwargs)
         # Le champ n'est pas obligatoire, mais son absence ne vaut jamais
         # « ouvert » : `clean_politique_acces` retombe sur la valeur en place,
         # à défaut sur le défaut du modèle, qui est le plus fermé.
         self.fields["politique_acces"].required = False
+        # Un module est une formation sauf mention contraire : ne pas cocher la
+        # nature ne doit pas refuser l'enregistrement.
+        self.fields["genre"].required = False
+
+        if personnel:
+            # Un module sans responsable n'a personne à relancer ni à qui
+            # attribuer ses leçons : le secrétariat doit trancher à la saisie.
+            self.fields["responsable"].required = True
+            self.fields["responsable"].empty_label = "Choisir l'enseignant responsable…"
+        else:
+            # L'enseignant est le responsable : lui montrer le champ lui
+            # permettrait de confier son module à un autre depuis un écran qui
+            # ne parle que du sien.
+            self.fields.pop("responsable", None)
+
+    def clean_genre(self):
+        return self.cleaned_data.get("genre") or ModuleFormation.Genre.FORMATION
 
     def clean_politique_acces(self):
         """Resserrer la politique ne doit pas rendre le module inlisible.

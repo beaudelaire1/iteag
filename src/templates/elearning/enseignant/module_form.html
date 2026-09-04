@@ -25,6 +25,8 @@
         <div><p class="overline mb-1">Étape 1</p><h2 class="text-lg font-semibold">Identifier le module</h2>
         <p class="mt-1 text-sm text-warm-500">Nommez le module et rattachez-le à l’offre de formation.</p></div>
         {% include "partials/champ.html" with field=form.titre %}
+        {% include "partials/champ.html" with field=form.genre %}
+        {% if form.responsable %}{% include "partials/champ.html" with field=form.responsable %}{% endif %}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             {% include "partials/champ.html" with field=form.code %}
             {% include "partials/champ.html" with field=form.niveau %}
