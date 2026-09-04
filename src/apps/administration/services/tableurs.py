@@ -59,6 +59,22 @@ def _booleen(ligne: dict[str, str], champ: str, defaut: bool = True) -> bool:
     return brut in {"oui", "o", "1", "true", "vrai", "x"}
 
 
+def _rattachement(modele, ligne: dict[str, str], champ: str, libelle: str):
+    """L'objet nommé dans la colonne, ou None si elle est vide.
+
+    Un nom renseigné mais introuvable reste une erreur, jamais un silence : une
+    faute de frappe laisserait sinon l'étudiant sans rattachement, et rien ne
+    le signalerait avant qu'on aille le chercher.
+    """
+    nom = (ligne.get(champ) or "").strip()
+    if not nom:
+        return None
+    trouve = modele.objects.filter(nom__iexact=nom).first()
+    if trouve is None:
+        raise ValidationError(f"{libelle} : « {nom} ». Créez-le d'abord, ou laissez la colonne vide.")
+    return trouve
+
+
 def _slug_libre(modele, base: str, champ: str = "slug") -> str:
     """Un slug unique dérivé du titre, sans écraser un existant."""
     racine = slugify(base)[:180] or "entree"
@@ -134,10 +150,10 @@ COLONNES_ETUDIANTS = [
     Colonne("numero_etudiant", "Laisser vide pour le faire attribuer — l'email sert alors de clé"),
     Colonne("nom", "Nom de famille", requise=True, exemple="Marceline"),
     Colonne("prenom", "Prénom", requise=True, exemple="Josiane"),
-    Colonne("email", "Obligatoire si le numéro est laissé vide", exemple="josiane.marceline@example.org"),
+    Colonne("email", "Adresse électronique", requise=True, exemple="josiane.marceline@example.org"),
     Colonne("telephone", "Téléphone", exemple="+590 690 00 00 00"),
-    Colonne("parcours", "Nom exact du parcours", requise=True, exemple="Licence en théologie"),
-    Colonne("promotion", "Nom exact de la promotion", requise=True, exemple="Promotion 2026"),
+    Colonne("parcours", "Nom exact d'un parcours existant, ou vide", exemple="Licence en théologie"),
+    Colonne("promotion", "Nom exact d'une promotion existante, ou vide", exemple="Promotion 2026"),
     Colonne("statut", "actif, inscrit, pre_inscrit, suspendu, diplome", exemple="actif"),
     Colonne("eglise", "Église d'appartenance", exemple="Église de Pointe-à-Pitre"),
 ]
@@ -151,24 +167,14 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
 
     nom = _exiger(ligne, "nom")
     prenom = _exiger(ligne, "prenom")
+    # L'email est la clé de repli quand le fichier ne porte pas de numéro. Il
+    # sert aussi à joindre l'étudiant pour qu'il définisse son mot de passe :
+    # sans lui, le compte créé reste inatteignable.
+    email = _exiger(ligne, "email")
 
-    # Le numéro fait clé quand il existe ; sinon l'email. Reprendre un fichier
-    # dépourvu des deux recréerait la même personne à chaque dépôt — c'est
-    # précisément ce contre quoi la clé naturelle protège.
     numero = (ligne.get("numero_etudiant") or "").strip()
-    email = (ligne.get("email") or "").strip()
-    if not numero and not email:
-        raise ValidationError(
-            "Renseignez « numero_etudiant » ou « email ». Sans l'un des deux, "
-            "un second import de ce fichier recréerait cette personne."
-        )
-
-    parcours = Parcours.objects.filter(nom__iexact=_exiger(ligne, "parcours")).first()
-    if parcours is None:
-        raise ValidationError(f"Parcours inconnu : « {ligne.get('parcours')} ».")
-    promotion = Promotion.objects.filter(nom__iexact=_exiger(ligne, "promotion")).first()
-    if promotion is None:
-        raise ValidationError(f"Promotion inconnue : « {ligne.get('promotion')} ».")
+    parcours = _rattachement(Parcours, ligne, "parcours", "Parcours inconnu")
+    promotion = _rattachement(Promotion, ligne, "promotion", "Promotion inconnue")
 
     statut = (ligne.get("statut") or ProfilEtudiant.StatutInscription.PRE_INSCRIT).strip().lower()
     if statut not in ProfilEtudiant.StatutInscription.values:
@@ -217,8 +223,12 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
             compte.phone = ligne["telephone"].strip()
         compte.save(update_fields=["first_name", "last_name", "email", "phone"])
 
-    profil.parcours = parcours
-    profil.promotion = promotion
+    # Une colonne laissée vide ne veut pas dire « efface » : un second dépôt,
+    # partiel, ne doit pas détacher un étudiant déjà rattaché à son parcours.
+    if parcours is not None:
+        profil.parcours = parcours
+    if promotion is not None:
+        profil.promotion = promotion
     profil.statut_inscription = statut
     if ligne.get("eglise"):
         profil.eglise = ligne["eglise"].strip()

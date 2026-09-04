@@ -76,8 +76,10 @@ class StudentDashboardView(StudentRoleRequiredMixin, TemplateView):
                 "current_session": current_session,
                 "prochaine_session": prochaine_session,
                 "total_ects_acquis": total_ects_acquis,
+                # Un profil repris par import peut n'avoir pas encore de parcours :
+                # aucune progression n'est mesurable tant qu'aucun total n'est exigé.
                 "progress_percent": round((total_ects_acquis / profil.parcours.ects_requis) * 100)
-                if profil.parcours.ects_requis
+                if profil.parcours_id and profil.parcours.ects_requis
                 else 0,
                 "pending_evaluations": profil.evaluations.select_related(
                     "cours_session__cours", "cours_session__session", "devoir"

@@ -171,8 +171,8 @@ class TestMiseAJourSansDoublon:
 
     def test_l_etudiant_est_reconnu_par_son_numero(self, referentiel):
         _, parcours, promotion = referentiel
-        entetes = ["numero_etudiant", "nom", "prenom", "parcours", "promotion"]
-        ligne = ["ETU2026001", "Marceline", "Josiane", parcours.nom, promotion.nom]
+        entetes = ["numero_etudiant", "nom", "prenom", "email", "parcours", "promotion"]
+        ligne = ["ETU2026001", "Marceline", "Josiane", "josiane@example.org", parcours.nom, promotion.nom]
 
         executer(SCHEMAS["etudiants"], _fichier("e.csv", _csv(entetes, [ligne])))
         rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", _csv(entetes, [ligne])))
@@ -225,6 +225,64 @@ class TestMiseAJourSansDoublon:
         assert ProfilEtudiant.objects.count() == 1
         assert rapport.mis_a_jour == 1
 
+    def test_le_rattachement_pedagogique_peut_manquer(self, referentiel):
+        """
+        Reprendre un effectif existant, c'est importer des noms et des emails.
+
+        Le parcours et la promotion exacts se renseignent ensuite, sur la fiche.
+        Les exiger au dépôt obligeait à les retrouver avant tout import.
+        """
+        contenu = _csv(
+            ["nom", "prenom", "email"],
+            [["Marceline", "Josiane", "josiane@example.org"]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert not rapport.est_en_echec
+        profil = ProfilEtudiant.objects.get()
+        assert profil.parcours_id is None
+        assert profil.promotion_id is None
+
+    def test_une_colonne_vide_ne_detache_pas_un_etudiant_rattache(self, referentiel):
+        """Un second dépôt partiel ne doit rien défaire de ce qui est en place."""
+        _, parcours, promotion = referentiel
+        complet = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [["Marceline", "Josiane", "josiane@example.org", parcours.nom, promotion.nom]],
+        )
+        executer(SCHEMAS["etudiants"], _fichier("e.csv", complet))
+
+        partiel = _csv(["nom", "prenom", "email"], [["Marceline", "Josiane", "josiane@example.org"]])
+        executer(SCHEMAS["etudiants"], _fichier("e.csv", partiel))
+
+        profil = ProfilEtudiant.objects.get()
+        assert profil.parcours_id == parcours.pk
+        assert profil.promotion_id == promotion.pk
+
+    def test_un_parcours_inconnu_reste_refuse(self, referentiel):
+        """Vide est permis ; mal orthographié ne l'est pas."""
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours"],
+            [["Marceline", "Josiane", "josiane@example.org", "Licence en théologi"]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert rapport.est_en_echec
+        assert "Parcours inconnu" in rapport.erreurs[0][1]
+        assert ProfilEtudiant.objects.count() == 0
+
+    def test_l_email_est_desormais_exige(self, referentiel):
+        """Sans lui, le compte créé serait injoignable pour définir son mot de passe."""
+        _, parcours, promotion = referentiel
+        contenu = _csv(
+            ["numero_etudiant", "nom", "prenom", "parcours", "promotion"],
+            [["ETU2026009", "Marceline", "Josiane", parcours.nom, promotion.nom]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert rapport.est_en_echec
+        assert "email" in rapport.erreurs[0][1]
+
     def test_sans_numero_ni_email_la_ligne_est_refusee(self, referentiel):
         """Ni l'un ni l'autre : plus rien ne distingue cette personne d'une nouvelle."""
         _, parcours, promotion = referentiel
@@ -242,8 +300,8 @@ class TestMiseAJourSansDoublon:
         """Un import ne fabrique pas de mot de passe et n'en fait transiter aucun."""
         _, parcours, promotion = referentiel
         contenu = _csv(
-            ["numero_etudiant", "nom", "prenom", "parcours", "promotion"],
-            [["ETU2026002", "Sainte-Rose", "Emmanuel", parcours.nom, promotion.nom]],
+            ["numero_etudiant", "nom", "prenom", "email", "parcours", "promotion"],
+            [["ETU2026002", "Sainte-Rose", "Emmanuel", "emmanuel@example.org", parcours.nom, promotion.nom]],
         )
         executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
 
