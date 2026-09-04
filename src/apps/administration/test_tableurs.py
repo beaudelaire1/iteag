@@ -180,6 +180,64 @@ class TestMiseAJourSansDoublon:
         assert ProfilEtudiant.objects.count() == 1
         assert rapport.mis_a_jour == 1
 
+    def test_le_numero_absent_est_attribue(self, referentiel):
+        """
+        Le secrétariat reprend des listes qui ne portent aucun numéro.
+
+        Exiger une colonne que le fichier d'origine ignore obligeait à inventer
+        des numéros à la main avant tout import — le numéro se génère déjà seul
+        à l'acceptation d'une candidature.
+        """
+        _, parcours, promotion = referentiel
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [["Marceline", "Josiane", "josiane@example.org", parcours.nom, promotion.nom]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert not rapport.est_en_echec
+        assert rapport.crees == 1
+        assert ProfilEtudiant.objects.get().numero_etudiant.startswith("ETU")
+
+    def test_deux_lignes_sans_numero_ne_se_marchent_pas_dessus(self, referentiel):
+        _, parcours, promotion = referentiel
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [
+                ["Marceline", "Josiane", "josiane@example.org", parcours.nom, promotion.nom],
+                ["Sainte-Rose", "Emmanuel", "emmanuel@example.org", parcours.nom, promotion.nom],
+            ],
+        )
+        executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        numeros = set(ProfilEtudiant.objects.values_list("numero_etudiant", flat=True))
+        assert len(numeros) == 2
+
+    def test_sans_numero_l_email_fait_cle(self, referentiel):
+        """Sans clé de repli, redéposer le même fichier créerait tout en double."""
+        _, parcours, promotion = referentiel
+        entetes = ["nom", "prenom", "email", "parcours", "promotion"]
+        ligne = ["Marceline", "Josiane", "josiane@example.org", parcours.nom, promotion.nom]
+
+        executer(SCHEMAS["etudiants"], _fichier("e.csv", _csv(entetes, [ligne])))
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", _csv(entetes, [ligne])))
+
+        assert ProfilEtudiant.objects.count() == 1
+        assert rapport.mis_a_jour == 1
+
+    def test_sans_numero_ni_email_la_ligne_est_refusee(self, referentiel):
+        """Ni l'un ni l'autre : plus rien ne distingue cette personne d'une nouvelle."""
+        _, parcours, promotion = referentiel
+        contenu = _csv(
+            ["nom", "prenom", "parcours", "promotion"],
+            [["Marceline", "Josiane", parcours.nom, promotion.nom]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert rapport.est_en_echec
+        assert "email" in rapport.erreurs[0][1]
+        assert ProfilEtudiant.objects.count() == 0
+
     def test_le_compte_importe_n_a_pas_de_mot_de_passe_utilisable(self, referentiel):
         """Un import ne fabrique pas de mot de passe et n'en fait transiter aucun."""
         _, parcours, promotion = referentiel
