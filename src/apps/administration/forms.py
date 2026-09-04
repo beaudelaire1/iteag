@@ -229,6 +229,22 @@ class AdminParcoursForm(SlugDeriveDuNom, FormulaireModeleITEAG):
 
 
 class CoursDeSessionForm(FormulaireModeleITEAG):
+    # Redéclaré pour rester facultatif : un cours créé sans y penser garde le
+    # délai par défaut de l'institut plutôt que de refuser l'enregistrement.
+    delai_correction_jours = forms.IntegerField(
+        required=False,
+        min_value=0,
+        label="Délai de correction (jours)",
+        help_text="Au-delà, une copie remise et non notée est signalée au secrétariat. Zéro : aucun suivi.",
+        widget=forms.NumberInput(attrs={"class": "form-input", "min": 0}),
+    )
+
+    def clean_delai_correction_jours(self):
+        valeur = self.cleaned_data.get("delai_correction_jours")
+        if valeur is None:
+            return CoursDeSession._meta.get_field("delai_correction_jours").default
+        return valeur
+
     class Meta:
         model = CoursDeSession
         fields = [
@@ -243,6 +259,10 @@ class CoursDeSessionForm(FormulaireModeleITEAG):
             "inscriptions_ouvertes",
             "date_limite_inscription",
             "frais_inscription",
+            # Le délai au-delà duquel une copie remise et non notée remonte au
+            # secrétariat. Il se règle ici, et non sur l'écran de l'enseignant :
+            # personne ne fixe l'échéance qu'on lui opposera ensuite.
+            "delai_correction_jours",
             "informations_pratiques",
         ]
         widgets = {
@@ -257,6 +277,7 @@ class CoursDeSessionForm(FormulaireModeleITEAG):
             "inscriptions_ouvertes": forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded"}),
             "date_limite_inscription": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
             "frais_inscription": forms.NumberInput(attrs={"class": "form-input", "min": 0, "step": "0.01"}),
+            "delai_correction_jours": forms.NumberInput(attrs={"class": "form-input", "min": 0}),
             "informations_pratiques": forms.Textarea(attrs={"class": "form-input", "rows": 4}),
         }
 

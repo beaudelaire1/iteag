@@ -216,6 +216,16 @@ class CoursDeSession(TimeStampedModel):
         help_text="Après cette date, la remise est close. Vide = pas d'échéance.",
     )
 
+    # Une copie remise et jamais corrigée n'alertait personne : l'étudiant
+    # attendait, et rien ne le disait. Ce délai donne au secrétariat un repère
+    # pour relancer l'enseignant. Il se règle par cours, un séminaire intensif
+    # et un cours annuel n'ayant pas la même exigence.
+    delai_correction_jours = models.PositiveSmallIntegerField(
+        default=15,
+        verbose_name="Délai de correction (jours)",
+        help_text="Au-delà, la copie remise est signalée au secrétariat. Zéro : aucun suivi.",
+    )
+
     class Meta:
         verbose_name = "Cours de session"
         verbose_name_plural = "Cours de session"

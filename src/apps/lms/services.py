@@ -153,7 +153,53 @@ def deposer(evaluation: Evaluation, fichier, *, request=None) -> Evaluation:
         objet_libelle=f"Remise de {evaluation.etudiant}",
         tardif=evaluation.depot_tardif,
     )
+    _avertir_de_la_remise(evaluation)
     return evaluation
+
+
+def _avertir_de_la_remise(evaluation) -> None:
+    """Accuse réception à l'étudiant, et signale la copie au secrétariat.
+
+    L'étudiant déposait sans rien recevoir en retour : il ne savait pas si son
+    fichier était arrivé. Le secrétariat, lui, ne l'apprenait jamais — or c'est
+    lui qui relancera l'enseignant si la copie reste sans note.
+    """
+    from django.contrib.auth import get_user_model
+    from django.urls import reverse
+
+    from apps.core.models import Notification
+    from apps.core.services.notifications import notifier, notifier_plusieurs
+
+    cours = evaluation.cours_session
+    details = [
+        {"libelle": "Cours", "valeur": cours.cours.titre},
+        {"libelle": "Étudiant", "valeur": str(evaluation.etudiant)},
+        {"libelle": "Remise", "valeur": "en retard" if evaluation.depot_tardif else "dans les délais"},
+    ]
+
+    notifier(
+        evaluation.etudiant.utilisateur,
+        f"Devoir remis — {cours.cours.titre}",
+        type_notification=Notification.Type.SYSTEME,
+        message=(
+            "Votre copie est bien arrivée. Vous serez prévenu dès que votre note "
+            "sera publiée."
+        ),
+        details=details,
+    )
+
+    User = get_user_model()
+    notifier_plusieurs(
+        User.objects.filter(is_active=True, role=User.Role.SECRETARIAT),
+        f"Copie remise — {evaluation.etudiant}",
+        type_notification=Notification.Type.SYSTEME,
+        message=(
+            f"Une copie vient d'être remise pour « {cours.cours.titre} ». "
+            "Elle apparaîtra dans le suivi des corrections."
+        ),
+        details=details,
+        url_cible=reverse("administration:corrections"),
+    )
 
 
 # ──────────────────────────────────────────────

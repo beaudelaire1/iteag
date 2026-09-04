@@ -166,6 +166,33 @@ class Evaluation(TimeStampedModel):
             return self.date_limite_reportee
         return self.devoir.date_fermeture if self.devoir_id else None
 
+    @property
+    def attend_sa_correction(self) -> bool:
+        """Remise faite, note absente. C'est l'état où l'étudiant patiente."""
+        return self.date_soumission is not None and self.statut in (
+            self.StatutEvaluation.SOUMIS,
+            self.StatutEvaluation.EN_CORRECTION,
+        )
+
+    def jours_depuis_remise(self, a_la_date=None) -> int:
+        if self.date_soumission is None:
+            return 0
+        return max(0, ((a_la_date or timezone.now()) - self.date_soumission).days)
+
+    def correction_en_retard(self, a_la_date=None) -> bool:
+        """Copie remise depuis plus longtemps que le délai fixé sur le cours.
+
+        Le retard reste une affaire interne : il donne au secrétariat de quoi
+        relancer l'enseignant, et n'est jamais montré à l'étudiant — lui dire
+        que sa copie traîne l'inquiéterait sans rien lui permettre de faire.
+        """
+        if not self.attend_sa_correction:
+            return False
+        delai = getattr(self.cours_session, "delai_correction_jours", 0) or 0
+        if delai <= 0:
+            return False  # suivi désactivé sur ce cours
+        return self.jours_depuis_remise(a_la_date) > delai
+
     def motif_de_refus_depot(self, a_la_date=None):
         """Pourquoi cet étudiant ne peut pas déposer — vide s'il le peut."""
         maintenant = a_la_date or timezone.now()

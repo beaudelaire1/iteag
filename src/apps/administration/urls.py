@@ -4,6 +4,7 @@ from . import (
     views,
     views_academics,
     views_assiduite,
+    views_corrections,
     views_elearning,
     views_enseignants,
     views_pieces,
@@ -152,6 +153,13 @@ urlpatterns = [
         name="enrollment_proof_download",
     ),
     # Paiements
+    # Suivi des corrections
+    path("corrections/", views_corrections.CorrectionsView.as_view(), name="corrections"),
+    path(
+        "corrections/<int:pk>/relancer/",
+        views_corrections.RelanceCorrectionView.as_view(),
+        name="correction_relance",
+    ),
     # Promotions
     path("promotions/", views_academics.PromotionListView.as_view(), name="promotions"),
     path("promotions/nouvelle/", views_academics.PromotionCreateView.as_view(), name="promotion_create"),
