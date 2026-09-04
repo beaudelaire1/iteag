@@ -51,8 +51,25 @@
     racine.querySelectorAll?.(SELECTEUR).forEach(configurer);
   };
 
+  /**
+   * Wagtail attache Tippy après avoir inséré le bouton. Un balayage déclenché
+   * par l'insertion arrive donc parfois avant l'instance : `configurer` sortait
+   * alors sans rien faire, et plus rien ne repassait sur ce bouton — qui
+   * gardait le `placement: "bottom"` d'origine et ouvrait son panneau hors de
+   * l'écran. On reconfigure donc aussi juste avant l'ouverture, en phase de
+   * capture : à cet instant l'instance existe forcément.
+   */
+  const configurerAvantOuverture = (evenement) => {
+    const bouton = evenement.target?.closest?.(SELECTEUR);
+    if (bouton) configurer(bouton);
+  };
+
   const demarrer = () => {
     scanner();
+
+    ['mousedown', 'focusin', 'keydown'].forEach((evenement) => {
+      document.addEventListener(evenement, configurerAvantOuverture, true);
+    });
 
     const observateur = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
