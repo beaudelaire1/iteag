@@ -65,4 +65,22 @@
         {% if temoignage %}Envoyer la nouvelle version{% else %}Soumettre mon témoignage{% endif %}
     </button>
 </form>
+
+{% if temoignage %}
+{% comment %}
+Formulaire séparé, et non un second bouton du précédent : imbriquer deux
+« form » est invalide, et le champ « action » doit partir seul pour que la
+suppression ne soit jamais confondue avec un envoi de nouvelle version.
+{% endcomment %}
+<form method="post" class="mt-8 border-t border-warm-200 pt-6"
+      data-confirmer="Supprimer définitivement votre témoignage ? Le texte et la photo seront perdus.">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="supprimer">
+    <p class="mb-3 text-sm text-warm-500">
+        La suppression est définitive : le texte et la photo sont effacés. Vous pourrez
+        en rédiger un nouveau à tout moment.
+    </p>
+    <button type="submit" class="text-sm font-semibold text-rose-700">Supprimer mon témoignage</button>
+</form>
+{% endif %}
 {% endblock %}
