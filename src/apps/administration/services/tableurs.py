@@ -128,10 +128,14 @@ def _exporter_professeurs():
 # ══════════════════════════════════════════════
 
 COLONNES_ETUDIANTS = [
-    Colonne("numero_etudiant", "Identifiant unique", requise=True, exemple="ETU2026001"),
+    Colonne(
+        "numero_etudiant",
+        "Laisser vide pour le faire attribuer — l'email sert alors de clé",
+        exemple="ETU2026001",
+    ),
     Colonne("nom", "Nom de famille", requise=True, exemple="Marceline"),
     Colonne("prenom", "Prénom", requise=True, exemple="Josiane"),
-    Colonne("email", "Adresse électronique", exemple="josiane.marceline@example.org"),
+    Colonne("email", "Obligatoire si le numéro est laissé vide", exemple="josiane.marceline@example.org"),
     Colonne("telephone", "Téléphone", exemple="+590 690 00 00 00"),
     Colonne("parcours", "Nom exact du parcours", requise=True, exemple="Licence en théologie"),
     Colonne("promotion", "Nom exact de la promotion", requise=True, exemple="Promotion 2026"),
@@ -141,11 +145,24 @@ COLONNES_ETUDIANTS = [
 
 
 def _importer_etudiant(ligne: dict[str, str]) -> bool:
-    from apps.accounts.models import User
+    from django.utils import timezone
 
-    numero = _exiger(ligne, "numero_etudiant")
+    from apps.accounts.models import User
+    from apps.administration.services.admission import numero_etudiant_suivant
+
     nom = _exiger(ligne, "nom")
     prenom = _exiger(ligne, "prenom")
+
+    # Le numéro fait clé quand il existe ; sinon l'email. Reprendre un fichier
+    # dépourvu des deux recréerait la même personne à chaque dépôt — c'est
+    # précisément ce contre quoi la clé naturelle protège.
+    numero = (ligne.get("numero_etudiant") or "").strip()
+    email = (ligne.get("email") or "").strip()
+    if not numero and not email:
+        raise ValidationError(
+            "Renseignez « numero_etudiant » ou « email ». Sans l'un des deux, "
+            "un second import de ce fichier recréerait cette personne."
+        )
 
     parcours = Parcours.objects.filter(nom__iexact=_exiger(ligne, "parcours")).first()
     if parcours is None:
@@ -159,7 +176,10 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         attendus = ", ".join(ProfilEtudiant.StatutInscription.values)
         raise ValidationError(f"Statut inconnu : « {statut} ». Valeurs attendues : {attendus}.")
 
-    profil = ProfilEtudiant.objects.filter(numero_etudiant=numero).select_related("utilisateur").first()
+    if numero:
+        profil = ProfilEtudiant.objects.filter(numero_etudiant=numero).select_related("utilisateur").first()
+    else:
+        profil = ProfilEtudiant.objects.filter(utilisateur__email__iexact=email).select_related("utilisateur").first()
     cree = profil is None
 
     if cree:
@@ -173,7 +193,7 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
             rang += 1
         compte = User.objects.create(
             username=identifiant,
-            email=(ligne.get("email") or "").strip(),
+            email=email,
             first_name=prenom,
             last_name=nom,
             phone=(ligne.get("telephone") or "").strip(),
@@ -181,7 +201,13 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         )
         compte.set_unusable_password()
         compte.save(update_fields=["password"])
-        profil = ProfilEtudiant(utilisateur=compte, numero_etudiant=numero)
+        # Un numéro absent du fichier est attribué ici par la même fonction que
+        # l'acceptation d'une candidature : les deux voies alimentent la même
+        # série, et aucune ne peut produire un numéro que l'autre a déjà donné.
+        profil = ProfilEtudiant(
+            utilisateur=compte,
+            numero_etudiant=numero or numero_etudiant_suivant(timezone.now().year),
+        )
     else:
         compte = profil.utilisateur
         compte.first_name = prenom
