@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlencode
 
 from django.conf import settings
 
@@ -36,6 +37,24 @@ def _hote_indexable(request) -> bool:
 def site_context(request):
     """Global template context for all pages."""
     site_url = settings.SITE_URL.rstrip("/")
+    hote_indexable = _hote_indexable(request)
+    # Une page paginee est une vraie page de collection : la rabattre par
+    # canonique sur la premiere ferait disparaitre ses contenus profonds des
+    # signaux d'indexation. Les recherches et filtres, eux, ne creent pas de
+    # pages editoriales distinctes et restent consolides sur l'URL nue.
+    page = request.GET.get("page", "").strip()
+    suffixe_canonique = ""
+    if page.isdigit() and int(page) > 1:
+        suffixe_canonique = f"?{urlencode({'page': int(page)})}"
+
+    parametres_non_indexables = set(request.GET) - {"page"}
+    if not hote_indexable:
+        robots = "noindex, nofollow"
+    elif parametres_non_indexables:
+        robots = "noindex, follow"
+    else:
+        robots = "index, follow"
+
     fichiers_statiques = (
         Path(settings.BASE_DIR) / "static" / "css" / "main.css",
         Path(settings.BASE_DIR) / "static" / "js" / "iteag.js",
@@ -46,14 +65,15 @@ def site_context(request):
         "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
         "SITE_TAGLINE": "Une formation de qualité pour un service efficace",
         "SITE_URL": site_url,
-        "CANONICAL_URL": f"{site_url}{request.path}",
+        "CANONICAL_URL": f"{site_url}{request.path}{suffixe_canonique}",
+        "SEO_ROBOTS": robots,
         "SITE_EMAIL": "secretariat@iteag.org",
         "SITE_PHONE": "+590 690 37 64 17",
         "SITE_ADDRESS": "201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe",
         "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
         "ASSET_VERSION": asset_version,
-        "HOTE_INDEXABLE": _hote_indexable(request),
+        "HOTE_INDEXABLE": hote_indexable,
         # Identité légale de l'éditeur, exposée globalement parce que le pied de
         # page y renvoie depuis toutes les pages.
         "ITEAG_FORME_JURIDIQUE": settings.ITEAG_FORME_JURIDIQUE,

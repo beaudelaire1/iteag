@@ -1,0 +1,26 @@
+{% load iteag_tags %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ CANONICAL_URL }}"
+  },
+  "headline": "{{ headline|escapejs }}",
+  "description": "{{ description|default:headline|striptags|truncatechars:200|escapejs }}",
+  "inLanguage": "fr",
+  "datePublished": "{{ date_published|date:'c' }}",
+  "dateModified": "{{ date_modified|default:date_published|date:'c' }}"{% if author %},
+  "author": {
+    "@type": "Person",
+    "name": "{{ author|escapejs }}"
+  }{% endif %}{% if image_url %},
+  "image": "{{ image_url|absolute_url:SITE_URL }}"{% endif %},
+  "publisher": {
+    "@type": "EducationalOrganization",
+    "@id": "{{ SITE_URL }}/#organization",
+    "name": "{{ SITE_FULL_NAME|escapejs }}"
+  }
+}
+</script>

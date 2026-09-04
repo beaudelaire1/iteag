@@ -1,0 +1,16 @@
+{% load iteag_tags %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "{{ person.nom_complet|escapejs }}",
+  "url": "{{ CANONICAL_URL }}",
+  "description": "{{ person.biographie|default:person.specialite|striptags|truncatechars:200|escapejs }}",
+  "jobTitle": "Enseignant en théologie",
+  "worksFor": {
+    "@type": "EducationalOrganization",
+    "@id": "{{ SITE_URL }}/#organization"
+  }{% if person.photo %},
+  "image": "{{ person.photo.url|absolute_url:SITE_URL }}"{% endif %}
+}
+</script>

@@ -1,0 +1,19 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "{{ book.titre|escapejs }}",
+  "url": "{{ CANONICAL_URL }}",
+  "description": "{{ book.description|default:book.titre|striptags|truncatechars:200|escapejs }}"{% if book.auteur %},
+  "author": {
+    "@type": "Person",
+    "name": "{{ book.auteur|escapejs }}"
+  }{% endif %}{% if book.isbn %},
+  "isbn": "{{ book.isbn|escapejs }}"{% endif %}{% if book.editeur %},
+  "publisher": {
+    "@type": "Organization",
+    "name": "{{ book.editeur|escapejs }}"
+  }{% endif %},
+  "inLanguage": "fr"
+}
+</script>

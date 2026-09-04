@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block title %}{{ notice.titre }} — Bibliothèque{% endblock %}
-{% block meta_description %}{{ notice.titre }}{% if notice.auteur %} de {{ notice.auteur }}{% endif %} — Bibliothèque ITEAG.{% endblock %}
+{% block meta_description %}{{ notice.description|default:notice.titre|striptags|truncatechars:150 }}{% if notice.auteur %} — {{ notice.auteur }}{% endif %}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title=notice.titre social_description=notice.description|default:notice.auteur social_type="book" social_image_mode="none" %}{% endblock %}
+{% block json_ld %}{% include "partials/jsonld_book.html" with book=notice %}{% endblock %}
 
 {% block content %}
 <section class="section">

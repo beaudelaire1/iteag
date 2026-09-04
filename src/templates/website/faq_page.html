@@ -3,6 +3,7 @@
 
 {% block title %}FAQ — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}Retrouvez les réponses aux questions fréquentes sur l'ITEAG, les formations et les admissions.{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title="Questions fréquentes — ITEAG" social_description="Réponses pratiques sur les formations théologiques, les admissions et la vie à l’ITEAG." %}{% endblock %}
 
 {% block extra_head %}
 {% include "partials/jsonld_faq.html" with questions=page.questions %}

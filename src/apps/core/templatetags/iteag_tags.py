@@ -1,10 +1,28 @@
 """Balises de gabarit transverses."""
 
 import random
+from urllib.parse import urljoin, urlsplit
 
 from django import template
 
 register = template.Library()
+
+
+@register.filter
+def absolute_url(value, site_url: str) -> str:
+    """Rend absolue une URL d'image produite par Django/Wagtail.
+
+    Les stockages locaux renvoient un chemin ``/media/...`` tandis que R2
+    renvoie deja une URL HTTPS signee. Les apercus sociaux exigent une URL
+    absolue dans les deux cas.
+    """
+    url = str(value or "").strip()
+    if not url:
+        return ""
+    if urlsplit(url).scheme in {"http", "https"}:
+        return url
+    return urljoin(f"{str(site_url).rstrip('/')}/", url.lstrip("/"))
+
 
 # Versets affichés en bandeau. Le tirage se fait côté serveur : le contenu est
 # présent dans le HTML livré, donc indexable et lisible sans JavaScript.

@@ -2,6 +2,13 @@
 
 {% block title %}Témoignage de {{ temoignage.nom_affiche }} — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ temoignage.texte|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}
+{% if temoignage.photo %}
+    {% include "partials/social_meta.html" with social_title=temoignage.nom_affiche social_description=temoignage.texte social_type="article" social_image_url=temoignage.photo.url social_image_alt=temoignage.nom_affiche %}
+{% else %}
+    {% include "partials/social_meta.html" with social_title=temoignage.nom_affiche social_description=temoignage.texte social_type="article" social_image_mode="none" %}
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="section bg-warm-100 min-h-[70vh]">

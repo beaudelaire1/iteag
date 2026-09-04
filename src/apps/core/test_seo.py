@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -11,9 +12,11 @@ from django.template.loader import render_to_string
 from django.test import RequestFactory, override_settings
 
 from apps.core.context_processors import site_context
+from apps.core.templatetags.iteag_tags import absolute_url
 from apps.elearning.models import ModuleFormation
 from apps.formations.models import Cours, Discipline, Parcours, Professeur
 from apps.library.models import NoticeBibliographique
+from apps.website.models_publications import TemoignageEtudiant
 from apps.website.sitemaps import (
     CoursSitemap,
     ModulesPubliesSitemap,
@@ -21,6 +24,7 @@ from apps.website.sitemaps import (
     PagesPubliquesSitemap,
     ParcoursSitemap,
     ProfesseursSitemap,
+    TemoignagesPubliesSitemap,
 )
 
 
@@ -36,9 +40,66 @@ def test_robots_indique_un_seul_groupe_et_le_sitemap(client):
 
 @override_settings(SITE_URL="https://iteag.org")
 def test_url_canonique_ignore_les_parametres_de_filtrage():
-    requete = RequestFactory().get("/formations/?page=2&tri=nom")
+    requete = RequestFactory().get("/formations/?tri=nom")
 
     assert site_context(requete)["CANONICAL_URL"] == "https://iteag.org/formations/"
+
+
+@override_settings(SITE_URL="https://iteag.org", ALLOWED_HOSTS=["iteag.org"])
+def test_url_canonique_conserve_la_pagination():
+    requete = RequestFactory().get("/articles/?page=2&q=theologie", HTTP_HOST="iteag.org")
+
+    contexte = site_context(requete)
+
+    assert contexte["CANONICAL_URL"] == "https://iteag.org/articles/?page=2"
+    assert contexte["SEO_ROBOTS"] == "noindex, follow"
+
+
+def test_url_image_absolue_accepte_un_stockage_local_ou_externe():
+    assert absolute_url("/media/image.jpg", "https://iteag.org") == "https://iteag.org/media/image.jpg"
+    assert absolute_url("https://cdn.example/image.jpg", "https://iteag.org") == "https://cdn.example/image.jpg"
+
+
+@override_settings(STATIC_URL="/static/")
+def test_apercu_social_global_couvre_open_graph_et_x():
+    rendu = render_to_string(
+        "partials/social_meta.html",
+        {
+            "SITE_URL": "https://iteag.org",
+            "SITE_NAME": "ITEAG",
+            "SITE_TAGLINE": "Formation théologique",
+            "CANONICAL_URL": "https://iteag.org/formations/",
+            "social_title": "Formations — ITEAG",
+            "social_description": "Les formations de l'ITEAG.",
+        },
+    )
+
+    assert 'property="og:locale" content="fr_FR"' in rendu
+    assert 'name="twitter:card" content="summary_large_image"' in rendu
+    assert 'property="og:image" content="https://iteag.org/static/img/og-iteag.png"' in rendu
+    assert 'name="twitter:image" content="https://iteag.org/static/img/og-iteag.png"' in rendu
+
+
+def test_schema_article_est_un_json_valide_sans_image():
+    rendu = render_to_string(
+        "partials/jsonld_article.html",
+        {
+            "SITE_URL": "https://iteag.org",
+            "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
+            "CANONICAL_URL": "https://iteag.org/articles/exemple/",
+            "headline": "Une lecture de l'épître aux Romains",
+            "description": "Un article de recherche.",
+            "date_published": datetime(2026, 9, 2, tzinfo=UTC),
+            "date_modified": datetime(2026, 9, 2, tzinfo=UTC),
+            "author": "Marie Exemple",
+        },
+    )
+    donnees = json.loads(re.search(r"<script[^>]*>(.*?)</script>", rendu, re.S).group(1))
+
+    assert donnees["@type"] == "Article"
+    assert donnees["headline"] == "Une lecture de l'épître aux Romains"
+    assert donnees["author"]["name"] == "Marie Exemple"
+    assert "image" not in donnees
 
 
 @override_settings(STATIC_URL="/static/")
@@ -183,6 +244,18 @@ def test_sitemap_xml_couvre_tous_les_catalogues_publics():
         statut=ModuleFormation.StatutPublication.BROUILLON,
     )
     notice = NoticeBibliographique.objects.create(titre="Ouvrage public")
+    temoignage = TemoignageEtudiant.objects.create(
+        nom_affiche="Étudiante ITEAG",
+        texte="Une formation qui m'a fait grandir.",
+        consentement_publication=True,
+        statut=TemoignageEtudiant.Statut.PUBLIE,
+    )
+    TemoignageEtudiant.objects.create(
+        nom_affiche="Témoignage privé",
+        texte="Ne pas publier.",
+        consentement_publication=False,
+        statut=TemoignageEtudiant.Statut.PUBLIE,
+    )
     requete = RequestFactory().get("/sitemap.xml", secure=True, HTTP_HOST="iteag.org")
     reponse = sitemap(
         requete,
@@ -193,6 +266,7 @@ def test_sitemap_xml_couvre_tous_les_catalogues_publics():
             "professeurs": ProfesseursSitemap,
             "modules": ModulesPubliesSitemap,
             "bibliotheque": NoticesBibliothequeSitemap,
+            "temoignages": TemoignagesPubliesSitemap,
         },
     )
     reponse.render()
@@ -203,11 +277,14 @@ def test_sitemap_xml_couvre_tous_les_catalogues_publics():
         "https://iteag.org/formations/professeurs/",
         "https://iteag.org/e-learning/",
         "https://iteag.org/bibliotheque/",
+        "https://iteag.org/articles/",
+        "https://iteag.org/admissions/candidature/",
         f"https://iteag.org{parcours.get_absolute_url()}",
         f"https://iteag.org{cours.get_absolute_url()}",
         f"https://iteag.org{professeur.get_absolute_url()}",
         f"https://iteag.org{module.get_absolute_url()}",
         f"https://iteag.org/bibliotheque/notice/{notice.pk}/",
+        f"https://iteag.org/temoignages/{temoignage.pk}/",
     }
     exclues = {
         f"https://iteag.org{parcours_inactif.get_absolute_url()}",

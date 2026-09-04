@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags wagtailimages_tags static %}
 
-{% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.meta_description|default:"Institut de formation théologique en Guadeloupe, accessible aux Antilles et à la Guyane : parcours diplômants, cours libres et e-learning." }}{% endblock %}
+{% block title %}{{ page.seo_title|default:"Formation théologique Antilles-Guyane | ITEAG" }}{% endblock %}
+{% block meta_description %}{{ page.meta_description|default:"Étudiez la théologie en Guadeloupe avec l'ITEAG : parcours diplômants, cours libres et e-learning accessibles aux Antilles et en Guyane."|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title="ITEAG — Formation théologique aux Antilles et en Guyane" social_description=page.meta_description|default:"Parcours diplômants, cours libres et e-learning en théologie depuis la Guadeloupe, pour les Antilles et la Guyane." %}{% endblock %}
 {% block json_ld %}{% include "partials/jsonld_organization.html" %}{% endblock %}
 
 {% block content %}
@@ -208,6 +209,22 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
             {% for news in latest_news %}
             <article class="card relative group reveal">
+                {% comment %}
+                Rendition calibrée plutôt que le fichier d'origine : une image
+                d'actualité pèse souvent plusieurs Mo, et trois d'entre elles sont
+                chargées dès l'accueil. Le repli garde les cartes alignées quand
+                l'actualité n'a pas d'image à la une.
+                {% endcomment %}
+                {% if news.image %}
+                {% image news.image fill-600x340 as news_img %}
+                <img src="{{ news_img.url }}" alt=""
+                     class="mb-5 h-48 w-full rounded object-cover"
+                     width="600" height="340" loading="lazy">
+                {% else %}
+                <div class="mb-5 flex h-48 w-full items-center justify-center rounded bg-gradient-to-br from-navy-100 to-navy-50">
+                    <svg class="h-12 w-12 text-navy-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z"/></svg>
+                </div>
+                {% endif %}
                 <time class="text-xs font-medium uppercase tracking-wider text-warm-600" datetime="{{ news.date|date:'Y-m-d' }}">{{ news.date|date:'d F Y' }}</time>
                 <h3 class="text-lg mt-3 mb-3 text-navy-900">{{ news.title }}</h3>
                 {% if news.excerpt %}

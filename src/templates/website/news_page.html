@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags wagtailimages_tags %}
 
-{% block title %}{{ page.title }} — Actualités — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.excerpt|default:page.title }}{% endblock %}
+{% block title %}{{ page.seo_title|default:page.title }} — Actualités — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.meta_description|default:page.search_description|default:page.excerpt|default:page.title|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}
+{% if page.image %}
+    {% image page.image fill-1200x630 as social_image %}
+    {% include "partials/social_meta.html" with social_title=page.seo_title|default:page.title social_description=page.meta_description|default:page.search_description|default:page.excerpt|default:page.title social_type="article" social_image_url=social_image.url social_image_alt=page.image.title %}
+{% else %}
+    {% include "partials/social_meta.html" with social_title=page.seo_title|default:page.title social_description=page.meta_description|default:page.search_description|default:page.excerpt|default:page.title social_type="article" social_image_mode="none" %}
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<meta property="article:published_time" content="{{ page.date|date:'c' }}">
+<meta property="article:modified_time" content="{{ page.last_published_at|date:'c' }}">
+{% endblock %}
+
+{% block json_ld %}
+{% if page.image %}{% image page.image fill-1200x630 as structured_image %}{% endif %}
+{% include "partials/jsonld_article.html" with headline=page.title description=page.meta_description|default:page.search_description|default:page.excerpt|default:page.title date_published=page.date date_modified=page.last_published_at image_url=structured_image.url %}
+{% endblock %}
 
 {% block content %}
 <article class="py-16 lg:py-24">

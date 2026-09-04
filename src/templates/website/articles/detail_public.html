@@ -1,7 +1,26 @@
 {% extends "base.html" %}
 
 {% block title %}{{ article.titre }} — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ article.resume }}{% endblock %}
+{% block meta_description %}{{ article.resume|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}
+{% if article.image_principale %}
+    {% include "partials/social_meta.html" with social_title=article.titre social_description=article.resume social_type="article" social_image_url=article.image_principale.url social_image_alt=article.titre %}
+{% else %}
+    {% include "partials/social_meta.html" with social_title=article.titre social_description=article.resume social_type="article" social_image_mode="none" %}
+{% endif %}
+{% endblock %}
+{% block extra_head %}
+<meta property="article:published_time" content="{{ article.date_publication|date:'c' }}">
+<meta property="article:modified_time" content="{{ article.updated_at|date:'c' }}">
+<meta property="article:author" content="{{ article.nom_auteur }}">
+{% endblock %}
+{% block json_ld %}
+{% if article.image_principale %}
+    {% include "partials/jsonld_article.html" with headline=article.titre description=article.resume date_published=article.date_publication date_modified=article.updated_at author=article.nom_auteur image_url=article.image_principale.url %}
+{% else %}
+    {% include "partials/jsonld_article.html" with headline=article.titre description=article.resume date_published=article.date_publication date_modified=article.updated_at author=article.nom_auteur %}
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <article class="section">

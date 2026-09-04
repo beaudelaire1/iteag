@@ -2,7 +2,8 @@
 {% load static %}
 
 {% block title %}{{ parcours.nom }} — Formations — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ parcours.description|truncatewords:30 }}{% endblock %}
+{% block meta_description %}{{ parcours.meta_description|default:parcours.description|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title=parcours.nom social_description=parcours.meta_description|default:parcours.description social_image_mode="none" %}{% endblock %}
 
 {% block extra_head %}
 {% include "partials/jsonld_course.html" with nom=parcours.nom description=parcours.description credential=parcours.ects_requis|stringformat:"s"|add:" ECTS" niveau=parcours.get_type_parcours_display %}

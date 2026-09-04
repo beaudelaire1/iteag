@@ -251,7 +251,9 @@ class HomePage(Page):
             .prefetch_related("disciplines")
             .order_by("sans_photo", "ordre", "nom")[:4]
         )
-        context["latest_news"] = NewsPage.objects.live().public().order_by("-date")[:3]
+        # L'accueil rend l'image à la une de chaque actualité : sans jointure,
+        # chaque carte déclenche sa propre requête sur wagtailimages.
+        context["latest_news"] = NewsPage.objects.live().public().select_related("image").order_by("-date")[:3]
         context["upcoming_events"] = (
             EventPage.objects.live().public().filter(date_debut__gte=timezone.now()).order_by("date_debut")[:3]
         )

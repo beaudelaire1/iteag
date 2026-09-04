@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags %}
 
-{% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.meta_description|default:page.search_description|default:page.title }}{% endblock %}
+{% block title %}{{ page.seo_title|default:page.title }} — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.meta_description|default:page.search_description|default:page.title|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title=page.seo_title|default:page.title social_description=page.meta_description|default:page.search_description|default:page.title %}{% endblock %}
 
 {% block content %}
 <article class="py-16 lg:py-24">

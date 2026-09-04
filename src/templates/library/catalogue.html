@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Catalogue — Bibliothèque {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}Explorez les ouvrages de la bibliothèque de l'ITEAG.{% endblock %}
+{% block title %}Catalogue{% if page_obj.number > 1 %} — page {{ page_obj.number }}{% endif %} — Bibliothèque {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Explorez le catalogue de la bibliothèque de l'ITEAG : théologie, Bible, histoire de l'Église et disciplines connexes{% if page_obj.number > 1 %}, page {{ page_obj.number }}{% endif %}.{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title="Bibliothèque théologique — ITEAG" social_description="Explorez les ouvrages de la bibliothèque de l’ITEAG en théologie, Bible et histoire de l’Église." %}{% endblock %}
 
 {% block content %}
 <section class="section">
