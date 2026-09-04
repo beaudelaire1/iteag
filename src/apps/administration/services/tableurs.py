@@ -128,11 +128,10 @@ def _exporter_professeurs():
 # ══════════════════════════════════════════════
 
 COLONNES_ETUDIANTS = [
-    Colonne(
-        "numero_etudiant",
-        "Laisser vide pour le faire attribuer — l'email sert alors de clé",
-        exemple="ETU2026001",
-    ),
+    # Sans exemple : la ligne d'exemple du gabarit montre la colonne vide, ce
+    # qui est l'usage attendu. Y afficher « ETU2026001 » laissait croire qu'il
+    # fallait inventer un numéro par ligne — exactement ce qu'on vient de lever.
+    Colonne("numero_etudiant", "Laisser vide pour le faire attribuer — l'email sert alors de clé"),
     Colonne("nom", "Nom de famille", requise=True, exemple="Marceline"),
     Colonne("prenom", "Prénom", requise=True, exemple="Josiane"),
     Colonne("email", "Obligatoire si le numéro est laissé vide", exemple="josiane.marceline@example.org"),
