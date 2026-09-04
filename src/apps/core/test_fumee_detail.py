@@ -408,6 +408,7 @@ FABRIQUES = {
     "administration:etudiant_delete": (ADMIN, lambda m: {"pk": m["profil"].pk}),
     "administration:payment_update": (SECRETARIAT, lambda m: {"pk": m["paiement"].pk}),
     "administration:payment_delete": (ADMIN, lambda m: {"pk": m["paiement"].pk}),
+    "administration:correction_relance": (SECRETARIAT, lambda m: {"pk": m["evaluation"].pk}),
     "administration:promotion_update": (SECRETARIAT, lambda m: {"pk": m["promotion"].pk}),
     "administration:promotion_delete": (ADMIN, lambda m: {"pk": m["promotion"].pk}),
     "administration:credit_ects_update": (SECRETARIAT, lambda m: {"pk": m["credit"].pk}),

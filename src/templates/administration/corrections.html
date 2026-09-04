@@ -1,0 +1,82 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Suivi des corrections — {{ SITE_NAME }}{% endblock %}
+{% block portal_nav %}{% with nav='corrections' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='corrections' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 max-w-3xl">
+    <p class="overline mb-2">Scolarité</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Suivi des corrections</h1>
+    <p class="mt-3 text-sm text-warm-600">
+        Les copies remises qui attendent encore leur note, la plus ancienne d’abord.
+        Le retard se compte à partir du délai fixé sur chaque cours.
+        <strong>L’étudiant n’en est jamais informé</strong> : ce suivi sert à relancer l’enseignant.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="mb-6 flex flex-wrap items-center gap-3">
+    <a href="{% url 'administration:corrections' %}"
+       class="{% if etat != 'retard' %}btn-primary{% else %}btn-secondary{% endif %} text-sm">Toutes</a>
+    <a href="{% url 'administration:corrections' %}?etat=retard"
+       class="{% if etat == 'retard' %}btn-primary{% else %}btn-secondary{% endif %} text-sm">
+        En retard{% if nb_en_retard %} ({{ nb_en_retard }}){% endif %}
+    </a>
+</div>
+
+{% if copies %}
+<div class="space-y-4">
+    {% for copie in copies %}
+    <article class="card-elevated flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="min-w-0">
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                {% if copie.correction_en_retard %}
+                <span class="badge badge-danger">En retard</span>
+                {% else %}
+                <span class="badge badge-success">Dans les délais</span>
+                {% endif %}
+                {% if copie.depot_tardif %}<span class="badge badge-gold">Remise tardive</span>{% endif %}
+            </div>
+            <h2 class="truncate text-lg font-semibold text-navy-900">{{ copie.etudiant }}</h2>
+            <p class="mt-1 text-sm text-warm-500">
+                {{ copie.cours_session.cours.titre }} · {{ copie.cours_session.session }}
+            </p>
+            <p class="mt-1 text-sm text-warm-500">
+                Enseignant : {{ copie.cours_session.enseignant }}
+            </p>
+        </div>
+
+        <div class="text-center text-sm">
+            <p class="text-xl font-bold text-navy-900 num">{{ copie.jours_depuis_remise }}</p>
+            <p class="text-xs text-warm-500">jour(s) d’attente</p>
+            <p class="mt-1 text-xs text-warm-400">délai : {{ copie.cours_session.delai_correction_jours }} j</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            {% if copie.fichier_soumis %}
+            <a href="{{ copie.fichier_soumis.url }}" class="btn-secondary text-sm">Ouvrir la copie</a>
+            {% endif %}
+            <form method="post" action="{% url 'administration:correction_relance' copie.pk %}"
+                  data-confirmer="Relancer {{ copie.cours_session.enseignant }} pour la copie de {{ copie.etudiant }} ?">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost text-sm">Relancer l’enseignant</button>
+            </form>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+<div class="card-elevated py-12 text-center text-warm-500">
+    {% if etat == 'retard' %}
+    Aucune copie en retard de correction. Rien à relancer.
+    {% else %}
+    Aucune copie en attente de note.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
