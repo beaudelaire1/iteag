@@ -1,11 +1,20 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags wagtailimages_tags %}
 
-{% block title %}{{ page.title }} — Événements — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.search_description|default:page.title }}{% endblock %}
+{% block title %}{{ page.seo_title|default:page.title }} — Événements — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.search_description|default:page.description|default:page.title|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}
+{% if page.image %}
+    {% image page.image fill-1200x630 as social_image %}
+    {% include "partials/social_meta.html" with social_title=page.seo_title|default:page.title social_description=page.search_description|default:page.description|default:page.title social_image_url=social_image.url social_image_alt=page.image.title %}
+{% else %}
+    {% include "partials/social_meta.html" with social_title=page.seo_title|default:page.title social_description=page.search_description|default:page.description|default:page.title social_image_mode="none" %}
+{% endif %}
+{% endblock %}
 
 {% block extra_head %}
-{% include "partials/jsonld_event.html" with event=page %}
+{% if page.image %}{% image page.image fill-1200x630 as event_image %}{% endif %}
+{% include "partials/jsonld_event.html" with event=page image_url=event_image.url %}
 {% endblock %}
 
 {% block content %}

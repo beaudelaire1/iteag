@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags duree %}
 
-{% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.accroche|default:page.search_description }}{% endblock %}
+{% block title %}{{ page.seo_title|default:page.title }} — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ page.accroche|default:page.search_description|default:"Modules de formation théologique à distance proposés par l'ITEAG."|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title=page.seo_title|default:page.title social_description=page.accroche|default:page.search_description|default:"Modules de formation théologique à distance proposés par l’ITEAG." %}{% endblock %}
 
 {% block content %}
 <section class="section-hero bg-warm-100">

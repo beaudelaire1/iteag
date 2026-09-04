@@ -24,6 +24,8 @@ class PagesPubliquesSitemap(Sitemap):
             "website:politique_donnees",
             "website:politique_cookies",
             "website:mentions_legales",
+            "website:articles",
+            "admissions:candidature_form",
             "formations:parcours_list",
             "formations:professeur_list",
             "elearning:catalogue",
@@ -108,3 +110,24 @@ class ArticlesRechercheSitemap(Sitemap):
 
     def lastmod(self, item):
         return item.updated_at
+
+
+class TemoignagesPubliesSitemap(Sitemap):
+    """Témoignages dont la publication publique a été explicitement consentie."""
+
+    protocol = "https"
+    changefreq = "monthly"
+
+    def items(self):
+        from apps.website.models_publications import TemoignageEtudiant
+
+        return TemoignageEtudiant.objects.filter(
+            statut=TemoignageEtudiant.Statut.PUBLIE,
+            consentement_publication=True,
+        ).only("pk", "modifie_le")
+
+    def location(self, item):
+        return reverse("website:temoignage_public", kwargs={"pk": item.pk})
+
+    def lastmod(self, item):
+        return item.modifie_le

@@ -2,7 +2,14 @@
 {% load duree %}
 
 {% block title %}{{ module.titre }} — E-Learning — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ module.description|truncatewords:30 }}{% endblock %}
+{% block meta_description %}{{ module.description|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}
+{% if module.image_couverture %}
+    {% include "partials/social_meta.html" with social_title=module.titre social_description=module.description social_type="article" social_image_url=module.image_couverture.url social_image_alt=module.titre %}
+{% else %}
+    {% include "partials/social_meta.html" with social_title=module.titre social_description=module.description social_type="article" social_image_mode="none" %}
+{% endif %}
+{% endblock %}
 
 {% block extra_head %}
 {% comment %}

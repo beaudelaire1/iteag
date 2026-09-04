@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Articles — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}Les articles des enseignants et étudiants de l'{{ SITE_FULL_NAME }}.{% endblock %}
+{% block title %}Articles{% if page_obj.number > 1 %} — page {{ page_obj.number }}{% endif %} — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Les articles des enseignants et étudiants de l'{{ SITE_FULL_NAME }}{% if page_obj.number > 1 %}, page {{ page_obj.number }}{% endif %}.{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title="Articles de théologie — ITEAG" social_description="Recherches et réflexions en théologie, exégèse et histoire de l’Église par les enseignants et étudiants de l’ITEAG." %}{% endblock %}
 
 {% block content %}
 <section class="section">

@@ -1,0 +1,28 @@
+{% load static iteag_tags %}
+<meta property="og:title" content="{{ social_title|default:SITE_NAME|striptags }}">
+<meta property="og:description" content="{{ social_description|default:SITE_TAGLINE|striptags|truncatechars:200 }}">
+<meta property="og:type" content="{{ social_type|default:'website' }}">
+<meta property="og:site_name" content="{{ SITE_NAME }}">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:url" content="{{ CANONICAL_URL }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ social_title|default:SITE_NAME|striptags }}">
+<meta name="twitter:description" content="{{ social_description|default:SITE_TAGLINE|striptags|truncatechars:200 }}">
+{% if social_image_mode != "none" %}
+    {% if social_image_url %}
+        {% with image_absolue=social_image_url|absolute_url:SITE_URL %}
+<meta property="og:image" content="{{ image_absolue }}">
+<meta property="og:image:secure_url" content="{{ image_absolue }}">
+<meta name="twitter:image" content="{{ image_absolue }}">
+        {% endwith %}
+    {% else %}
+        {% static 'img/og-iteag.png' as image_sociale %}
+<meta property="og:image" content="{{ SITE_URL }}{{ image_sociale }}">
+<meta property="og:image:secure_url" content="{{ SITE_URL }}{{ image_sociale }}">
+<meta property="og:image:width" content="1728">
+<meta property="og:image:height" content="909">
+<meta name="twitter:image" content="{{ SITE_URL }}{{ image_sociale }}">
+    {% endif %}
+<meta property="og:image:alt" content="{{ social_image_alt|default:'ITEAG — Formation théologique aux Antilles et en Guyane' }}">
+<meta name="twitter:image:alt" content="{{ social_image_alt|default:'ITEAG — Formation théologique aux Antilles et en Guyane' }}">
+{% endif %}

@@ -22,6 +22,7 @@ from apps.website.sitemaps import (
     PagesPubliquesSitemap,
     ParcoursSitemap,
     ProfesseursSitemap,
+    TemoignagesPubliesSitemap,
 )
 
 sitemaps = {
@@ -31,6 +32,7 @@ sitemaps = {
     "parcours": ParcoursSitemap,
     "cours": CoursSitemap,
     "professeurs": ProfesseursSitemap,
+    "temoignages": TemoignagesPubliesSitemap,
     "modules": ModulesPubliesSitemap,
     "bibliotheque": NoticesBibliothequeSitemap,
 }

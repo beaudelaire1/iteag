@@ -1,12 +1,13 @@
 {# JSON-LD Event — Schema.org · PUB-013 #}
-{% load wagtailimages_tags %}
+{% load iteag_tags %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "Event",
     "name": "{{ event.title|escapejs }}",
     "description": "{{ event.search_description|default:event.title|escapejs }}",
-    "url": "{{ CANONICAL_URL }}",
+    "url": "{{ CANONICAL_URL }}",{% if image_url %}
+    "image": "{{ image_url|absolute_url:SITE_URL }}",{% endif %}
     "startDate": "{{ event.date_debut|date:'c' }}",
     {% if event.date_fin %}"endDate": "{{ event.date_fin|date:'c' }}",{% endif %}
     {% if event.lieu %}"location": {

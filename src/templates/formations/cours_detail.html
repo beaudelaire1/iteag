@@ -2,7 +2,8 @@
 {% load static %}
 
 {% block title %}{{ cours.titre }} — Formations — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ cours.description|truncatewords:30 }}{% endblock %}
+{% block meta_description %}{{ cours.description|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title=cours.titre social_description=cours.description social_image_mode="none" %}{% endblock %}
 
 {% block extra_head %}
 {% include "partials/jsonld_course.html" with nom=cours.titre description=cours.description credential=cours.ects|default:"2.5"|stringformat:"s"|add:" ECTS" %}

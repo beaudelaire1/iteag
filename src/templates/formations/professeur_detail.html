@@ -3,6 +3,14 @@
 
 {% block title %}{{ professeur.prenom }} {{ professeur.nom|upper }} — {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ professeur.nom_complet }}, enseignant à l'ITEAG — {{ professeur.specialite }}.{% endblock %}
+{% block social_meta %}
+{% if professeur.photo %}
+    {% include "partials/social_meta.html" with social_title=professeur.nom_complet social_description=professeur.biographie|default:professeur.specialite social_type="profile" social_image_url=professeur.photo.url social_image_alt=professeur.nom_complet %}
+{% else %}
+    {% include "partials/social_meta.html" with social_title=professeur.nom_complet social_description=professeur.biographie|default:professeur.specialite social_type="profile" social_image_mode="none" %}
+{% endif %}
+{% endblock %}
+{% block json_ld %}{% include "partials/jsonld_person.html" with person=professeur %}{% endblock %}
 
 {% block content %}
 

@@ -13,16 +13,11 @@
     Deux directives contradictoires sur la même page laissent croire à une
     indexation possible en relisant le HTML seul.
     {% endcomment %}
-    <meta name="robots" content="{% block robots %}{% if HOTE_INDEXABLE %}index, follow{% else %}noindex, nofollow{% endif %}{% endblock %}">
+    <meta name="robots" content="{% block robots %}{{ SEO_ROBOTS }}{% endblock %}">
     <link rel="canonical" href="{{ CANONICAL_URL }}">
 
-    {# Open Graph #}
-    <meta property="og:title" content="{% block og_title %}{{ SITE_NAME }}{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}{{ SITE_TAGLINE }}{% endblock %}">
-    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:site_name" content="{{ SITE_NAME }}">
-    <meta property="og:url" content="{{ CANONICAL_URL }}">
-    {% block og_image %}{% endblock %}
+    {# Open Graph + X/Twitter #}
+    {% block social_meta %}{% include "partials/social_meta.html" %}{% endblock %}
 
     {% load static %}
     <link rel="stylesheet" href="{% static 'fonts/fonts.css' %}">

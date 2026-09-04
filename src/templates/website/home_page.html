@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags wagtailimages_tags static %}
 
-{% block title %}{{ page.title }} — {{ SITE_NAME }}{% endblock %}
-{% block meta_description %}{{ page.meta_description|default:"Institut de formation théologique en Guadeloupe, accessible aux Antilles et à la Guyane : parcours diplômants, cours libres et e-learning." }}{% endblock %}
+{% block title %}{{ page.seo_title|default:"Formation théologique Antilles-Guyane | ITEAG" }}{% endblock %}
+{% block meta_description %}{{ page.meta_description|default:"Étudiez la théologie en Guadeloupe avec l'ITEAG : parcours diplômants, cours libres et e-learning accessibles aux Antilles et en Guyane."|striptags|truncatechars:160 }}{% endblock %}
+{% block social_meta %}{% include "partials/social_meta.html" with social_title="ITEAG — Formation théologique aux Antilles et en Guyane" social_description=page.meta_description|default:"Parcours diplômants, cours libres et e-learning en théologie depuis la Guadeloupe, pour les Antilles et la Guyane." %}{% endblock %}
 {% block json_ld %}{% include "partials/jsonld_organization.html" %}{% endblock %}
 
 {% block content %}
