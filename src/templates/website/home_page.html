@@ -209,10 +209,12 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-motion-stagger>
             {% for news in latest_news %}
             <article class="card relative group reveal">
-                {# Rendition calibrée plutôt que le fichier d'origine : une image
-                   d'actualité pèse souvent plusieurs Mo, et trois d'entre elles
-                   sont chargées dès l'accueil. Le placeholder garde les cartes
-                   alignées quand l'actualité n'a pas d'image à la une. #}
+                {% comment %}
+                Rendition calibrée plutôt que le fichier d'origine : une image
+                d'actualité pèse souvent plusieurs Mo, et trois d'entre elles sont
+                chargées dès l'accueil. Le repli garde les cartes alignées quand
+                l'actualité n'a pas d'image à la une.
+                {% endcomment %}
                 {% if news.image %}
                 {% image news.image fill-600x340 as news_img %}
                 <img src="{{ news_img.url }}" alt=""
