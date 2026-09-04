@@ -379,6 +379,16 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     taille_octets = models.BigIntegerField(default=0, verbose_name="Taille")
     checksum_sha256 = models.CharField(max_length=64, blank=True)
     poster = models.ImageField(upload_to="elearning/posters/", blank=True)
+    # Fichier déposé depuis la plateforme, gardé le temps de l'envoi chez le
+    # fournisseur puis effacé. L'institut convoie la vidéo, il ne l'héberge pas :
+    # la conserver ferait payer deux fois le même octet, sans que rien ne la lise
+    # jamais depuis ici.
+    fichier_source = models.FileField(
+        upload_to="elearning/depots/%Y/%m/",
+        blank=True,
+        verbose_name="Fichier déposé",
+        help_text="Effacé dès que le fournisseur a pris la vidéo en charge.",
+    )
 
     statut_traitement = models.CharField(
         max_length=20,

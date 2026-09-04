@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils.text import slugify
 
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
+from apps.core.validation_fichiers import RegleFichier, valider_fichier
 from apps.elearning.diffusion import fournisseur_compatible
 from apps.elearning.models import Chapitre, Lecon, ModuleFormation, RessourceLecon, SousTitre, VideoAsset
 
@@ -316,6 +317,51 @@ class SousTitreForm(FormulaireModeleITEAG):
         fichier.seek(0)
         if not entete.startswith(b"WEBVTT"):
             raise forms.ValidationError("Le fichier doit être au format WebVTT (il commence par « WEBVTT »).")
+        return fichier
+
+
+REGLE_VIDEO = RegleFichier(
+    extensions=frozenset({".mp4", ".mov", ".m4v", ".webm", ".mkv"}),
+    taille_max=2 * 1024 * 1024 * 1024,
+    message_formats="Formats acceptés : MP4, MOV, M4V, WEBM ou MKV.",
+)
+
+
+class VideoTeleversementForm(FormulaireITEAG):
+    """
+    Dépôt d'un fichier vidéo depuis la plateforme.
+
+    L'autre voie — coller le lien d'une vidéo déjà déposée — reste ouverte et
+    reste la plus légère. Celle-ci existe pour l'enseignant qui n'a pas de compte
+    chez le fournisseur et n'a pas à en avoir un : il choisit son fichier, ITEAG
+    le convoie chez Bunny et suit l'encodage à sa place.
+
+    Aucun choix de fournisseur n'est proposé, et ce n'est pas un oubli. Le modèle
+    de diffusion réserve les modules restreints aux adresses signées : YouTube et
+    Vimeo y sont du contenu public. Offrir le choix laisserait déposer un cours
+    là où le retrait d'accès est impossible.
+    """
+
+    titre = forms.CharField(
+        label="Titre de la vidéo",
+        max_length=250,
+        widget=forms.TextInput(attrs={"class": INPUT}),
+    )
+    fichier = forms.FileField(
+        label="Fichier vidéo",
+        widget=forms.ClearableFileInput(attrs={"class": FICHIER, "accept": "video/*"}),
+        help_text="2 Go au plus. Le fichier est transmis à Bunny Stream puis effacé du site.",
+    )
+    transcription = forms.CharField(
+        label="Transcription (facultative)",
+        required=False,
+        widget=forms.Textarea(attrs={"class": INPUT, "rows": 5}),
+        help_text="Améliore l'accessibilité et le référencement.",
+    )
+
+    def clean_fichier(self):
+        fichier = self.cleaned_data["fichier"]
+        valider_fichier(fichier, REGLE_VIDEO)
         return fichier
 
 
