@@ -40,6 +40,32 @@
             <button type="submit" class="btn-primary w-full justify-center">{% if modification %}Enregistrer les corrections{% else %}Ajouter à la bibliothèque{% endif %}</button>
             {% if modification %}<a href="{% url 'elearning:enseignant_videos' %}" class="btn-ghost w-full justify-center">Annuler</a>{% endif %}
         </form>
+
+        {% if depot_possible and not modification %}
+        <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5 mt-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="deposer">
+            <div>
+                <p class="overline mb-1">Sans compte chez l’hébergeur</p>
+                <h2 class="text-lg font-semibold">Déposer un fichier</h2>
+            </div>
+            <p class="text-sm text-warm-600">
+                Choisissez votre fichier : l’ITEAG l’envoie à Bunny Stream et suit l’encodage.
+                Vous serez prévenu dès que la vidéo sera prête. Rien à créer chez l’hébergeur.
+            </p>
+
+            {% include "partials/erreurs_formulaire.html" with form=form_depot %}
+            {% include "partials/champ.html" with field=form_depot.titre %}
+            {% include "partials/champ.html" with field=form_depot.fichier %}
+            {% include "partials/champ.html" with field=form_depot.transcription %}
+
+            <div class="note max-w-none"><span class="lbl">Hébergement</span>
+            Le dépôt vise Bunny Stream, seul hébergeur dont l’adresse se révoque. Une vidéo
+            destinée au public peut aussi être référencée depuis YouTube ou Vimeo, ci-dessus.</div>
+
+            <button type="submit" class="btn-primary w-full justify-center">Déposer la vidéo</button>
+        </form>
+        {% endif %}
     </section>
 
     <section class="lg:col-span-2">

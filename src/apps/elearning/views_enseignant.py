@@ -29,6 +29,7 @@ from apps.elearning.forms import (
     RessourceLeconForm,
     SousTitreForm,
     VideoExterneForm,
+    VideoTeleversementForm,
 )
 from apps.elearning.models import (
     Chapitre,
@@ -507,18 +508,71 @@ class ReordonnerLeconsView(ProfesseurMixin, View):
 
 
 class VideoUploadView(ProfesseurMixin, TemplateView):
-    """Référence une vidéo externe sans jamais recevoir son fichier."""
+    """Deux voies vers une vidéo : la référencer, ou la déposer.
+
+    Référencer reste le chemin le plus léger — le fichier ne transite pas.
+    Déposer existe pour l'enseignant qui n'a pas de compte chez le fournisseur :
+    ITEAG convoie le fichier jusqu'à Bunny et suit l'encodage à sa place.
+    """
 
     template_name = "elearning/enseignant/video_form.html"
 
     def get_context_data(self, **kwargs):
+        from apps.elearning.bunny_televersement import televersement_disponible
+
         contexte = super().get_context_data(**kwargs)
         contexte.setdefault("form", VideoExterneForm())
+        contexte.setdefault("form_depot", VideoTeleversementForm())
+        # Sans clé d'API, le dépôt échouerait à l'envoi : mieux vaut ne pas le
+        # proposer que laisser remplir un formulaire condamné.
+        contexte["depot_possible"] = televersement_disponible()
         contexte["videos"] = VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:30]
         return contexte
 
     def post(self, request, *args, **kwargs):
+        if request.POST.get("action") == "deposer":
+            return self._deposer(request)
         return self._referencer(request)
+
+    def _deposer(self, request):
+        """Déclare la vidéo chez Bunny, puis confie l'envoi au worker.
+
+        La déclaration est faite ici, en synchrone : elle est brève, et son échec
+        — clé absente, bibliothèque inconnue — doit se lire dans le formulaire
+        plutôt que se découvrir plus tard sur une fiche en erreur.
+        """
+        from apps.elearning import bunny_televersement as bunny
+        from apps.elearning.tasks import televerser_video_bunny
+
+        formulaire = VideoTeleversementForm(request.POST, request.FILES)
+        if not formulaire.is_valid():
+            return self.render_to_response(self.get_context_data(form_depot=formulaire))
+
+        titre = formulaire.cleaned_data["titre"]
+        try:
+            identifiant = bunny.creer_video(titre)
+        except bunny.TeleversementBunnyIndisponible as erreur:
+            formulaire.add_error(None, str(erreur))
+            return self.render_to_response(self.get_context_data(form_depot=formulaire))
+
+        video = VideoAsset.objects.create(
+            titre=titre,
+            cle_stockage=identifiant,
+            fournisseur="bunny",
+            fichier_source=formulaire.cleaned_data["fichier"],
+            nom_origine=formulaire.cleaned_data["fichier"].name[:250],
+            transcription=formulaire.cleaned_data["transcription"],
+            uploade_par=request.user,
+            statut_traitement=VideoAsset.StatutTraitement.EN_ATTENTE,
+        )
+        journaliser("creation", request=request, objet=video)
+        televerser_video_bunny.delay(str(video.pk))
+        messages.success(
+            request,
+            "Vidéo déposée. Son envoi et son encodage se poursuivent : "
+            "vous serez prévenu dès qu'elle sera prête.",
+        )
+        return redirect(reverse("elearning:enseignant_videos"))
 
     def _referencer(self, request):
         """La vidéo vit chez le fournisseur : on n'enregistre que sa référence."""

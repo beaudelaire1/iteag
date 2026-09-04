@@ -35,7 +35,16 @@ MIMES_CONNUS = {
         "application/zip",
     },
     ".odt": {"application/vnd.oasis.opendocument.text", "application/zip"},
+    # Vidéo. Deux familles de conteneurs seulement : ISO Base Media, qui porte
+    # « ftyp » au cinquième octet, et EBML, reconnaissable dès le premier.
+    ".mp4": {"video/mp4"},
+    ".m4v": {"video/x-m4v", "video/mp4"},
+    ".mov": {"video/quicktime", "video/mp4"},
+    ".webm": {"video/webm"},
+    ".mkv": {"video/x-matroska", "video/webm"},
 }
+CONTENEURS_ISO_BMFF = {".mp4", ".m4v", ".mov"}
+CONTENEURS_EBML = {".webm", ".mkv"}
 # Certains navigateurs et clients mobiles n'annoncent aucun type utile. Refuser
 # sur cette seule base rejetterait des dépôts parfaitement valides : c'est la
 # signature binaire qui tranche ensuite.
@@ -135,6 +144,12 @@ def _signature_valide(fichier, extension: str) -> bool:
         return entete.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
     if extension in {".docx", ".odt"}:
         return entete.startswith(b"PK\x03\x04") and _zip_valide(fichier, extension)
+    if extension in CONTENEURS_ISO_BMFF:
+        # La taille de la première boîte précède le type : « ftyp » se lit donc
+        # au cinquième octet, jamais au premier.
+        return entete[4:8] == b"ftyp"
+    if extension in CONTENEURS_EBML:
+        return entete.startswith(b"\x1a\x45\xdf\xa3")
     return False
 
 

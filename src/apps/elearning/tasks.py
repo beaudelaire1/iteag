@@ -115,6 +115,92 @@ def _notifier_depositaire(video) -> None:
     )
 
 
+@shared_task(name="elearning.televerser_video_bunny", bind=True, max_retries=0)
+def televerser_video_bunny(self, video_id: str) -> str:
+    """Pousse chez Bunny le fichier déposé, puis attend la fin de l'encodage.
+
+    La vidéo est déjà déclarée chez le fournisseur au moment où cette tâche
+    démarre : « cle_stockage » porte son identifiant. L'échec d'un envoi laisse
+    donc une vidéo vide chez Bunny plutôt qu'un enregistrement orphelin ici, ce
+    qui se répare en redéposant le fichier sur la même fiche.
+    """
+    from apps.elearning import bunny_televersement as bunny
+    from apps.elearning.models import VideoAsset
+
+    video = VideoAsset.objects.filter(pk=video_id).first()
+    if video is None:
+        logger.warning("Vidéo %s introuvable", video_id)
+        return "introuvable"
+    if not video.fichier_source:
+        logger.warning("Vidéo %s sans fichier déposé", video_id)
+        return "sans_fichier"
+
+    video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+    video.message_erreur = ""
+    video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+
+    try:
+        taille = video.fichier_source.size
+        with video.fichier_source.open("rb") as fichier:
+            bunny.envoyer_fichier(video.cle_stockage, fichier, taille)
+        video.taille_octets = taille
+        _attendre_encodage(video, bunny)
+    except Exception as erreur:  # noqa: BLE001 — toute panne doit se lire sur la fiche
+        logger.exception("Téléversement Bunny en échec pour la vidéo %s", video_id)
+        video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
+        video.message_erreur = str(erreur)[:500]
+        video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+        return "erreur"
+
+    # Le fichier a fait son office. Le garder ferait payer deux fois le même
+    # octet — une fois chez Bunny, une fois sur R2 — sans que rien ne le lise.
+    video.fichier_source.delete(save=False)
+    video.statut_traitement = VideoAsset.StatutTraitement.PRET
+    video.message_erreur = ""
+    video.save(
+        update_fields=[
+            "fichier_source",
+            "duree_secondes",
+            "taille_octets",
+            "statut_traitement",
+            "message_erreur",
+            "updated_at",
+        ]
+    )
+
+    for lecon in video.lecons.select_related("chapitre__module"):
+        if not lecon.duree_secondes:
+            lecon.duree_secondes = video.duree_secondes
+            lecon.save(update_fields=["duree_secondes", "updated_at"])
+        lecon.chapitre.module.recalculer_duree()
+
+    _notifier_depositaire(video)
+    return "pret"
+
+
+def _attendre_encodage(video, bunny, *, tentatives: int = 60, attente_secondes: int = 20) -> None:
+    """Attend que Bunny déclare la vidéo lisible.
+
+    Sans cette attente, la fiche annoncerait « prête » une vidéo encore en file
+    d'attente : l'enseignant publierait son module et les étudiants tomberaient
+    sur un lecteur vide. Vingt minutes de patience couvrent l'encodage d'une
+    séquence longue ; au-delà, l'état reste « en préparation » et se rattrape
+    en rouvrant la fiche.
+    """
+    import time
+
+    for _ in range(tentatives):
+        etat = bunny.etat_video(video.cle_stockage)
+        if etat in (bunny.ETAT_TERMINE, bunny.ETAT_RESOLUTION_TERMINEE):
+            video.duree_secondes = bunny.duree_video(video.cle_stockage) or video.duree_secondes
+            return
+        if etat == bunny.ETAT_ECHEC:
+            raise RuntimeError("Bunny a rejeté la vidéo : format illisible ou transfert interrompu.")
+        time.sleep(attente_secondes)
+
+    raise TimeoutError("Bunny n'a pas fini d'encoder la vidéo dans le délai prévu.")
+
+
 @shared_task(name="elearning.expirer_acces")
 def expirer_acces() -> int:
     from apps.elearning.services.octroi import expirer_acces_echus
