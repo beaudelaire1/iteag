@@ -17,7 +17,7 @@ from django.utils.text import slugify
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
-from apps.core.mixins import TeacherRoleRequiredMixin
+from apps.core.mixins import StaffOrTeacherRoleRequiredMixin
 from apps.core.models import Notification
 from apps.core.services.audit import journaliser
 from apps.core.services.notifications import notifier_plusieurs
@@ -87,14 +87,28 @@ def _notifier_nouveau_module_a_tous(module):
     )
 
 
-class ProfesseurMixin(TeacherRoleRequiredMixin):
-    """Restreint l'accès aux modules dont l'utilisateur est responsable."""
+class ProfesseurMixin(StaffOrTeacherRoleRequiredMixin):
+    """L'atelier de production, ouvert à l'enseignant et au personnel.
+
+    Un enseignant ne voit que les modules dont il est responsable. Le
+    secrétariat, lui, les voit tous : il saisit pour le compte des enseignants,
+    souvent parce qu'ils ne le feront pas eux-mêmes. Il désigne le responsable à
+    la création — le module reste sous la responsabilité pédagogique d'un
+    professeur, jamais d'une personne qui changera de poste.
+    """
 
     @property
     def professeur(self):
         return getattr(self.request.user, "profil_professeur", None)
 
+    @property
+    def est_personnel(self) -> bool:
+        utilisateur = self.request.user
+        return bool(getattr(utilisateur, "is_admin", False) or getattr(utilisateur, "is_secretariat", False))
+
     def mes_modules(self):
+        if self.est_personnel:
+            return ModuleFormation.objects.all()
         if self.professeur is None:
             return ModuleFormation.objects.none()
         return ModuleFormation.objects.filter(responsable=self.professeur)
@@ -131,9 +145,15 @@ class ModuleCreateView(ProfesseurMixin, CreateView):
     form_class = ModuleForm
     template_name = "elearning/enseignant/module_form.html"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["personnel"] = self.est_personnel
+        return kwargs
+
     def form_valid(self, form):
         module = form.save(commit=False)
-        module.responsable = self.professeur
+        # Le personnel désigne le responsable ; l'enseignant l'est d'office.
+        module.responsable = form.cleaned_data.get("responsable") or self.professeur
         module.slug = ModuleForm._slug_libre(module.titre)
         module.save()
         form.save_m2m()
@@ -150,6 +170,11 @@ class ModuleUpdateView(ProfesseurMixin, UpdateView):
 
     def get_queryset(self):
         return self.mes_modules()
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["personnel"] = self.est_personnel
+        return kwargs
 
     def form_valid(self, form):
         module = form.save()

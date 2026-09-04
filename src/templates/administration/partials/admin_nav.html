@@ -31,6 +31,10 @@
     {% include "partials/nav_icon.html" with name="check" only %}
     Corrections
 </a>
+<a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-link">
+    {% include "partials/nav_icon.html" with name="video" only %}
+    Modules et ateliers
+</a>
 
 <p class="portal-nav-group">Scolarité</p>
 <a href="{% url 'administration:etudiants' %}" class="portal-nav-link {% if nav == 'etudiants' %}active{% endif %}">
