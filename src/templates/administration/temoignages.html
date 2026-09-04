@@ -77,6 +77,16 @@
                 <button type="submit" class="btn-ghost">Refuser</button>
             </form>
             {% endif %}
+
+            {% if temoignage.statut != 'publie' %}
+            <form method="post" action="{% url 'website:temoignage_decision' %}" class="sm:ml-auto sm:self-center"
+                  data-confirmer="Supprimer définitivement le témoignage de {{ temoignage.nom_affiche }} ? Le texte et la photo seront perdus.">
+                {% csrf_token %}
+                <input type="hidden" name="temoignage_id" value="{{ temoignage.pk }}">
+                <input type="hidden" name="action" value="supprimer">
+                <button type="submit" class="text-sm font-semibold text-rose-700">Supprimer</button>
+            </form>
+            {% endif %}
         </div>
     </article>
     {% empty %}

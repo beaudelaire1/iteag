@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from apps.academics.models import ProfilEtudiant, Promotion
 from apps.accounts.models import User
-from apps.core.models import Notification
+from apps.core.models import JournalAudit, Notification
 from apps.formations.models import Parcours
 from apps.website.models_publications import TemoignageEtudiant
 
@@ -243,6 +243,114 @@ class TestModeration:
         assert TemoignageEtudiant.objects.filter(pk=temoignage.pk).exists()
         assert Notification.objects.filter(destinataire=etudiant, titre__contains="retiré du site").exists()
         assert "publié qui pourra ensuite être retiré" not in _rendu_public()
+
+
+class TestSuppression:
+    """
+    Le CRUD s'arrêtait au changement de statut.
+
+    Publier, refuser et retirer déplacent un témoignage d'un état à l'autre,
+    mais rien ne permettait de l'effacer : ni à la direction devant un texte
+    qui n'a pas à rester en base, ni à l'étudiant voulant retirer ses propres
+    mots. Un retrait laisse le texte enregistré — c'est son intérêt, et c'est
+    aussi pourquoi il ne remplace pas une suppression.
+    """
+
+    def _en_attente(self, etudiant, **extra):
+        return TemoignageEtudiant.objects.create(
+            etudiant=etudiant,
+            nom_affiche="Maya Jean",
+            texte="Un témoignage soumis que la direction peut décider d'effacer définitivement.",
+            consentement_publication=True,
+            **extra,
+        )
+
+    def test_la_direction_supprime_un_temoignage_et_notifie_l_etudiant(self, client, admin, etudiant):
+        temoignage = self._en_attente(etudiant)
+        client.force_login(admin)
+        reponse = client.post(
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "supprimer"},
+        )
+        assert reponse.status_code == 302
+        assert not TemoignageEtudiant.objects.filter(pk=temoignage.pk).exists()
+        assert Notification.objects.filter(destinataire=etudiant, titre__contains="supprimé").exists()
+
+    def test_un_temoignage_publie_doit_d_abord_etre_retire(self, client, admin, etudiant):
+        """Deux gestes valent mieux qu'un clic irréversible sur une ligne en ligne."""
+        temoignage = self._en_attente(
+            etudiant,
+            statut=TemoignageEtudiant.Statut.PUBLIE,
+            valide_le=timezone.now(),
+            valide_par=admin,
+        )
+        client.force_login(admin)
+        client.post(
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "supprimer"},
+        )
+        assert TemoignageEtudiant.objects.filter(pk=temoignage.pk).exists()
+
+    def test_la_suppression_emporte_la_photo(self, client, admin, etudiant):
+        """Django ne supprime jamais le fichier d'un FileField avec la ligne."""
+        from django.core.files.storage import default_storage
+
+        temoignage = self._en_attente(etudiant, photo=_petite_photo())
+        nom_fichier = temoignage.photo.name
+        assert default_storage.exists(nom_fichier)
+
+        client.force_login(admin)
+        client.post(
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "supprimer"},
+        )
+        assert not default_storage.exists(nom_fichier)
+
+    def test_la_suppression_est_journalisee(self, client, admin, etudiant):
+        """L'objet disparaît : sans trace, plus rien ne dit qu'il a existé."""
+        temoignage = self._en_attente(etudiant)
+        client.force_login(admin)
+        client.post(
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "supprimer"},
+        )
+        assert JournalAudit.objects.filter(
+            action=JournalAudit.Action.SUPPRESSION,
+            objet_type="TemoignageEtudiant",
+            objet_id=str(temoignage.pk),
+        ).exists()
+
+    def test_le_secretariat_ne_peut_pas_supprimer(self, client, secretaire, etudiant):
+        temoignage = self._en_attente(etudiant)
+        client.force_login(secretaire)
+        client.post(
+            reverse("website:temoignage_decision"),
+            {"temoignage_id": temoignage.pk, "action": "supprimer"},
+        )
+        assert TemoignageEtudiant.objects.filter(pk=temoignage.pk).exists()
+
+    def test_l_etudiant_supprime_son_propre_temoignage(self, client, etudiant):
+        temoignage = self._en_attente(etudiant)
+        client.force_login(etudiant)
+        reponse = client.post(reverse("website:temoignage_etudiant"), {"action": "supprimer"})
+        assert reponse.status_code == 302
+        assert not TemoignageEtudiant.objects.filter(pk=temoignage.pk).exists()
+
+    def test_le_retrait_par_l_auteur_d_un_texte_publie_avertit_la_direction(self, client, admin, etudiant):
+        """La direction croirait sinon le témoignage toujours en ligne."""
+        self._en_attente(
+            etudiant,
+            statut=TemoignageEtudiant.Statut.PUBLIE,
+            valide_le=timezone.now(),
+            valide_par=admin,
+        )
+        client.force_login(etudiant)
+        client.post(reverse("website:temoignage_etudiant"), {"action": "supprimer"})
+        assert Notification.objects.filter(destinataire=admin, titre__contains="retiré par son auteur").exists()
+
+    def test_supprimer_sans_temoignage_ne_casse_pas(self, client, etudiant):
+        client.force_login(etudiant)
+        assert client.post(reverse("website:temoignage_etudiant"), {"action": "supprimer"}).status_code == 302
 
 
 class TestPublicationPublique:

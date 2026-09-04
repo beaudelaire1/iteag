@@ -66,7 +66,51 @@ class TemoignageEtudiantView(StudentRoleRequiredMixin, TemplateView):
         )
         return contexte
 
+    def supprimer(self, request):
+        """Retrait complet à l'initiative de l'auteur.
+
+        Modifier son texte le renvoie en validation, sans jamais l'effacer :
+        seul ce geste le fait disparaître. Un étudiant qui se ravise n'a pas à
+        demander à la direction de retirer ses propres mots.
+        """
+        temoignage = self._temoignage()
+        if temoignage is None:
+            messages.error(request, "Vous n'avez aucun témoignage à supprimer.")
+            return redirect("website:temoignage_etudiant")
+
+        etait_publie = temoignage.statut == TemoignageEtudiant.Statut.PUBLIE
+        nom = temoignage.nom_affiche
+        identifiant = str(temoignage.pk)
+
+        if temoignage.photo:
+            temoignage.photo.delete(save=False)
+        temoignage.delete()
+
+        journaliser(
+            JournalAudit.Action.SUPPRESSION,
+            utilisateur=request.user,
+            request=request,
+            objet_type="TemoignageEtudiant",
+            objet_id=identifiant,
+            objet_libelle=f"Témoignage « {nom} » supprimé par son auteur",
+        )
+        # La direction avait validé ce texte : sans cet avis, elle le croirait
+        # toujours en ligne.
+        if etait_publie:
+            notifier_plusieurs(
+                User.objects.filter(is_active=True, role=User.Role.ADMIN),
+                f"Témoignage retiré par son auteur — {nom}",
+                type_notification=Notification.Type.SYSTEME,
+                message=f"{nom} a supprimé son témoignage, qui était publié sur le site.",
+                url_cible=reverse("website:temoignages_gestion"),
+            )
+        messages.success(request, "Votre témoignage a été supprimé.")
+        return redirect("website:temoignage_etudiant")
+
     def post(self, request, *args, **kwargs):
+        if request.POST.get("action") == "supprimer":
+            return self.supprimer(request)
+
         formulaire = TemoignageEtudiantForm(request.POST, request.FILES)
         if not formulaire.is_valid():
             return self.render_to_response(self.get_context_data(form=formulaire))
@@ -191,6 +235,46 @@ class TemoignageDecisionView(AdminRoleRequiredMixin, View):
                 "La direction a retiré votre témoignage de l'affichage public. "
                 "Il reste enregistré dans votre espace et pourra être republié ultérieurement."
             )
+        elif action == "supprimer":
+            # Le retrait fait déjà disparaître un témoignage du site, sans rien
+            # perdre. La suppression, elle, est définitive : l'exiger en deux
+            # temps évite qu'un clic sur une ligne publiée efface le texte.
+            if temoignage.statut == TemoignageEtudiant.Statut.PUBLIE:
+                messages.error(request, "Retirez d'abord du site un témoignage publié avant de le supprimer.")
+                return redirect("website:temoignages_gestion")
+
+            nom = temoignage.nom_affiche
+            etudiant = temoignage.etudiant
+            libelle_audit = f"Témoignage « {nom} »"
+            identifiant = str(temoignage.pk)
+
+            # Django ne supprime jamais le fichier d'un FileField avec la ligne :
+            # sans cet appel, la photo resterait sur R2 sans rien pour la citer.
+            if temoignage.photo:
+                temoignage.photo.delete(save=False)
+            temoignage.delete()
+
+            journaliser(
+                JournalAudit.Action.SUPPRESSION,
+                utilisateur=request.user,
+                request=request,
+                objet_type="TemoignageEtudiant",
+                objet_id=identifiant,
+                objet_libelle=libelle_audit,
+            )
+            notifier(
+                etudiant,
+                "Votre témoignage ITEAG a été supprimé",
+                type_notification=Notification.Type.SYSTEME,
+                message=(
+                    "La direction a supprimé votre témoignage. Vous pouvez en rédiger un nouveau "
+                    "depuis votre espace étudiant."
+                ),
+                details=details,
+                url_cible=reverse("website:temoignage_etudiant"),
+            )
+            messages.success(request, f"Le témoignage de {nom} a été supprimé.")
+            return redirect("website:temoignages_gestion")
         else:
             messages.error(request, "Action inconnue.")
             return redirect("website:temoignages_gestion")
