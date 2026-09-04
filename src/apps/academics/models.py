@@ -50,15 +50,24 @@ class ProfilEtudiant(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="profil_etudiant",
     )
+    # Facultatifs pour permettre la reprise d'un effectif existant : les listes
+    # que le secrétariat importe portent des noms, des emails et rarement le
+    # rattachement pédagogique exact. Exiger l'un et l'autre à l'import
+    # obligeait à renseigner à la main, avant tout dépôt, ce que la fiche sert
+    # justement à compléter ensuite.
     parcours = models.ForeignKey(
         "formations.Parcours",
         on_delete=models.PROTECT,
         related_name="etudiants",
+        null=True,
+        blank=True,
     )
     promotion = models.ForeignKey(
         Promotion,
         on_delete=models.PROTECT,
         related_name="etudiants",
+        null=True,
+        blank=True,
     )
     numero_etudiant = models.CharField(max_length=20, unique=True, verbose_name="Numéro étudiant")
     statut_inscription = models.CharField(
@@ -102,6 +111,12 @@ class ProfilEtudiant(TimeStampedModel):
 
     @property
     def ects_restants(self):
+        # Sans parcours, aucun total n'est exigé de cet étudiant : il n'y a donc
+        # rien « à valider ». L'état est transitoire — le secrétariat rattache
+        # le parcours après la reprise — et zéro se lit là où « None » s'écrirait
+        # en toutes lettres dans la fiche.
+        if self.parcours_id is None:
+            return 0
         return self.parcours.ects_requis - self.total_ects_acquis
 
 
