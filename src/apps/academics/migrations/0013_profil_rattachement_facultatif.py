@@ -5,21 +5,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('academics', '0012_modes_paiement_hors_ligne'),
-        ('formations', '0004_bibliographie_cours'),
+        ("academics", "0012_modes_paiement_hors_ligne"),
+        ("formations", "0004_bibliographie_cours"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='profiletudiant',
-            name='parcours',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='etudiants', to='formations.parcours'),
+            model_name="profiletudiant",
+            name="parcours",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="etudiants",
+                to="formations.parcours",
+            ),
         ),
         migrations.AlterField(
-            model_name='profiletudiant',
-            name='promotion',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='etudiants', to='academics.promotion'),
+            model_name="profiletudiant",
+            name="promotion",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="etudiants",
+                to="academics.promotion",
+            ),
         ),
     ]
