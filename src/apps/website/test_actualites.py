@@ -163,6 +163,22 @@ class TestBrochure:
         assert reponse.status_code == 200
         assert not NewsPage.objects.filter(title="Journée portes ouvertes").exists()
 
+    def test_un_bouton_dedie_mene_a_la_publication_d_une_brochure(self, client, secretaire, index):
+        """
+        « Publier une brochure » doit se voir, pas se déduire.
+
+        Le champ vivait dans le formulaire d'actualité : il fallait comprendre
+        que publier une brochure revenait à écrire une actualité et y joindre un
+        PDF. Ce raisonnement n'a pas à être demandé.
+        """
+        client.force_login(secretaire)
+        liste = client.get(reverse("website:actualites_gestion")).content.decode()
+        assert "Publier une brochure" in liste
+
+        formulaire = client.get(reverse("website:actualite_creation"), {"brochure": "1"}).content.decode()
+        assert "Publier une brochure" in formulaire
+        assert "n’est pas obligatoire" in formulaire
+
     def test_un_fichier_renomme_en_pdf_est_refuse(self, client, secretaire, index):
         """L'extension ne prouve rien : c'est la signature qui tranche."""
         client.force_login(secretaire)

@@ -187,16 +187,16 @@ class LeconForm(FormulaireModeleITEAG):
 
     video_fichier = forms.FileField(
         required=False,
-        label="Déposer un fichier vidéo",
+        label="Votre fichier vidéo",
         widget=forms.ClearableFileInput(attrs={"class": FICHIER, "accept": "video/*"}),
-        help_text="Hébergé sur Bunny Stream. 2 Go au plus. L'encodage se poursuit après l'enregistrement.",
+        help_text="La mise en ligne se fait toute seule. 2 Go au plus.",
     )
     video_lien = forms.URLField(
         required=False,
         max_length=500,
-        label="Ou coller le lien d'une vidéo en ligne",
+        label="Lien d'une vidéo déjà en ligne",
         widget=forms.URLInput(attrs={"class": INPUT, "placeholder": "https://www.youtube.com/watch?v=…"}),
-        help_text="Bunny Stream, Vimeo ou YouTube — l'hébergeur est reconnu depuis l'adresse.",
+        help_text="YouTube, Vimeo ou Bunny Stream.",
     )
 
     class Meta:
@@ -252,6 +252,17 @@ class LeconForm(FormulaireModeleITEAG):
     def clean_duree_secondes(self):
         return self.cleaned_data.get("duree_secondes") or 0
 
+    _source_video_refusee = False
+
+    def _post_clean(self):
+        super()._post_clean()
+        # Le modèle exige une vidéo et le signale sur la liste déroulante. Quand
+        # l'absence de source a déjà été dite sur le champ de dépôt, ce second
+        # message désigne le mauvais endroit : il envoie chercher dans une liste
+        # vide ce qu'on attend d'un fichier.
+        if self._source_video_refusee:
+            self._errors.pop("video", None)
+
     def _resoudre_la_video(self, donnees) -> None:
         """Une leçon vidéo tient d'une source, et d'une seule.
 
@@ -270,16 +281,12 @@ class LeconForm(FormulaireModeleITEAG):
 
         sources = [source for source in (existante, fichier, lien) if source]
         if not sources:
-            self.add_error(
-                "video_fichier",
-                "Choisissez une vidéo déjà enregistrée, déposez un fichier, ou collez un lien.",
-            )
+            self._source_video_refusee = True
+            self.add_error("video_fichier", "Choisissez votre fichier vidéo.")
             return
         if len(sources) > 1:
-            self.add_error(
-                "video_fichier",
-                "Une seule source à la fois : une vidéo existante, un fichier, ou un lien.",
-            )
+            self._source_video_refusee = True
+            self.add_error("video_fichier", "Une seule vidéo à la fois : un fichier, un lien, ou une vidéo déjà là.")
             return
 
         if fichier:
