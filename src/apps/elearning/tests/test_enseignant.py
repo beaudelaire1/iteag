@@ -274,7 +274,10 @@ class TestCycleDeVieDUnModule:
             {"titre": "Sans vidéo", "type_lecon": Lecon.TypeLecon.VIDEO, "ordre": 1},
         )
         assert reponse.status_code == 200
-        assert b"doit r" in reponse.content  # « doit référencer un fichier »
+        # Le refus se dit désormais sur le champ de dépôt, en désignant le geste
+        # attendu. L'ancien message du modèle envoyait chercher dans une liste
+        # déroulante vide ce qu'on attend d'un fichier.
+        assert "Choisissez votre fichier vidéo" in reponse.content.decode()
         assert not Lecon.objects.filter(titre="Sans vidéo").exists()
 
     def test_je_ne_peux_rattacher_que_mes_propres_videos(

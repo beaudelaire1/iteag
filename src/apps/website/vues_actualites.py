@@ -147,6 +147,10 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
             **super().get_context_data(**kwargs),
             "nav": "actualites",
             "actualite": actualite,
+            # Publier une brochure, c'est publier une actualité qui porte un
+            # document — mais personne n'a à le déduire. L'écran le dit, et se
+            # présente autrement selon le bouton par lequel on est arrivé.
+            "mode_brochure": self.request.GET.get("brochure") == "1" and actualite is None,
             "form": kwargs.get("form") or ActualiteForm(initial=self._valeurs_initiales(actualite)),
         }
 

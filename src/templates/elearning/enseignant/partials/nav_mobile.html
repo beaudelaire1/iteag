@@ -1,1 +1,4 @@
-{% include "lms/partials/teacher_nav_mobile.html" %}
+{% comment %}Même règle que la barre latérale : chacun garde sa navigation.{% endcomment %}
+{% if user.is_admin %}{% include "administration/partials/admin_nav_mobile.html" %}
+{% elif user.is_secretariat %}{% include "administration/partials/secretariat_nav_mobile.html" %}
+{% else %}{% include "lms/partials/teacher_nav_mobile.html" %}{% endif %}

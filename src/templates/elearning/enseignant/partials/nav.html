@@ -1,2 +1,13 @@
-{% comment %}Une seule barre pour l’espace enseignant : le présentiel et la vidéo n’en font qu’un.{% endcomment %}
-{% include "lms/partials/teacher_nav.html" %}
+{% comment %}
+Une seule barre pour l’espace enseignant : le présentiel et la vidéo n’en font qu’un.
+
+Le secrétariat travaille désormais dans cet atelier, puisqu’il y monte les
+modules et les ateliers. Lui servir la barre de l’enseignant le renvoyait vers
+des écrans qui ne le concernent pas — « Mes enseignements », « Propositions » —
+et surtout lui faisait perdre la sienne : plus d’Actualités, plus de
+candidatures, aucun retour. Chacun garde donc sa navigation, quel que soit
+l’écran où il travaille.
+{% endcomment %}
+{% if user.is_admin %}{% include "administration/partials/admin_nav.html" %}
+{% elif user.is_secretariat %}{% include "administration/partials/secretariat_nav.html" %}
+{% else %}{% include "lms/partials/teacher_nav.html" %}{% endif %}

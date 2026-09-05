@@ -14,7 +14,10 @@
             Les annonces de l'institut, telles qu'elles paraissent sur le site public.
         </p>
     </div>
-    <a href="{% url 'website:actualite_creation' %}" class="btn-primary">Écrire une actualité</a>
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'website:actualite_creation' %}" class="btn-primary">Écrire une actualité</a>
+        <a href="{% url 'website:actualite_creation' %}?brochure=1" class="btn-secondary">Publier une brochure</a>
+    </div>
 </div>
 {% endblock %}
 
