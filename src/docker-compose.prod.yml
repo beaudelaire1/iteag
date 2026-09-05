@@ -2,6 +2,15 @@
 # Chemin : src/docker-compose.prod.yml
 
 x-application: &application
+  # Chaque construction porte le SHA qu'elle sert. Sans cette étiquette, toutes
+  # les constructions se succèdent sous le même nom d'image : celle qui tournait
+  # perd son nom au profit de la suivante, puis le premier nettoyage Docker
+  # l'efface. « Redéployer l'image précédente » ne désigne alors plus rien, et un
+  # déploiement raté n'a pas d'issue autre que réparer le code, en direct, site
+  # éteint. Étiquetée par révision, l'ancienne image reste désignable : le repli
+  # est une commande, pas un correctif d'urgence.
+  image: iteag-app:${ITEAG_REVISION:?ITEAG_REVISION est aussi l'étiquette de l'image ; sans elle, aucun repli n'est possible}
+
   build:
     context: .
     dockerfile: Dockerfile.prod
