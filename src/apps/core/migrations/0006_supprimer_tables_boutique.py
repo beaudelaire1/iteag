@@ -54,7 +54,9 @@ def supprimer_les_tables(apps, schema_editor):
         # Sans cette purge, l'historique continuerait d'affirmer que « commerce »
         # et « paiements » sont appliquées, et un futur « showmigrations »
         # afficherait des apps que plus rien ne définit.
-        curseur.execute("DELETE FROM django_migrations WHERE app IN %s", [APPS_RETIREES])
+        # « = ANY(%s) » et non « IN %s » : psycopg3 n'adapte pas un tuple Python
+        # en liste SQL, il le sérialise en chaîne et la requête ne compile pas.
+        curseur.execute("DELETE FROM django_migrations WHERE app = ANY(%s)", [list(APPS_RETIREES)])
 
 
 def ne_rien_recreer(apps, schema_editor):
