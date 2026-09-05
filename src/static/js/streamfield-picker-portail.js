@@ -18,6 +18,11 @@
     if (!instance || typeof instance.setProps !== 'function') return;
 
     instance.setProps({
+      // Rendu à la racine du document, et non près du bouton. Un ancêtre qui
+      // masque son débordement — une carte, une section du portail — découpe
+      // sinon le panneau : il s'ouvre, on en voit le haut, et le reste est
+      // tranché net. Sorti du flux, plus rien ne peut le rogner.
+      appendTo: () => document.body,
       placement: 'auto',
       popperOptions: {
         modifiers: [
