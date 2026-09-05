@@ -131,6 +131,38 @@ class TestBrochure:
 
         assert "Document à télécharger" not in client.get(page.url).content.decode()
 
+    def test_une_brochure_se_publie_sans_un_mot(self, client, secretaire, index):
+        """
+        Le document se suffit à lui-même.
+
+        Exiger un bloc de contenu obligeait à écrire « voici le programme de la
+        rentrée » au-dessus du PDF qui le dit déjà — et, faute de l'écrire, le
+        formulaire était rejeté sans que la brochure soit enregistrée.
+        """
+        client.force_login(secretaire)
+        # « contenu-count: 0 » est ce que poste réellement l'éditeur laissé vide.
+        donnees = _saisie(brochure=_brochure(), brochure_libelle="Programme de la rentrée")
+        donnees.pop("corps")
+        donnees["contenu-count"] = "0"
+
+        reponse = client.post(reverse("website:actualite_creation"), donnees)
+
+        assert reponse.status_code == 302
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+        assert page.brochure_id is not None
+
+    def test_ni_texte_ni_brochure_reste_refuse(self, client, secretaire, index):
+        """Une actualité doit porter quelque chose : du texte, ou un document."""
+        client.force_login(secretaire)
+        donnees = _saisie()
+        donnees.pop("corps")
+        donnees["contenu-count"] = "0"
+
+        reponse = client.post(reverse("website:actualite_creation"), donnees)
+
+        assert reponse.status_code == 200
+        assert not NewsPage.objects.filter(title="Journée portes ouvertes").exists()
+
     def test_un_fichier_renomme_en_pdf_est_refuse(self, client, secretaire, index):
         """L'extension ne prouve rien : c'est la signature qui tranche."""
         client.force_login(secretaire)
