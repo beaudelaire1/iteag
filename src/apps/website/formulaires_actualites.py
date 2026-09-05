@@ -60,7 +60,9 @@ class ActualiteForm(FormulaireITEAG):
     brochure = forms.FileField(
         required=False,
         label="Brochure ou document",
-        help_text="Facultatif. PDF ou bureautique, 20 Mo au plus. Un bouton de téléchargement apparaît sous l'actualité.",
+        help_text=(
+            "Facultatif. PDF ou bureautique, 20 Mo au plus. Un bouton de téléchargement apparaît sous l'actualité."
+        ),
         widget=forms.ClearableFileInput(attrs={"class": "form-file", "accept": REGLE_BROCHURE.accept}),
     )
     brochure_libelle = forms.CharField(

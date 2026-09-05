@@ -1,17 +1,27 @@
 """
-Éprouve la signature Bunny contre le compte réel.
+Éprouve les identifiants Bunny contre le compte réel.
 
-Pourquoi cette commande existe : la signature est la seule partie du dispositif
-vidéo qui ne peut pas être vérifiée hors ligne. Nos tests confirment que le
-jeton est *formé* comme nous l'avons décidé — ils ne peuvent pas confirmer que
-le CDN l'*accepte*. Seul un aller-retour avec le compte le dit.
+Pourquoi cette commande existe : le dialogue avec Bunny est la seule partie du
+dispositif vidéo qui ne peut pas être vérifiée hors ligne. Nos tests confirment
+que le jeton et l'en-tête sont *formés* comme nous l'avons décidé — ils ne
+peuvent pas confirmer que Bunny les *accepte*. Seul un aller-retour le dit.
 
-Elle vérifie les deux étapes, car la première réussit souvent quand la seconde
-échoue : le manifeste se charge, puis chaque segment est refusé, et la lecture
-s'arrête après quelques secondes en paraissant d'abord fonctionner. C'est le
-défaut qu'un jeton de fichier, au lieu d'un jeton de répertoire, produit.
+Deux clés, deux usages, et la commande éprouve les deux :
 
-Aucun secret n'est affiché : ni la clé, ni le jeton complet.
+  · **La clé d'API du dépôt** autorise à créer et à téléverser. Elle n'était pas
+    contrôlée ici, si bien qu'une clé fausse ne se découvrait que le jour où
+    quelqu'un déposait une vidéo — et sortait alors en « 401 » brut devant un
+    utilisateur. C'est arrivé.
+  · **La clé de signature** autorise à lire. Sa vérification passe par deux
+    étapes, car la première réussit souvent quand la seconde échoue : le
+    manifeste se charge, puis chaque segment est refusé, et la lecture s'arrête
+    après quelques secondes en paraissant d'abord fonctionner. C'est le défaut
+    qu'un jeton de fichier, au lieu d'un jeton de répertoire, produit.
+
+Sans argument, seule la clé d'API est éprouvée — c'est le contrôle qui ne
+demande rien à personne. L'identifiant d'une vidéo ajoute l'épreuve de lecture.
+
+Aucun secret n'est affiché : ni les clés, ni le jeton complet.
 """
 
 import time
@@ -22,6 +32,7 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.elearning import bunny_televersement as depot
 from apps.elearning.diffusion import BunnyStreamVideo
 
 DELAI = 15
@@ -54,14 +65,28 @@ def _premier_segment(manifeste: str) -> str:
 
 
 class Command(BaseCommand):
-    help = "Vérifie la signature Bunny sur une vidéo réelle : manifeste puis segment."
+    help = "Vérifie les identifiants Bunny : clé d'API du dépôt, puis signature de lecture sur une vidéo réelle."
 
     def add_arguments(self, analyseur):
-        analyseur.add_argument("identifiant", help="Identifiant de la vidéo dans la bibliothèque Bunny")
+        analyseur.add_argument(
+            "identifiant",
+            nargs="?",
+            default="",
+            help="Identifiant d'une vidéo de la bibliothèque. Sans lui, seule la clé d'API est éprouvée.",
+        )
         analyseur.add_argument("--ip", default="", help="Adresse à lier, si la liaison est activée")
         analyseur.add_argument("--ttl", type=int, default=300, help="Durée de validité du jeton, en secondes")
 
     def handle(self, *args, **options):
+        identifiant = options["identifiant"]
+
+        self._eprouver_la_cle_de_depot()
+
+        if not identifiant:
+            self.stdout.write(self.style.MIGRATE_HEADING("\nLecture"))
+            self.stdout.write("  Non éprouvée — passer l'identifiant d'une vidéo pour la contrôler aussi.")
+            return
+
         zone = getattr(settings, "BUNNY_ZONE_DIFFUSION", "").rstrip("/")
         cle = getattr(settings, "BUNNY_CLE_SIGNATURE", "")
         if not zone or not cle:
@@ -71,12 +96,11 @@ class Command(BaseCommand):
                 "de l'authentification par jeton de la zone de diffusion."
             )
 
-        identifiant = options["identifiant"]
         backend = BunnyStreamVideo()
         expiration = int(time.time()) + options["ttl"]
         adresse_ip = options["ip"]
 
-        self.stdout.write(self.style.MIGRATE_HEADING("\nConfiguration"))
+        self.stdout.write(self.style.MIGRATE_HEADING("\nLecture — configuration de la zone"))
         self.stdout.write(f"  Zone de diffusion   {zone}")
         self.stdout.write(f"  Clé de signature    {'renseignée (' + str(len(cle)) + ' caractères)'}")
         self.stdout.write(f"  Liaison d'adresse   {'oui — ' + adresse_ip if adresse_ip else 'non'}")
@@ -119,6 +143,39 @@ class Command(BaseCommand):
                     "  ou référent ne s'ajoute dans la bibliothèque Bunny."
                 )
             )
+
+    def _eprouver_la_cle_de_depot(self) -> None:
+        """La clé qui autorise à déposer — celle dont le refus sortait en 401 brut.
+
+        Un refus arrête la commande. Ce n'est pas un excès de zèle : le dépôt est
+        le seul chemin par lequel un enseignant sans compte Bunny crée une leçon
+        vidéo. Refusé, il ne peut plus créer la leçon, donc plus lui attacher de
+        ressource. Laisser le contrôle continuer en signalant la chose au passage
+        reviendrait à la faire glisser sous les lignes suivantes.
+        """
+        self.stdout.write(self.style.MIGRATE_HEADING("\nDépôt — clé d'API de la bibliothèque"))
+
+        bibliotheque = str(getattr(settings, "BUNNY_STREAM_LIBRARY_ID", "") or "").strip()
+        cle = str(getattr(settings, "BUNNY_STREAM_API_KEY", "") or "").strip()
+
+        self.stdout.write(f"  Bibliothèque        {bibliotheque or 'non renseignée'}")
+        self.stdout.write(f"  Clé d'API           {f'renseignée ({len(cle)} caractères)' if cle else 'non renseignée'}")
+
+        if not bibliotheque or not cle:
+            self.stdout.write(
+                self.style.WARNING(
+                    "  Dépôt non configuré — l'écran de leçon ne proposera que le lien.\n"
+                    "  Renseigner BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY pour l'ouvrir."
+                )
+            )
+            return
+
+        try:
+            total = depot.verifier_acces()
+        except depot.TeleversementBunnyIndisponible as erreur:
+            raise CommandError(f"Dépôt refusé.\n{erreur}") from erreur
+
+        self.stdout.write(self.style.SUCCESS(f"  Accepté — la bibliothèque contient {total} vidéo(s)."))
 
     def _dire(self, code: int, quoi: str) -> None:
         if code == 200:

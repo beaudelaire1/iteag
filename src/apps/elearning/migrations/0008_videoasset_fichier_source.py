@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('elearning', '0007_retirer_vente_modules'),
+        ("elearning", "0007_retirer_vente_modules"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='videoasset',
-            name='fichier_source',
-            field=models.FileField(blank=True, help_text='Effacé dès que le fournisseur a pris la vidéo en charge.', upload_to='elearning/depots/%Y/%m/', verbose_name='Fichier déposé'),
+            model_name="videoasset",
+            name="fichier_source",
+            field=models.FileField(
+                blank=True,
+                help_text="Effacé dès que le fournisseur a pris la vidéo en charge.",
+                upload_to="elearning/depots/%Y/%m/",
+                verbose_name="Fichier déposé",
+            ),
         ),
     ]

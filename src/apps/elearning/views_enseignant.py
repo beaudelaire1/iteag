@@ -319,6 +319,7 @@ class LeconFormMixin(ProfesseurMixin):
     def get_success_url(self):
         return reverse("elearning:enseignant_structure", kwargs={"slug": self.chapitre.module.slug})
 
+
 class LeconCreateView(LeconFormMixin, CreateView):
     model = Lecon
 
@@ -593,8 +594,7 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         televerser_video_bunny.delay(str(video.pk))
         messages.success(
             request,
-            "Vidéo déposée. Son envoi et son encodage se poursuivent : "
-            "vous serez prévenu dès qu'elle sera prête.",
+            "Vidéo déposée. Son envoi et son encodage se poursuivent : vous serez prévenu dès qu'elle sera prête.",
         )
         return redirect(reverse("elearning:enseignant_videos"))
 

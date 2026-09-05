@@ -293,7 +293,25 @@ class LeconForm(FormulaireModeleITEAG):
             valider_fichier(fichier, REGLE_VIDEO)
             if self.errors:
                 return
-            donnees["video"] = self._deposer_chez_bunny(fichier, donnees.get("titre") or fichier.name)
+            try:
+                donnees["video"] = self._deposer_chez_bunny(fichier, donnees.get("titre") or fichier.name)
+            except forms.ValidationError as erreur:
+                # Le refus se disait en tête de formulaire, à l'endroit réservé
+                # aux erreurs qui ne visent aucun champ. Il vise pourtant celui
+                # où le geste a été fait. Et il laissait sans suite : le dépôt
+                # refusé, l'écran ne disait pas que le lien, lui, restait ouvert
+                # — l'enseignant ne pouvait plus créer la leçon, donc plus lui
+                # attacher la moindre ressource, l'écran des ressources n'étant
+                # servi qu'aux leçons existantes.
+                self._source_video_refusee = True
+                for message in erreur.messages:
+                    self.add_error("video_fichier", message)
+                self.add_error(
+                    "video_fichier",
+                    "En attendant, déposez la vidéo depuis le tableau de bord Bunny, puis collez son "
+                    "lien dans « Je n'ai pas de fichier à déposer » ci-dessous.",
+                )
+                return
             self.instance.video = donnees["video"]
             return
 

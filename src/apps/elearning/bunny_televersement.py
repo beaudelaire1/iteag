@@ -34,6 +34,22 @@ RACINE_API = "https://video.bunnycdn.com/library"
 TIMEOUT_APPEL_SECONDES = 15
 TIMEOUT_ENVOI_SECONDES = 30 * 60
 
+# Bunny répond « Authentication has been denied for this request » sans jamais
+# dire laquelle des deux clés est en cause. Or la bibliothèque Stream en publie
+# deux, à deux endroits différents de la même page : celle qui autorise le dépôt
+# et celle qui signe la lecture. Les confondre produit exactement ce refus, et le
+# site continue de lire les vidéos existantes — seul le dépôt casse, ce qui
+# écarte d'emblée le soupçon d'un problème de configuration Bunny.
+CODES_IDENTIFIANTS_REFUSES = (401, 403)
+
+MESSAGE_CLE_REFUSEE = (
+    "Bunny refuse la clé d'API du dépôt. La bibliothèque Stream porte deux clés "
+    "distinctes : « API Key », qui autorise le dépôt, et la clé d'authentification "
+    "par jeton, qui signe la lecture. Vérifier que BUNNY_STREAM_API_KEY porte la "
+    "première, et que BUNNY_STREAM_LIBRARY_ID désigne bien la bibliothèque à "
+    "laquelle cette clé appartient."
+)
+
 # Codes d'état Bunny. Seuls « terminé » et « résolution terminée » valent prêt :
 # une vidéo encore en file d'attente est lisible par personne.
 ETAT_EN_ATTENTE = 0
@@ -64,9 +80,7 @@ def _configuration(*, silencieux: bool = False) -> tuple[str, str] | None:
         return bibliotheque, cle
     if silencieux:
         return None
-    raise TeleversementBunnyIndisponible(
-        "Le dépôt de vidéos exige BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY."
-    )
+    raise TeleversementBunnyIndisponible("Le dépôt de vidéos exige BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY.")
 
 
 def _appeler(url: str, *, cle: str, methode: str, corps=None, entetes=None, timeout: int):
@@ -80,13 +94,24 @@ def _appeler(url: str, *, cle: str, methode: str, corps=None, entetes=None, time
         with urlopen(requete, timeout=timeout) as reponse:  # noqa: S310 — hôte fixe, HTTPS
             charge = reponse.read()
     except HTTPError as erreur:
-        # Le corps d'erreur de Bunny nomme la cause — bibliothèque inconnue, clé
-        # refusée, quota. Le perdre laisserait « HTTP 401 » comme seul indice.
+        # Le corps d'erreur de Bunny nomme parfois la cause — bibliothèque
+        # inconnue, quota. Le perdre laisserait « HTTP 401 » comme seul indice.
         detail = ""
         try:
             detail = erreur.read().decode("utf-8", "replace")[:300]
-        except Exception:  # noqa: BLE001 — le détail est un confort, jamais requis
-            pass
+        except (OSError, ValueError) as lecture:
+            logger.debug("Corps d'erreur Bunny illisible : %s", lecture)
+
+        if erreur.code in CODES_IDENTIFIANTS_REFUSES:
+            # Ce corps-là ne dit rien d'exploitable — il se contente de répéter
+            # que l'accès est refusé. Il part au journal, où l'exploitant le
+            # cherchera ; l'utilisateur, lui, reçoit la phrase qui nomme le geste
+            # à faire. Lui montrer le JSON brut de Bunny, comme c'était le cas,
+            # ne lui apprenait rien et laissait croire à une panne du service.
+            logger.error("Bunny a refusé les identifiants du dépôt (%s) : %s", erreur.code, detail)
+            raise TeleversementBunnyIndisponible(MESSAGE_CLE_REFUSEE) from erreur
+
+        logger.warning("Bunny a refusé l'appel (%s) : %s", erreur.code, detail)
         raise TeleversementBunnyIndisponible(f"Bunny a refusé l'appel ({erreur.code}). {detail}".strip()) from erreur
     except (URLError, TimeoutError) as erreur:
         raise TeleversementBunnyIndisponible(f"Bunny est injoignable : {erreur}") from erreur
@@ -97,6 +122,29 @@ def _appeler(url: str, *, cle: str, methode: str, corps=None, entetes=None, time
         return json.loads(charge.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as erreur:
         raise TeleversementBunnyIndisponible("Réponse Bunny illisible.") from erreur
+
+
+def verifier_acces() -> int:
+    """Éprouve la clé d'API du dépôt et retourne la taille de la bibliothèque.
+
+    Rien n'est créé : on demande la première page du catalogue. C'est le seul
+    contrôle qui ne peut pas se faire hors ligne — nos tests confirment que
+    l'en-tête est *formé* comme Bunny l'attend, jamais qu'il est *accepté*. Et
+    c'est le contrôle qui manquait : `verifier_bunny` n'éprouvait que la
+    signature de lecture, si bien qu'une clé de dépôt fausse ne se découvrait
+    que le jour où quelqu'un déposait une vidéo.
+    """
+    bibliotheque, cle = _configuration()
+    reponse = _appeler(
+        f"{RACINE_API}/{bibliotheque}/videos?page=1&itemsPerPage=1",
+        cle=cle,
+        methode="GET",
+        timeout=TIMEOUT_APPEL_SECONDES,
+    )
+    try:
+        return max(0, int(reponse.get("totalItems") or 0))
+    except (TypeError, ValueError):
+        return 0
 
 
 def creer_video(titre: str) -> str:

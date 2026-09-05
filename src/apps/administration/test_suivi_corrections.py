@@ -58,9 +58,7 @@ def cours_session(db, enseignant):
         date_fin=timezone.now().date() + timedelta(days=60),
     )
     Promotion.objects.create(nom="Promo corr", parcours=parcours, annee_debut=2026, annee_fin=2029)
-    return CoursDeSession.objects.create(
-        session=session, cours=cours, enseignant=enseignant, delai_correction_jours=15
-    )
+    return CoursDeSession.objects.create(session=session, cours=cours, enseignant=enseignant, delai_correction_jours=15)
 
 
 @pytest.fixture

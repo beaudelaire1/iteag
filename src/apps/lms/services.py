@@ -181,10 +181,7 @@ def _avertir_de_la_remise(evaluation) -> None:
         evaluation.etudiant.utilisateur,
         f"Devoir remis — {cours.cours.titre}",
         type_notification=Notification.Type.SYSTEME,
-        message=(
-            "Votre copie est bien arrivée. Vous serez prévenu dès que votre note "
-            "sera publiée."
-        ),
+        message=("Votre copie est bien arrivée. Vous serez prévenu dès que votre note sera publiée."),
         details=details,
     )
 

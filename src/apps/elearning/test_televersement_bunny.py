@@ -77,9 +77,7 @@ class TestSignatureVideo:
 
 
 class TestDepotDepuisLaPlateforme:
-    def test_le_depot_declare_la_video_et_confie_l_envoi(
-        self, client, enseignant, bunny_configure, monkeypatch
-    ):
+    def test_le_depot_declare_la_video_et_confie_l_envoi(self, client, enseignant, bunny_configure, monkeypatch):
         appels = {}
 
         def declarer(titre):
@@ -260,6 +258,42 @@ class TestDepuisLaLecon:
         assert appels == []
         assert not VideoAsset.objects.exists()
 
+    def test_un_depot_refuse_se_dit_sur_le_champ_et_laisse_une_issue(
+        self, client, enseignant, chapitre, bunny_configure, monkeypatch
+    ):
+        """Refusé, le dépôt fermait tout — la leçon, et donc ses ressources.
+
+        L'écran des ressources n'est servi qu'aux leçons existantes. Une leçon
+        vidéo qu'on ne peut pas créer emporte donc avec elle la possibilité de
+        lui attacher quoi que ce soit. Le refus doit se dire là où le geste a été
+        fait, et nommer le chemin qui reste ouvert.
+        """
+        import re
+
+        def refuser(_titre):
+            raise bunny.TeleversementBunnyIndisponible(bunny.MESSAGE_CLE_REFUSEE)
+
+        monkeypatch.setattr(bunny, "creer_video", refuser)
+
+        client.force_login(enseignant)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]),
+            self.saisie(video_fichier=fichier()),
+        )
+
+        assert reponse.status_code == 200
+        erreurs = reponse.context["form"].errors
+        assert "video_fichier" in erreurs
+        # Surtout pas sur la liste déroulante : elle n'a aucun rapport avec le refus.
+        assert "video" not in erreurs
+        assert any("tableau de bord Bunny" in message for message in erreurs["video_fichier"])
+
+        contenu = reponse.content.decode()
+        # Le chemin de secours ne doit pas rester replié derrière un libellé qui
+        # parle de ne pas avoir de fichier, adressé à quelqu'un qui en a un.
+        assert re.search(r"<details[^>]*\sopen[^>]*>", contenu)
+        assert "mon dépôt a été refusé" in contenu
+
 
 class TestTacheDEnvoi:
     @pytest.fixture
@@ -301,3 +335,99 @@ class TestTacheDEnvoi:
         assert "rejeté" in video.message_erreur
         # Le fichier reste : il permet de relancer l'envoi sans le redemander.
         assert video.fichier_source
+
+
+class TestClesRefusees:
+    """Un 401 de Bunny ne dit jamais laquelle des deux clés est en cause."""
+
+    def test_un_401_nomme_la_cle_a_corriger(self, bunny_configure, monkeypatch):
+        """Le JSON brut de Bunny n'apprenait rien à qui le lisait dans le formulaire.
+
+        « Authentication has been denied for this request » désigne un refus, pas
+        une cause : la bibliothèque Stream porte deux clés, à deux endroits de la
+        même page, et les confondre produit exactement ce message.
+        """
+        import io
+        from urllib.error import HTTPError
+
+        def refuser(*_args, **_kwargs):
+            raise HTTPError(
+                "https://video.bunnycdn.com/library/12345/videos",
+                401,
+                "Unauthorized",
+                {},
+                io.BytesIO(b'{"Success":false,"Message":"Authentication has been denied for this request."}'),
+            )
+
+        monkeypatch.setattr(bunny, "urlopen", refuser)
+
+        with pytest.raises(bunny.TeleversementBunnyIndisponible) as refus:
+            bunny.creer_video("Prédication")
+
+        message = str(refus.value)
+        assert "BUNNY_STREAM_API_KEY" in message
+        assert "authentification par jeton" in message
+        # Le corps de Bunny part au journal, pas sous les yeux de l'utilisateur.
+        assert "Authentication has been denied" not in message
+
+    def test_un_autre_code_garde_le_detail_de_bunny(self, bunny_configure, monkeypatch):
+        """Hors identifiants, le corps de Bunny nomme souvent la cause : on le garde."""
+        import io
+        from urllib.error import HTTPError
+
+        def refuser(*_args, **_kwargs):
+            raise HTTPError(
+                "https://video.bunnycdn.com/library/12345/videos",
+                429,
+                "Too Many Requests",
+                {},
+                io.BytesIO(b'{"Message":"Quota depasse"}'),
+            )
+
+        monkeypatch.setattr(bunny, "urlopen", refuser)
+
+        with pytest.raises(bunny.TeleversementBunnyIndisponible, match="Quota depasse"):
+            bunny.creer_video("Prédication")
+
+
+class TestVerificationDesCles:
+    """`verifier_bunny` n'éprouvait que la lecture — le dépôt passait au travers."""
+
+    def commande(self, *args):
+        import io as flux
+
+        from django.core.management import call_command
+
+        sortie = flux.StringIO()
+        call_command("verifier_bunny", *args, stdout=sortie)
+        return sortie.getvalue()
+
+    def test_la_cle_de_depot_s_eprouve_sans_identifiant_de_video(self, bunny_configure, monkeypatch):
+        """Le contrôle qui ne demande rien à personne doit pouvoir se lancer seul."""
+        monkeypatch.setattr(bunny, "verifier_acces", lambda: 7)
+
+        sortie = self.commande()
+
+        assert "7 vidéo(s)" in sortie
+        assert "Non éprouvée" in sortie
+
+    def test_une_cle_de_depot_refusee_arrete_la_commande(self, bunny_configure, monkeypatch):
+        """Un dépôt refusé n'est pas un avertissement : plus aucune leçon vidéo ne se crée."""
+        from django.core.management.base import CommandError
+
+        def refuser():
+            raise bunny.TeleversementBunnyIndisponible(bunny.MESSAGE_CLE_REFUSEE)
+
+        monkeypatch.setattr(bunny, "verifier_acces", refuser)
+
+        with pytest.raises(CommandError, match="BUNNY_STREAM_API_KEY"):
+            self.commande()
+
+    def test_un_depot_non_configure_reste_un_avertissement(self, settings, monkeypatch):
+        """Le dépôt est facultatif : sans clé, l'écran propose le lien, et c'est tout."""
+        settings.BUNNY_STREAM_LIBRARY_ID = ""
+        settings.BUNNY_STREAM_API_KEY = ""
+
+        sortie = self.commande()
+
+        assert "Dépôt non configuré" in sortie

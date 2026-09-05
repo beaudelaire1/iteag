@@ -5,21 +5,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wagtaildocs', '0014_alter_document_file_size'),
-        ('website', '0014_articles_etudiants'),
+        ("wagtaildocs", "0014_alter_document_file_size"),
+        ("website", "0014_articles_etudiants"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='newspage',
-            name='brochure',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='wagtaildocs.document', verbose_name='Brochure ou document joint'),
+            model_name="newspage",
+            name="brochure",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="+",
+                to="wagtaildocs.document",
+                verbose_name="Brochure ou document joint",
+            ),
         ),
         migrations.AddField(
-            model_name='newspage',
-            name='brochure_libelle',
-            field=models.CharField(blank=True, help_text='Ce que le lecteur lira sur le bouton. À défaut : le nom du fichier.', max_length=200, verbose_name='Intitulé du document'),
+            model_name="newspage",
+            name="brochure_libelle",
+            field=models.CharField(
+                blank=True,
+                help_text="Ce que le lecteur lira sur le bouton. À défaut : le nom du fichier.",
+                max_length=200,
+                verbose_name="Intitulé du document",
+            ),
         ),
     ]
