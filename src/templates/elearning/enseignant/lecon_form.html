@@ -41,9 +41,16 @@
             {% comment %}
             Un seul geste visible : choisir son fichier. Les deux autres chemins
             existent, repliés, pour qui en a besoin.
+
+            Repliés, sauf quand le dépôt vient d'échouer : c'est précisément le
+            moment où l'autre chemin cesse d'être une préférence pour devenir la
+            seule issue. Le laisser fermé derrière un libellé qui parle de ne pas
+            avoir de fichier, à quelqu'un qui en a un et qu'on vient de refuser,
+            revient à cacher la sortie.
             {% endcomment %}
-            <details class="rounded border border-warm-200 px-4 py-3">
-                <summary class="cursor-pointer text-sm text-warm-600">Je n’ai pas de fichier à déposer</summary>
+            <details class="rounded border border-warm-200 px-4 py-3"
+                     {% if form.video_fichier.errors or form.video_lien.errors or form.video.errors %}open{% endif %}>
+                <summary class="cursor-pointer text-sm text-warm-600">Je n’ai pas de fichier à déposer, ou mon dépôt a été refusé</summary>
                 <div class="mt-5 space-y-5">
                     {% include "partials/champ.html" with field=form.video_lien %}
                     {% include "partials/champ.html" with field=form.video %}
