@@ -44,7 +44,7 @@ FONCTIONNALITES_EDITEUR_PORTAIL = (
     "link",
 )
 
-VERSION_ASSETS_EDITEUR = "11"
+VERSION_ASSETS_EDITEUR = "12"
 
 
 def _asset_iteag(chemin: str) -> str:

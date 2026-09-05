@@ -128,6 +128,11 @@ def test_picker_adapte_le_tippy_officiel_sans_reimplementer_le_composant():
     assert "'mousedown', 'focusin', 'keydown'" in script
     assert "configurerAvantOuverture, true" in script
 
+    # Rendu près du bouton, le panneau était découpé par le premier ancêtre qui
+    # masque son débordement : il s'ouvrait, on en voyait le haut, le reste était
+    # tranché. À la racine du document, plus rien ne peut le rogner.
+    assert "appendTo: () => document.body" in script
+
 
 def test_tableau_propose_du_texte_riche_compact_dans_les_cellules():
     tableau = TableauEditorialBlock()
