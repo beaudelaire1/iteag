@@ -204,7 +204,10 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
 
         ContenuActualite.objects.update_or_create(
             actualite=actualite,
-            defaults={"contenu": donnees["contenu"]},
+            # Une actualité qui ne porte qu'une brochure n'a aucun bloc : le
+            # champ reste un flux vide, jamais nul, faute de quoi la colonne
+            # refuserait l'enregistrement.
+            defaults={"contenu": donnees["contenu"] or ContenuActualite._meta.get_field("contenu").stream_block.to_python([])},
         )
 
         if actualite.live:

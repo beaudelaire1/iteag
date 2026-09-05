@@ -108,4 +108,19 @@ class ActualiteForm(FormulaireITEAG):
         if en_texte(corps_heritage).strip():
             return CHAMP_CONTENU.stream_block.to_python([{"type": "texte", "value": assainir(corps_heritage)}])
 
-        raise forms.ValidationError("Ajoutez au moins un bloc de contenu à l'actualité.")
+        # Vide : c'est « clean » qui tranchera, une fois la brochure connue.
+        # Le champ est nettoyé avant elle, il ne peut pas en décider seul.
+        return contenu
+
+    def clean(self):
+        donnees = super().clean()
+        # Une actualité doit porter quelque chose — mais pas forcément du texte.
+        # Une brochure se publie sans un mot : « voici le programme de la
+        # rentrée » n'ajoute rien au document lui-même, et l'exiger empêchait
+        # purement et simplement de publier un PDF seul.
+        if not donnees.get("contenu") and not donnees.get("brochure"):
+            self.add_error(
+                "contenu",
+                "Ajoutez au moins un bloc de contenu, ou joignez une brochure.",
+            )
+        return donnees
