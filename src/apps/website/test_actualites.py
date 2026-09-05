@@ -74,6 +74,94 @@ def _saisie(**surcharges):
     return donnees
 
 
+PDF = b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n" + b"0" * 64
+
+
+def _brochure(nom="brochure.pdf", contenu=PDF, type_mime="application/pdf"):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    return SimpleUploadedFile(nom, contenu, content_type=type_mime)
+
+
+class TestBrochure:
+    """
+    La secrétaire doit pouvoir joindre une brochure à une annonce.
+
+    Jusqu'ici, publier un document supposait de le déposer quelque part puis d'en
+    coller l'adresse dans le corps du texte — quand quelqu'un savait le faire.
+    Le fichier rejoint la médiathèque Wagtail, comme les images : il reste donc
+    consultable et remplaçable depuis l'administration.
+    """
+
+    def test_la_brochure_est_jointe_et_rejoint_la_mediatheque(self, client, secretaire, index):
+        from wagtail.documents import get_document_model
+
+        client.force_login(secretaire)
+        client.post(
+            reverse("website:actualite_creation"),
+            _saisie(brochure=_brochure(), brochure_libelle="Brochure Licence 2026-2027"),
+        )
+
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+        assert page.brochure_id is not None
+        assert page.brochure_libelle == "Brochure Licence 2026-2027"
+        assert get_document_model().objects.count() == 1
+
+    def test_le_bouton_de_telechargement_apparait_sur_la_page(self, client, secretaire, index):
+        client.force_login(secretaire)
+        client.post(
+            reverse("website:actualite_creation"),
+            _saisie(brochure=_brochure(), brochure_libelle="Brochure Licence 2026-2027"),
+        )
+        # Une actualité créée reste un brouillon : sa page publique n'existe
+        # qu'une fois la publication décidée.
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+        page.save_revision().publish()
+
+        contenu = client.get(page.url).content.decode()
+
+        assert "Brochure Licence 2026-2027" in contenu
+        assert "Document à télécharger" in contenu
+
+    def test_sans_brochure_aucun_bouton(self, client, secretaire, index):
+        client.force_login(secretaire)
+        client.post(reverse("website:actualite_creation"), _saisie())
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+        page.save_revision().publish()
+
+        assert "Document à télécharger" not in client.get(page.url).content.decode()
+
+    def test_un_fichier_renomme_en_pdf_est_refuse(self, client, secretaire, index):
+        """L'extension ne prouve rien : c'est la signature qui tranche."""
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("website:actualite_creation"),
+            _saisie(brochure=_brochure(contenu=b"MZ\x90\x00 programme" * 8)),
+        )
+
+        assert reponse.status_code == 200
+        assert not NewsPage.objects.filter(title="Journée portes ouvertes").exists()
+
+    def test_l_intitule_se_corrige_sans_redeposer_le_fichier(self, client, secretaire, index):
+        """C'est le libellé d'un bouton qu'on ajuste le plus souvent après coup."""
+        client.force_login(secretaire)
+        client.post(
+            reverse("website:actualite_creation"),
+            _saisie(brochure=_brochure(), brochure_libelle="Brochre Licence"),
+        )
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+        document_initial = page.brochure_id
+
+        client.post(
+            reverse("website:actualite_edition", args=[page.pk]),
+            _saisie(brochure_libelle="Brochure Licence 2026-2027"),
+        )
+
+        page.refresh_from_db()
+        assert page.brochure_libelle == "Brochure Licence 2026-2027"
+        assert page.brochure_id == document_initial
+
+
 class TestPerimetre:
     def test_le_secretariat_ecrit_les_actualites(self, client, secretaire, index):
         client.force_login(secretaire)

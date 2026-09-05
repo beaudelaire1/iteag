@@ -352,12 +352,32 @@ class NewsPage(Page):
         related_name="+",
         verbose_name="Image à la une",
     )
+    # Une brochure se publiait jusqu'ici en la déposant quelque part puis en
+    # collant son adresse dans le corps de l'annonce — quand quelqu'un savait le
+    # faire. Le document vit désormais avec l'actualité qui l'annonce, et le
+    # secrétariat le dépose lui-même.
+    brochure = models.ForeignKey(
+        "wagtaildocs.Document",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name="Brochure ou document joint",
+    )
+    brochure_libelle = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Intitulé du document",
+        help_text="Ce que le lecteur lira sur le bouton. À défaut : le nom du fichier.",
+    )
     meta_description = models.CharField(max_length=300, blank=True)
 
     content_panels = Page.content_panels + [
         FieldPanel("date"),
         FieldPanel("excerpt"),
         FieldPanel("image"),
+        FieldPanel("brochure"),
+        FieldPanel("brochure_libelle"),
         FieldPanel("body"),
     ]
 

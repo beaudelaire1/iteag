@@ -57,6 +57,18 @@
             </div>
             {% endif %}
         {% endwith %}
+
+        {% if page.brochure %}
+        <div class="mt-10 rounded border border-warm-200 bg-warm-50 p-5 reveal reveal-delay-2">
+            <p class="overline mb-2">Document à télécharger</p>
+            <a href="{{ page.brochure.url }}" class="btn-primary" download>
+                {{ page.brochure_libelle|default:page.brochure.title }}
+            </a>
+            <p class="mt-3 text-xs text-warm-500">
+                {{ page.brochure.file_extension|upper }} · {{ page.brochure.file.size|filesizeformat }}
+            </p>
+        </div>
+        {% endif %}
     </div>
 </article>
 {% endblock %}
