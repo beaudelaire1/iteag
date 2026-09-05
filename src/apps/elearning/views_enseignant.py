@@ -319,7 +319,6 @@ class LeconFormMixin(ProfesseurMixin):
     def get_success_url(self):
         return reverse("elearning:enseignant_structure", kwargs={"slug": self.chapitre.module.slug})
 
-
 class LeconCreateView(LeconFormMixin, CreateView):
     model = Lecon
 

@@ -172,7 +172,32 @@ class ChapitreForm(FormulaireModeleITEAG):
 
 
 class LeconForm(FormulaireModeleITEAG):
-    """Une leçon : vidéo, document, texte ou lien."""
+    """
+    Une leçon : vidéo, document, texte ou lien.
+
+    La vidéo se choisissait dans une liste que rien ne remplissait depuis cet
+    écran : il fallait quitter la leçon, passer par la bibliothèque, revenir.
+    Pour une prédication découpée en six séquences, six allers-retours.
+
+    Elle se dépose donc ici, ou se colle depuis un lien. L'hébergeur découle du
+    geste : un fichier va chez Bunny — seul fournisseur dont l'adresse se
+    révoque, et donc le seul qui puisse porter un module restreint — tandis
+    qu'un lien désigne lui-même le sien.
+    """
+
+    video_fichier = forms.FileField(
+        required=False,
+        label="Déposer un fichier vidéo",
+        widget=forms.ClearableFileInput(attrs={"class": FICHIER, "accept": "video/*"}),
+        help_text="Hébergé sur Bunny Stream. 2 Go au plus. L'encodage se poursuit après l'enregistrement.",
+    )
+    video_lien = forms.URLField(
+        required=False,
+        max_length=500,
+        label="Ou coller le lien d'une vidéo en ligne",
+        widget=forms.URLInput(attrs={"class": INPUT, "placeholder": "https://www.youtube.com/watch?v=…"}),
+        help_text="Bunny Stream, Vimeo ou YouTube — l'hébergeur est reconnu depuis l'adresse.",
+    )
 
     class Meta:
         model = Lecon
@@ -207,6 +232,8 @@ class LeconForm(FormulaireModeleITEAG):
     def __init__(self, *args, enseignant=None, chapitre=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.chapitre = chapitre
+        # Conservé : c'est lui qui portera la vidéo déposée depuis cet écran.
+        self.enseignant = enseignant
         self.fields["duree_secondes"].required = False
         # Un enseignant ne rattache que ses propres vidéos.
         if enseignant is not None:
@@ -225,11 +252,100 @@ class LeconForm(FormulaireModeleITEAG):
     def clean_duree_secondes(self):
         return self.cleaned_data.get("duree_secondes") or 0
 
+    def _resoudre_la_video(self, donnees) -> None:
+        """Une leçon vidéo tient d'une source, et d'une seule.
+
+        La vidéo est créée ici, et non par la vue : le modèle exige qu'une leçon
+        vidéo en porte une, et cette règle s'applique pendant la validation. La
+        rattacher plus tard reviendrait à faire échouer toute leçon dont la
+        vidéo n'existe pas encore.
+
+        Rien n'est créé tant qu'une autre erreur subsiste : un titre manquant ne
+        doit pas laisser derrière lui une vidéo déclarée chez l'hébergeur et
+        rattachée à rien.
+        """
+        existante = donnees.get("video")
+        fichier = donnees.get("video_fichier")
+        lien = (donnees.get("video_lien") or "").strip()
+
+        sources = [source for source in (existante, fichier, lien) if source]
+        if not sources:
+            self.add_error(
+                "video_fichier",
+                "Choisissez une vidéo déjà enregistrée, déposez un fichier, ou collez un lien.",
+            )
+            return
+        if len(sources) > 1:
+            self.add_error(
+                "video_fichier",
+                "Une seule source à la fois : une vidéo existante, un fichier, ou un lien.",
+            )
+            return
+
+        if fichier:
+            valider_fichier(fichier, REGLE_VIDEO)
+            if self.errors:
+                return
+            donnees["video"] = self._deposer_chez_bunny(fichier, donnees.get("titre") or fichier.name)
+            self.instance.video = donnees["video"]
+            return
+
+        if lien:
+            # Toute la validation d'adresse vit déjà dans le formulaire de
+            # référencement : schéma, hébergeur reconnu, identifiant plausible,
+            # Bunny configuré, vidéo pas déjà référencée. La rejouer ici la
+            # ferait diverger au premier hébergeur ajouté.
+            titre = donnees.get("titre") or "Vidéo"
+            reference = VideoExterneForm({"titre": titre, "adresse_video": lien})
+            if not reference.is_valid():
+                for message in reference.errors.get("adresse_video", ["Lien vidéo invalide."]):
+                    self.add_error("video_lien", message)
+                return
+            if self.errors:
+                return
+            # Déjà en ligne : l'encodage a eu lieu chez l'hébergeur avant que
+            # l'adresse ne soit communiquée. Rien à préparer de notre côté.
+            donnees["video"] = VideoAsset.objects.create(
+                titre=titre[:250],
+                cle_stockage=reference.cleaned_data["identifiant"],
+                fournisseur=reference.cleaned_data["fournisseur"],
+                uploade_par=self.enseignant,
+                statut_traitement=VideoAsset.StatutTraitement.PRET,
+            )
+            self.instance.video = donnees["video"]
+
+    def _deposer_chez_bunny(self, fichier, titre: str) -> VideoAsset:
+        """Déclare la vidéo chez Bunny, puis confie l'envoi au worker.
+
+        La déclaration est synchrone : brève, et son échec — clé absente,
+        bibliothèque inconnue — doit se lire dans le formulaire plutôt que se
+        découvrir plus tard sur une fiche en erreur.
+        """
+        from apps.elearning import bunny_televersement as bunny
+        from apps.elearning.tasks import televerser_video_bunny
+
+        try:
+            identifiant = bunny.creer_video(titre)
+        except bunny.TeleversementBunnyIndisponible as erreur:
+            raise forms.ValidationError(str(erreur)) from erreur
+
+        video = VideoAsset.objects.create(
+            titre=titre[:250],
+            cle_stockage=identifiant,
+            fournisseur="bunny",
+            fichier_source=fichier,
+            nom_origine=fichier.name[:250],
+            uploade_par=self.enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_ATTENTE,
+        )
+        televerser_video_bunny.delay(str(video.pk))
+        return video
+
     def clean(self):
         donnees = super().clean()
         type_lecon = donnees.get("type_lecon")
-        if type_lecon == Lecon.TypeLecon.VIDEO and not donnees.get("video"):
-            self.add_error("video", "Une leçon vidéo doit référencer un lien vidéo déjà enregistré.")
+        if type_lecon == Lecon.TypeLecon.VIDEO:
+            self._resoudre_la_video(donnees)
         if type_lecon == Lecon.TypeLecon.LIEN_EXTERNE and not donnees.get("lien_externe"):
             self.add_error("lien_externe", "Indiquez l'adresse de la ressource.")
         if type_lecon == Lecon.TypeLecon.DOCUMENT and not (donnees.get("document") or self.instance.document):
