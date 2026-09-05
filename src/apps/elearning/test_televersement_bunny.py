@@ -98,7 +98,7 @@ class TestDepotDepuisLaPlateforme:
             {"action": "deposer", "titre": "Prédication — séquence 1", "fichier": fichier(), "transcription": ""},
         )
 
-        assert reponse.status_code == 302
+        assert reponse.status_code == 302, reponse.context["form"].errors
         video = VideoAsset.objects.get()
         assert video.cle_stockage == "guid-bunny"
         assert video.fournisseur == "bunny"
@@ -147,6 +147,117 @@ class TestDepotDepuisLaPlateforme:
         )
 
         assert reponse.status_code == 200
+        assert not VideoAsset.objects.exists()
+
+
+class TestDepuisLaLecon:
+    """
+    La vidéo se choisissait dans une liste que rien ne remplissait depuis là.
+
+    Il fallait quitter la leçon, passer par la bibliothèque, revenir. Pour une
+    prédication découpée en six séquences : six allers-retours.
+    """
+
+    @pytest.fixture
+    def chapitre(self, enseignant):
+        from apps.elearning.models import Chapitre, ModuleFormation
+
+        module = ModuleFormation.objects.create(
+            titre="Atelier de prédication", slug="atelier-lecon", responsable=enseignant.profil_professeur
+        )
+        return Chapitre.objects.create(module=module, titre="Séquences", ordre=1)
+
+    def saisie(self, **extra):
+        donnees = {
+            "titre": "Séquence 1",
+            "type_lecon": "video",
+            "ordre": "0",
+            "duree_secondes": "",
+            "contenu_texte": "",
+            "lien_externe": "",
+        }
+        donnees.update(extra)
+        return donnees
+
+    def test_le_fichier_depose_devient_la_video_de_la_lecon(
+        self, client, enseignant, chapitre, bunny_configure, monkeypatch
+    ):
+        envois = {}
+        monkeypatch.setattr(bunny, "creer_video", lambda titre: "guid-lecon")
+        monkeypatch.setattr(
+            "apps.elearning.tasks.televerser_video_bunny.delay",
+            lambda video_id: envois.setdefault("tache", video_id),
+        )
+
+        client.force_login(enseignant)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]),
+            self.saisie(video_fichier=fichier()),
+        )
+
+        assert reponse.status_code == 302, reponse.context["form"].errors
+        video = VideoAsset.objects.get()
+        assert video.cle_stockage == "guid-lecon"
+        assert video.fournisseur == "bunny"
+        assert chapitre.lecons.get().video == video
+        assert envois["tache"] == str(video.pk)
+
+    def test_un_lien_youtube_designe_son_hebergeur(self, client, enseignant, chapitre):
+        """
+        L'hébergeur découle de l'adresse : rien à cocher.
+
+        YouTube n'est admis que sur un module public. Le modèle refuse de le
+        rattacher à un module réservé, dont l'accès doit pouvoir être retiré —
+        et une adresse YouTube partagée ne se retire pas.
+        """
+        from apps.elearning.models import ModuleFormation
+
+        module = chapitre.module
+        module.politique_acces = ModuleFormation.PolitiqueAcces.PUBLIC
+        module.save(update_fields=["politique_acces"])
+
+        client.force_login(enseignant)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]),
+            self.saisie(video_lien="https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+        )
+
+        assert reponse.status_code == 302, reponse.context["form"].errors
+        video = VideoAsset.objects.get()
+        assert video.fournisseur == "youtube"
+        assert video.statut_traitement == VideoAsset.StatutTraitement.PRET
+
+    def test_deux_sources_a_la_fois_sont_refusees(self, client, enseignant, chapitre, bunny_configure):
+        client.force_login(enseignant)
+        reponse = client.post(
+            reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]),
+            self.saisie(video_fichier=fichier(), video_lien="https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+        )
+
+        assert reponse.status_code == 200
+        assert not VideoAsset.objects.exists()
+
+    def test_une_lecon_video_sans_source_est_refusee(self, client, enseignant, chapitre):
+        client.force_login(enseignant)
+        reponse = client.post(reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]), self.saisie())
+
+        assert reponse.status_code == 200
+        assert not chapitre.lecons.exists()
+
+    def test_rien_n_est_declare_chez_l_hebergeur_si_la_lecon_est_refusee(
+        self, client, enseignant, chapitre, bunny_configure, monkeypatch
+    ):
+        """Un formulaire qui échoue ne doit pas laisser une vidée orpheline chez Bunny."""
+        appels = []
+        monkeypatch.setattr(bunny, "creer_video", lambda titre: appels.append(titre) or "guid")
+
+        client.force_login(enseignant)
+        client.post(
+            reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]),
+            self.saisie(titre="", video_fichier=fichier()),
+        )
+
+        assert appels == []
         assert not VideoAsset.objects.exists()
 
 

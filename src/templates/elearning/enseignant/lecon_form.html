@@ -35,7 +35,16 @@
     <section class="card-elevated space-y-5">
         <div><p class="overline mb-1">Étape 2</p><h2 class="text-lg font-semibold">Ajouter le contenu</h2>
         <p class="mt-1 text-sm text-warm-500">Seul le champ correspondant au format choisi est nécessaire.</p></div>
-        <div data-type-lecon="video">{% include "partials/champ.html" with field=form.video %}</div>
+        <div data-type-lecon="video" class="space-y-5">
+            {% include "partials/champ.html" with field=form.video %}
+            <p class="text-xs uppercase tracking-wider text-warm-400">ou ajouter une nouvelle vidéo</p>
+            {% include "partials/champ.html" with field=form.video_fichier %}
+            {% include "partials/champ.html" with field=form.video_lien %}
+            <div class="note max-w-none"><span class="lbl">Hébergement</span>
+            Un fichier déposé part chez Bunny Stream, seul hébergeur dont l’adresse se révoque —
+            donc le seul admis pour un module réservé. Un lien YouTube ou Vimeo convient à un
+            contenu public.</div>
+        </div>
         <div data-type-lecon="document">{% include "partials/champ.html" with field=form.document %}</div>
         <div data-type-lecon="lien_externe">{% include "partials/champ.html" with field=form.lien_externe %}</div>
         <div data-type-lecon="texte">{% include "partials/champ.html" with field=form.contenu_texte %}</div>
