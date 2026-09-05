@@ -246,3 +246,51 @@ def test_la_commande_de_readiness_sait_ignorer_la_base():
     ci = (RACINE.parent / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     assert "verifier_production --sans-base" in ci
+
+
+def test_le_compose_etiquette_chaque_image_par_sa_revision():
+    """Sans étiquette, un déploiement raté n'a rien à quoi revenir.
+
+    Toutes les constructions portaient auparavant le même nom d'image : celle
+    qui servait perdait son nom au profit de la suivante, puis le nettoyage
+    Docker l'effaçait. Le « redéployer l'image précédente » du runbook ne
+    désignait alors plus aucune image, et la seule issue à une bascule ratée
+    était de corriger le code en direct, site éteint.
+    """
+    compose = (RACINE / "docker-compose.prod.yml").read_text(encoding="utf-8")
+
+    assert "image: iteag-app:${ITEAG_REVISION:?" in compose
+
+
+def test_le_deploiement_migre_avant_de_basculer():
+    """L'ordre est tout : après la bascule, une migration ratée est une panne.
+
+    ``web`` attend que ``migrate`` ait réussi. Tant que les migrations passent
+    pendant la bascule, la moindre erreur de schéma laisse la pile sans rien
+    qui serve de page. Jouées avant, pendant que l'ancienne version sert
+    toujours, elles ne coûtent qu'un déploiement annulé.
+    """
+    script = (RACINE / "scripts" / "deployer.sh").read_text(encoding="utf-8")
+
+    migration = script.index("compose run --rm migrate")
+    bascule = script.index("compose up -d --no-build --remove-orphans")
+
+    assert migration < bascule
+    # Le contrat Compose est vérifié avant tout : une variable oubliée dans la
+    # fiche Coolify doit se constater sans avoir touché aux conteneurs.
+    assert script.index("compose config --quiet") < migration
+    # Une migration en attente déclenche un dump antérieur au changement de
+    # schéma — celui du service « backup » lui est postérieur par construction.
+    assert "postgres_backup_r2.py backup" in script
+
+
+def test_le_deploiement_replie_sur_la_revision_precedente():
+    """Un contrôle de santé qui n'aboutit pas doit rendre le site, pas un rapport."""
+    script = (RACINE / "scripts" / "deployer.sh").read_text(encoding="utf-8")
+
+    assert 'ITEAG_REVISION="$REPLI" compose up -d --no-build' in script
+    # Un 200 ne suffit pas : un conteneur ayant survécu à la bascule répondrait
+    # 200 sans servir le nouveau code.
+    assert 'tolower($1) == "x-iteag-revision:"' in script
+    # Les migrations ne se défont pas avec l'image : le repli doit le dire.
+    assert "ne les défait pas" in script
