@@ -5,10 +5,20 @@ from django import forms
 from apps.core.editeur_riche import StreamFieldPortail
 from apps.core.formulaires import FormulaireITEAG
 from apps.core.services.redaction import assainir, en_texte
+from apps.core.validation_fichiers import RegleFichier, valider_fichier
 from apps.website.models_publications import ContenuActualite
 
 INPUT = "form-input"
 CHAMP_CONTENU = ContenuActualite._meta.get_field("contenu")
+
+# Une brochure est un document à lire, pas une pièce à exécuter : la liste reste
+# volontairement courte, et le contrôle porte sur la signature binaire, jamais
+# sur la seule extension.
+REGLE_BROCHURE = RegleFichier(
+    extensions=frozenset({".pdf", ".docx", ".odt"}),
+    taille_max=20 * 1024 * 1024,
+    message_formats="Formats acceptés : PDF, DOCX ou ODT.",
+)
 
 
 class ActualiteForm(FormulaireITEAG):
@@ -47,6 +57,25 @@ class ActualiteForm(FormulaireITEAG):
         help_text="Facultative. Elle illustre la vignette dans la liste et le haut de l'actualité.",
         widget=forms.ClearableFileInput(attrs={"class": "form-file", "accept": "image/*"}),
     )
+    brochure = forms.FileField(
+        required=False,
+        label="Brochure ou document",
+        help_text="Facultatif. PDF ou bureautique, 20 Mo au plus. Un bouton de téléchargement apparaît sous l'actualité.",
+        widget=forms.ClearableFileInput(attrs={"class": "form-file", "accept": REGLE_BROCHURE.accept}),
+    )
+    brochure_libelle = forms.CharField(
+        required=False,
+        max_length=200,
+        label="Intitulé du document",
+        help_text="Ce que le lecteur lira sur le bouton. À défaut : le nom du fichier.",
+        widget=forms.TextInput(attrs={"class": INPUT, "placeholder": "Brochure Licence 2026-2027"}),
+    )
+
+    def clean_brochure(self):
+        fichier = self.cleaned_data.get("brochure")
+        if fichier:
+            valider_fichier(fichier, REGLE_BROCHURE)
+        return fichier
 
     def __init__(self, *args, **kwargs):
         """Laisse les anciens clients POSTer ``corps`` pendant la transition."""

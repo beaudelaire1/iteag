@@ -137,6 +137,7 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
             "titre": actualite.title if actualite else "",
             "date": actualite.date if actualite else None,
             "chapeau": actualite.excerpt if actualite else "",
+            "brochure_libelle": actualite.brochure_libelle if actualite else "",
             "contenu": self._contenu_initial(actualite),
         }
 
@@ -186,6 +187,16 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
         if donnees.get("image"):
             actualite.image = self._image_wagtail(donnees["image"], donnees["titre"], request.user)
 
+        if donnees.get("brochure"):
+            actualite.brochure = self._document_wagtail(
+                donnees["brochure"],
+                donnees.get("brochure_libelle") or donnees["titre"],
+                request.user,
+            )
+        # L'intitulé se corrige sans redéposer le fichier : le libellé d'un
+        # bouton est ce qu'on ajuste le plus souvent après coup.
+        actualite.brochure_libelle = donnees.get("brochure_libelle", "")
+
         if creation:
             index.add_child(instance=actualite)
         else:
@@ -215,6 +226,23 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
             else "Actualité mise à jour — la page en ligne est à jour.",
         )
         return redirect("website:actualite_edition", pk=actualite.pk)
+
+    @staticmethod
+    def _document_wagtail(fichier, titre: str, utilisateur):
+        """Dépose la brochure dans la bibliothèque de documents Wagtail.
+
+        Le même chemin que l'image : le fichier rejoint la médiathèque plutôt
+        qu'un dossier parallèle, et reste donc consultable, remplaçable et
+        supprimable depuis l'administration comme n'importe quel document.
+        """
+        from wagtail.documents import get_document_model
+
+        Document = get_document_model()
+        return Document.objects.create(
+            title=titre[:255],
+            file=fichier,
+            uploaded_by_user=utilisateur if utilisateur.is_authenticated else None,
+        )
 
     @staticmethod
     def _image_wagtail(fichier, titre: str, utilisateur):
