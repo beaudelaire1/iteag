@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, vues_actualites, vues_articles, vues_temoignages
+from . import views, vues_actualites, vues_articles, vues_brochures, vues_temoignages
 
 app_name = "website"
 
@@ -9,6 +9,13 @@ urlpatterns = [
     path("protection-des-donnees/", views.politique_donnees, name="politique_donnees"),
     path("cookies/", views.politique_cookies, name="politique_cookies"),
     path("mentions-legales/", views.mentions_legales, name="mentions_legales"),
+    # ── Brochures — lecture publique ──
+    path("brochures/", vues_brochures.BrochuresPubliquesView.as_view(), name="brochures"),
+    path(
+        "brochures/<slug:slug>/telecharger/",
+        vues_brochures.BrochureTelechargementView.as_view(),
+        name="brochure_telecharger",
+    ),
     # ── Articles de recherche — lecture publique ──
     path("articles/", vues_articles.ArticlesPublicsView.as_view(), name="articles"),
     path("articles/<slug:slug>/", vues_articles.ArticlePublicView.as_view(), name="article_detail"),
@@ -56,6 +63,23 @@ urlpatterns = [
         name="illustration_supprimer",
     ),
     # ── Actualités, côté back-office (direction et secrétariat) ──
+    # ── Brochures — dépôt et publication par le secrétariat ──
+    path("espace-admin/brochures/", vues_brochures.BrochuresGestionView.as_view(), name="brochures_gestion"),
+    path(
+        "espace-admin/brochures/nouvelle/",
+        vues_brochures.BrochureEditionView.as_view(),
+        name="brochure_creation",
+    ),
+    path(
+        "espace-admin/brochures/<int:pk>/",
+        vues_brochures.BrochureEditionView.as_view(),
+        name="brochure_edition",
+    ),
+    path(
+        "espace-admin/brochures/<int:pk>/decision/",
+        vues_brochures.BrochureDecisionView.as_view(),
+        name="brochure_decision",
+    ),
     path("espace-admin/actualites/", vues_actualites.ActualitesGestionView.as_view(), name="actualites_gestion"),
     path(
         "espace-admin/actualites/nouvelle/",

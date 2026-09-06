@@ -96,6 +96,37 @@ class TestAccesDuSecretariat:
         assert "Homilétique" not in contenu
 
 
+class TestAtteignableDepuisLeMenu:
+    """Une fonctionnalité qu'on ne trouve pas au menu n'existe pas.
+
+    L'atelier était rangé dans « À traiter », entre les corrections et les
+    paiements, avec la même icône que « Accès aux modules » — deux entrées
+    voisines, de sens opposé, sous le même pictogramme. Il vit désormais dans
+    un groupe « E-Learning », et il figure aussi dans la barre mobile, d'où il
+    était purement absent : sur téléphone, aucun chemin n'y menait.
+    """
+
+    def test_la_barre_du_secretariat_mene_a_l_atelier(self, client, secretaire):
+        client.force_login(secretaire)
+        contenu = client.get(reverse("secretariat:dashboard")).content.decode()
+        assert reverse("elearning:enseignant_modules") in contenu
+
+    def test_la_barre_mobile_du_secretariat_y_mene_aussi(self, client, secretaire):
+        client.force_login(secretaire)
+        contenu = client.get(reverse("secretariat:dashboard")).content.decode()
+        # Les deux barres sont rendues dans la même page : la pilule mobile et
+        # le lien latéral pointent tous deux vers l'atelier, d'où le compte.
+        assert contenu.count(reverse("elearning:enseignant_modules")) >= 2
+
+    def test_la_barre_de_la_direction_mene_a_l_atelier(self, client, db):
+        directrice = User.objects.create_user(
+            username="dir_atelier", email="da@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+        )
+        client.force_login(directrice)
+        contenu = client.get(reverse("administration:dashboard")).content.decode()
+        assert contenu.count(reverse("elearning:enseignant_modules")) >= 2
+
+
 class TestDesignationDuResponsable:
     def test_le_secretariat_choisit_le_responsable(self, client, secretaire, enseignant):
         client.force_login(secretaire)

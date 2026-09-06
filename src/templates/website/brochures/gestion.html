@@ -1,0 +1,102 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Brochures — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='brochures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='brochures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="overline mb-2">Communication</p>
+        <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Brochures</h1>
+        <p class="mt-1 text-sm text-warm-500">
+            Les documents mis à disposition des visiteurs sur la page
+            <a href="{% url 'website:brochures' %}" class="link-reveal">Brochures</a> du site public.
+        </p>
+    </div>
+    <a href="{% url 'website:brochure_creation' %}" class="btn-primary">Déposer une brochure</a>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+
+{% comment %}
+Les brouillons d'abord : une brochure déposée mais jamais publiée n'existe
+pour personne, et c'est le seul état qui attend une décision.
+{% endcomment %}
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    Brouillons ({{ brouillons|length }})
+</h2>
+{% if brouillons %}
+<ul class="mb-10 space-y-3" role="list">
+    {% for brochure in brouillons %}
+    <li class="card flex flex-wrap items-center justify-between gap-3">
+        <span class="min-w-0">
+            <span class="badge">Hors ligne</span>
+            <a href="{% url 'website:brochure_edition' brochure.pk %}"
+               class="ml-2 font-semibold text-navy-900">{{ brochure.titre }}</a>
+            <span class="block text-xs text-warm-500">
+                {{ brochure.get_categorie_display }}
+                · {{ brochure.format_lisible }}{% if brochure.taille_lisible %}, {{ brochure.taille_lisible }}{% endif %}
+                · déposée le {{ brochure.created_at|date:"d/m/Y" }}
+            </span>
+        </span>
+        <span class="flex flex-wrap items-center gap-2">
+            <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="publier">
+                <button type="submit" class="btn-primary whitespace-nowrap">Publier</button>
+            </form>
+            <a href="{% url 'website:brochure_edition' brochure.pk %}" class="btn-ghost">Modifier</a>
+            <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}"
+                  data-confirmer="Supprimer « {{ brochure.titre }} » ? Le fichier sera effacé.">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="supprimer">
+                <button type="submit" class="text-sm text-danger">Supprimer</button>
+            </form>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card mb-10 py-10 text-center">
+    <p class="text-warm-600">Aucune brochure en attente de publication.</p>
+</div>
+{% endif %}
+
+<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-warm-500">
+    En ligne ({{ en_ligne|length }})
+</h2>
+{% if en_ligne %}
+<ul class="space-y-3" role="list">
+    {% for brochure in en_ligne %}
+    <li class="card flex flex-wrap items-center justify-between gap-3">
+        <span class="min-w-0">
+            <span class="badge badge-gold">En ligne</span>
+            <a href="{{ brochure.get_absolute_url }}" class="ml-2 font-semibold text-navy-900">{{ brochure.titre }}</a>
+            <span class="block text-xs text-warm-500">
+                {{ brochure.get_categorie_display }}
+                · {{ brochure.format_lisible }}{% if brochure.taille_lisible %}, {{ brochure.taille_lisible }}{% endif %}
+                · publiée le {{ brochure.date_publication|date:"d/m/Y" }}
+                · {{ brochure.nombre_telechargements }} téléchargement{{ brochure.nombre_telechargements|pluralize }}
+            </span>
+        </span>
+        <span class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'website:brochure_edition' brochure.pk %}" class="btn-ghost">Modifier</a>
+            <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="depublier">
+                <button type="submit" class="text-sm text-danger">Retirer du site</button>
+            </form>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm text-warm-500">Aucune brochure publiée pour le moment.</p>
+{% endif %}
+
+{% include "partials/pagination.html" %}
+
+{% endblock %}

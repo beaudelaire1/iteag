@@ -1,0 +1,98 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}{% if brochure %}{{ brochure.titre }}{% else %}Nouvelle brochure{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}{% with nav='brochures' %}{% include "administration/partials/admin_nav.html" %}{% endwith %}{% endblock %}
+{% block portal_nav_mobile %}{% with nav='brochures' %}{% include "administration/partials/admin_nav_mobile.html" %}{% endwith %}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8">
+    <p class="overline mb-2"><a href="{% url 'website:brochures_gestion' %}">Brochures</a></p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">
+        {% if brochure %}Modifier la brochure{% else %}Déposer une brochure{% endif %}
+    </h1>
+    {% if brochure %}
+    <p class="mt-1 text-sm text-warm-500">
+        <span class="badge{% if brochure.est_publiee %} badge-gold{% endif %}">
+            {% if brochure.est_publiee %}En ligne{% else %}Hors ligne{% endif %}
+        </span>
+        {% if brochure.est_publiee %}
+        · <a href="{{ brochure.get_absolute_url }}" class="link-reveal">ouvrir le document publié</a>
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<form method="post" enctype="multipart/form-data" class="space-y-6"
+      action="{% if brochure %}{% url 'website:brochure_edition' brochure.pk %}{% else %}{% url 'website:brochure_creation' %}{% endif %}">
+    {% csrf_token %}
+
+    <div class="card space-y-4">
+        {% include "partials/champ.html" with field=form.titre %}
+        {% include "partials/champ.html" with field=form.categorie %}
+        {% include "partials/champ.html" with field=form.description %}
+    </div>
+
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Le document</h2>
+        {% if brochure.fichier %}
+        <p class="text-sm text-warm-500">
+            Fichier actuel : <a href="{{ brochure.get_absolute_url }}" class="link-reveal">{{ brochure.titre }}</a>
+            {% if brochure.taille_lisible %} ({{ brochure.taille_lisible }}){% endif %}.
+            En déposer un nouveau le remplacera ; laissez vide pour le conserver.
+        </p>
+        {% endif %}
+        {% include "partials/champ.html" with field=form.fichier %}
+        {% include "partials/champ.html" with field=form.couverture %}
+    </div>
+
+    <div class="card space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Affichage</h2>
+        {% include "partials/champ.html" with field=form.ordre %}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn-primary">
+            {% if brochure.est_publiee %}Enregistrer et remplacer la version en ligne{% else %}Enregistrer le brouillon{% endif %}
+        </button>
+        <a href="{% url 'website:brochures_gestion' %}" class="btn-ghost">Retour</a>
+    </div>
+</form>
+
+{% if brochure %}
+<div class="card mt-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Mise en ligne</h2>
+    {% if brochure.est_publiee %}
+    <p class="mt-1 mb-4 text-sm text-warm-500">
+        Cette brochure est publiée. La retirer conserve le fichier : seule l'adresse
+        publique cesse de répondre, et vous pouvez la remettre en ligne plus tard.
+    </p>
+    <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="depublier">
+        <button type="submit" class="btn-ghost">Retirer du site</button>
+    </form>
+    {% else %}
+    <p class="mt-1 mb-4 text-sm text-warm-500">
+        Cette brochure n'est visible de personne. La publier la fait paraître sur la page
+        « Brochures » du site public, où chacun pourra la télécharger.
+    </p>
+    <div class="flex flex-wrap gap-3">
+        <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="publier">
+            <button type="submit" class="btn-primary">Publier la brochure</button>
+        </form>
+        <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}"
+              data-confirmer="Supprimer « {{ brochure.titre }} » ? Le fichier sera effacé.">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="supprimer">
+            <button type="submit" class="btn-ghost text-danger">Supprimer</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

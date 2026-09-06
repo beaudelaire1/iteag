@@ -17,6 +17,7 @@
 <a href="{% url 'administration:sessions' %}" class="portal-nav-pill {% if nav == 'sessions' %}active{% endif %}">Sessions</a>
 <a href="{% url 'administration:course_offerings' %}" class="portal-nav-pill {% if nav == 'course_offerings' %}active{% endif %}">Programmation</a>
 <a href="{% url 'administration:professeurs' %}" class="portal-nav-pill {% if nav == 'professeurs' %}active{% endif %}">Corps professoral</a>
+<a href="{% url 'elearning:enseignant_modules' %}" class="portal-nav-pill">Modules et ateliers</a>
 <a href="{% url 'administration:video_statistiques' %}" class="portal-nav-pill {% if nav == 'video_statistiques' %}active{% endif %}">Visionnage</a>
 <a href="{% url 'administration:video_journal' %}" class="portal-nav-pill {% if nav == 'video_journal' %}active{% endif %}">Journal des accès</a>
 <a href="{% url 'library:gestion' %}" class="portal-nav-pill {% if nav == 'bibliotheque' %}active{% endif %}">Bibliothèque</a>
@@ -26,6 +27,7 @@
 <a href="{% url 'website:actualites_gestion' %}" class="portal-nav-pill {% if nav == 'actualites' %}active{% endif %}">Actualités</a>
 <a href="{% url 'website:temoignages_gestion' %}" class="portal-nav-pill {% if nav == 'temoignages' %}active{% endif %}">Témoignages</a>
 <a href="{% url 'website:articles_relecture' %}" class="portal-nav-pill {% if nav == 'articles' %}active{% endif %}">Articles</a>
+<a href="{% url 'website:brochures_gestion' %}" class="portal-nav-pill {% if nav == 'brochures' %}active{% endif %}">Brochures</a>
 <a href="{% url 'redaction:documents' %}" class="portal-nav-pill {% if nav == 'documents_rediges' %}active{% endif %}">Documents</a>
 <a href="{% url 'accounts:signature' %}" class="portal-nav-pill {% if nav == 'signature' %}active{% endif %}">Signature</a>
 <a href="{% url 'administration:utilisateurs' %}" class="portal-nav-pill {% if nav == 'utilisateurs' %}active{% endif %}">Utilisateurs</a>
