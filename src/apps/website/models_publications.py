@@ -1,5 +1,8 @@
 """Articles de recherche et contenus éditoriaux publics hors arborescence Wagtail."""
 
+import mimetypes
+from pathlib import Path
+
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
@@ -336,3 +339,171 @@ class TemoignageEtudiant(models.Model):
     @property
     def est_public(self) -> bool:
         return self.statut == self.Statut.PUBLIE and self.consentement_publication
+
+
+# ──────────────────────────────────────────────
+# Brochures — documents de communication publiés
+# ──────────────────────────────────────────────
+
+
+class Brochure(TimeStampedModel):
+    """Un document de communication mis à disposition du public.
+
+    Une brochure n'est pas un document rédigé : elle n'a ni destinataire, ni
+    référence au registre, et elle n'est pas composée dans l'application. Elle
+    arrive mise en page depuis l'imprimeur ou le graphiste, et ce qu'on attend
+    du site est de la porter — pas de la réécrire.
+
+    Une brochure se joint déjà à une actualité (« NewsPage.brochure »), et cela
+    reste le bon geste pour annoncer : « voici le programme de la rentrée », le
+    PDF sous le texte. Mais l'annonce passe, et le document reste. Six mois plus
+    tard, la plaquette d'admission n'est plus retrouvable que par celui qui se
+    souvient de l'actualité qui la portait — et le visiteur venu chercher « les
+    brochures de l'institut » n'a aucune page où aller.
+
+    Ce modèle sert cet autre besoin : un catalogue durable, classé, que le
+    secrétariat alimente depuis sa rubrique et que le public consulte
+    directement. Les deux chemins coexistent sans se gêner.
+
+    Le fichier reste en place tant que la brochure existe : dépublier ne
+    supprime rien, cela retire seulement l'adresse publique. Une plaquette de
+    l'an dernier qu'on remet en ligne pour une réunion doit se retrouver
+    intacte, pas se re-téléverser.
+    """
+
+    class Categorie(models.TextChoices):
+        INSTITUTION = "institution", "Présentation de l'institut"
+        FORMATION = "formation", "Formation ou parcours"
+        ADMISSION = "admission", "Admission et inscription"
+        EVENEMENT = "evenement", "Événement"
+        AUTRE = "autre", "Autre document"
+
+    class Statut(models.TextChoices):
+        BROUILLON = "brouillon", "Brouillon"
+        PUBLIEE = "publiee", "Publiée"
+
+    titre = models.CharField(max_length=200, verbose_name="Titre")
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    description = models.TextField(
+        blank=True,
+        max_length=600,
+        verbose_name="Description",
+        help_text="Deux ou trois phrases : ce que le visiteur trouvera dans le document.",
+    )
+    categorie = models.CharField(
+        max_length=20,
+        choices=Categorie.choices,
+        default=Categorie.INSTITUTION,
+        db_index=True,
+        verbose_name="Catégorie",
+    )
+    fichier = models.FileField(upload_to="brochures/%Y/%m/", verbose_name="Fichier de la brochure")
+    couverture = models.ImageField(
+        upload_to="brochures/couvertures/%Y/%m/",
+        blank=True,
+        verbose_name="Image de couverture",
+    )
+
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.BROUILLON, db_index=True)
+    date_publication = models.DateTimeField(null=True, blank=True, verbose_name="Publiée le")
+    # Le classement de la page publique est décidé par le secrétariat, pas par
+    # la date de dépôt : la brochure institutionnelle doit rester en tête même
+    # quand une plaquette d'événement arrive après elle.
+    ordre = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ordre d'affichage",
+        help_text="Les plus petits nombres passent en premier. Laissez 0 pour un classement par date.",
+    )
+    nombre_telechargements = models.PositiveIntegerField(default=0, verbose_name="Téléchargements")
+
+    deposee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="brochures_deposees",
+        verbose_name="Déposée par",
+    )
+
+    class Meta:
+        verbose_name = "Brochure"
+        verbose_name_plural = "Brochures"
+        ordering = ["ordre", "-date_publication", "-created_at"]
+        indexes = [models.Index(fields=["statut", "ordre"])]
+
+    def __str__(self):
+        return self.titre
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self._slug_libre(self.titre)
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def _slug_libre(titre: str) -> str:
+        base = slugify(titre)[:200] or "brochure"
+        candidat, suffixe = base, 1
+        while Brochure.objects.filter(slug=candidat).exists():
+            suffixe += 1
+            candidat = f"{base}-{suffixe}"
+        return candidat
+
+    def get_absolute_url(self) -> str:
+        return reverse("website:brochure_telecharger", kwargs={"slug": self.slug})
+
+    @property
+    def est_publiee(self) -> bool:
+        return self.statut == self.Statut.PUBLIEE
+
+    @property
+    def extension(self) -> str:
+        """L'extension réelle du document déposé, point compris."""
+        return Path(self.fichier.name).suffix.lower() if self.fichier else ""
+
+    @property
+    def format_lisible(self) -> str:
+        """Ce qu'on annonce au visiteur avant qu'il clique — « PDF », « DOCX »."""
+        return self.extension.lstrip(".").upper()
+
+    @property
+    def type_mime(self) -> str:
+        """Le type à servir.
+
+        Depuis que la brochure accepte aussi le bureautique, annoncer
+        « application/pdf » pour tout ferait télécharger un DOCX que le
+        navigateur essaierait d'afficher comme un PDF, et qui s'ouvrirait sur
+        une erreur. On déduit donc le type de l'extension, déjà contrôlée par
+        la signature binaire au dépôt.
+        """
+        devine, _ = mimetypes.guess_type(self.fichier.name if self.fichier else "")
+        return devine or "application/octet-stream"
+
+    @property
+    def taille_lisible(self) -> str:
+        """Le poids du fichier, tel qu'on l'annonce avant un téléchargement.
+
+        Un fichier absent du stockage — restauration partielle, média non
+        monté — ne doit pas casser la page qui le liste : on préfère ne rien
+        annoncer plutôt que lever une erreur au rendu.
+        """
+        try:
+            octets = self.fichier.size
+        except (ValueError, OSError):
+            return ""
+        if octets < 1024 * 1024:
+            return f"{max(1, round(octets / 1024))} Ko"
+        return f"{octets / (1024 * 1024):.1f} Mo".replace(".", ",")
+
+    def publier(self, *, maintenant=None) -> None:
+        self.statut = self.Statut.PUBLIEE
+        self.date_publication = maintenant or timezone.now()
+        self.save(update_fields=["statut", "date_publication", "updated_at"])
+
+    def depublier(self) -> None:
+        """Retire la brochure du site sans toucher au fichier ni à sa date.
+
+        La date de première publication est conservée : elle sert de repère au
+        secrétariat pour savoir depuis quand le document circule.
+        """
+        self.statut = self.Statut.BROUILLON
+        self.save(update_fields=["statut", "updated_at"])

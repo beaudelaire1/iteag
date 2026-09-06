@@ -71,7 +71,7 @@ from apps.lms.models import (
     RessourcePedagogique,
 )
 from apps.website.models import NewsIndexPage, NewsPage
-from apps.website.models_publications import Article, ImageArticle, TemoignageEtudiant
+from apps.website.models_publications import Article, Brochure, ImageArticle, TemoignageEtudiant
 
 ADMIN, SECRETARIAT = User.Role.ADMIN, User.Role.SECRETARIAT
 ENSEIGNANT, ETUDIANT = User.Role.ENSEIGNANT, User.Role.ETUDIANT
@@ -357,6 +357,17 @@ def univers(db, settings, tmp_path):
     )
     index_actualites.add_child(instance=monde["actualite"])
 
+    # Une brochure publiée : son adresse de téléchargement est publique,
+    # mais sa fiche de gestion ne l'est pas.
+    monde["brochure"] = Brochure.objects.create(
+        titre="Présentation de l'institut",
+        categorie=Brochure.Categorie.INSTITUTION,
+        fichier=SimpleUploadedFile("brochure-detail.pdf", b"%PDF-1.4" + b"0" * 200, content_type="application/pdf"),
+        statut=Brochure.Statut.PUBLIEE,
+        date_publication=timezone.now(),
+        deposee_par=monde[SECRETARIAT],
+    )
+
     monde["document_administratif"] = DocumentAdministratif.objects.create(
         etudiant=monde[ETUDIANT],
         type_document=DocumentAdministratif.TypeDocument.ATTESTATION,
@@ -581,6 +592,10 @@ FABRIQUES = {
     "website:actualite_edition": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
     "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
     "website:temoignage_public": (PUBLIC, lambda m: {"pk": m["temoignage"].pk}),
+    # ── Brochures ──
+    "website:brochure_telecharger": (PUBLIC, lambda m: {"slug": m["brochure"].slug}),
+    "website:brochure_edition": (SECRETARIAT, lambda m: {"pk": m["brochure"].pk}),
+    "website:brochure_decision": (SECRETARIAT, lambda m: {"pk": m["brochure"].pk}),
     # ── Documents rédigés ──
     "redaction:document_edition": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
     "redaction:document_decision": (SECRETARIAT, lambda m: {"pk": m["document_redige"].pk}),
