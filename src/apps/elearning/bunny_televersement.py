@@ -24,6 +24,8 @@ from urllib.request import Request, urlopen
 
 from django.conf import settings
 
+from apps.core.services.production import defaut_de_forme_bunny
+
 logger = logging.getLogger(__name__)
 
 RACINE_API = "https://video.bunnycdn.com/library"
@@ -49,6 +51,13 @@ MESSAGE_CLE_REFUSEE = (
     "première, et que BUNNY_STREAM_LIBRARY_ID désigne bien la bibliothèque à "
     "laquelle cette clé appartient."
 )
+
+# La forme des identifiants appartient au contrat de configuration, tenu par
+# « core » : c'est lui qui refuse une mise en service, et il ne doit dépendre
+# d'aucune application. Le dépôt s'y réfère plutôt que d'en garder une copie,
+# qui dériverait au premier ajustement.
+defaut_de_forme = defaut_de_forme_bunny
+
 
 # Codes d'état Bunny. Seuls « terminé » et « résolution terminée » valent prêt :
 # une vidéo encore en file d'attente est lisible par personne.
@@ -76,11 +85,23 @@ def televersement_disponible() -> bool:
 def _configuration(*, silencieux: bool = False) -> tuple[str, str] | None:
     bibliotheque = str(getattr(settings, "BUNNY_STREAM_LIBRARY_ID", "") or "").strip()
     cle = str(getattr(settings, "BUNNY_STREAM_API_KEY", "") or "").strip()
-    if bibliotheque and cle:
-        return bibliotheque, cle
-    if silencieux:
-        return None
-    raise TeleversementBunnyIndisponible("Le dépôt de vidéos exige BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY.")
+    if not bibliotheque or not cle:
+        if silencieux:
+            return None
+        raise TeleversementBunnyIndisponible(
+            "Le dépôt de vidéos exige BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY."
+        )
+
+    defaut = defaut_de_forme(bibliotheque, cle)
+    if defaut:
+        # Partir quand même produirait un 401 que rien ne distingue d'une clé
+        # révoquée : autant nommer le défaut ici, où il est certain.
+        logger.error("Identifiants Bunny mal formés : %s", defaut)
+        if silencieux:
+            return None
+        raise TeleversementBunnyIndisponible(defaut)
+
+    return bibliotheque, cle
 
 
 def _appeler(url: str, *, cle: str, methode: str, corps=None, entetes=None, timeout: int):

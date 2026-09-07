@@ -79,7 +79,7 @@ class FournisseurVideo(Protocol):
 
     def lecture(self, cle: str, ttl: int = 300, adresse_ip: str = "") -> Lecture: ...
 
-    def televerser(self, fichier, cle: str) -> None: ...
+    def televerser(self, fichier, cle: str) -> str: ...
 
     def supprimer(self, cle: str) -> None: ...
 
@@ -128,8 +128,10 @@ class LocalStockageVideo:
         except signing.BadSignature:
             return None
 
-    def televerser(self, fichier, cle: str) -> None:
-        default_storage.save(cle, fichier)
+    def televerser(self, fichier, cle: str) -> str:
+        # Le stockage peut renommer : deux dépôts de même nom ne s'écrasent pas.
+        # C'est la clé retenue, pas celle demandée, qui retrouvera le fichier.
+        return default_storage.save(cle, fichier)
 
     def supprimer(self, cle: str) -> None:
         if default_storage.exists(cle):
@@ -181,8 +183,9 @@ class S3StockageVideo:
             ExpiresIn=ttl,
         )
 
-    def televerser(self, fichier, cle: str) -> None:
+    def televerser(self, fichier, cle: str) -> str:
         self._client.upload_fileobj(fichier, self._bucket, cle)
+        return cle
 
     def supprimer(self, cle: str) -> None:
         self._client.delete_object(Bucket=self._bucket, Key=cle)
@@ -297,7 +300,7 @@ class BunnyStreamVideo:
             origine=self._zone,
         )
 
-    def televerser(self, fichier, cle: str) -> None:
+    def televerser(self, fichier, cle: str) -> str:
         raise NotImplementedError("Le dépôt se fait dans la console Bunny ; la leçon référence l'identifiant.")
 
     def supprimer(self, cle: str) -> None:
@@ -334,7 +337,7 @@ class _FournisseurIframe:
             origine=self.origine,
         )
 
-    def televerser(self, fichier, cle: str) -> None:
+    def televerser(self, fichier, cle: str) -> str:
         raise NotImplementedError("Le dépôt se fait chez le fournisseur ; la leçon référence l'identifiant.")
 
     def supprimer(self, cle: str) -> None:
@@ -386,6 +389,10 @@ PROTECTION_PAR_FOURNISSEUR: dict[str, str] = {nom: classe.protection for nom, cl
 
 CHOIX_FOURNISSEUR = [
     (BunnyStreamVideo.nom, "Bunny Stream (adresse signée)"),
+    # Le repli du dépôt : le fichier reste sur le stockage de l'institut et se
+    # sert par adresse signée. Il figure ici pour que les écrans sachent le
+    # nommer — pas pour être choisi, aucun formulaire ne le propose.
+    (LocalStockageVideo.nom, "ITEAG (adresse signée)"),
     (VimeoVideo.nom, "Vimeo (contenu public)"),
     (YouTubeVideo.nom, "YouTube (contenu public)"),
 ]

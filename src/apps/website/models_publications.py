@@ -452,6 +452,17 @@ class Brochure(TimeStampedModel):
         return reverse("website:brochure_telecharger", kwargs={"slug": self.slug})
 
     @property
+    def url_sur_le_site(self) -> str:
+        """La page où le visiteur la trouve, et l'endroit exact où elle s'y trouve.
+
+        « get_absolute_url » sert le fichier : la suivre télécharge le document
+        sans jamais montrer la page qui le porte. Publier ne disait donc rien de
+        l'endroit où la brochure venait d'apparaître — le secrétariat savait
+        qu'elle était en ligne, et rien d'autre.
+        """
+        return f"{reverse('website:brochures')}#brochure-{self.slug}"
+
+    @property
     def est_publiee(self) -> bool:
         return self.statut == self.Statut.PUBLIEE
 

@@ -293,25 +293,7 @@ class LeconForm(FormulaireModeleITEAG):
             valider_fichier(fichier, REGLE_VIDEO)
             if self.errors:
                 return
-            try:
-                donnees["video"] = self._deposer_chez_bunny(fichier, donnees.get("titre") or fichier.name)
-            except forms.ValidationError as erreur:
-                # Le refus se disait en tête de formulaire, à l'endroit réservé
-                # aux erreurs qui ne visent aucun champ. Il vise pourtant celui
-                # où le geste a été fait. Et il laissait sans suite : le dépôt
-                # refusé, l'écran ne disait pas que le lien, lui, restait ouvert
-                # — l'enseignant ne pouvait plus créer la leçon, donc plus lui
-                # attacher la moindre ressource, l'écran des ressources n'étant
-                # servi qu'aux leçons existantes.
-                self._source_video_refusee = True
-                for message in erreur.messages:
-                    self.add_error("video_fichier", message)
-                self.add_error(
-                    "video_fichier",
-                    "En attendant, déposez la vidéo depuis le tableau de bord Bunny, puis collez son "
-                    "lien dans « Je n'ai pas de fichier à déposer » ci-dessous.",
-                )
-                return
+            donnees["video"] = self._deposer(fichier, donnees.get("titre") or fichier.name)
             self.instance.video = donnees["video"]
             return
 
@@ -339,31 +321,24 @@ class LeconForm(FormulaireModeleITEAG):
             )
             self.instance.video = donnees["video"]
 
-    def _deposer_chez_bunny(self, fichier, titre: str) -> VideoAsset:
-        """Déclare la vidéo chez Bunny, puis confie l'envoi au worker.
+    #: Renseigné quand la vidéo a dû être hébergée par ITEAG faute de Bunny.
+    #: La vue s'en sert pour le dire à l'enseignant après l'enregistrement.
+    repli_hebergement = False
 
-        La déclaration est synchrone : brève, et son échec — clé absente,
-        bibliothèque inconnue — doit se lire dans le formulaire plutôt que se
-        découvrir plus tard sur une fiche en erreur.
+    def _deposer(self, fichier, titre: str) -> VideoAsset:
+        """Confie le fichier au service de dépôt, quel que soit son hébergeur.
+
+        Le refus de Bunny ne casse plus la leçon. Il faisait échouer la
+        validation, donc l'enregistrement, donc toute la suite : sans leçon, pas
+        de ressource à y attacher, l'écran des ressources n'étant servi qu'aux
+        leçons existantes. Une clé mal recopiée fermait ainsi la création de
+        cours à tout l'institut, et à l'enseignant seul de s'en dépêtrer avec un
+        message qui nommait une variable d'environnement.
         """
-        from apps.elearning import bunny_televersement as bunny
-        from apps.elearning.tasks import televerser_video_bunny
+        from apps.elearning.services import depot_video
 
-        try:
-            identifiant = bunny.creer_video(titre)
-        except bunny.TeleversementBunnyIndisponible as erreur:
-            raise forms.ValidationError(str(erreur)) from erreur
-
-        video = VideoAsset.objects.create(
-            titre=titre[:250],
-            cle_stockage=identifiant,
-            fournisseur="bunny",
-            fichier_source=fichier,
-            nom_origine=fichier.name[:250],
-            uploade_par=self.enseignant,
-            statut_traitement=VideoAsset.StatutTraitement.EN_ATTENTE,
-        )
-        televerser_video_bunny.delay(str(video.pk))
+        video, hebergeur = depot_video.deposer(fichier, titre, self.enseignant)
+        self.repli_hebergement = hebergeur != depot_video.BUNNY
         return video
 
     def clean(self):

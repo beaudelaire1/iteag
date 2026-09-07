@@ -85,6 +85,15 @@ def rubriques() -> list[Rubrique]:
                 # les articles publiés existaient à leur adresse sans qu'aucun
                 # chemin n'y mène : un visiteur ne les trouvait jamais.
                 Entree(libelle="Articles", url=reverse("website:articles")),
+                # Le catalogue des brochures n'était atteignable que par le pied
+                # de page. Une brochure publiée existait donc à son adresse sans
+                # qu'aucun chemin visible n'y mène : le secrétariat la publiait,
+                # et personne — lui compris — ne voyait où elle avait atterri.
+                Entree(
+                    libelle="Brochures",
+                    url=reverse("website:brochures"),
+                    detail="Présentation, parcours, admission",
+                ),
                 Entree(libelle="Nous contacter", url="/contact/"),
             ),
         ),

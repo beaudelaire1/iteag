@@ -164,11 +164,18 @@ class Command(BaseCommand):
         if not bibliotheque or not cle:
             self.stdout.write(
                 self.style.WARNING(
-                    "  Dépôt non configuré — l'écran de leçon ne proposera que le lien.\n"
-                    "  Renseigner BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY pour l'ouvrir."
+                    "  Dépôt non configuré — les vidéos déposées seront hébergées par l'ITEAG.\n"
+                    "  Renseigner BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY pour les confier à Bunny."
                 )
             )
             return
+
+        # La forme d'abord : un appel parti sur une valeur mal recopiée revient
+        # en « 401 », que rien ne distingue d'une clé révoquée. C'est le piège
+        # dans lequel la production est tombée.
+        defaut = depot.defaut_de_forme(bibliotheque, cle)
+        if defaut:
+            raise CommandError(f"Identifiants mal formés — aucun appel n'a été tenté.\n{defaut}")
 
         try:
             total = depot.verifier_acces()

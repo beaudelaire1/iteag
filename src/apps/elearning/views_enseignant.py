@@ -319,6 +319,19 @@ class LeconFormMixin(ProfesseurMixin):
     def get_success_url(self):
         return reverse("elearning:enseignant_structure", kwargs={"slug": self.chapitre.module.slug})
 
+    def _signaler_repli(self, form) -> None:
+        """Dit que la vidéo est hébergée ici, quand Bunny l'a refusée.
+
+        La leçon est créée dans les deux cas — c'est tout l'objet du repli — mais
+        l'enseignant doit savoir laquelle des deux choses vient de se produire,
+        et à qui le signaler. Le taire donnerait une réussite silencieuse dont
+        personne ne saurait qu'elle demande une réparation.
+        """
+        from apps.elearning.services import depot_video
+
+        if getattr(form, "repli_hebergement", False):
+            messages.warning(self.request, depot_video.MESSAGE_REPLI)
+
 
 class LeconCreateView(LeconFormMixin, CreateView):
     model = Lecon
@@ -364,6 +377,7 @@ class LeconCreateView(LeconFormMixin, CreateView):
                     {"libelle": "Leçon", "valeur": lecon.titre},
                 ],
             )
+        self._signaler_repli(form)
         messages.success(self.request, "Leçon ajoutée.")
         return redirect(self.get_success_url())
 
@@ -429,6 +443,7 @@ class LeconUpdateView(LeconFormMixin, UpdateView):
                     {"libelle": "Leçon", "valeur": lecon.titre},
                 ],
             )
+        self._signaler_repli(form)
         messages.success(self.request, "Leçon mise à jour.")
         return redirect(self.get_success_url())
 
@@ -560,42 +575,37 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         return self._referencer(request)
 
     def _deposer(self, request):
-        """Déclare la vidéo chez Bunny, puis confie l'envoi au worker.
+        """Range la vidéo chez son hébergeur, et dit lequel a été retenu.
 
-        La déclaration est faite ici, en synchrone : elle est brève, et son échec
-        — clé absente, bibliothèque inconnue — doit se lire dans le formulaire
-        plutôt que se découvrir plus tard sur une fiche en erreur.
+        Bunny d'abord ; ITEAG si Bunny refuse. Le dépôt aboutit dans les deux
+        cas : un refus de Bunny renvoyait l'enseignant à une variable
+        d'environnement qu'il n'a aucun moyen de corriger, et lui fermait le
+        seul chemin dont il dispose quand il n'a pas de compte chez le
+        fournisseur.
         """
-        from apps.elearning import bunny_televersement as bunny
-        from apps.elearning.tasks import televerser_video_bunny
+        from apps.elearning.services import depot_video
 
         formulaire = VideoTeleversementForm(request.POST, request.FILES)
         if not formulaire.is_valid():
             return self.render_to_response(self.get_context_data(form_depot=formulaire))
 
-        titre = formulaire.cleaned_data["titre"]
-        try:
-            identifiant = bunny.creer_video(titre)
-        except bunny.TeleversementBunnyIndisponible as erreur:
-            formulaire.add_error(None, str(erreur))
-            return self.render_to_response(self.get_context_data(form_depot=formulaire))
+        video, hebergeur = depot_video.deposer(
+            formulaire.cleaned_data["fichier"],
+            formulaire.cleaned_data["titre"],
+            request.user,
+        )
+        if formulaire.cleaned_data["transcription"]:
+            video.transcription = formulaire.cleaned_data["transcription"]
+            video.save(update_fields=["transcription", "updated_at"])
 
-        video = VideoAsset.objects.create(
-            titre=titre,
-            cle_stockage=identifiant,
-            fournisseur="bunny",
-            fichier_source=formulaire.cleaned_data["fichier"],
-            nom_origine=formulaire.cleaned_data["fichier"].name[:250],
-            transcription=formulaire.cleaned_data["transcription"],
-            uploade_par=request.user,
-            statut_traitement=VideoAsset.StatutTraitement.EN_ATTENTE,
-        )
         journaliser("creation", request=request, objet=video)
-        televerser_video_bunny.delay(str(video.pk))
-        messages.success(
-            request,
-            "Vidéo déposée. Son envoi et son encodage se poursuivent : vous serez prévenu dès qu'elle sera prête.",
-        )
+        if hebergeur == depot_video.BUNNY:
+            messages.success(
+                request,
+                "Vidéo déposée. Son envoi et son encodage se poursuivent : vous serez prévenu dès qu'elle sera prête.",
+            )
+        else:
+            messages.warning(request, depot_video.MESSAGE_REPLI)
         return redirect(reverse("elearning:enseignant_videos"))
 
     def _referencer(self, request):

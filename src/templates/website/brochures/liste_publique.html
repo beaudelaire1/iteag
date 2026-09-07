@@ -37,7 +37,11 @@
         {% if brochures %}
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {% for brochure in brochures %}
-            <article class="card-elevated flex flex-col">
+            {% comment %}
+            L'ancre porte le slug : c'est elle que le secrétariat suit depuis sa
+            rubrique pour voir, après publication, où sa brochure a atterri.
+            {% endcomment %}
+            <article class="card-elevated flex flex-col scroll-mt-28" id="brochure-{{ brochure.slug }}">
                 {% if brochure.couverture %}
                 <img src="{{ brochure.couverture.url }}" alt=""
                      class="mb-4 w-full rounded object-cover h-[13rem]">

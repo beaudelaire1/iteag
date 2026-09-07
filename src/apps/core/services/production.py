@@ -5,9 +5,56 @@ vérifient que l'application n'est pas ouverte au public avec des valeurs de
 repli de développement ou une protection critique désactivée.
 """
 
+import re
 from urllib.parse import urlparse
 
 from django.conf import settings
+
+# La clé d'API d'une bibliothèque Bunny Stream est un identifiant universel :
+# trente-deux chiffres hexadécimaux en cinq groupes de 8-4-4-4-12, séparés par
+# des tirets. L'identifiant de bibliothèque, lui, est un nombre.
+#
+# Cette règle vit ici plutôt que dans « elearning » parce qu'elle appartient au
+# contrat de configuration d'une instance, au même titre que la présence des
+# variables : c'est ce contrat qui est censé refuser une mise en service. Le
+# domaine la relit au moment de déposer, mais il ne la définit pas — et core ne
+# doit dépendre d'aucune application.
+_MOTIF_CLE_API_BUNNY = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+_MOTIF_BIBLIOTHEQUE_BUNNY = re.compile(r"^[0-9]{1,12}$")
+
+
+def defaut_de_forme_bunny(bibliotheque: str, cle: str) -> str:
+    """Ce qui cloche dans les identifiants Bunny configurés, ou une chaîne vide.
+
+    Renseignée ne veut pas dire recopiée correctement. Une clé dont les groupes
+    ont été réordonnés au copier-coller passe tout contrôle de présence, puis se
+    fait refuser par Bunny en « 401 » — un code que rien ne distingue d'une clé
+    révoquée. L'exploitant relit alors une clé qu'il croit bonne et cherche du
+    côté du compte Bunny, pendant que plus aucune vidéo ne peut être déposée.
+
+    Le message décrit la valeur sans jamais la citer : sa longueur et son
+    découpage suffisent à reconnaître l'erreur, et ni un écran ni un journal
+    d'exploitation ne sont l'endroit où recopier un secret.
+    """
+    if bibliotheque and not _MOTIF_BIBLIOTHEQUE_BUNNY.fullmatch(bibliotheque):
+        return (
+            "BUNNY_STREAM_LIBRARY_ID n'a pas la forme d'un identifiant de bibliothèque. "
+            "Bunny attend un nombre — celui qui s'affiche en tête de la page de la "
+            f"bibliothèque, et dans son adresse. La valeur configurée compte {len(bibliotheque)} "
+            "caractères et n'est pas un nombre."
+        )
+    if cle and not _MOTIF_CLE_API_BUNNY.fullmatch(cle):
+        groupes = cle.split("-")
+        return (
+            "BUNNY_STREAM_API_KEY n'a pas la forme d'une clé Bunny. Une clé d'API de "
+            "bibliothèque Stream compte 36 caractères en cinq groupes hexadécimaux "
+            f"— 8-4-4-4-12, séparés par des tirets. La valeur configurée compte {len(cle)} "
+            f"caractères en {len(groupes)} groupe{'s' if len(groupes) > 1 else ''} "
+            f"({'-'.join(str(len(groupe)) for groupe in groupes)}). "
+            "Recopier la clé depuis Stream > la bibliothèque > API, d'un seul bloc, "
+            "sans en réordonner les groupes."
+        )
+    return ""
 
 
 def _origine(url: str) -> str:
@@ -168,6 +215,16 @@ def anomalies_configuration_production() -> list[str]:
                     f"{nom} doit être renseigné : sans lui, les chapitres des leçons "
                     "restent vides sans qu'aucune erreur ne le signale."
                 )
+
+        # Renseignée ne veut pas dire recopiée correctement : c'est ce qui a
+        # laissé partir une mise en service où aucune vidéo ne pouvait être
+        # déposée.
+        defaut = defaut_de_forme_bunny(
+            str(getattr(settings, "BUNNY_STREAM_LIBRARY_ID", "") or "").strip(),
+            str(getattr(settings, "BUNNY_STREAM_API_KEY", "") or "").strip(),
+        )
+        if defaut:
+            anomalies.append(defaut)
 
     # ── Publication légale ──
     #

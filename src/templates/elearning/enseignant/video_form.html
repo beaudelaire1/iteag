@@ -41,7 +41,7 @@
             {% if modification %}<a href="{% url 'elearning:enseignant_videos' %}" class="btn-ghost w-full justify-center">Annuler</a>{% endif %}
         </form>
 
-        {% if depot_possible and not modification %}
+        {% if not modification %}
         <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5 mt-6">
             {% csrf_token %}
             <input type="hidden" name="action" value="deposer">
@@ -59,9 +59,16 @@
             {% include "partials/champ.html" with field=form_depot.fichier %}
             {% include "partials/champ.html" with field=form_depot.transcription %}
 
+            {% if depot_possible %}
             <div class="note max-w-none"><span class="lbl">Hébergement</span>
             Le dépôt vise Bunny Stream, seul hébergeur dont l’adresse se révoque. Une vidéo
             destinée au public peut aussi être référencée depuis YouTube ou Vimeo, ci-dessus.</div>
+            {% else %}
+            <div class="note alert max-w-none"><span class="lbl">Hébergement</span>
+            Bunny Stream n’est pas joignable en ce moment : votre vidéo sera donc hébergée par
+            l’ITEAG, avec la même adresse signée et la même durée de vie. Le dépôt aboutit,
+            la lecture aussi. Signalez-le à l’administrateur du site.</div>
+            {% endif %}
 
             <button type="submit" class="btn-primary w-full justify-center">Déposer la vidéo</button>
         </form>

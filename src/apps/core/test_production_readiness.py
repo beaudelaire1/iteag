@@ -51,7 +51,7 @@ CONFIGURATION_PRODUCTION = {
     "BUNNY_ZONE_DIFFUSION": "https://video.example.test",
     "BUNNY_CLE_SIGNATURE": "video-secret",
     "BUNNY_STREAM_LIBRARY_ID": "12345",
-    "BUNNY_STREAM_API_KEY": "cle-api-stream",
+    "BUNNY_STREAM_API_KEY": "0f8e1c2a-3b4d-4e5f-8a9b-0c1d2e3f4a5b",
     "CACHES": {"default": {"BACKEND": "django_redis.cache.RedisCache"}},
     "CELERY_BROKER_URL": "redis://redis:6379/1",
     "CELERY_RESULT_BACKEND": "redis://redis:6379/2",
@@ -145,6 +145,26 @@ def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, moteur_pos
         setattr(settings, cle, config)
     setattr(settings, nom, valeur)
 
+    with pytest.raises(CommandError):
+        call_command("verifier_production", sans_base=True)
+
+
+def test_une_cle_bunny_mal_recopiee_refuse_l_ouverture(settings, moteur_postgresql):
+    """Renseignée ne veut pas dire recopiée correctement.
+
+    La clé partie en production portait un groupe de trop : elle passait le
+    contrôle de présence, et Bunny la refusait en « 401 » — un code que rien ne
+    distingue d'une clé révoquée. Plus aucune vidéo ne pouvait être déposée, et
+    la mise en service était déjà annoncée. La forme se contrôle donc ici, où le
+    défaut se constate avant l'ouverture.
+    """
+    for cle, config in CONFIGURATION_PRODUCTION.items():
+        setattr(settings, cle, config)
+    settings.BUNNY_STREAM_API_KEY = "9c2d1635-e1ee-1111-86e28f273b7b-2866-4a8e"
+
+    anomalies = anomalies_configuration_production()
+
+    assert any("BUNNY_STREAM_API_KEY" in anomalie and "groupes" in anomalie for anomalie in anomalies)
     with pytest.raises(CommandError):
         call_command("verifier_production", sans_base=True)
 

@@ -195,6 +195,45 @@ class TestDepot:
         assert brochure.titre == "Présentation de l'ITEAG — édition 2026"
         assert brochure.fichier.name == chemin_initial
 
+    def test_publier_montre_ou_la_brochure_a_paru(self, client, secretaire, brochure):
+        """Publier ne disait que « c'est en ligne ». Ni la page, ni l'endroit.
+
+        Le secrétariat repartait de là sans savoir où regarder : la page publique
+        n'était atteignable que par le pied de page, et le titre de la brochure
+        menait au fichier, pas à l'endroit où il apparaît. On lui rend donc
+        l'adresse, et un lien qui y mène.
+        """
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("website:brochure_decision", kwargs={"pk": brochure.pk}),
+            {"action": "publier"},
+            follow=True,
+        )
+
+        assert reponse.status_code == 200
+        brochure.refresh_from_db()
+        assert reponse.context["vient_de_paraitre"] == brochure
+        contenu = reponse.content.decode()
+        assert brochure.url_sur_le_site in contenu
+        assert "Voir la brochure sur le site" in contenu
+
+    def test_l_adresse_publique_mene_a_la_place_de_la_brochure(self, client, brochure):
+        """L'ancre doit exister sur la page, sinon le lien ne mène qu'à la liste."""
+        brochure.publier()
+
+        contenu = client.get(reverse("website:brochures")).content.decode()
+
+        assert f'id="brochure-{brochure.slug}"' in contenu
+        assert brochure.url_sur_le_site.endswith(f"#brochure-{brochure.slug}")
+
+    def test_le_catalogue_figure_dans_la_navigation_publique(self, client):
+        """Le pied de page ne suffit pas : personne n'y cherche une rubrique."""
+        from apps.core.navigation import rubriques
+
+        adresses = [entree.url for rubrique in rubriques() for entree in rubrique.entrees]
+
+        assert reverse("website:brochures") in adresses
+
     def test_publier_puis_retirer(self, client, secretaire, brochure):
         client.force_login(secretaire)
         adresse = reverse("website:brochure_decision", kwargs={"pk": brochure.pk})

@@ -21,6 +21,30 @@
 
 {% block portal_content %}
 
+{% if vient_de_paraitre %}
+{% comment %}
+Ce qui manquait après « Publier » : la page, et l'endroit sur la page. Le
+bandeau vert disait qu'une brochure était en ligne et s'effaçait au bout de
+cinq secondes, sans jamais montrer où. Le panneau reste, et porte l'adresse.
+{% endcomment %}
+<section class="card-elevated mb-8 border-l-4 border-l-gold-500" aria-labelledby="titre-parution">
+    <p class="overline mb-1">Elle est en ligne</p>
+    <h2 id="titre-parution" class="text-lg font-semibold text-navy-900">{{ vient_de_paraitre.titre }}</h2>
+    <p class="mt-2 text-sm text-warm-600">
+        Le document est visible de tous, dans la rubrique
+        « L’institut → Brochures » du site public, sous
+        « {{ vient_de_paraitre.get_categorie_display }} ».
+    </p>
+    <p class="mt-4 break-all rounded bg-warm-50 px-3 py-2 font-mono text-xs text-warm-700">
+        {{ request.scheme }}://{{ request.get_host }}{{ vient_de_paraitre.url_sur_le_site }}
+    </p>
+    <p class="mt-4 flex flex-wrap items-center gap-3">
+        <a href="{{ vient_de_paraitre.url_sur_le_site }}" class="btn-primary">Voir la brochure sur le site</a>
+        <a href="{{ vient_de_paraitre.get_absolute_url }}" class="btn-ghost">Ouvrir le fichier</a>
+    </p>
+</section>
+{% endif %}
+
 {% comment %}
 Les brouillons d'abord : une brochure déposée mais jamais publiée n'existe
 pour personne, et c'est le seul état qui attend une décision.
@@ -74,7 +98,12 @@ pour personne, et c'est le seul état qui attend une décision.
     <li class="card flex flex-wrap items-center justify-between gap-3">
         <span class="min-w-0">
             <span class="badge badge-gold">En ligne</span>
-            <a href="{{ brochure.get_absolute_url }}" class="ml-2 font-semibold text-navy-900">{{ brochure.titre }}</a>
+            {% comment %}
+            Le titre menait au fichier : le suivre téléchargeait le document sans
+            jamais montrer la page qui le porte. Il mène désormais à sa place sur
+            le site ; le fichier reste à un clic, sous un libellé qui le dit.
+            {% endcomment %}
+            <a href="{{ brochure.url_sur_le_site }}" class="ml-2 font-semibold text-navy-900">{{ brochure.titre }}</a>
             <span class="block text-xs text-warm-500">
                 {{ brochure.get_categorie_display }}
                 · {{ brochure.format_lisible }}{% if brochure.taille_lisible %}, {{ brochure.taille_lisible }}{% endif %}
@@ -83,6 +112,8 @@ pour personne, et c'est le seul état qui attend une décision.
             </span>
         </span>
         <span class="flex flex-wrap items-center gap-2">
+            <a href="{{ brochure.url_sur_le_site }}" class="btn-ghost">Voir sur le site</a>
+            <a href="{{ brochure.get_absolute_url }}" class="btn-ghost">Ouvrir le fichier</a>
             <a href="{% url 'website:brochure_edition' brochure.pk %}" class="btn-ghost">Modifier</a>
             <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}">
                 {% csrf_token %}

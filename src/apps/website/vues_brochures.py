@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.db.models import F, Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.views import View
 from django.views.generic import ListView, TemplateView
 
@@ -40,9 +41,27 @@ class BrochuresGestionView(StaffRoleRequiredMixin, ListView):
                 "nav": "brochures",
                 "brouillons": [b for b in brochures if not b.est_publiee],
                 "en_ligne": [b for b in brochures if b.est_publiee],
+                "vient_de_paraitre": self._vient_de_paraitre(),
             }
         )
         return contexte
+
+    def _vient_de_paraitre(self):
+        """La brochure que la publication vient de mettre en ligne, s'il y en a une.
+
+        Publier ne rendait qu'un bandeau vert : « en ligne sur la page
+        Brochures ». Ni la page, ni l'endroit. La retrouver demandait de deviner
+        qu'un catalogue public existait, puis de le parcourir. On la ressert donc
+        ici, avec son adresse, immédiatement après le geste.
+
+        Elle est relue en base plutôt que cherchée dans la liste affichée : la
+        liste est paginée, et une brochure publiée depuis la deuxième page n'y
+        figurerait pas.
+        """
+        identifiant = self.request.GET.get("publiee", "")
+        if not identifiant.isdigit():
+            return None
+        return Brochure.objects.filter(pk=int(identifiant), statut=Brochure.Statut.PUBLIEE).first()
 
 
 class BrochureEditionView(StaffRoleRequiredMixin, TemplateView):
@@ -108,7 +127,9 @@ class BrochureDecisionView(StaffRoleRequiredMixin, View):
                 objet=brochure,
                 objet_libelle=f"Brochure « {titre} » → en ligne",
             )
-            messages.success(request, f"« {titre} » est en ligne sur la page Brochures.")
+            messages.success(request, f"« {titre} » est en ligne. Son adresse est rappelée ci-dessous.")
+            # L'adresse revient avec la redirection : c'est elle qui manquait.
+            return redirect(f"{reverse('website:brochures_gestion')}?publiee={brochure.pk}")
         elif action == "depublier":
             brochure.depublier()
             journaliser(

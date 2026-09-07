@@ -43,10 +43,16 @@ def fichier(nom="sequence-1.mp4", contenu=MP4, type_mime="video/mp4"):
     return SimpleUploadedFile(nom, contenu, content_type=type_mime)
 
 
+# Une clé d'API Bunny est un identifiant universel, et la plateforme le vérifie
+# désormais avant d'appeler quoi que ce soit. Le jeu d'essai doit donc en porter
+# une vraie forme — factice, mais bien formée.
+CLE_BIEN_FORMEE = "0f8e1c2a-3b4d-4e5f-8a9b-0c1d2e3f4a5b"
+
+
 @pytest.fixture
 def bunny_configure(settings):
     settings.BUNNY_STREAM_LIBRARY_ID = "12345"
-    settings.BUNNY_STREAM_API_KEY = "cle-de-test"
+    settings.BUNNY_STREAM_API_KEY = CLE_BIEN_FORMEE
 
 
 class TestSignatureVideo:
@@ -104,8 +110,16 @@ class TestDepotDepuisLaPlateforme:
         assert video.fichier_source
         assert appels["tache"] == str(video.pk)
 
-    def test_un_refus_de_bunny_se_lit_dans_le_formulaire(self, client, enseignant, bunny_configure, monkeypatch):
-        """Sinon la panne ne se découvrirait qu'après coup, sur une fiche en erreur."""
+    def test_un_refus_de_bunny_fait_heberger_la_video_par_l_institut(
+        self, client, enseignant, bunny_configure, monkeypatch
+    ):
+        """Le refus de Bunny ne doit plus coûter la vidéo.
+
+        Il faisait échouer le dépôt et renvoyait l'enseignant à une variable
+        d'environnement qu'il n'a aucun moyen de corriger. La vidéo est donc
+        gardée ici, servie par la même adresse signée, et l'enseignant sait
+        qu'il faut le signaler.
+        """
 
         def refuser(_titre):
             raise bunny.TeleversementBunnyIndisponible("Bunny a refusé l'appel (401).")
@@ -116,21 +130,34 @@ class TestDepotDepuisLaPlateforme:
         reponse = client.post(
             reverse("elearning:enseignant_videos"),
             {"action": "deposer", "titre": "Prédication", "fichier": fichier(), "transcription": ""},
+            follow=True,
         )
 
         assert reponse.status_code == 200
-        assert "401" in reponse.content.decode()
-        assert not VideoAsset.objects.exists()
+        video = VideoAsset.objects.get()
+        assert video.fournisseur == "local"
+        assert video.statut_traitement == VideoAsset.StatutTraitement.PRET
+        # Une adresse signée, comme chez Bunny : le module restreint reste servi.
+        from apps.elearning.diffusion import NiveauProtection
 
-    def test_sans_cle_api_le_depot_n_est_pas_propose(self, client, enseignant, settings):
-        """Un formulaire condamné à l'envoi ne doit pas être offert."""
+        assert video.protection == NiveauProtection.SIGNEE
+        assert any("hébergée par ITEAG" in str(message) for message in reponse.context["messages"])
+
+    def test_sans_cle_api_le_depot_reste_propose(self, client, enseignant, settings):
+        """Sans clé, le dépôt reste le seul geste qu'un enseignant sache faire.
+
+        L'écran le retirait, ne laissant que le référencement — c'est-à-dire un
+        compte Bunny, que l'enseignant n'a pas et n'a pas à avoir. Le dépôt tient
+        désormais sans Bunny ; l'écran le propose donc, en disant qui hébergera.
+        """
         settings.BUNNY_STREAM_LIBRARY_ID = ""
         settings.BUNNY_STREAM_API_KEY = ""
 
         client.force_login(enseignant)
         contenu = client.get(reverse("elearning:enseignant_videos")).content.decode()
 
-        assert "Déposer un fichier" not in contenu
+        assert "Déposer un fichier" in contenu
+        assert "hébergée par" in contenu
 
     def test_un_fichier_qui_n_est_pas_une_video_est_refuse(self, client, enseignant, bunny_configure):
         client.force_login(enseignant)
@@ -258,17 +285,16 @@ class TestDepuisLaLecon:
         assert appels == []
         assert not VideoAsset.objects.exists()
 
-    def test_un_depot_refuse_se_dit_sur_le_champ_et_laisse_une_issue(
-        self, client, enseignant, chapitre, bunny_configure, monkeypatch
-    ):
+    def test_un_depot_refuse_n_empeche_plus_la_lecon(self, client, enseignant, chapitre, bunny_configure, monkeypatch):
         """Refusé, le dépôt fermait tout — la leçon, et donc ses ressources.
 
         L'écran des ressources n'est servi qu'aux leçons existantes. Une leçon
-        vidéo qu'on ne peut pas créer emporte donc avec elle la possibilité de
-        lui attacher quoi que ce soit. Le refus doit se dire là où le geste a été
-        fait, et nommer le chemin qui reste ouvert.
+        vidéo qu'on ne peut pas créer emportait donc avec elle la possibilité de
+        lui attacher quoi que ce soit : une clé mal recopiée suffisait à fermer
+        la création de cours à tout l'institut. La leçon se crée désormais, sa
+        vidéo est hébergée ici, et l'enseignant est prévenu de le signaler.
         """
-        import re
+        from apps.elearning.models import Lecon
 
         def refuser(_titre):
             raise bunny.TeleversementBunnyIndisponible(bunny.MESSAGE_CLE_REFUSEE)
@@ -279,20 +305,14 @@ class TestDepuisLaLecon:
         reponse = client.post(
             reverse("elearning:enseignant_lecon_creer", args=[chapitre.pk]),
             self.saisie(video_fichier=fichier()),
+            follow=True,
         )
 
         assert reponse.status_code == 200
-        erreurs = reponse.context["form"].errors
-        assert "video_fichier" in erreurs
-        # Surtout pas sur la liste déroulante : elle n'a aucun rapport avec le refus.
-        assert "video" not in erreurs
-        assert any("tableau de bord Bunny" in message for message in erreurs["video_fichier"])
-
-        contenu = reponse.content.decode()
-        # Le chemin de secours ne doit pas rester replié derrière un libellé qui
-        # parle de ne pas avoir de fichier, adressé à quelqu'un qui en a un.
-        assert re.search(r"<details[^>]*\sopen[^>]*>", contenu)
-        assert "mon dépôt a été refusé" in contenu
+        lecon = Lecon.objects.get()
+        assert lecon.video is not None
+        assert lecon.video.fournisseur == "local"
+        assert any("hébergée par ITEAG" in str(message) for message in reponse.context["messages"])
 
 
 class TestTacheDEnvoi:
@@ -388,6 +408,64 @@ class TestClesRefusees:
 
         with pytest.raises(bunny.TeleversementBunnyIndisponible, match="Quota depasse"):
             bunny.creer_video("Prédication")
+
+
+class TestFormeDesIdentifiants:
+    """
+    Une clé recopiée de travers produit le même refus qu'une clé fausse.
+
+    C'est ce qui s'est passé en production : la valeur configurée portait un
+    groupe de trop, Bunny répondait « Authentication has been denied », et
+    l'exploitant relisait une clé qu'il croyait bonne en cherchant du côté du
+    compte Bunny. La forme se contrôle ici, avant tout appel, parce que c'est le
+    seul endroit où le défaut est certain.
+    """
+
+    def test_une_cle_a_six_groupes_est_refusee_avant_tout_appel(self, settings, monkeypatch):
+        """Le cas réel : les groupes d'un identifiant universel, réordonnés."""
+
+        def jamais(*_args, **_kwargs):
+            raise AssertionError("Aucun appel ne doit partir sur une clé mal formée.")
+
+        monkeypatch.setattr(bunny, "urlopen", jamais)
+        settings.BUNNY_STREAM_LIBRARY_ID = "712346"
+        settings.BUNNY_STREAM_API_KEY = "9c2d1635-e1ee-1111-86e28f273b7b-2866-4a8e"
+
+        with pytest.raises(bunny.TeleversementBunnyIndisponible) as refus:
+            bunny.creer_video("Prédication")
+
+        message = str(refus.value)
+        assert "6 groupes" in message
+        assert "8-4-4-4-12" in message
+        # Le secret ne se recopie ni dans un écran ni dans un journal.
+        assert "9c2d1635" not in message
+
+    def test_un_identifiant_de_bibliotheque_non_numerique_est_refuse(self, settings):
+        settings.BUNNY_STREAM_LIBRARY_ID = "vz-7fd6c2-31c"
+        settings.BUNNY_STREAM_API_KEY = CLE_BIEN_FORMEE
+
+        with pytest.raises(bunny.TeleversementBunnyIndisponible, match="BUNNY_STREAM_LIBRARY_ID"):
+            bunny.creer_video("Prédication")
+
+    def test_une_cle_bien_formee_laisse_passer(self):
+        assert bunny.defaut_de_forme("712346", CLE_BIEN_FORMEE) == ""
+
+    def test_la_commande_nomme_le_defaut_de_forme(self, settings, monkeypatch):
+        """`verifier_bunny` doit dire la même chose que l'écran, sans partir sur le réseau."""
+        import io as flux
+
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        def jamais(*_args, **_kwargs):
+            raise AssertionError("Aucun appel ne doit partir sur une clé mal formée.")
+
+        monkeypatch.setattr(bunny, "urlopen", jamais)
+        settings.BUNNY_STREAM_LIBRARY_ID = "712346"
+        settings.BUNNY_STREAM_API_KEY = "9c2d1635-e1ee-1111-86e28f273b7b-2866-4a8e"
+
+        with pytest.raises(CommandError, match="cinq groupes"):
+            call_command("verifier_bunny", stdout=flux.StringIO())
 
 
 class TestVerificationDesCles:
