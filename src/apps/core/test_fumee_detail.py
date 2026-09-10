@@ -510,6 +510,7 @@ FABRIQUES = {
     "elearning:enseignant_audience": (ENSEIGNANT, lambda m: {"slug": m["module"].slug}),
     "elearning:enseignant_publier": (ENSEIGNANT, lambda m: {"slug": m["module"].slug}),
     "elearning:enseignant_depublier": (ENSEIGNANT, lambda m: {"slug": m["module"].slug}),
+    "elearning:enseignant_module_supprimer": (ENSEIGNANT, lambda m: {"slug": m["module"].slug}),
     "elearning:enseignant_chapitre_creer": (ENSEIGNANT, lambda m: {"slug": m["module"].slug}),
     "elearning:enseignant_chapitre_supprimer": (ENSEIGNANT, lambda m: {"pk": m["chapitre"].pk}),
     "elearning:enseignant_lecon_creer": (ENSEIGNANT, lambda m: {"chapitre_pk": m["chapitre"].pk}),

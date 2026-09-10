@@ -12,6 +12,19 @@
         <h1 class="text-xl mb-4">Supprimer {{ libelle }} ?</h1>
 
         <p class="mb-2 text-warm-700">{{ consequence }}</p>
+
+        {% comment %}
+            Certaines suppressions ne doivent pas aboutir — une attestation
+            délivrée, par exemple. Le motif se lit ici, sur la page où le geste
+            se fait, plutôt que dans un bandeau après un aller-retour.
+        {% endcomment %}
+        {% if blocage %}
+        <div class="note alert mb-6 max-w-none">
+            <span class="lbl">Suppression impossible</span>
+            <p>{{ blocage }}</p>
+        </div>
+        <a href="{{ annuler_url }}" class="btn-ghost">Retour</a>
+        {% else %}
         <p class="mb-6 text-sm text-warm-500">Cette action est irréversible.</p>
 
         <form method="post" class="flex flex-wrap gap-4">
@@ -19,6 +32,7 @@
             <button type="submit" class="btn-danger">Supprimer</button>
             <a href="{{ annuler_url }}" class="btn-ghost">Annuler</a>
         </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

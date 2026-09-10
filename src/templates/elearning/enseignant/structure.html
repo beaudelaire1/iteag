@@ -29,6 +29,7 @@
                 <button type="submit" class="btn-primary" {% if not publiable %}disabled{% endif %}>Publier</button>
             </form>
             {% endif %}
+            <a href="{% url 'elearning:enseignant_module_supprimer' module.slug %}" class="btn-ghost text-danger">Supprimer</a>
         </div>
     </div>
 </div>

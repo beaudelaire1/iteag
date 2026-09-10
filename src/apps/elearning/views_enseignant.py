@@ -32,6 +32,7 @@ from apps.elearning.forms import (
     VideoTeleversementForm,
 )
 from apps.elearning.models import (
+    AttestationModule,
     Chapitre,
     InscriptionModule,
     Lecon,
@@ -247,6 +248,80 @@ class ModuleDepublierView(ProfesseurMixin, View):
         journaliser("modification", request=request, objet=module, objet_libelle=f"Dépublication : {module.titre}")
         messages.success(request, "Module repassé en brouillon.")
         return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": slug}))
+
+
+class ModuleDeleteView(ProfesseurMixin, DeleteView):
+    """Le dernier maillon du cycle de vie : jeter un module.
+
+    Supprimer un module emporte ses chapitres, ses leçons et le suivi des
+    étudiants : la confirmation annonce donc le décompte exact plutôt qu'un
+    avertissement générique. Une seule chose ne se rattrape pas — une
+    attestation délivrée se vérifie publiquement par son code, et l'institut ne
+    peut pas la rendre invérifiable parce qu'un module a été rangé. Dans ce
+    cas, la suppression est refusée et la dépublication reste la bonne porte :
+    elle retire le module de la vue sans rien détruire.
+
+    Les vidéos, elles, appartiennent à la bibliothèque de l'enseignant et non
+    au module : elles survivent à sa suppression.
+    """
+
+    model = ModuleFormation
+    template_name = "elearning/enseignant/confirmer_suppression.html"
+    slug_url_kwarg = "slug"
+
+    def get_queryset(self):
+        return self.mes_modules()
+
+    def get_success_url(self):
+        return reverse("elearning:enseignant_modules")
+
+    def _attestations_delivrees(self) -> int:
+        return AttestationModule.objects.filter(inscription__module=self.object).count()
+
+    def _blocage(self) -> str:
+        attestations = self._attestations_delivrees()
+        if not attestations:
+            return ""
+        return (
+            f"{attestations} attestation(s) ont déjà été délivrées pour ce module. "
+            "Chacune se vérifie par son code : les supprimer rendrait invérifiables "
+            "des documents que l'institut a signés. Dépubliez le module pour le "
+            "retirer du catalogue — les inscrits et leurs attestations sont conservés."
+        )
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        inscrits = self.object.inscriptions.count()
+        lecons = self.object.lecons().count()
+        progressions = ProgressionLecon.objects.filter(lecon__chapitre__module=self.object).count()
+        consequence = (
+            f"{self.object.chapitres.count()} chapitre(s) et {lecons} leçon(s) seront supprimés, "
+            f"ainsi que {inscrits} inscription(s) et {progressions} progression(s) d'étudiant. "
+            "Les vidéos restent dans votre bibliothèque."
+        )
+        contexte.update(
+            {
+                "objet": self.object,
+                "libelle": f"le module « {self.object.titre} »",
+                "consequence": consequence,
+                "blocage": self._blocage(),
+                "annuler_url": reverse("elearning:enseignant_structure", kwargs={"slug": self.object.slug}),
+            }
+        )
+        return contexte
+
+    def form_valid(self, form):
+        blocage = self._blocage()
+        if blocage:
+            messages.error(self.request, f"Suppression impossible — {blocage}")
+            return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": self.object.slug}))
+        titre = self.object.titre
+        # Journalisé avant la suppression : après, il ne reste plus d'objet à
+        # décrire, et c'est précisément la trace qui doit survivre.
+        journaliser("suppression", request=self.request, objet=self.object, objet_libelle=f"Module : {titre}")
+        reponse = super().form_valid(form)
+        messages.success(self.request, f"Module « {titre} » supprimé.")
+        return reponse
 
 
 # ══════════════════════════════════════════════

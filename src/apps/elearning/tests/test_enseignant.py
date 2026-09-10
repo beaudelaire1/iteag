@@ -11,8 +11,15 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from apps.accounts.models import User
-from apps.core.models import Notification
-from apps.elearning.models import Chapitre, Lecon, ModuleFormation, SousTitre, VideoAsset
+from apps.core.models import JournalAudit, Notification
+from apps.elearning.models import (
+    AttestationModule,
+    Chapitre,
+    Lecon,
+    ModuleFormation,
+    SousTitre,
+    VideoAsset,
+)
 from apps.formations.models import Professeur
 
 
@@ -347,6 +354,59 @@ class TestPublicationControlee:
         client.post(reverse("elearning:enseignant_depublier", kwargs={"slug": module.slug}))
         module.refresh_from_db()
         assert module.statut == ModuleFormation.StatutPublication.BROUILLON
+
+
+@pytest.mark.django_db
+class TestSuppressionDUnModule:
+    """Le module se jette, sauf quand l'institut a déjà signé pour lui."""
+
+    def test_la_suppression_emporte_chapitres_et_lecons(self, client, enseignant, module, lecon, video_prete):
+        client.force_login(enseignant.user)
+        reponse = client.post(reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug}))
+        assert reponse.status_code == 302
+        assert not ModuleFormation.objects.filter(pk=module.pk).exists()
+        assert not Chapitre.objects.filter(pk=lecon.chapitre.pk).exists()
+        assert not Lecon.objects.filter(pk=lecon.pk).exists()
+        # La vidéo appartient à la bibliothèque, pas au module.
+        assert VideoAsset.objects.filter(pk=video_prete.pk).exists()
+
+    def test_la_suppression_laisse_une_trace(self, client, enseignant, module):
+        client.force_login(enseignant.user)
+        client.post(reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug}))
+        assert JournalAudit.objects.filter(action="suppression", objet_libelle=f"Module : {module.titre}").exists()
+
+    def test_une_attestation_delivree_bloque_la_suppression(self, client, enseignant, module, lecon, acces):
+        AttestationModule.objects.create(inscription=acces)
+        client.force_login(enseignant.user)
+
+        page = client.get(reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug}))
+        contenu = page.content.decode()
+        assert "Suppression impossible" in contenu
+        assert "btn-danger" not in contenu
+
+        reponse = client.post(reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug}))
+        assert reponse.status_code == 302
+        assert ModuleFormation.objects.filter(pk=module.pk).exists()
+
+    def test_la_confirmation_annonce_le_decompte(self, client, enseignant, module, lecon, acces):
+        client.force_login(enseignant.user)
+        contenu = client.get(
+            reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug})
+        ).content.decode()
+        assert "1 chapitre(s) et 1 leçon(s)" in contenu
+        assert "1 inscription(s)" in contenu
+
+    def test_la_page_de_structure_offre_la_suppression(self, client, enseignant, module):
+        """Sans point d'entrée, l'adresse existerait sans que personne la trouve."""
+        client.force_login(enseignant.user)
+        contenu = client.get(reverse("elearning:enseignant_structure", kwargs={"slug": module.slug})).content.decode()
+        assert reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug}) in contenu
+
+    def test_je_ne_supprime_pas_le_module_d_un_autre(self, client, autre_enseignant, module):
+        client.force_login(autre_enseignant.user)
+        reponse = client.post(reverse("elearning:enseignant_module_supprimer", kwargs={"slug": module.slug}))
+        assert reponse.status_code == 404
+        assert ModuleFormation.objects.filter(pk=module.pk).exists()
 
 
 @pytest.mark.django_db

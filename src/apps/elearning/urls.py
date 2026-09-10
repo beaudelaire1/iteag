@@ -93,6 +93,11 @@ urlpatterns = [
         name="enseignant_depublier",
     ),
     path(
+        "espace-enseignant/<slug:slug>/supprimer/",
+        views_enseignant.ModuleDeleteView.as_view(),
+        name="enseignant_module_supprimer",
+    ),
+    path(
         "espace-enseignant/<slug:slug>/audience/", views_enseignant.AudienceView.as_view(), name="enseignant_audience"
     ),
     # Module et leçons
