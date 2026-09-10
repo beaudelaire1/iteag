@@ -60,3 +60,24 @@ def test_le_pied_de_page_n_emploie_pas_la_teinte_reservee_aux_fonds_clairs():
     palette = teintes()
     assert contraste(palette["warm-500"], palette["navy-950"]) < AA_TEXTE_COURANT
     assert "text-warm-500" not in PIED_DE_PAGE.read_text(encoding="utf-8")
+
+
+def test_la_marque_du_champ_obligatoire_est_lisible():
+    """L'astérisque est masqué aux lecteurs d'écran : il ne parle qu'aux yeux.
+
+    Raison de plus pour qu'il se voie. En gold-600 il tombait à 3.73:1 sur le
+    fond crème — la seule indication visuelle qu'un champ doit être rempli
+    s'effaçait pour qui distingue mal les contrastes.
+    """
+    palette = teintes()
+    for nom_fond, fond in (("warm-50", palette["warm-50"]), ("blanc", "#FFFFFF")):
+        ratio = contraste(palette["gold-700"], fond)
+        assert ratio >= AA_TEXTE_COURANT, f"gold-700 sur {nom_fond} : {ratio:.2f}:1"
+
+
+def test_les_petites_capitales_dorees_sur_fond_sombre_restent_lisibles():
+    """Vérifié plutôt que supposé : « overline-light » est en gold-300."""
+    palette = teintes()
+    for jeton in ("navy-800", "navy-900", "navy-950"):
+        ratio = contraste(palette["gold-300"], palette[jeton])
+        assert ratio >= AA_TEXTE_COURANT, f"gold-300 sur {jeton} : {ratio:.2f}:1"

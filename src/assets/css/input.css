@@ -892,7 +892,10 @@
   }
 
   .form-label .obligatoire {
-    color: var(--color-gold-600);
+    /* gold-600 ne donnait que 3.73:1 sur le fond crème et 3.89:1 sur une
+       carte blanche : la marque du champ obligatoire, en petit corps, passait
+       sous le seuil AA. gold-700 atteint 6.03:1 sans changer la teinte. */
+    color: var(--color-gold-700);
     margin-left: 0.125rem;
   }
 

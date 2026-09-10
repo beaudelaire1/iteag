@@ -15,10 +15,14 @@
 
             {# Col 1 — Marque #}
             <div class="reveal">
-                {% comment %}Le sigle est écrit juste à côté : le répéter en alternative le ferait entendre deux fois.{% endcomment %}
-                <a href="/" class="flex items-center gap-3 mb-5 group">
-                    <img src="{% static 'img/logo.png' %}" alt="" class="h-12 w-auto" width="48" height="48">
-                    <span class="text-base font-bold text-white">{{ SITE_NAME }}</span>
+                {% comment %}
+                    Le fichier du logo porte déjà le sigle : le doubler d'un
+                    « ITEAG » en texte faisait lire « ITEAG ITEAG ». Le nom
+                    accessible du lien passe donc sur le lien lui-même, comme
+                    dans la barre de navigation.
+                {% endcomment %}
+                <a href="/" class="inline-flex items-center mb-5 group" aria-label="Accueil {{ SITE_NAME }}">
+                    <img src="{% static 'img/logo.png' %}" alt="" class="h-12 w-auto" width="161" height="48">
                 </a>
                 <p class="text-sm leading-relaxed mb-3 text-warm-400">
                     {{ SITE_FULL_NAME }}
@@ -92,18 +96,26 @@
                 </p>
             </div>
             <div>
-                <form method="post" action="{% url 'core:newsletter_inscription' %}"
-                      class="flex flex-col sm:flex-row gap-3">
+                {% comment %}
+                    L'intitulé était réservé aux lecteurs d'écran : à l'écran,
+                    seul un texte d'exemple gris disait ce qu'attendait le
+                    champ — et il disparaît à la première frappe. Il est
+                    désormais affiché, au-dessus de la ligne plutôt que dedans,
+                    pour ne pas se retrouver aligné avec le bouton.
+                {% endcomment %}
+                <form method="post" action="{% url 'core:newsletter_inscription' %}">
                     {% csrf_token %}
                     <input type="hidden" name="suivant" value="{{ request.path }}">
-                    <label for="newsletter-email" class="sr-only">Votre adresse email</label>
-                    <input type="email" name="email" id="newsletter-email" required
-                           autocomplete="email" placeholder="vous@exemple.org"
-                           class="form-input flex-1">
-                    {# Piège à robots : masqué visuellement, jamais rempli par un humain #}
-                    <input type="text" name="site_web" tabindex="-1" autocomplete="off"
-                           aria-hidden="true" class="sr-only">
-                    <button type="submit" class="btn-gold justify-center">S'inscrire</button>
+                    <label for="newsletter-email" class="form-label text-warm-400">Votre adresse email</label>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="email" name="email" id="newsletter-email" required
+                               autocomplete="email" placeholder="vous@exemple.org"
+                               class="form-input flex-1">
+                        {# Piège à robots : masqué visuellement, jamais rempli par un humain #}
+                        <input type="text" name="site_web" tabindex="-1" autocomplete="off"
+                               aria-hidden="true" class="sr-only">
+                        <button type="submit" class="btn-gold justify-center">S'inscrire</button>
+                    </div>
                 </form>
                 <p class="mt-3 text-xs leading-5 text-warm-400">
                     Votre adresse est utilisée uniquement pour cette lettre d'information après confirmation.
