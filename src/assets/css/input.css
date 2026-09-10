@@ -38,7 +38,11 @@
   --color-warm-200: #EDE5D0;
   --color-warm-300: #D8CDB6;
   --color-warm-400: #B8AC93;
-  --color-warm-500: #978B72;
+  /* #978B72 ne donnait que 3.22:1 sur le fond crème du site : toutes les
+     mentions légales, dates et légendes écrites en warm-500 échouaient au
+     niveau AA. Cette teinte garde la même nuance et atteint 4.81:1. Le jeton
+     ne sert qu'à du texte — aucun fond, aucune bordure ne l'utilise. */
+  --color-warm-500: #796E59;
   --color-warm-600: #736957;
   --color-warm-700: #544B3D;
   --color-warm-800: #373127;

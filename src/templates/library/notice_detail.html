@@ -35,51 +35,60 @@
                     {% endif %}
                 </div>
 
-                <aside class="p-6 rounded-2xl border border-warm-200 bg-warm-50 space-y-4">
-                    {% if notice.editeur %}
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Éditeur</dt>
-                        <dd class="mt-1 text-warm-700">{{ notice.editeur }}</dd>
-                    </div>
-                    {% endif %}
-                    {% if notice.date_publication %}
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Date de publication</dt>
-                        <dd class="mt-1 text-warm-700">{{ notice.date_publication }}</dd>
-                    </div>
-                    {% endif %}
-                    {% if notice.isbn %}
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">ISBN</dt>
-                        <dd class="mt-1 text-warm-700 font-mono text-sm">{{ notice.isbn }}</dd>
-                    </div>
-                    {% endif %}
-                    {% if notice.cote %}
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Cote</dt>
-                        <dd class="mt-1 text-warm-700 font-mono">{{ notice.cote }}</dd>
-                    </div>
-                    {% endif %}
-                    {% if notice.discipline %}
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Discipline</dt>
-                        <dd class="mt-1 text-warm-700">{{ notice.discipline.nom }}</dd>
-                    </div>
-                    {% endif %}
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Disponibilité</dt>
-                        <dd class="mt-1">
-                            {% if notice.disponible %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Disponible
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-rose-700">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Indisponible
-                            </span>
-                            {% endif %}
-                        </dd>
-                    </div>
+                {% comment %}
+                    Les termes et leurs définitions doivent appartenir à une
+                    liste de définitions : isolés, ils ne disent plus quelle
+                    valeur répond à quelle étiquette. Et un « aside » ici
+                    déclarerait un repère de page dans le contenu principal.
+                {% endcomment %}
+                <div class="p-6 rounded-2xl border border-warm-200 bg-warm-50 space-y-4">
+                    <dl class="space-y-4">
+                        {% if notice.editeur %}
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Éditeur</dt>
+                            <dd class="mt-1 text-warm-700">{{ notice.editeur }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if notice.date_publication %}
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Date de publication</dt>
+                            <dd class="mt-1 text-warm-700">{{ notice.date_publication }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if notice.isbn %}
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">ISBN</dt>
+                            <dd class="mt-1 text-warm-700 font-mono text-sm">{{ notice.isbn }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if notice.cote %}
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Cote</dt>
+                            <dd class="mt-1 text-warm-700 font-mono">{{ notice.cote }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if notice.discipline %}
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Discipline</dt>
+                            <dd class="mt-1 text-warm-700">{{ notice.discipline.nom }}</dd>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-warm-500">Disponibilité</dt>
+                            <dd class="mt-1">
+                                {% if notice.disponible %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Disponible
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-rose-700">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Indisponible
+                                </span>
+                                {% endif %}
+                            </dd>
+                        </div>
+
+                    </dl>
 
                     {% if user_emprunt %}
                     <div class="pt-2 space-y-3">
@@ -123,7 +132,7 @@
                         <p class="text-xs text-warm-500 italic">Cet ouvrage est actuellement réservé ou emprunté par un autre lecteur.</p>
                     </div>
                     {% endif %}
-                </aside>
+                </div>
             </div>
 
             {% if notice.mots_cles %}

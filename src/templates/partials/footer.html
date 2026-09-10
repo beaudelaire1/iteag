@@ -1,5 +1,10 @@
 {% load static %}
 
+{% comment %}
+    Tout ce pied de page est sur bleu nuit. warm-500, assombri pour passer AA
+    sur le fond crème des pages, n'y contraste plus (3.61:1) : les mentions
+    discrètes y sont donc en warm-400.
+{% endcomment %}
 <footer class="mt-auto bg-navy-950 text-warm-400">
 
     {# Bande dorée subtile animée #}
@@ -10,14 +15,15 @@
 
             {# Col 1 — Marque #}
             <div class="reveal">
+                {% comment %}Le sigle est écrit juste à côté : le répéter en alternative le ferait entendre deux fois.{% endcomment %}
                 <a href="/" class="flex items-center gap-3 mb-5 group">
-                    <img src="{% static 'img/logo.png' %}" alt="{{ SITE_NAME }}" class="h-12 w-auto" width="48" height="48">
+                    <img src="{% static 'img/logo.png' %}" alt="" class="h-12 w-auto" width="48" height="48">
                     <span class="text-base font-bold text-white">{{ SITE_NAME }}</span>
                 </a>
                 <p class="text-sm leading-relaxed mb-3 text-warm-400">
                     {{ SITE_FULL_NAME }}
                 </p>
-                <p class="text-sm text-warm-500">{{ SITE_ADDRESS }}</p>
+                <p class="text-sm text-warm-400">{{ SITE_ADDRESS }}</p>
                 <hr class="divider-gold mt-5">
             </div>
 
@@ -99,7 +105,7 @@
                            aria-hidden="true" class="sr-only">
                     <button type="submit" class="btn-gold justify-center">S'inscrire</button>
                 </form>
-                <p class="mt-3 text-xs leading-5 text-warm-500">
+                <p class="mt-3 text-xs leading-5 text-warm-400">
                     Votre adresse est utilisée uniquement pour cette lettre d'information après confirmation.
                     <a href="{% url 'website:politique_donnees' %}" class="text-warm-400 underline underline-offset-2 hover:text-white">
                         Données personnelles et droits
@@ -110,27 +116,27 @@
 
         {# Barre basse #}
         <div class="mt-12 pt-6 border-t border-navy-800 flex flex-col lg:flex-row items-center justify-between gap-4">
-            <p class="text-xs text-warm-500">&copy; {% now "Y" %} {{ SITE_NAME }}. Tous droits réservés.</p>
+            <p class="text-xs text-warm-400">&copy; {% now "Y" %} {{ SITE_NAME }}. Tous droits réservés.</p>
             <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
                 <a href="{% url 'website:mentions_legales' %}"
-                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                   class="text-warm-400 hover:text-gold-400 transition-colors duration-200">
                     Mentions légales
                 </a>
                 <a href="{% url 'website:politique_donnees' %}"
-                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                   class="text-warm-400 hover:text-gold-400 transition-colors duration-200">
                     Protection des données
                 </a>
                 <a href="{% url 'website:politique_cookies' %}"
-                   class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                   class="text-warm-400 hover:text-gold-400 transition-colors duration-200">
                     Politique des cookies
                 </a>
                 <button type="button" data-cookie-settings
-                        class="text-warm-500 hover:text-gold-400 transition-colors duration-200">
+                        class="text-warm-400 hover:text-gold-400 transition-colors duration-200">
                     Gérer les cookies
                 </button>
             </div>
-            <p class="text-xs text-warm-500">
-                Conçu par <a href="https://www.traitdunion.it" target="_blank" rel="noopener noreferrer" class="font-medium text-warm-500 hover:text-gold-400 transition-colors duration-200">Trait&nbsp;d'Union&nbsp;Studio</a>
+            <p class="text-xs text-warm-400">
+                Conçu par <a href="https://www.traitdunion.it" target="_blank" rel="noopener noreferrer" class="font-medium text-warm-400 hover:text-gold-400 transition-colors duration-200">Trait&nbsp;d'Union&nbsp;Studio</a>
             </p>
         </div>
     </div>
