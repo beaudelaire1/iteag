@@ -10,30 +10,53 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 
-# La clé d'API d'une bibliothèque Bunny Stream est un identifiant universel :
-# trente-deux chiffres hexadécimaux en cinq groupes de 8-4-4-4-12, séparés par
-# des tirets. L'identifiant de bibliothèque, lui, est un nombre.
+# La clé d'API d'une bibliothèque Bunny Stream est faite de groupes
+# hexadécimaux séparés par des tirets. Leur nombre et leur longueur, en
+# revanche, ne sont pas ce que ce module a longtemps cru.
+#
+# Ce module exigeait un identifiant universel — 8-4-4-4-12, trente-deux
+# chiffres. C'était faux. Le tableau de bord de la bibliothèque 714046
+# affichait, le 10 septembre 2026, une clé de quarante et un caractères en six
+# groupes (8-4-4-12-4-4), copiée au bouton depuis la page « API ». Le contrôle
+# a refusé cette clé parfaitement valide, et refusé de tenter le moindre appel :
+# aucune vidéo ne pouvait plus être déposée, et le message d'erreur envoyait
+# l'exploitant relire une clé qui n'avait rien à se reprocher. Bunny ne publie
+# aucune spécification de forme ; l'exigence venait d'une supposition.
+#
+# D'où la règle tenue désormais : ne contrôler que ce dont on est certain. Un
+# contrôle de forme n'a de valeur que s'il attrape un copier-coller abîmé sans
+# jamais refuser ce que le fournisseur délivre réellement. Reste donc le jeu de
+# caractères — une espace, un retour à la ligne ou un guillemet ramassé au
+# passage est certainement une erreur — et une longueur plancher, qui attrape
+# une valeur tronquée. Le découpage, lui, appartient à Bunny.
 #
 # Cette règle vit ici plutôt que dans « elearning » parce qu'elle appartient au
 # contrat de configuration d'une instance, au même titre que la présence des
 # variables : c'est ce contrat qui est censé refuser une mise en service. Le
 # domaine la relit au moment de déposer, mais il ne la définit pas — et core ne
 # doit dépendre d'aucune application.
-_MOTIF_CLE_API_BUNNY = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+_MOTIF_CLE_API_BUNNY = re.compile(r"^[0-9a-fA-F]+(?:-[0-9a-fA-F]+)*$")
+_HEXADECIMAUX_MINIMUM_CLE_BUNNY = 32
 _MOTIF_BIBLIOTHEQUE_BUNNY = re.compile(r"^[0-9]{1,12}$")
 
 
 def defaut_de_forme_bunny(bibliotheque: str, cle: str) -> str:
     """Ce qui cloche dans les identifiants Bunny configurés, ou une chaîne vide.
 
-    Renseignée ne veut pas dire recopiée correctement. Une clé dont les groupes
-    ont été réordonnés au copier-coller passe tout contrôle de présence, puis se
-    fait refuser par Bunny en « 401 » — un code que rien ne distingue d'une clé
+    Renseignée ne veut pas dire recopiée correctement. Une clé qui traîne une
+    espace ou un retour à la ligne passe tout contrôle de présence, puis se fait
+    refuser par Bunny en « 401 » — un code que rien ne distingue d'une clé
     révoquée. L'exploitant relit alors une clé qu'il croit bonne et cherche du
     côté du compte Bunny, pendant que plus aucune vidéo ne peut être déposée.
 
-    Le message décrit la valeur sans jamais la citer : sa longueur et son
-    découpage suffisent à reconnaître l'erreur, et ni un écran ni un journal
+    Ce contrôle ne juge que le jeu de caractères et une longueur plancher. Il ne
+    juge pas le découpage en groupes : Bunny en délivre plusieurs formes, et le
+    supposer a déjà coûté une mise en service (voir le commentaire au-dessus de
+    ``_MOTIF_CLE_API_BUNNY``). Devant une valeur qu'il ne reconnaît pas mais qui
+    pourrait être une clé, il se tait et laisse Bunny trancher : un refus venu du
+    fournisseur est un fait, un refus venu d'ici n'est qu'une hypothèse.
+
+    Le message décrit la valeur sans jamais la citer : ni un écran ni un journal
     d'exploitation ne sont l'endroit où recopier un secret.
     """
     if bibliotheque and not _MOTIF_BIBLIOTHEQUE_BUNNY.fullmatch(bibliotheque):
@@ -44,16 +67,23 @@ def defaut_de_forme_bunny(bibliotheque: str, cle: str) -> str:
             "caractères et n'est pas un nombre."
         )
     if cle and not _MOTIF_CLE_API_BUNNY.fullmatch(cle):
-        groupes = cle.split("-")
         return (
-            "BUNNY_STREAM_API_KEY n'a pas la forme d'une clé Bunny. Une clé d'API de "
-            "bibliothèque Stream compte 36 caractères en cinq groupes hexadécimaux "
-            f"— 8-4-4-4-12, séparés par des tirets. La valeur configurée compte {len(cle)} "
-            f"caractères en {len(groupes)} groupe{'s' if len(groupes) > 1 else ''} "
-            f"({'-'.join(str(len(groupe)) for groupe in groupes)}). "
-            "Recopier la clé depuis Stream > la bibliothèque > API, d'un seul bloc, "
-            "sans en réordonner les groupes."
+            "BUNNY_STREAM_API_KEY porte des caractères qu'une clé Bunny ne contient pas. "
+            "Une clé est faite de chiffres hexadécimaux groupés par des tirets ; la valeur "
+            "configurée contient autre chose — le plus souvent une espace, un retour à la "
+            "ligne ou un guillemet ramassé au copier-coller. La recopier depuis "
+            "Stream > la bibliothèque > API, avec le bouton de copie de la page."
         )
+    if cle:
+        hexadecimaux = len(cle.replace("-", ""))
+        if hexadecimaux < _HEXADECIMAUX_MINIMUM_CLE_BUNNY:
+            return (
+                "BUNNY_STREAM_API_KEY est trop courte pour être une clé Bunny : "
+                f"{hexadecimaux} chiffres hexadécimaux, là où la plus courte en compte "
+                f"{_HEXADECIMAUX_MINIMUM_CLE_BUNNY}. La valeur est vraisemblablement "
+                "tronquée. La recopier depuis Stream > la bibliothèque > API, avec le "
+                "bouton de copie de la page."
+            )
     return ""
 
 

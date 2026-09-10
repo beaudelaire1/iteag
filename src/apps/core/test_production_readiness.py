@@ -149,24 +149,42 @@ def test_la_commande_echoue_si_un_secret_fonctionnel_manque(settings, moteur_pos
         call_command("verifier_production", sans_base=True)
 
 
-def test_une_cle_bunny_mal_recopiee_refuse_l_ouverture(settings, moteur_postgresql):
+def test_une_cle_bunny_tronquee_refuse_l_ouverture(settings, moteur_postgresql):
     """Renseignée ne veut pas dire recopiée correctement.
 
-    La clé partie en production portait un groupe de trop : elle passait le
-    contrôle de présence, et Bunny la refusait en « 401 » — un code que rien ne
-    distingue d'une clé révoquée. Plus aucune vidéo ne pouvait être déposée, et
-    la mise en service était déjà annoncée. La forme se contrôle donc ici, où le
-    défaut se constate avant l'ouverture.
+    Une clé tronquée passe le contrôle de présence, et Bunny la refuse en
+    « 401 » — un code que rien ne distingue d'une clé révoquée. Plus aucune
+    vidéo ne peut être déposée, et la mise en service est déjà annoncée. Ce
+    défaut-là se constate avant l'ouverture, donc il se contrôle ici.
     """
     for cle, config in CONFIGURATION_PRODUCTION.items():
         setattr(settings, cle, config)
-    settings.BUNNY_STREAM_API_KEY = "9c2d1635-e1ee-1111-86e28f273b7b-2866-4a8e"
+    settings.BUNNY_STREAM_API_KEY = "0f8e1c2a-3b4d"
 
     anomalies = anomalies_configuration_production()
 
-    assert any("BUNNY_STREAM_API_KEY" in anomalie and "groupes" in anomalie for anomalie in anomalies)
+    assert any("BUNNY_STREAM_API_KEY" in anomalie and "tronquée" in anomalie for anomalie in anomalies)
     with pytest.raises(CommandError):
         call_command("verifier_production", sans_base=True)
+
+
+def test_une_cle_bunny_a_six_groupes_laisse_passer(settings, moteur_postgresql):
+    """Bunny délivre plusieurs découpages, et ce module n'a pas à en juger.
+
+    Le 10 septembre 2026, la bibliothèque 714046 affichait une clé de quarante
+    et un caractères en six groupes — 8-4-4-12-4-4. Ce contrôle exigeait alors
+    un identifiant universel et refusait cette clé, copiée au bouton depuis le
+    tableau de bord : plus aucun dépôt n'était possible, et le message d'erreur
+    envoyait chercher une faute qui n'existait pas. Un contrôle de forme qui
+    refuse ce que le fournisseur délivre coûte davantage qu'il ne protège.
+    """
+    for cle, config in CONFIGURATION_PRODUCTION.items():
+        setattr(settings, cle, config)
+    settings.BUNNY_STREAM_API_KEY = "0f8e1c2a-3b4d-4e5f-0c1d2e3f4a5b-8a9b-1234"
+
+    anomalies = anomalies_configuration_production()
+
+    assert not [anomalie for anomalie in anomalies if "BUNNY_STREAM_API_KEY" in anomalie]
 
 
 @pytest.mark.parametrize("nom", MENTIONS_LEGALES_OBLIGATOIRES)

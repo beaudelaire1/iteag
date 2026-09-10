@@ -43,9 +43,9 @@ def fichier(nom="sequence-1.mp4", contenu=MP4, type_mime="video/mp4"):
     return SimpleUploadedFile(nom, contenu, content_type=type_mime)
 
 
-# Une clé d'API Bunny est un identifiant universel, et la plateforme le vérifie
-# désormais avant d'appeler quoi que ce soit. Le jeu d'essai doit donc en porter
-# une vraie forme — factice, mais bien formée.
+# Bunny délivre des clés de découpages variés ; la plateforme ne vérifie donc
+# que le jeu de caractères et une longueur plancher. Le jeu d'essai porte l'un
+# des découpages observés — factice, mais plausible.
 CLE_BIEN_FORMEE = "0f8e1c2a-3b4d-4e5f-8a9b-0c1d2e3f4a5b"
 
 
@@ -414,31 +414,46 @@ class TestFormeDesIdentifiants:
     """
     Une clé recopiée de travers produit le même refus qu'une clé fausse.
 
-    C'est ce qui s'est passé en production : la valeur configurée portait un
-    groupe de trop, Bunny répondait « Authentication has been denied », et
-    l'exploitant relisait une clé qu'il croyait bonne en cherchant du côté du
-    compte Bunny. La forme se contrôle ici, avant tout appel, parce que c'est le
-    seul endroit où le défaut est certain.
+    Une valeur qui traîne une espace ou un retour à la ligne passe le contrôle
+    de présence, puis Bunny répond « Authentication has been denied » et
+    l'exploitant relit une clé qu'il croit bonne en cherchant du côté du compte
+    Bunny. Ce défaut-là se contrôle ici, avant tout appel, parce qu'il est
+    certain.
+
+    Ce qui n'est pas certain, en revanche, c'est le découpage en groupes. Ce
+    module a exigé un identifiant universel jusqu'au 10 septembre 2026, jour où
+    il a refusé une clé authentique de six groupes et bloqué tout dépôt sur
+    l'instance en service. Le contrôle ne juge donc plus la forme des groupes.
     """
 
-    def test_une_cle_a_six_groupes_est_refusee_avant_tout_appel(self, settings, monkeypatch):
-        """Le cas réel : les groupes d'un identifiant universel, réordonnés."""
+    def test_une_cle_a_six_groupes_passe(self, settings):
+        """Le cas réel : Bunny délivre aussi des clés en 8-4-4-12-4-4."""
+        settings.BUNNY_STREAM_LIBRARY_ID = "712346"
+
+        assert bunny.defaut_de_forme("712346", "0f8e1c2a-3b4d-4e5f-0c1d2e3f4a5b-8a9b-1234") == ""
+
+    def test_une_cle_coupee_par_une_espace_est_refusee_avant_tout_appel(self, settings, monkeypatch):
+        """Une espace au milieu, elle, est une erreur certaine.
+
+        Les espaces de bord sont déjà retirées à la lecture du réglage : seule
+        celle qui coupe la valeur en deux survit jusqu'ici, et elle vient
+        toujours d'une sélection à la souris qui a ramassé de travers.
+        """
 
         def jamais(*_args, **_kwargs):
             raise AssertionError("Aucun appel ne doit partir sur une clé mal formée.")
 
         monkeypatch.setattr(bunny, "urlopen", jamais)
         settings.BUNNY_STREAM_LIBRARY_ID = "712346"
-        settings.BUNNY_STREAM_API_KEY = "9c2d1635-e1ee-1111-86e28f273b7b-2866-4a8e"
+        settings.BUNNY_STREAM_API_KEY = "0f8e1c2a-3b4d-4e5f 8a9b-0c1d2e3f4a5b"
 
         with pytest.raises(bunny.TeleversementBunnyIndisponible) as refus:
             bunny.creer_video("Prédication")
 
         message = str(refus.value)
-        assert "6 groupes" in message
-        assert "8-4-4-4-12" in message
+        assert "BUNNY_STREAM_API_KEY" in message
         # Le secret ne se recopie ni dans un écran ni dans un journal.
-        assert "9c2d1635" not in message
+        assert "0f8e1c2a" not in message
 
     def test_un_identifiant_de_bibliotheque_non_numerique_est_refuse(self, settings):
         settings.BUNNY_STREAM_LIBRARY_ID = "vz-7fd6c2-31c"
@@ -462,9 +477,9 @@ class TestFormeDesIdentifiants:
 
         monkeypatch.setattr(bunny, "urlopen", jamais)
         settings.BUNNY_STREAM_LIBRARY_ID = "712346"
-        settings.BUNNY_STREAM_API_KEY = "9c2d1635-e1ee-1111-86e28f273b7b-2866-4a8e"
+        settings.BUNNY_STREAM_API_KEY = "0f8e1c2a-3b4d"
 
-        with pytest.raises(CommandError, match="cinq groupes"):
+        with pytest.raises(CommandError, match="tronquée"):
             call_command("verifier_bunny", stdout=flux.StringIO())
 
 
