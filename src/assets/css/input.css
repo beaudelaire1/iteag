@@ -812,6 +812,85 @@
     color: var(--color-warm-600);
     margin-bottom: 0.5rem;
   }
+  /* ── Sections d'un formulaire long ──
+     Un dossier de candidature demandé d'affilée, en une colonne, ne dit pas où
+     l'on en est ni combien il en reste. Le regroupement le dit sans un mot. */
+  .candidature-section {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-warm-200);
+  }
+  .candidature-section:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .candidature-section__titre {
+    margin-bottom: 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-gold-700);
+  }
+
+  /* ── Dépôt de fichier ──
+     Le contrôle natif reste dans le flux, seul porteur de la valeur ; il n'est
+     masqué que lorsque le script a dessiné son remplaçant francophone. Il
+     garde une taille et une position réelles plutôt que « display: none », qui
+     le sortirait de l'ordre de tabulation. */
+  .champ-fichier--habille .form-file,
+  .champ-fichier--habille input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .champ-fichier--habille {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .champ-fichier__bouton {
+    flex: none;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-navy-800);
+    background-color: var(--color-warm-100);
+    border: 1px solid var(--color-warm-300);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-premium),
+                border-color var(--duration-fast) var(--ease-premium);
+  }
+  .champ-fichier__bouton:hover {
+    background-color: var(--color-warm-200);
+    border-color: var(--color-warm-400);
+  }
+  /* Le focus part sur le champ natif devenu invisible : l'anneau est reporté
+     ici, sinon la navigation au clavier traverserait le champ sans trace. */
+  .champ-fichier--focus .champ-fichier__bouton {
+    outline: 2px solid var(--color-navy-700);
+    outline-offset: 2px;
+  }
+  .champ-fichier__nom {
+    min-width: 0;
+    font-size: 0.8125rem;
+    color: var(--color-warm-600);
+    overflow-wrap: anywhere;
+  }
+  .champ-fichier--rempli .champ-fichier__nom {
+    font-weight: 500;
+    color: var(--color-navy-800);
+  }
+
   .form-label .obligatoire {
     color: var(--color-gold-600);
     margin-left: 0.125rem;

@@ -21,9 +21,31 @@
 
                 {% include "partials/erreurs_formulaire.html" %}
 
-                {% for field in form %}
-                {% include "partials/champ.html" %}
+                {% comment %}
+                    L'astérisque des champs obligatoires n'était expliqué nulle
+                    part : il fallait le déduire. La légende le dit une fois,
+                    avant le premier champ.
+                {% endcomment %}
+                <p class="form-aide"><span class="obligatoire" aria-hidden="true">*</span> Champ obligatoire.</p>
+
+                {% for section in form.sections %}
+                <fieldset class="candidature-section">
+                    <legend class="candidature-section__titre">{{ section.titre }}</legend>
+                    {% if section.aide %}<p class="form-aide mb-4">{{ section.aide }}</p>{% endif %}
+                    <div class="space-y-6">
+                        {% for field in section.champs %}
+                        {% include "partials/champ.html" %}
+                        {% endfor %}
+                    </div>
+                </fieldset>
                 {% endfor %}
+
+                {% comment %}
+                    Les champs cachés — dont le piège à robots — ne figurent
+                    dans aucune section : ils sont rendus à part pour qu'aucun
+                    ne disparaisse du formulaire au fil des regroupements.
+                {% endcomment %}
+                {% for field in form.hidden_fields %}{{ field }}{% endfor %}
 
                 {% include "partials/turnstile_widget.html" with action="candidature" %}
                 {% include "partials/information_donnees.html" with finalite="instruire votre candidature, vous contacter à son sujet et préparer votre inscription si elle est acceptée" %}

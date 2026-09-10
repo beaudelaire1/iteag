@@ -31,7 +31,24 @@ leur nom à l'utilisateur dégrade l'UX et trahit inutilement le mécanisme.
     <label class="form-label" for="{{ field.id_for_label }}">
         {{ field.label }}{% if field.field.required %}<span class="obligatoire" aria-hidden="true">*</span>{% endif %}
     </label>
+    {% if field.field.widget.input_type == 'file' %}
+    {% comment %}
+        Le bouton d'un « input type=file » est dessiné par le navigateur, dans
+        sa langue à lui : « Choose file / No file chosen » s'affichait en
+        anglais sur un site entièrement francophone, et rien dans la page ne
+        pouvait le traduire.
+
+        Le champ natif reste en place et reste le seul à porter la valeur : le
+        script « champs-fichier.js » se contente de l'habiller. Sans script,
+        l'ancien bouton du navigateur revient — traduit à sa façon, mais
+        parfaitement utilisable.
+    {% endcomment %}
+    <div class="champ-fichier" data-champ-fichier>
+        {{ field }}
+    </div>
+    {% else %}
     {{ field }}
+    {% endif %}
     {% endif %}
 
     {% if field.help_text %}
