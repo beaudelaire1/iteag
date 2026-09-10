@@ -392,4 +392,13 @@ class TestPublicationPublique:
         assert "<em>exigeante</em>" not in html
 
     def test_aucune_section_vide_n_est_affichee(self):
+        """Le vide se construit désormais : la base en porte deux d'origine.
+
+        La migration 0018 reprend les deux témoignages de l'ancien site, si
+        bien qu'aucune base — pas même celle des tests — ne démarre sans rien à
+        montrer. Ce que ce contrôle garantit reste le même : sans témoignage
+        publié, la rubrique disparaît au lieu d'afficher un titre sur du vide.
+        """
+        TemoignageEtudiant.objects.all().delete()
+
         assert "Paroles d'étudiants" not in _rendu_public()
