@@ -1436,13 +1436,25 @@
   border-bottom-color: transparent;
 }
 
-/* Hero parallax-like entrance */
+/* Entrée du héros — sans JavaScript
+
+   Le titre du héros est l'élément mesuré par le « plus grand rendu ». Tant que
+   son opacité dépendait d'un observateur d'intersection lancé par un script
+   différé, la mesure attendait le script : 2,1 s de retard pour un texte déjà
+   présent dans le HTML servi. L'animation part donc du premier rendu, décrite
+   par la feuille de style seule ; « both » la fait gagner sur l'opacité nulle
+   de .reveal, avant comme après, y compris si le script ne s'exécute jamais. */
+@keyframes entree-hero {
+  from { opacity: 0; transform: translateY(48px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 [data-motion-hero] .reveal {
-  transform: translateY(48px) scale(0.96);
+  animation: entree-hero 600ms var(--ease-out-expo) both;
 }
-[data-motion-hero] .reveal.revealed {
-  transform: translateY(0) scale(1);
-}
+[data-motion-hero] .reveal-delay-1 { animation-delay: 80ms; }
+[data-motion-hero] .reveal-delay-2 { animation-delay: 160ms; }
+[data-motion-hero] .reveal-delay-3 { animation-delay: 240ms; }
+[data-motion-hero] .reveal-delay-4 { animation-delay: 320ms; }
 
 /* Image subtle zoom on visible */
 .img-reveal {

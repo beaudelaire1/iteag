@@ -34,6 +34,25 @@ def _hote_indexable(request) -> bool:
     return hote in HOTES_INDEXABLES
 
 
+# Le script de consentement lit et écrit ce cookie ; le serveur le reçoit à
+# chaque requête et peut donc décider lui-même de l'état de la bannière.
+NOM_COOKIE_CONSENTEMENT = "iteag_cookie_consent"
+CHOIX_CONSENTEMENT = ("essential", "preferences")
+
+
+def _bandeau_cookies_ouvert(request) -> bool:
+    """La bannière doit-elle être visible dès le HTML servi ?
+
+    Elle était rendue masquée puis dévoilée par un script différé : le plus
+    grand bloc de texte de la page d'accueil n'apparaissait donc qu'après
+    l'exécution du script, 1,2 s après le premier rendu. Le choix étant
+    conservé dans un cookie que le serveur reçoit, la décision se prend ici,
+    et la bannière est peinte du premier coup.
+    """
+    cookies = getattr(request, "COOKIES", None) or {}
+    return cookies.get(NOM_COOKIE_CONSENTEMENT) not in CHOIX_CONSENTEMENT
+
+
 def site_context(request):
     """Global template context for all pages."""
     site_url = settings.SITE_URL.rstrip("/")
@@ -86,6 +105,7 @@ def site_context(request):
         "DEBUG": settings.DEBUG,
         "CLOUDFLARE_TURNSTILE_ENABLED": settings.CLOUDFLARE_TURNSTILE_ENABLED,
         "CLOUDFLARE_TURNSTILE_SITE_KEY": settings.CLOUDFLARE_TURNSTILE_SITE_KEY,
+        "BANDEAU_COOKIES_OUVERT": _bandeau_cookies_ouvert(request),
     }
 
 

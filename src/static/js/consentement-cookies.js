@@ -53,11 +53,17 @@
     return document.querySelector("[data-cookie-banner]");
   }
 
-  function afficher() {
+  /* Le serveur sert désormais la bannière déjà visible quand aucun choix n'est
+   * enregistré : au chargement, il n'y a plus rien à dévoiler, et déplacer le
+   * curseur vers un bouton que le visiteur n'a pas demandé déplacerait sa
+   * lecture sans raison. La mise au point ne suit donc que l'ouverture
+   * explicite, depuis « Gérer les cookies ». */
+  function afficher(focaliser) {
     const element = banniere();
     if (!element) return;
     element.hidden = false;
     element.classList.remove("hidden");
+    if (!focaliser) return;
     const premierBouton = element.querySelector("button[data-cookie-choice]");
     premierBouton?.focus({ preventScroll: true });
   }
@@ -76,7 +82,9 @@
       ecrireChoix(choix);
       masquer();
     },
-    open: afficher,
+    open() {
+      afficher(true);
+    },
   };
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -90,9 +98,10 @@
     });
 
     document.querySelectorAll("[data-cookie-settings]").forEach((bouton) => {
-      bouton.addEventListener("click", afficher);
+      bouton.addEventListener("click", () => afficher(true));
     });
 
-    if (!choixActuel()) afficher();
+    // Repli si le HTML a été mis en cache avant que le choix soit fait.
+    if (!choixActuel()) afficher(false);
   });
 })();

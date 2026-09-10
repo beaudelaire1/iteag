@@ -1,5 +1,10 @@
-<div data-cookie-banner hidden
-     class="hidden fixed inset-x-0 bottom-0 z-[70] px-4 pb-4 sm:px-6 sm:pb-6"
+{% comment %}
+    La bannière reste dans le HTML même après un choix : le bouton « gérer mes
+    préférences » de la politique des cookies la rouvre. Seule sa visibilité
+    initiale vient du serveur, qui lit le cookie de consentement.
+{% endcomment %}
+<div data-cookie-banner{% if not BANDEAU_COOKIES_OUVERT %} hidden{% endif %}
+     class="{% if not BANDEAU_COOKIES_OUVERT %}hidden {% endif %}fixed inset-x-0 bottom-0 z-[70] px-4 pb-4 sm:px-6 sm:pb-6"
      role="dialog" aria-modal="false" aria-labelledby="cookie-banner-title" aria-describedby="cookie-banner-description">
     <div class="mx-auto max-w-5xl overflow-hidden rounded-lg border border-warm-200 bg-white shadow-2xl">
         <div class="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-end">

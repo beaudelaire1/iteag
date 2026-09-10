@@ -20,6 +20,14 @@
     {% block social_meta %}{% include "partials/social_meta.html" %}{% endblock %}
 
     {% load static %}
+    {% comment %}
+    Le navigateur ne découvre les polices qu'après avoir téléchargé puis lu la
+    feuille qui les déclare : le titre attendait deux allers-retours avant
+    d'être dessiné. Les deux seules polices du premier écran — le serif du
+    titre, la sans du texte — partent donc en même temps que la feuille.
+    {% endcomment %}
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{% static 'fonts/PlayfairDisplay-700.woff2' %}">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{% static 'fonts/Inter-400.woff2' %}">
     <link rel="stylesheet" href="{% static 'fonts/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={{ ASSET_VERSION }}">
 

@@ -40,6 +40,9 @@
   }
 
   /* ── 3. Counter animation (stat numbers) ── */
+  const format = new Intl.NumberFormat("fr-FR");
+  const moinsDAnimation = window.matchMedia("(prefers-reduced-motion: reduce)");
+
   function animateCounters() {
     const counters = document.querySelectorAll("[data-counter]");
     if (!counters.length) return;
@@ -55,15 +58,30 @@
           const start = performance.now();
 
           el.classList.add("counted");
+          counterObserver.unobserve(el);
+
+          // Qui demande moins d'animation reçoit le chiffre, pas le décompte.
+          if (moinsDAnimation.matches) {
+            el.textContent = format.format(target) + suffix;
+            return;
+          }
+
+          // Écrire à chaque image redemandait une mise en page pour afficher
+          // le même nombre : sur deux secondes, 120 recalculs par compteur
+          // pour une vingtaine de valeurs réellement différentes.
+          let affiche = null;
 
           function step(now) {
             const progress = Math.min((now - start) / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 4); // easeOutQuart
-            el.textContent = Math.round(target * eased).toLocaleString("fr-FR") + suffix;
+            const valeur = Math.round(target * eased);
+            if (valeur !== affiche) {
+              affiche = valeur;
+              el.textContent = format.format(valeur) + suffix;
+            }
             if (progress < 1) requestAnimationFrame(step);
           }
           requestAnimationFrame(step);
-          counterObserver.unobserve(el);
         });
       },
       { threshold: 0.3 }
@@ -140,15 +158,9 @@
       });
     });
 
-    // Hero entrance — progressive reveal with cinematic delay
-    const heroes = document.querySelectorAll("[data-motion-hero]");
-    heroes.forEach((hero) => {
-      hero.classList.add("reveal");
-      // Force immediate reveal for hero (above fold)
-      requestAnimationFrame(() => {
-        hero.classList.add("revealed");
-      });
-    });
+    // L'entrée du héros appartient désormais à la feuille de style : lui poser
+    // ici la classe .reveal remettait le premier écran à une opacité nulle le
+    // temps d'une image, longtemps après que le navigateur l'avait dessiné.
   }
 
   /* ── 7. Progress bar animation ── */

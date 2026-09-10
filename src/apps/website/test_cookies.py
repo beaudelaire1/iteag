@@ -52,3 +52,25 @@ def test_aucun_outil_de_mesure_n_est_annonce_comme_actif():
 
     assert "Aucun outil de mesure d'audience" in politique
     assert "aucune régie publicitaire" in politique
+
+
+@pytest.mark.django_db
+def test_le_bandeau_est_servi_visible_avant_tout_choix(client):
+    """La bannière est le plus grand bloc de texte de l'accueil : peinte au
+    premier rendu, elle ne retarde plus la mesure du plus grand rendu."""
+    contenu = client.get(reverse("accounts:login")).content.decode("utf-8")
+
+    debut = contenu.index("data-cookie-banner")
+    balise = contenu[debut : contenu.index(">", debut)]
+    assert "hidden" not in balise, balise
+
+
+@pytest.mark.django_db
+def test_le_bandeau_reste_masque_une_fois_le_choix_fait(client):
+    """Masqué, mais toujours présent : « gérer mes préférences » le rouvre."""
+    client.cookies["iteag_cookie_consent"] = "essential"
+    contenu = client.get(reverse("accounts:login")).content.decode("utf-8")
+
+    debut = contenu.index("data-cookie-banner")
+    balise = contenu[debut : contenu.index(">", debut)]
+    assert "hidden" in balise, balise
