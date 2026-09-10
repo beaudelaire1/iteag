@@ -59,15 +59,36 @@
         {% endwith %}
 
         {% if page.brochure %}
+        {% comment %}
+        Une affiche jointe en JPG ou PNG se montre : la placer derrière un
+        bouton « télécharger » obligeait le lecteur à ouvrir un fichier pour
+        voir ce que l'actualité venait justement annoncer. Un document, lui,
+        garde son bouton — rien à afficher tant qu'il n'est pas ouvert.
+        {% endcomment %}
+        {% with extension=page.brochure.file_extension|lower libelle=page.brochure_libelle|default:page.brochure.title %}
+        {% if extension == "jpg" or extension == "jpeg" or extension == "png" %}
+        <figure class="mt-10 reveal reveal-delay-2">
+            <a href="{{ page.brochure.url }}">
+                <img src="{{ page.brochure.url }}" alt="{{ libelle }}"
+                     class="w-full rounded border border-warm-200" loading="lazy">
+            </a>
+            <figcaption class="mt-3 text-xs text-warm-500">
+                {{ libelle }} — <a href="{{ page.brochure.url }}" class="link-reveal">ouvrir en grand</a>
+                · {{ extension|upper }}, {{ page.brochure.file.size|filesizeformat }}
+            </figcaption>
+        </figure>
+        {% else %}
         <div class="mt-10 rounded border border-warm-200 bg-warm-50 p-5 reveal reveal-delay-2">
             <p class="overline mb-2">Document à télécharger</p>
             <a href="{{ page.brochure.url }}" class="btn-primary" download>
-                {{ page.brochure_libelle|default:page.brochure.title }}
+                {{ libelle }}
             </a>
             <p class="mt-3 text-xs text-warm-500">
-                {{ page.brochure.file_extension|upper }} · {{ page.brochure.file.size|filesizeformat }}
+                {{ extension|upper }} · {{ page.brochure.file.size|filesizeformat }}
             </p>
         </div>
+        {% endif %}
+        {% endwith %}
         {% endif %}
     </div>
 </article>

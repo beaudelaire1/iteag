@@ -123,6 +123,55 @@ class TestBrochure:
         assert "Brochure Licence 2026-2027" in contenu
         assert "Document à télécharger" in contenu
 
+    def test_une_affiche_jointe_s_affiche_dans_la_page(self, client, secretaire, index):
+        """Une affiche annonce : elle doit se voir sans qu'on ouvre un fichier.
+
+        Jointe en JPG, elle se retrouvait derrière un bouton « Document à
+        télécharger » — le lecteur devait ouvrir le fichier pour découvrir ce
+        que l'actualité venait justement annoncer.
+        """
+        import io as flux
+
+        from PIL import Image
+
+        tampon = flux.BytesIO()
+        Image.new("RGB", (8, 12), "white").save(tampon, format="JPEG")
+
+        client.force_login(secretaire)
+        client.post(
+            reverse("website:actualite_creation"),
+            _saisie(
+                brochure=_brochure("affiche.jpg", tampon.getvalue(), "image/jpeg"),
+                brochure_libelle="Affiche des ateliers de prédication",
+            ),
+        )
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+        page.save_revision().publish()
+
+        contenu = client.get(page.url).content.decode()
+
+        assert "Document à télécharger" not in contenu
+        assert f'<img src="{page.brochure.url}"' in contenu
+        assert "ouvrir en grand" in contenu
+
+    def test_une_affiche_jointe_est_servie_pour_etre_vue(self, client, secretaire, index):
+        """Servie en pièce jointe, l'image se téléchargerait au lieu de s'afficher."""
+        import io as flux
+
+        from PIL import Image
+
+        tampon = flux.BytesIO()
+        Image.new("RGB", (8, 12), "white").save(tampon, format="JPEG")
+
+        client.force_login(secretaire)
+        client.post(
+            reverse("website:actualite_creation"),
+            _saisie(brochure=_brochure("affiche.jpg", tampon.getvalue(), "image/jpeg")),
+        )
+        page = NewsPage.objects.get(title="Journée portes ouvertes")
+
+        assert page.brochure.content_disposition == "inline"
+
     def test_sans_brochure_aucun_bouton(self, client, secretaire, index):
         client.force_login(secretaire)
         client.post(reverse("website:actualite_creation"), _saisie())

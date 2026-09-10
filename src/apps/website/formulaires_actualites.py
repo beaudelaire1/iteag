@@ -14,10 +14,15 @@ CHAMP_CONTENU = ContenuActualite._meta.get_field("contenu")
 # Une brochure est un document à lire, pas une pièce à exécuter : la liste reste
 # volontairement courte, et le contrôle porte sur la signature binaire, jamais
 # sur la seule extension.
+#
+# L'image y figure parce que c'est sous cette forme que la plupart des affiches
+# arrivent au secrétariat : une photo de l'affiche imprimée, ou le JPEG rendu
+# par le graphiste. Exiger un PDF revenait à demander une conversion à qui n'a
+# pas l'outil pour la faire — et l'affiche restait alors hors du site.
 REGLE_BROCHURE = RegleFichier(
-    extensions=frozenset({".pdf", ".docx", ".odt"}),
+    extensions=frozenset({".pdf", ".docx", ".odt", ".jpg", ".jpeg", ".png"}),
     taille_max=20 * 1024 * 1024,
-    message_formats="Formats acceptés : PDF, DOCX ou ODT.",
+    message_formats="Formats acceptés : PDF, image (JPG, PNG) ou bureautique (DOCX, ODT).",
 )
 
 
@@ -61,7 +66,8 @@ class ActualiteForm(FormulaireITEAG):
         required=False,
         label="Brochure ou document",
         help_text=(
-            "Facultatif. PDF ou bureautique, 20 Mo au plus. Un bouton de téléchargement apparaît sous l'actualité."
+            "Facultatif. PDF, image ou bureautique, 20 Mo au plus. Une affiche en JPG ou PNG "
+            "s'affiche sous le texte ; un document s'y télécharge."
         ),
         widget=forms.ClearableFileInput(attrs={"class": "form-file", "accept": REGLE_BROCHURE.accept}),
     )

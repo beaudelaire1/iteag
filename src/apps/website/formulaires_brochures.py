@@ -40,7 +40,10 @@ class BrochureForm(FormulaireModeleITEAG):
                 f"{REGLE_BROCHURE.message_formats} {REGLE_BROCHURE.taille_max_lisible} au plus. "
                 "En déposer un nouveau remplace le précédent."
             ),
-            "couverture": "Facultative. Elle illustre la vignette sur la page publique.",
+            "couverture": (
+                "Facultative. Elle illustre la vignette sur la page publique. "
+                "Inutile pour une affiche déposée en JPG ou PNG : elle s'illustre elle-même."
+            ),
         }
 
     def __init__(self, *args, **kwargs):

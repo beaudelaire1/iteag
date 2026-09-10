@@ -330,7 +330,16 @@ WAGTAIL_SITE_NAME = "ITEAG"
 WAGTAILADMIN_BASE_URL = env("WAGTAILADMIN_BASE_URL", default="http://localhost:8000")
 WAGTAIL_ENABLE_UPDATE_CHECK = False
 WAGTAILIMAGES_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 Mo
-WAGTAILDOCS_EXTENSIONS = ["pdf", "docx", "doc", "pptx", "xlsx", "csv", "txt"]
+# La bibliothèque de documents doit accepter ce que le portail accepte
+# (« REGLE_BROCHURE »). Une affiche arrive le plus souvent en image, et l'ODT
+# passait déjà le formulaire sans figurer ici : le dépôt par le portail ne
+# valide pas le modèle, mais l'administration Wagtail, elle, refusait le même
+# fichier.
+WAGTAILDOCS_EXTENSIONS = ["pdf", "docx", "doc", "odt", "pptx", "xlsx", "csv", "txt", "jpg", "jpeg", "png"]
+# Une affiche jointe à une actualité s'affiche dans la page. Servie en pièce
+# jointe — le comportement par défaut de Wagtail hors PDF — elle se serait
+# téléchargée au lieu de se montrer.
+WAGTAILDOCS_INLINE_CONTENT_TYPES = ["application/pdf", "image/jpeg", "image/png"]
 
 # Draftail reste l'éditeur natif de Wagtail. La liste est explicite pour que
 # tous les champs RichTextField / RichTextBlock partagent le même profil et

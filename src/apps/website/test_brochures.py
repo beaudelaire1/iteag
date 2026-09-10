@@ -57,6 +57,15 @@ def _png_minimal() -> bytes:
     return tampon.getvalue()
 
 
+def _fichier_jpg(nom="affiche.jpg") -> SimpleUploadedFile:
+    """Une affiche telle qu'elle arrive au secrétariat : une image, pas un PDF."""
+    from PIL import Image
+
+    tampon = io.BytesIO()
+    Image.new("RGB", (8, 12), "white").save(tampon, format="JPEG")
+    return SimpleUploadedFile(nom, tampon.getvalue(), content_type="image/jpeg")
+
+
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
@@ -157,6 +166,42 @@ class TestDepot:
         assert reponse.status_code == 302
         deposee = Brochure.objects.get(titre="Programme des portes ouvertes")
         assert deposee.format_lisible == "DOCX"
+
+    def test_une_affiche_en_image_est_acceptee(self, client, secretaire):
+        """La plupart des affiches arrivent en photo, jamais en PDF.
+
+        Exiger une conversion revenait à demander un outil que le secrétariat
+        n'a pas — et l'affiche restait hors du site.
+        """
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("website:brochure_creation"),
+            {
+                "titre": "Affiche des ateliers de prédication",
+                "categorie": Brochure.Categorie.EVENEMENT,
+                "fichier": _fichier_jpg(),
+                "ordre": 0,
+            },
+        )
+        assert reponse.status_code == 302
+        deposee = Brochure.objects.get(titre="Affiche des ateliers de prédication")
+        assert deposee.est_image
+        assert deposee.format_lisible == "JPG"
+
+    def test_une_image_deguisee_reste_refusee(self, client, secretaire):
+        """Accepter l'image n'ouvre pas la porte : la signature tranche toujours."""
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("website:brochure_creation"),
+            {
+                "titre": "Fausse affiche",
+                "categorie": Brochure.Categorie.AUTRE,
+                "fichier": SimpleUploadedFile("piege.png", b"<html>rien</html>", content_type="image/png"),
+                "ordre": 0,
+            },
+        )
+        assert reponse.status_code == 200
+        assert not Brochure.objects.filter(titre="Fausse affiche").exists()
 
     def test_le_document_est_servi_sous_son_vrai_type(self, client, secretaire):
         """Annoncer « application/pdf » pour un DOCX le rendrait illisible."""
@@ -298,6 +343,29 @@ class TestPagePublique:
         brochure.refresh_from_db()
         assert brochure.nombre_telechargements == 1
 
+    def test_une_affiche_se_montre_au_lieu_de_se_telecharger(self, client, secretaire):
+        """Une affiche est faite pour être vue : la cacher derrière un bouton
+        « Télécharger » obligeait le visiteur à ouvrir un fichier pour découvrir
+        ce que la vignette pouvait lui montrer tout de suite."""
+        affiche = Brochure.objects.create(
+            titre="Affiche de la formation biblique",
+            fichier=_fichier_jpg(),
+            deposee_par=secretaire,
+        )
+        affiche.publier()
+
+        contenu = client.get(reverse("website:brochures")).content.decode()
+
+        assert affiche.fichier.url in contenu
+        assert "Voir l'affiche" in contenu
+
+    def test_une_affiche_publiee_est_servie_comme_image(self, client, secretaire):
+        affiche = Brochure.objects.create(titre="Affiche d'octobre", fichier=_fichier_jpg(), deposee_par=secretaire)
+        affiche.publier()
+        reponse = client.get(affiche.get_absolute_url())
+        assert reponse.status_code == 200
+        assert reponse["Content-Type"] == "image/jpeg"
+
     def test_un_brouillon_ne_se_telecharge_pas(self, client, brochure):
         reponse = client.get(brochure.get_absolute_url())
         assert reponse.status_code == 404
@@ -313,6 +381,17 @@ class TestModele:
         premiere = Brochure.objects.create(titre="Plaquette", fichier=_fichier_pdf(), deposee_par=secretaire)
         seconde = Brochure.objects.create(titre="Plaquette", fichier=_fichier_pdf("p2.pdf"), deposee_par=secretaire)
         assert premiere.slug != seconde.slug
+
+    def test_une_affiche_s_illustre_elle_meme(self, secretaire):
+        """Réclamer une couverture pour une affiche demanderait deux fois la même image."""
+        affiche = Brochure.objects.create(titre="Affiche", fichier=_fichier_jpg(), deposee_par=secretaire)
+        assert affiche.est_image
+        assert affiche.apercu_url == affiche.fichier.url
+
+    def test_un_pdf_sans_couverture_n_a_pas_d_apercu(self, secretaire):
+        document = Brochure.objects.create(titre="Plaquette PDF", fichier=_fichier_pdf(), deposee_par=secretaire)
+        assert not document.est_image
+        assert document.apercu_url == ""
 
     def test_taille_lisible_ne_casse_pas_sans_fichier(self):
         assert Brochure(titre="Sans fichier").taille_lisible == ""

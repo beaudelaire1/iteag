@@ -12,7 +12,7 @@
             <h1>Brochures</h1>
             <p class="mt-2 max-w-2xl text-warm-600">
                 Les documents de présentation de l'institut, de ses parcours et de ses admissions.
-                Chacun s'ouvre et se télécharge d'un clic.
+                Affiches et plaquettes s'ouvrent et se téléchargent d'un clic.
             </p>
         </header>
 
@@ -42,9 +42,20 @@
             rubrique pour voir, après publication, où sa brochure a atterri.
             {% endcomment %}
             <article class="card-elevated flex flex-col scroll-mt-28" id="brochure-{{ brochure.slug }}">
+                {% comment %}
+                Une brochure déposée en photo est sa propre illustration : la
+                montrer en vignette évite de réclamer une couverture qui serait
+                la même image. Elle porte alors un texte de remplacement, car
+                elle n'est plus décorative — c'est le document lui-même.
+                {% endcomment %}
                 {% if brochure.couverture %}
                 <img src="{{ brochure.couverture.url }}" alt=""
                      class="mb-4 w-full rounded object-cover h-[13rem]">
+                {% elif brochure.est_image %}
+                <a href="{{ brochure.get_absolute_url }}">
+                    <img src="{{ brochure.fichier.url }}" alt="Affiche — {{ brochure.titre }}"
+                         class="mb-4 w-full rounded object-cover h-[13rem]" loading="lazy">
+                </a>
                 {% endif %}
                 <p class="overline mb-1">{{ brochure.get_categorie_display }}</p>
                 <h2 class="text-lg font-semibold text-navy-900">
@@ -54,7 +65,9 @@
                 <p class="mt-3 flex-1 text-sm text-warm-500">{{ brochure.description }}</p>
                 {% endif %}
                 <p class="mt-4 flex items-center justify-between gap-3 text-sm">
-                    <a href="{{ brochure.get_absolute_url }}" class="btn-ghost">Télécharger</a>
+                    <a href="{{ brochure.get_absolute_url }}" class="btn-ghost">
+                        {% if brochure.est_image %}Voir l'affiche{% else %}Télécharger{% endif %}
+                    </a>
                     <span class="text-xs text-warm-500">
                         {{ brochure.format_lisible }}{% if brochure.taille_lisible %} · {{ brochure.taille_lisible }}{% endif %}
                     </span>

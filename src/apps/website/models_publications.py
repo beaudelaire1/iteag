@@ -477,6 +477,30 @@ class Brochure(TimeStampedModel):
         return self.extension.lstrip(".").upper()
 
     @property
+    def est_image(self) -> bool:
+        """L'affiche déposée telle quelle, plutôt qu'un document à ouvrir.
+
+        Une affiche arrive souvent en photo. Le site n'a alors rien à faire
+        télécharger : l'image *est* la brochure, et elle se montre.
+        """
+        return self.extension in {".jpg", ".jpeg", ".png"}
+
+    @property
+    def apercu_url(self) -> str:
+        """L'image à montrer sur la page publique, s'il y en a une.
+
+        La couverture prime quand elle existe — c'est un choix éditorial. À
+        défaut, une brochure qui est elle-même une image s'illustre toute
+        seule : réclamer une couverture pour une affiche reviendrait à
+        redemander la même image deux fois.
+        """
+        if self.couverture:
+            return self.couverture.url
+        if self.est_image and self.fichier:
+            return self.fichier.url
+        return ""
+
+    @property
     def type_mime(self) -> str:
         """Le type à servir.
 
