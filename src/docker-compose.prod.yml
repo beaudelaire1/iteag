@@ -57,6 +57,11 @@ x-application: &application
     EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
     EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
     EMAIL_TIMEOUT: ${EMAIL_TIMEOUT:-10}
+    # Boîtes réelles de l'institut. Déclarées ici, avec leur valeur par défaut,
+    # pour paraître dans la fiche Coolify et s'y modifier sans toucher au code :
+    # tout courriel adressé au secrétariat part en copie à la seconde.
+    ITEAG_COURRIEL_SECRETARIAT: ${ITEAG_COURRIEL_SECRETARIAT:-secretariat.iteag@gmail.com}
+    ITEAG_COURRIEL_COPIE: ${ITEAG_COURRIEL_COPIE:-contact.iteag@gmail.com}
 
     # Protection des formulaires publics : les clés sont obligatoires dans la
     # stack de production et `verifier_production` refuse explicitement False.
