@@ -75,9 +75,15 @@ PERSONNEL_ITEAG = (
         courriel="anisus971@gmail.com",
         fiche_professeur="alain-nisus",
     ),
-    # Comptabilité et administration. Son adresse n'est pas encore connue :
-    # le compte existe, l'invitation partira quand elle sera renseignée.
-    MembreDuPersonnel("patricia.alphonse", "Patricia", "Alphonse", User.Role.ADMIN),
+    # Comptabilité et administration. Adresse connue après l'ouverture des
+    # autres comptes : la migration accounts 0007 la renseigne et l'invite.
+    MembreDuPersonnel(
+        "patricia.alphonse",
+        "Patricia",
+        "Alphonse",
+        User.Role.ADMIN,
+        courriel="patricia.alphonse-dernault@orange.fr",
+    ),
 )
 
 

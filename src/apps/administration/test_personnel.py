@@ -11,6 +11,7 @@ from apps.accounts.models import User
 from apps.administration.services.personnel import (
     MOT_DE_PASSE_DEMONSTRATION,
     PERSONNEL_ITEAG,
+    MembreDuPersonnel,
     installer_personnel_iteag,
 )
 from apps.formations.models import Professeur
@@ -67,8 +68,12 @@ class TestInvitation:
     def test_une_invitation_par_adresse_connue_et_aucune_copie(self):
         bilan = installer_personnel_iteag()
 
-        assert sorted(bilan["invites"]) == ["alain.nisus", "viviane.foucan"]
-        assert sorted(m.to[0] for m in mail.outbox) == ["anisus971@gmail.com", "secretariat.iteag@gmail.com"]
+        assert sorted(bilan["invites"]) == ["alain.nisus", "patricia.alphonse", "viviane.foucan"]
+        assert sorted(m.to[0] for m in mail.outbox) == [
+            "anisus971@gmail.com",
+            "patricia.alphonse-dernault@orange.fr",
+            "secretariat.iteag@gmail.com",
+        ]
         # Le lien ouvre le compte : il ne doit pas atterrir dans la boîte de contact.
         assert all(m.cc == [] for m in mail.outbox)
 
@@ -101,10 +106,13 @@ class TestInvitation:
         assert espace.url.startswith(reverse("accounts:otp_activation"))
 
     def test_sans_adresse_le_compte_existe_sans_invitation(self):
-        bilan = installer_personnel_iteag()
+        bilan = installer_personnel_iteag(
+            membres=(MembreDuPersonnel("sans.adresse", "Sans", "Adresse", User.Role.ADMIN),)
+        )
 
-        assert "patricia.alphonse" in bilan["ouverts"]
-        assert "patricia.alphonse" not in bilan["invites"]
+        assert "sans.adresse" in bilan["ouverts"]
+        assert "sans.adresse" not in bilan["invites"]
+        assert mail.outbox == []
 
 
 class TestReprise:
@@ -178,3 +186,50 @@ class TestMigration:
         self.migration.ouvrir_les_comptes(apps, None)
 
         assert User.objects.filter(username="viviane.foucan", role=User.Role.SECRETARIAT).exists()
+
+
+class TestMigrationPatriciaAlphonse:
+    migration = importlib.import_module("apps.accounts.migrations.0007_invitation_patricia_alphonse")
+
+    @staticmethod
+    def _base_en_service():
+        from wagtail.models import Page
+
+        from apps.website.models import HomePage
+
+        Page.get_first_root_node().add_child(instance=HomePage(title="Accueil", slug="accueil-patricia"))
+
+    def test_le_compte_ouvert_sans_adresse_recoit_adresse_et_invitation(self, settings):
+        from django.apps import apps
+
+        settings.OTP_ENFORCE = True
+        # L'état laissé par 0006 : compte d'administration, sans adresse.
+        User.objects.create_user(username="patricia.alphonse", role=User.Role.ADMIN, first_name="Patricia")
+        self._base_en_service()
+
+        self.migration.inviter_patricia_alphonse(apps, None)
+
+        compte = User.objects.get(username="patricia.alphonse")
+        assert compte.email == "patricia.alphonse-dernault@orange.fr"
+        assert compte.role == User.Role.ADMIN
+        assert [m.to for m in mail.outbox] == [["patricia.alphonse-dernault@orange.fr"]]
+        assert mail.outbox[0].cc == []
+        assert "Google Authenticator" in mail.outbox[0].alternatives[0].content
+
+    def test_une_adresse_deja_corrigee_a_la_main_n_est_pas_reecrite(self):
+        from django.apps import apps
+
+        User.objects.create_user(
+            username="patricia.alphonse",
+            email="p.alphonse@example.org",
+            password="Choisi-par-elle-2026",
+            role=User.Role.ADMIN,
+        )
+        self._base_en_service()
+
+        self.migration.inviter_patricia_alphonse(apps, None)
+
+        compte = User.objects.get(username="patricia.alphonse")
+        assert compte.email == "p.alphonse@example.org"
+        assert compte.check_password("Choisi-par-elle-2026")
+        assert mail.outbox == []
