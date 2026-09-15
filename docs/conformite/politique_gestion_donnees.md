@@ -101,7 +101,7 @@ Le registre interne recense les services actuellement prévus : OVHcloud, Cloudf
 
 ## 11. Demandes d'exercice des droits
 
-Les demandes reçues à `secretariat@iteag.org` sont enregistrées avec leur date de réception, leur objet et leur date de réponse. L'identité n'est vérifiée que lorsque cela est nécessaire et de manière proportionnée.
+Les demandes reçues à `secretariat.iteag@gmail.com` sont enregistrées avec leur date de réception, leur objet et leur date de réponse. L'identité n'est vérifiée que lorsque cela est nécessaire et de manière proportionnée.
 
 Le secrétariat coordonne la recherche des données dans les applications concernées. Une demande d'effacement ne conduit pas à supprimer une donnée qu'une obligation légale impose encore de conserver ; elle peut conduire à restreindre son accès ou la placer en archivage intermédiaire.
 

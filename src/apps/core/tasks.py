@@ -25,10 +25,12 @@ def heartbeat_celery() -> str:
 
 
 @shared_task(name="core.envoyer_email")
-def envoyer_email_tache(sujet: str, gabarit: str, contexte: dict, destinataires: list[str]) -> bool:
+def envoyer_email_tache(
+    sujet: str, gabarit: str, contexte: dict, destinataires: list[str], copie: list[str] | None = None
+) -> bool:
     from apps.core.services.emails import envoyer_maintenant
 
-    return envoyer_maintenant(sujet, gabarit, contexte, destinataires)
+    return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie)
 
 
 @shared_task(name="core.purger_notifications")

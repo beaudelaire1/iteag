@@ -37,7 +37,7 @@ INSTITUT = {
     "sigle": "ITEAG",
     "adresse": "201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe",
     "telephone": "+590 690 37 64 17",
-    "email": "secretariat@iteag.org",
+    "email": settings.ITEAG_COURRIEL_SECRETARIAT,
     "site": "iteag.org",
     "statut": "Association loi 1905",
     # La devise de l'institut. Elle vit aussi dans « SITE_TAGLINE » (contexte

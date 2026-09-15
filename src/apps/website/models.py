@@ -566,7 +566,7 @@ class ContactPage(AbstractForm):
     thank_you_text = RichTextField(blank=True, verbose_name="Message de confirmation")
     meta_description = models.CharField(max_length=300, blank=True)
     destinataire = models.EmailField(
-        default="secretariat@iteag.org",
+        default="secretariat.iteag@gmail.com",
         verbose_name="Email destinataire",
         help_text="Adresse qui recevra les messages du formulaire.",
     )

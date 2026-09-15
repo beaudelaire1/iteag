@@ -10,7 +10,7 @@ Responsable : Institut de Théologie Évangélique des Antilles et de la Guyane 
 
 Adresse : 201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe
 
-Point de contact protection des données : secretariat@iteag.org — +590 690 37 64 17
+Point de contact protection des données : secretariat.iteag@gmail.com — +590 690 37 64 17
 
 Si un DPO est désigné ultérieurement, ses coordonnées remplacent ce point de contact dans la politique publique et dans les formulaires.
 

@@ -86,7 +86,7 @@ def site_context(request):
         "SITE_URL": site_url,
         "CANONICAL_URL": f"{site_url}{request.path}{suffixe_canonique}",
         "SEO_ROBOTS": robots,
-        "SITE_EMAIL": "secretariat@iteag.org",
+        "SITE_EMAIL": settings.ITEAG_COURRIEL_SECRETARIAT,
         "SITE_PHONE": "+590 690 37 64 17",
         "SITE_ADDRESS": "201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe",
         "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",

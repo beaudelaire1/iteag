@@ -283,7 +283,7 @@ class TestServiceEmail:
         assert "201 lot Pointe" in html
         assert "97139 Les Abymes" in html
         assert "+590 690 37 64 17" in html
-        assert "secretariat@iteag.org" in html
+        assert "secretariat.iteag@gmail.com" in html
         assert any(
             piece.get_content_type() == "image/png" and piece["Content-ID"] == "<logo-iteag>"
             for piece in message.attachments

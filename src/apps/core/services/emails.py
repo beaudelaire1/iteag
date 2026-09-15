@@ -1,7 +1,14 @@
 """Service d'envoi de courriels.
 
 Tous les envois de la plateforme passent par ici : un seul endroit décide du
-gabarit, de l'expéditeur et du mode d'envoi (synchrone ou différé).
+gabarit, de l'expéditeur, des copies et du mode d'envoi (synchrone ou différé).
+
+Règle de copie : tout courriel adressé à la boîte du secrétariat part aussi, en
+copie, à la boîte de contact de l'institut. Elle est appliquée ici plutôt que
+par chaque appelant — formulaire de contact, candidatures, demandes d'accès —
+parce qu'un appelant oublié serait un message que la copie ne reçoit jamais,
+sans que rien ne le signale. Seuls les envois confidentiels (un lien de
+définition de mot de passe) y échappent.
 """
 
 import logging
@@ -22,12 +29,21 @@ SITE_CONTEXT = {
     "SITE_NAME": "ITEAG",
     "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
     "SITE_TAGLINE": "Une formation de qualité pour un service efficace",
-    "SITE_EMAIL": "secretariat@iteag.org",
     "SITE_PHONE": "+590 690 37 64 17",
     "SITE_ADDRESS": "201 lot Pointe d'Or, 97139 Les Abymes, Guadeloupe",
     "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
     "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
 }
+
+
+def adresses_en_copie(destinataires: list[str]) -> list[str]:
+    """Copie due à un envoi : la boîte de contact dès que le secrétariat est destinataire."""
+    secretariat = (getattr(settings, "ITEAG_COURRIEL_SECRETARIAT", "") or "").casefold()
+    copie = (getattr(settings, "ITEAG_COURRIEL_COPIE", "") or "").strip()
+    deja_servies = {d.casefold() for d in destinataires}
+    if not secretariat or not copie or secretariat not in deja_servies or copie.casefold() in deja_servies:
+        return []
+    return [copie]
 
 
 def _chemin_logo() -> Path:
@@ -48,18 +64,23 @@ def envoyer_email(
     contexte: dict,
     destinataires: list[str],
     differe: bool = True,
+    confidentiel: bool = False,
 ) -> bool:
     """Envoie un courriel construit à partir d'un gabarit HTML.
 
     `differe` confie l'envoi à Celery. En cas d'indisponibilité du courtier,
     l'envoi bascule en synchrone plutôt que d'être perdu.
+
+    `confidentiel` supprime la copie automatique : un lien qui ouvre un compte
+    ne doit arriver que dans la boîte de son titulaire.
     """
     destinataires = [d for d in destinataires if d]
     if not destinataires:
         return False
+    copie = [] if confidentiel else adresses_en_copie(destinataires)
 
     if differe and getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
-        return envoyer_maintenant(sujet, gabarit, contexte, destinataires)
+        return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie)
 
     if differe:
         from apps.core.tasks import envoyer_email_tache
@@ -76,8 +97,10 @@ def envoyer_email(
                     max_retries=0,
                     timeout=getattr(settings, "CELERY_BROKER_CONNECTION_TIMEOUT", 1.0),
                 )
+                # La copie n'est ajoutée qu'au besoin : un message déjà en file
+                # au moment d'un déploiement garde la forme qu'il avait.
                 envoyer_email_tache.apply_async(
-                    args=[sujet, gabarit, contexte, destinataires],
+                    args=[sujet, gabarit, contexte, destinataires, *([copie] if copie else [])],
                     connection=connexion,
                     retry=False,
                 )
@@ -85,7 +108,7 @@ def envoyer_email(
         except Exception:  # noqa: BLE001 — courtier indisponible : on n'abandonne pas l'envoi
             logger.warning("Courtier Celery indisponible, bascule en envoi synchrone", exc_info=True)
 
-    return envoyer_maintenant(sujet, gabarit, contexte, destinataires)
+    return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie)
 
 
 def envoyer_notification_email(
@@ -128,11 +151,19 @@ def envoyer_notification_email(
     )
 
 
-def envoyer_maintenant(sujet: str, gabarit: str, contexte: dict, destinataires: list[str]) -> bool:
+def envoyer_maintenant(
+    sujet: str,
+    gabarit: str,
+    contexte: dict,
+    destinataires: list[str],
+    copie: list[str] | None = None,
+) -> bool:
     """Rendu et envoi immédiats. Ne lève pas : un courriel perdu n'arrête pas un workflow."""
     chemin_logo = _chemin_logo()
+    secretariat = getattr(settings, "ITEAG_COURRIEL_SECRETARIAT", "")
     contexte = {
         **SITE_CONTEXT,
+        "SITE_EMAIL": secretariat,
         "SITE_URL": getattr(settings, "SITE_URL", ""),
         "ANNEE_COURANTE": timezone.now().year,
         "EMAIL_LOGO_CID": LOGO_CID if chemin_logo.exists() else "",
@@ -151,6 +182,10 @@ def envoyer_maintenant(sujet: str, gabarit: str, contexte: dict, destinataires: 
         body=strip_tags(html),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=destinataires,
+        cc=copie or [],
+        # Répondre à un avis de la plateforme doit atteindre quelqu'un, quelle
+        # que soit l'adresse d'expédition que le relais SMTP impose.
+        reply_to=[secretariat] if secretariat else None,
     )
     message.attach_alternative(html, "text/html")
     if chemin_logo.exists():
