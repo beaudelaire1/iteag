@@ -115,6 +115,62 @@ class TestInvitation:
         assert mail.outbox == []
 
 
+def _cids(message) -> set[str]:
+    return {piece["Content-ID"].strip("<>") for piece in message.attachments if piece.get("Content-ID")}
+
+
+class TestInvitationIllustree:
+    def test_le_secretariat_recoit_les_quatre_captures_jointes(self, settings):
+        settings.OTP_ENFORCE = True
+        installer_personnel_iteag()
+
+        message = next(m for m in mail.outbox if m.to == ["secretariat.iteag@gmail.com"])
+        html = message.alternatives[0].content
+        attendues = {"guide-connexion", "guide-activation", "guide-telephone", "guide-verification"}
+        assert attendues <= _cids(message)
+        assert all(f"cid:{cid}" in html for cid in attendues)
+
+    def test_l_enseignant_ne_recoit_que_la_page_de_connexion(self, settings):
+        settings.OTP_ENFORCE = True
+        installer_personnel_iteag()
+
+        message = next(m for m in mail.outbox if m.to == ["anisus971@gmail.com"])
+        assert "guide-connexion" in _cids(message)
+        assert "guide-activation" not in _cids(message)
+        assert "cid:guide-activation" not in message.alternatives[0].content
+
+    def test_le_renvoi_ne_vise_que_les_comptes_a_second_facteur_jamais_connectes(self, settings):
+        from django.utils import timezone
+
+        from apps.administration.services.personnel import renvoyer_invitations_illustrees
+
+        settings.OTP_ENFORCE = True
+        installer_personnel_iteag()
+        User.objects.filter(username="viviane.foucan").update(last_login=timezone.now())
+        mail.outbox.clear()
+
+        renvoyes = renvoyer_invitations_illustrees()
+
+        assert renvoyes == ["patricia.alphonse"]
+        assert [m.to for m in mail.outbox] == [["patricia.alphonse-dernault@orange.fr"]]
+        html = mail.outbox[0].alternatives[0].content
+        assert "remplace le précédent" in html
+        assert mail.outbox[0].cc == []
+        # Le nouveau lien est valable.
+        assert _lien(mail.outbox[0])
+
+    def test_la_migration_de_renvoi_ne_fait_rien_sans_arborescence_wagtail(self, settings):
+        from django.apps import apps
+
+        settings.OTP_ENFORCE = True
+        installer_personnel_iteag()
+        mail.outbox.clear()
+
+        importlib.import_module("apps.accounts.migrations.0008_invitations_illustrees").renvoyer(apps, None)
+
+        assert mail.outbox == []
+
+
 class TestReprise:
     def test_un_second_passage_ne_reinvite_ni_ne_reecrit(self):
         installer_personnel_iteag()

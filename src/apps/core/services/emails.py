@@ -65,6 +65,7 @@ def envoyer_email(
     destinataires: list[str],
     differe: bool = True,
     confidentiel: bool = False,
+    images: dict[str, str] | None = None,
 ) -> bool:
     """Envoie un courriel construit à partir d'un gabarit HTML.
 
@@ -73,6 +74,11 @@ def envoyer_email(
 
     `confidentiel` supprime la copie automatique : un lien qui ouvre un compte
     ne doit arriver que dans la boîte de son titulaire.
+
+    `images` associe un identifiant de contenu (« cid: » dans le gabarit) à un
+    fichier sous `static/`. Les images sont jointes au message plutôt que
+    chargées depuis le site : Orange ou Outlook bloquent les images distantes
+    par défaut, et un guide illustré sans ses illustrations n'explique rien.
     """
     destinataires = [d for d in destinataires if d]
     if not destinataires:
@@ -80,7 +86,7 @@ def envoyer_email(
     copie = [] if confidentiel else adresses_en_copie(destinataires)
 
     if differe and getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
-        return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie)
+        return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie, images)
 
     if differe:
         from apps.core.tasks import envoyer_email_tache
@@ -101,6 +107,7 @@ def envoyer_email(
                 # au moment d'un déploiement garde la forme qu'il avait.
                 envoyer_email_tache.apply_async(
                     args=[sujet, gabarit, contexte, destinataires, *([copie] if copie else [])],
+                    **({"kwargs": {"images": images}} if images else {}),
                     connection=connexion,
                     retry=False,
                 )
@@ -108,7 +115,7 @@ def envoyer_email(
         except Exception:  # noqa: BLE001 — courtier indisponible : on n'abandonne pas l'envoi
             logger.warning("Courtier Celery indisponible, bascule en envoi synchrone", exc_info=True)
 
-    return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie)
+    return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie, images)
 
 
 def envoyer_notification_email(
@@ -157,6 +164,7 @@ def envoyer_maintenant(
     contexte: dict,
     destinataires: list[str],
     copie: list[str] | None = None,
+    images: dict[str, str] | None = None,
 ) -> bool:
     """Rendu et envoi immédiats. Ne lève pas : un courriel perdu n'arrête pas un workflow."""
     chemin_logo = _chemin_logo()
@@ -188,12 +196,17 @@ def envoyer_maintenant(
         reply_to=[secretariat] if secretariat else None,
     )
     message.attach_alternative(html, "text/html")
-    if chemin_logo.exists():
-        logo = MIMEImage(chemin_logo.read_bytes(), _subtype="png")
-        logo.add_header("Content-ID", f"<{LOGO_CID}>")
-        logo.add_header("Content-Disposition", "inline", filename="logo-iteag.png")
+    racine_statique = Path(settings.BASE_DIR) / "static"
+    pieces = [(LOGO_CID, chemin_logo, "logo-iteag.png")]
+    pieces += [(cid, racine_statique / relatif, Path(relatif).name) for cid, relatif in (images or {}).items()]
+    pieces = [piece for piece in pieces if piece[1].exists()]
+    if pieces:
         message.mixed_subtype = "related"
-        message.attach(logo)
+    for cid, chemin, nom in pieces:
+        image = MIMEImage(chemin.read_bytes(), _subtype="png")
+        image.add_header("Content-ID", f"<{cid}>")
+        image.add_header("Content-Disposition", "inline", filename=nom)
+        message.attach(image)
     try:
         message.send(fail_silently=False)
     except Exception:  # noqa: BLE001

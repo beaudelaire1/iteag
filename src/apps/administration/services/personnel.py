@@ -154,12 +154,26 @@ def ouvrir_compte(membre: MembreDuPersonnel) -> tuple[User | None, bool]:
     return compte, bool(compte.email) and inviter(compte)
 
 
-def inviter(compte: User) -> bool:
-    """Envoie le lien de première connexion, à son seul titulaire."""
+# Captures du guide, jointes au courriel (voir static/img/guide/). La page de
+# connexion concerne tout le monde ; les trois autres, le seul second facteur.
+IMAGE_CONNEXION = {"guide-connexion": "img/guide/connexion.png"}
+IMAGES_SECOND_FACTEUR = {
+    "guide-activation": "img/guide/activation-double-authentification.png",
+    "guide-telephone": "img/guide/authenticator-telephone.png",
+    "guide-verification": "img/guide/verification-code.png",
+}
+
+
+def inviter(compte: User, *, renvoi: bool = False) -> bool:
+    """Envoie le lien de première connexion, à son seul titulaire.
+
+    `renvoi` signale que ce message remplace une invitation déjà reçue.
+    """
     identifiant = urlsafe_base64_encode(force_bytes(compte.pk))
     jeton = default_token_generator.make_token(compte)
     racine = settings.SITE_URL.rstrip("/")
     lien = racine + reverse("accounts:password_reset_confirm", kwargs={"uidb64": identifiant, "token": jeton})
+    deux_facteurs = deux_facteurs_requis(compte)
 
     return envoyer_email(
         sujet="Votre espace est ouvert",
@@ -172,14 +186,35 @@ def inviter(compte: User) -> bool:
             "lien_activation": lien,
             "lien_oubli": racine + reverse("accounts:password_reset"),
             "lien_connexion": racine + reverse("accounts:login"),
-            "deux_facteurs": deux_facteurs_requis(compte),
+            "deux_facteurs": deux_facteurs,
             "validite_jours": max(1, settings.PASSWORD_RESET_TIMEOUT // 86400),
+            "renvoi": renvoi,
         },
         destinataires=[compte.email],
         # Synchrone : l'appel vient d'une migration, sans worker pour le prendre.
         differe=False,
         confidentiel=True,
+        images={**IMAGE_CONNEXION, **(IMAGES_SECOND_FACTEUR if deux_facteurs else {})},
     )
+
+
+def renvoyer_invitations_illustrees(membres=PERSONNEL_ITEAG) -> list[str]:
+    """Renvoie l'invitation illustrée aux comptes à second facteur jamais connectés.
+
+    Un compte qui s'est déjà connecté a franchi l'étape : lui renvoyer un lien
+    ne ferait que l'inquiéter. Un compte sans second facteur n'a rien à
+    apprendre des nouvelles illustrations.
+    """
+    renvoyes = []
+    for membre in membres:
+        compte = User.objects.filter(username=membre.identifiant, is_active=True).first()
+        if compte is None or not compte.email or compte.last_login is not None:
+            continue
+        if not deux_facteurs_requis(compte):
+            continue
+        if inviter(compte, renvoi=True):
+            renvoyes.append(compte.username)
+    return renvoyes
 
 
 def _a_reprendre(compte: User) -> bool:
