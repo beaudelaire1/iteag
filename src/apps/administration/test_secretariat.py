@@ -34,7 +34,7 @@ MOT_DE_PASSE = "MotDePasseSolide!2026"
 def secretaire(db):
     return User.objects.create_user(
         username="secretariat",
-        email="secretariat@iteag.org",
+        email="secretariat@example.org",
         password=MOT_DE_PASSE,
         first_name="Secrétariat",
         last_name="ITEAG",

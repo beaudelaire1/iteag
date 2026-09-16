@@ -28,7 +28,7 @@ def _second_facteur_actif(settings):
 def secretaire(db):
     return User.objects.create_user(
         username="secretariat",
-        email="secretariat@iteag.org",
+        email="secretariat@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )

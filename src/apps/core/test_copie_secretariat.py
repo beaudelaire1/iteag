@@ -65,4 +65,4 @@ class TestCopieSecretariat:
 
         html = mail.outbox[0].alternatives[0].content
         assert "secretariat.iteag@gmail.com" in html
-        assert "secretariat@iteag.org" not in html
+        assert "@iteag.org" not in html

@@ -109,7 +109,7 @@ def test_schema_organisation_est_un_json_valide():
         "SITE_NAME": "ITEAG",
         "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
         "SITE_PHONE": "+590 690 37 64 17",
-        "SITE_EMAIL": "secretariat@iteag.org",
+        "SITE_EMAIL": "secretariat.iteag@gmail.com",
         "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
     }

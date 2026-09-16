@@ -52,7 +52,7 @@ class Command(BaseCommand):
         crees = []
         crees += self._compte_de_service(
             "secretariat_iteag",
-            "secretariat@iteag.org",
+            "secretariat.demo@example.org",
             "Secrétariat",
             "ITEAG",
             User.Role.SECRETARIAT,

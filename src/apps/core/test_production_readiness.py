@@ -34,7 +34,7 @@ CONFIGURATION_PRODUCTION = {
     "EMAIL_HOST_PASSWORD": "secret",
     "EMAIL_USE_TLS": True,
     "EMAIL_USE_SSL": False,
-    "DEFAULT_FROM_EMAIL": "secretariat@iteag.org",
+    "DEFAULT_FROM_EMAIL": "secretariat.iteag@gmail.com",
     "SERVER_EMAIL": "errors@iteag.org",
     "CLOUDFLARE_TURNSTILE_ENABLED": True,
     "CLOUDFLARE_TURNSTILE_SITE_KEY": "site-key",

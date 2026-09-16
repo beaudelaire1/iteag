@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
             model_name="contactpage",
             name="destinataire",
             field=models.EmailField(
-                default="secretariat@iteag.org",
+                default="secretariat.iteag@gmail.com",
                 help_text="Adresse qui recevra les messages du formulaire.",
                 max_length=254,
                 verbose_name="Email destinataire",

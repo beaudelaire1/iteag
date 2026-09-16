@@ -129,7 +129,7 @@ jobs:
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
-      DEFAULT_FROM_EMAIL: secretariat@iteag.org
+      DEFAULT_FROM_EMAIL: secretariat.iteag@gmail.com
       SERVER_EMAIL: errors@iteag.org
       EMAIL_HOST: smtp.example.invalid
       EMAIL_PORT: "587"

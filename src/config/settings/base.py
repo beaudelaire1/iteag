@@ -401,8 +401,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 # ──────────────────────────────────────────────
 
 # Boîtes réelles de l'institut. Le domaine iteag.org ne porte aucun
-# enregistrement MX (constaté le 15/09/2026) : « secretariat@iteag.org »,
-# longtemps affichée partout, n'a jamais rien reçu. Tout ce qui s'adresse au
+# enregistrement MX (constaté le 15/09/2026) : les adresses en @iteag.org,
+# longtemps affichées partout, n'ont jamais rien reçu. Tout ce qui s'adresse au
 # secrétariat part vers la boîte Gmail qu'il relève, avec copie à la boîte de
 # contact — voir apps/core/services/emails.py.
 ITEAG_COURRIEL_SECRETARIAT = env("ITEAG_COURRIEL_SECRETARIAT", default="secretariat.iteag@gmail.com")
