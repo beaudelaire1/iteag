@@ -6,6 +6,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
+from django.shortcuts import redirect
+from django.templatetags.static import static as url_statique
 from django.urls import include, path, re_path
 from django.views.generic import RedirectView, TemplateView
 from wagtail import urls as wagtail_urls
@@ -65,6 +67,9 @@ urlpatterns = [
     # SEO
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
     path("robots.txt", TemplateView.as_view(template_name="robots.txt", content_type="text/plain")),
+    # Navigateurs et moteurs demandent /favicon.ico sans lire le <head>. Redirection
+    # temporaire : le nom du fichier statique change à chaque version.
+    path("favicon.ico", lambda request: redirect(url_statique("img/favicon.ico")), name="favicon"),
     # Sonde de santé (supervision et HEALTHCHECK du conteneur)
     path("healthz", views_core.HealthzView.as_view(), name="healthz"),
     # Wagtail admin

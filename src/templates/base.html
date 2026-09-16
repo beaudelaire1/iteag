@@ -38,7 +38,10 @@
     <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
 
     {% block videojs_css %}{% endblock %}
-    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    {# L'emblème du logo (globe et livre) sur fond vert ; le mot « ITEAG » est illisible à 16 px. #}
+    <link rel="icon" href="{% static 'img/favicon-32.png' %}" sizes="32x32" type="image/png">
+    <link rel="icon" href="{% static 'img/favicon-192.png' %}" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
     {% block extra_head %}{% endblock %}
     {% block json_ld %}{% endblock %}
 
