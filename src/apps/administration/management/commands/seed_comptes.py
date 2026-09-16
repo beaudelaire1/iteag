@@ -61,7 +61,7 @@ class Command(BaseCommand):
         )
         crees += self._compte_de_service(
             "direction_iteag",
-            "direction@iteag.org",
+            "direction.demo@example.org",
             "Direction",
             "ITEAG",
             User.Role.ADMIN,
