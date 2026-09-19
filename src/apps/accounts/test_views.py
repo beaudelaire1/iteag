@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.html import escape
 
 from apps.accounts.models import User
+from apps.accounts.views import tableau_de_bord
 
 # ──────────────────────────────────────────────
 # Auth views
@@ -23,6 +24,15 @@ class TestLoginView:
         url = reverse("accounts:login")
         response = client.post(url, {"username": "testuser", "password": "testpass123!"})
         assert response.status_code == 302  # redirect on success
+
+    def test_un_superutilisateur_est_route_vers_l_administration(self, db):
+        admin = User.objects.create_superuser(
+            username="super-route",
+            email="super-route@iteag.org",
+            password="admin123!",
+        )
+
+        assert tableau_de_bord(admin) == reverse("administration:dashboard")
 
     def test_login_invalid(self, client: Client, user):
         url = reverse("accounts:login")
