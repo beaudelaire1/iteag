@@ -21,7 +21,7 @@ from .services.securite import alerter_du_changement, alerter_du_mot_de_passe, e
 
 def tableau_de_bord(utilisateur) -> str:
     """Espace d'accueil correspondant au rôle. Un seul endroit en décide."""
-    if utilisateur.is_etudiant:
+    if utilisateur.is_etudiant and hasattr(utilisateur, "profil_etudiant"):
         return reverse("etudiant:dashboard")
     if utilisateur.is_enseignant:
         # L'accueil unifié, et non l'un des deux tableaux de bord partiels :
@@ -99,7 +99,7 @@ def gabarit_navigation(utilisateur) -> str:
     correspondance, il faudrait le dupliquer une fois par portail — et il
     dériverait quatre fois.
     """
-    if utilisateur.is_etudiant:
+    if utilisateur.is_etudiant and hasattr(utilisateur, "profil_etudiant"):
         return "etudiant/partials/student_nav.html"
     if utilisateur.is_enseignant:
         return "lms/partials/teacher_nav.html"
