@@ -19,6 +19,7 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils.text import slugify
 
 from apps.academics.models import ProfilEtudiant, Promotion
@@ -159,6 +160,50 @@ COLONNES_ETUDIANTS = [
 ]
 
 
+def _envoyer_activation_compte_etudiant(compte_id: int) -> None:
+    """Envoie le lien de création du mot de passe après validation de l'import."""
+    from django.conf import settings
+    from django.contrib.auth.tokens import default_token_generator
+    from django.urls import reverse
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    from apps.accounts.models import User
+    from apps.core.services.emails import envoyer_email
+
+    compte = User.objects.filter(pk=compte_id).select_related(
+        "profil_etudiant__parcours"
+    ).first()
+    if compte is None or not compte.email:
+        return
+
+    profil = getattr(compte, "profil_etudiant", None)
+    identifiant = urlsafe_base64_encode(force_bytes(compte.pk))
+    jeton = default_token_generator.make_token(compte)
+    chemin = reverse(
+        "accounts:password_reset_confirm",
+        kwargs={"uidb64": identifiant, "token": jeton},
+    )
+    lien_activation = f"{settings.SITE_URL.rstrip('/')}{chemin}"
+
+    envoyer_email(
+        sujet="Votre compte étudiant ITEAG est prêt",
+        gabarit="administration/emails/compte_etudiant_importe.html",
+        contexte={
+            "prenom": compte.first_name,
+            "numero_etudiant": profil.numero_etudiant if profil is not None else "",
+            "parcours": (
+                profil.parcours.nom
+                if profil is not None and profil.parcours_id
+                else ""
+            ),
+            "lien_activation": lien_activation,
+        },
+        destinataires=[compte.email],
+        confidentiel=True,
+    )
+
+
 def _importer_etudiant(ligne: dict[str, str]) -> bool:
     from django.utils import timezone
 
@@ -167,9 +212,8 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
 
     nom = _exiger(ligne, "nom")
     prenom = _exiger(ligne, "prenom")
-    # L'email est la clé de repli quand le fichier ne porte pas de numéro. Il
-    # sert aussi à joindre l'étudiant pour qu'il définisse son mot de passe :
-    # sans lui, le compte créé reste inatteignable.
+    # L'email sert à retrouver un compte déjà existant et à envoyer le lien
+    # d'activation lorsqu'un compte doit être créé pendant l'import.
     email = _exiger(ligne, "email")
 
     numero = (ligne.get("numero_etudiant") or "").strip()
@@ -181,44 +225,91 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         attendus = ", ".join(ProfilEtudiant.StatutInscription.values)
         raise ValidationError(f"Statut inconnu : « {statut} ». Valeurs attendues : {attendus}.")
 
+    profil_par_email = (
+        ProfilEtudiant.objects.filter(utilisateur__email__iexact=email)
+        .select_related("utilisateur")
+        .first()
+    )
     if numero:
-        profil = ProfilEtudiant.objects.filter(numero_etudiant=numero).select_related("utilisateur").first()
+        profil = (
+            ProfilEtudiant.objects.filter(numero_etudiant=numero)
+            .select_related("utilisateur")
+            .first()
+        )
+        if profil is None and profil_par_email is not None:
+            if profil_par_email.numero_etudiant != numero:
+                raise ValidationError(
+                    f"L'adresse « {email} » est déjà rattachée au numéro étudiant "
+                    f"« {profil_par_email.numero_etudiant} »."
+                )
+            profil = profil_par_email
     else:
-        profil = ProfilEtudiant.objects.filter(utilisateur__email__iexact=email).select_related("utilisateur").first()
+        profil = profil_par_email
+
     cree = profil is None
+    compte_cree = False
 
     if cree:
-        # Le compte est créé sans mot de passe utilisable : l'étudiant le
-        # définit lui-même par le lien de réinitialisation. Un import ne doit
-        # jamais fabriquer de mot de passe, ni le faire transiter.
-        base = slugify(f"{prenom}.{nom}")[:140] or "etudiant"
-        identifiant, rang = base, 2
-        while User.objects.filter(username=identifiant).exists():
-            identifiant = f"{base}{rang}"
-            rang += 1
-        compte = User.objects.create(
-            username=identifiant,
-            email=email,
-            first_name=prenom,
-            last_name=nom,
-            phone=(ligne.get("telephone") or "").strip(),
-            role=User.Role.ETUDIANT,
-        )
-        compte.set_unusable_password()
-        compte.save(update_fields=["password"])
-        # Un numéro absent du fichier est attribué ici par la même fonction que
-        # l'acceptation d'une candidature : les deux voies alimentent la même
-        # série, et aucune ne peut produire un numéro que l'autre a déjà donné.
+        comptes = list(User.objects.filter(email__iexact=email).order_by("pk")[:2])
+        if len(comptes) > 1:
+            raise ValidationError(
+                f"Plusieurs comptes utilisent l'adresse « {email} ». "
+                "Corrigez ce doublon avant l'import."
+            )
+
+        compte = comptes[0] if comptes else None
+        if compte is not None:
+            if compte.role != User.Role.ETUDIANT:
+                raise ValidationError(
+                    f"L'adresse « {email} » appartient déjà à un compte "
+                    f"« {compte.get_role_display()} »."
+                )
+            # Le compte existe déjà : on le rattache au nouveau dossier étudiant
+            # au lieu de créer un second identifiant pour la même personne.
+            compte.first_name = prenom
+            compte.last_name = nom
+            if ligne.get("telephone"):
+                compte.phone = ligne["telephone"].strip()
+            compte.save(update_fields=["first_name", "last_name", "phone"])
+        else:
+            # Aucun compte : on le crée sans mot de passe utilisable. L'étudiant
+            # définit lui-même son mot de passe via le courriel envoyé après le
+            # commit réussi de l'import.
+            base = slugify(f"{prenom}.{nom}")[:140] or "etudiant"
+            identifiant, rang = base, 2
+            while User.objects.filter(username=identifiant).exists():
+                identifiant = f"{base}{rang}"
+                rang += 1
+            compte = User.objects.create(
+                username=identifiant,
+                email=email,
+                first_name=prenom,
+                last_name=nom,
+                phone=(ligne.get("telephone") or "").strip(),
+                role=User.Role.ETUDIANT,
+            )
+            compte.set_unusable_password()
+            compte.save(update_fields=["password"])
+            compte_cree = True
+
         profil = ProfilEtudiant(
             utilisateur=compte,
             numero_etudiant=numero or numero_etudiant_suivant(timezone.now().year),
         )
     else:
         compte = profil.utilisateur
+        autre_compte = (
+            User.objects.filter(email__iexact=email)
+            .exclude(pk=compte.pk)
+            .first()
+        )
+        if autre_compte is not None:
+            raise ValidationError(
+                f"L'adresse « {email} » est déjà utilisée par un autre compte."
+            )
         compte.first_name = prenom
         compte.last_name = nom
-        if ligne.get("email"):
-            compte.email = ligne["email"].strip()
+        compte.email = email
         if ligne.get("telephone"):
             compte.phone = ligne["telephone"].strip()
         compte.save(update_fields=["first_name", "last_name", "email", "phone"])
@@ -233,6 +324,14 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
     if ligne.get("eglise"):
         profil.eglise = ligne["eglise"].strip()
     profil.save()
+
+    if compte_cree:
+        # Le moteur d'import est atomique. « on_commit » garantit qu'aucun mail
+        # n'est envoyé si une autre ligne du même fichier invalide l'import.
+        transaction.on_commit(
+            lambda compte_id=compte.pk: _envoyer_activation_compte_etudiant(compte_id)
+        )
+
     return cree
 
 
