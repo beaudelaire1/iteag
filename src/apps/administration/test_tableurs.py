@@ -390,10 +390,12 @@ class TestMiseAJourSansDoublon:
             rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
 
         assert rapport.est_en_echec
-        assert not User.objects.filter(email__in=[
-            "josiane.rollback@example.org",
-            "erreur.rollback@example.org",
-        ]).exists()
+        assert not User.objects.filter(
+            email__in=[
+                "josiane.rollback@example.org",
+                "erreur.rollback@example.org",
+            ]
+        ).exists()
         assert ProfilEtudiant.objects.count() == 0
         assert mail.outbox == []
 
