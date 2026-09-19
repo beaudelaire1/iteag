@@ -69,10 +69,10 @@
                          class="absolute right-0 mt-2 w-56 rounded bg-white shadow-lg ring-1 ring-warm-200 py-1 z-50">
                         <div class="px-4 py-2 border-b border-warm-100">
                             <p class="text-xs font-bold uppercase tracking-wider text-gold-500">
-                                {% if user.is_etudiant %}Étudiant{% elif user.is_enseignant %}Enseignant{% elif user.is_admin %}Administration{% elif user.is_secretariat %}Secrétariat{% endif %}
+                                {% if user.is_etudiant and user.profil_etudiant %}Étudiant{% elif user.is_enseignant %}Enseignant{% elif user.is_admin %}Administration{% elif user.is_secretariat %}Secrétariat{% endif %}
                             </p>
                         </div>
-                        {% if user.is_etudiant %}
+                        {% if user.is_etudiant and user.profil_etudiant %}
                         <a href="{% url 'etudiant:dashboard' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Mon espace</a>
                         <a href="{% url 'etudiant:courses' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Mes formations</a>
                         <a href="{% url 'etudiant:progress' %}" class="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50">Parcours ECTS</a>
@@ -143,7 +143,7 @@
                 <div class="px-4 py-1">
                     <span class="overline-light">{{ user.first_name|default:user.username }}</span>
                 </div>
-                {% if user.is_etudiant %}
+                {% if user.is_etudiant and user.profil_etudiant %}
                 <a href="{% url 'etudiant:dashboard' %}" class="nav-mobile-lien">Mon espace étudiant</a>
                 {% elif user.is_enseignant %}
                 <a href="{% url 'enseignant:accueil' %}" class="nav-mobile-lien">Mon espace enseignant</a>
