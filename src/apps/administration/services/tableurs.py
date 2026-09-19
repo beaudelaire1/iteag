@@ -19,7 +19,7 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils.text import slugify
 
 from apps.academics.models import ProfilEtudiant, Promotion
@@ -160,6 +160,17 @@ COLONNES_ETUDIANTS = [
 ]
 
 
+def _verrouiller_email_import_etudiant(email: str) -> None:
+    """Sérialise deux imports concurrents portant la même adresse."""
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as curseur:
+        curseur.execute(
+            "SELECT pg_advisory_xact_lock(hashtext(%s))",
+            [f"iteag-import-etudiant:{email.casefold()}"],
+        )
+
+
 def _envoyer_activation_compte_etudiant(compte_id: int) -> None:
     """Envoie le lien de création du mot de passe après validation de l'import."""
     from django.conf import settings
@@ -213,6 +224,10 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
     # L'email sert à retrouver un compte déjà existant et à envoyer le lien
     # d'activation lorsqu'un compte doit être créé pendant l'import.
     email = _exiger(ligne, "email")
+    # Deux imports simultanés de la même adresse ne doivent pas tous deux
+    # conclure qu'aucun compte n'existe. Le verrou transactionnel PostgreSQL
+    # est ciblé sur l'adresse et disparaît automatiquement au commit/rollback.
+    _verrouiller_email_import_etudiant(email)
 
     numero = (ligne.get("numero_etudiant") or "").strip()
     parcours = _rattachement(Parcours, ligne, "parcours", "Parcours inconnu")
