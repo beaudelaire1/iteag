@@ -88,12 +88,16 @@ class User(AbstractUser):
 
     @property
     def is_secretariat(self):
-        return self.role == self.Role.SECRETARIAT
+        return not self.is_superuser and self.role == self.Role.SECRETARIAT
 
     @property
     def is_enseignant(self):
-        return self.role == self.Role.ENSEIGNANT
+        return not self.is_superuser and self.role == self.Role.ENSEIGNANT
 
     @property
     def is_etudiant(self):
-        return self.role == self.Role.ETUDIANT
+        # createsuperuser ne renseigne pas notre champ role : il garde donc
+        # sa valeur par défaut etudiant. Un superutilisateur doit pourtant
+        # être présenté et routé comme administrateur, sinon le menu lui
+        # propose l'espace étudiant qui exige un ProfilEtudiant inexistant.
+        return not self.is_superuser and self.role == self.Role.ETUDIANT
