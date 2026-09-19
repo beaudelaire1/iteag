@@ -34,6 +34,16 @@ class TestLoginView:
 
         assert tableau_de_bord(admin) == reverse("administration:dashboard")
 
+    def test_un_compte_etudiant_sans_profil_n_est_pas_route_vers_un_espace_refuse(self, db):
+        utilisateur = User.objects.create_user(
+            username="etudiant-sans-profil",
+            email="sans-profil@iteag.org",
+            password="testpass123!",
+            role=User.Role.ETUDIANT,
+        )
+
+        assert tableau_de_bord(utilisateur) == ""
+
     def test_login_invalid(self, client: Client, user):
         url = reverse("accounts:login")
         response = client.post(url, {"username": "testuser", "password": "wrong"})
