@@ -28,6 +28,10 @@ class TestUserModel:
         )
         assert admin.is_superuser
         assert admin.is_staff
+        assert admin.is_admin
+        assert not admin.is_etudiant
+        assert not admin.is_enseignant
+        assert not admin.is_secretariat
 
     def test_default_role(self):
         user = User.objects.create_user(
