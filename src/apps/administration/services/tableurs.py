@@ -171,9 +171,7 @@ def _envoyer_activation_compte_etudiant(compte_id: int) -> None:
     from apps.accounts.models import User
     from apps.core.services.emails import envoyer_email
 
-    compte = User.objects.filter(pk=compte_id).select_related(
-        "profil_etudiant__parcours"
-    ).first()
+    compte = User.objects.filter(pk=compte_id).select_related("profil_etudiant__parcours").first()
     if compte is None or not compte.email:
         return
 
@@ -225,17 +223,9 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         attendus = ", ".join(ProfilEtudiant.StatutInscription.values)
         raise ValidationError(f"Statut inconnu : « {statut} ». Valeurs attendues : {attendus}.")
 
-    profil_par_email = (
-        ProfilEtudiant.objects.filter(utilisateur__email__iexact=email)
-        .select_related("utilisateur")
-        .first()
-    )
+    profil_par_email = ProfilEtudiant.objects.filter(utilisateur__email__iexact=email).select_related("utilisateur").first()
     if numero:
-        profil = (
-            ProfilEtudiant.objects.filter(numero_etudiant=numero)
-            .select_related("utilisateur")
-            .first()
-        )
+        profil = ProfilEtudiant.objects.filter(numero_etudiant=numero).select_related("utilisateur").first()
         if profil is None and profil_par_email is not None:
             if profil_par_email.numero_etudiant != numero:
                 raise ValidationError(
@@ -298,11 +288,7 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         )
     else:
         compte = profil.utilisateur
-        autre_compte = (
-            User.objects.filter(email__iexact=email)
-            .exclude(pk=compte.pk)
-            .first()
-        )
+        autre_compte = User.objects.filter(email__iexact=email).exclude(pk=compte.pk).first()
         if autre_compte is not None:
             raise ValidationError(
                 f"L'adresse « {email} » est déjà utilisée par un autre compte."
@@ -328,9 +314,7 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
     if compte_cree:
         # Le moteur d'import est atomique. « on_commit » garantit qu'aucun mail
         # n'est envoyé si une autre ligne du même fichier invalide l'import.
-        transaction.on_commit(
-            lambda compte_id=compte.pk: _envoyer_activation_compte_etudiant(compte_id)
-        )
+        transaction.on_commit(lambda compte_id=compte.pk: _envoyer_activation_compte_etudiant(compte_id))
 
     return cree
 
