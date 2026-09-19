@@ -14,6 +14,7 @@ numérique en flottant.
 import io
 
 import pytest
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
@@ -307,6 +308,96 @@ class TestMiseAJourSansDoublon:
 
         profil = ProfilEtudiant.objects.get()
         assert profil.utilisateur.has_usable_password() is False
+
+    def test_un_nouveau_compte_importe_recoit_un_mail_d_activation(
+        self,
+        referentiel,
+        settings,
+        django_capture_on_commit_callbacks,
+    ):
+        _, parcours, promotion = referentiel
+        settings.SITE_URL = "https://iteag.org"
+        mail.outbox.clear()
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [["Marceline", "Josiane", "josiane.activation@example.org", parcours.nom, promotion.nom]],
+        )
+
+        with django_capture_on_commit_callbacks(execute=True):
+            rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert not rapport.est_en_echec
+        compte = User.objects.get(email="josiane.activation@example.org")
+        assert compte.role == User.Role.ETUDIANT
+        assert compte.has_usable_password() is False
+        assert compte.profil_etudiant.parcours == parcours
+        assert len(mail.outbox) == 1
+        message = mail.outbox[0]
+        assert message.to == ["josiane.activation@example.org"]
+        assert message.subject == "ITEAG - Votre compte étudiant ITEAG est prêt"
+        assert "https://iteag.org/mot-de-passe/confirmer/" in message.body
+        assert compte.profil_etudiant.numero_etudiant in message.body
+
+    def test_un_compte_etudiant_existant_est_reutilise_sans_nouveau_mail(
+        self,
+        referentiel,
+        django_capture_on_commit_callbacks,
+    ):
+        _, parcours, promotion = referentiel
+        compte = User.objects.create_user(
+            username="josiane.existante",
+            email="josiane.existante@example.org",
+            password=MOT_DE_PASSE,
+            first_name="Ancien",
+            last_name="Nom",
+            role=User.Role.ETUDIANT,
+        )
+        mail.outbox.clear()
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [["Marceline", "Josiane", compte.email, parcours.nom, promotion.nom]],
+        )
+
+        with django_capture_on_commit_callbacks(execute=True):
+            rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert not rapport.est_en_echec
+        assert rapport.crees == 1
+        profil = ProfilEtudiant.objects.get()
+        assert profil.utilisateur_id == compte.pk
+        assert User.objects.filter(email__iexact=compte.email).count() == 1
+        compte.refresh_from_db()
+        assert compte.first_name == "Josiane"
+        assert compte.last_name == "Marceline"
+        assert mail.outbox == []
+
+    def test_un_import_annule_n_envoie_aucun_mail_d_activation(
+        self,
+        referentiel,
+        django_capture_on_commit_callbacks,
+    ):
+        _, parcours, promotion = referentiel
+        mail.outbox.clear()
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [
+                ["Marceline", "Josiane", "josiane.rollback@example.org", parcours.nom, promotion.nom],
+                ["Erreur", "Etudiant", "erreur.rollback@example.org", "Parcours inexistant", promotion.nom],
+            ],
+        )
+
+        with django_capture_on_commit_callbacks(execute=True):
+            rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert rapport.est_en_echec
+        assert not User.objects.filter(
+            email__in=[
+                "josiane.rollback@example.org",
+                "erreur.rollback@example.org",
+            ]
+        ).exists()
+        assert ProfilEtudiant.objects.count() == 0
+        assert mail.outbox == []
 
     def test_la_notice_est_reconnue_par_son_isbn(self, referentiel):
         entetes = ["titre", "auteur", "isbn"]
