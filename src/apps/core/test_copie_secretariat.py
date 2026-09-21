@@ -3,7 +3,7 @@
 import pytest
 from django.core import mail
 
-from apps.core.services.emails import envoyer_email, envoyer_notification_email
+from apps.core.services.emails import envoyer_email, envoyer_maintenant, envoyer_notification_email
 
 
 @pytest.fixture(autouse=True)
@@ -66,3 +66,24 @@ class TestCopieSecretariat:
         html = mail.outbox[0].alternatives[0].content
         assert "secretariat.iteag@gmail.com" in html
         assert "@iteag.org" not in html
+
+
+@pytest.mark.django_db
+class TestDestinatairesSansBoite:
+    def test_une_adresse_iteag_est_refusee_avant_envoi(self):
+        assert not _envoyer(["direction@iteag.org"])
+        assert mail.outbox == []
+
+    def test_un_lot_mixte_ne_garde_que_les_adresses_reelles(self):
+        assert _envoyer(["direction@iteag.org", "etudiant@example.org"])
+
+        assert mail.outbox[0].to == ["etudiant@example.org"]
+
+    def test_une_ancienne_tache_celery_est_egalement_bloquee(self):
+        assert not envoyer_maintenant(
+            "Ancienne notification",
+            "core/emails/notification.html",
+            {"titre": "Test", "message": "Ancienne tâche."},
+            ["direction@iteag.org"],
+        )
+        assert mail.outbox == []
