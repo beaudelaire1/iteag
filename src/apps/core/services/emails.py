@@ -13,6 +13,7 @@ définition de mot de passe) y échappent.
 
 import logging
 from email.mime.image import MIMEImage
+from email.utils import formataddr, parseaddr
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -53,7 +54,7 @@ def filtrer_destinataires(adresses: list[str] | None) -> list[str]:
         if not adresse:
             continue
         cle = adresse.casefold()
-        if cle.endswith(DOMAINE_EMAIL_SANS_MX):
+        if cle.endswith(DOMAINE_EMAIL_SANS_MX) and not getattr(settings, "ITEAG_EMAIL_DOMAIN_RECEIVABLE", False):
             logger.warning("Destinataire sans boîte réelle ignoré : %s", adresse)
             continue
         if cle in deja_vues:
@@ -185,6 +186,16 @@ def envoyer_notification_email(
     )
 
 
+def _adresse_expediteur() -> str:
+    """Construit un Header From stable et lisible sans masquer l'adresse SMTP."""
+    brut = (getattr(settings, "DEFAULT_FROM_EMAIL", "") or "").strip()
+    nom_existant, adresse = parseaddr(brut)
+    if not adresse:
+        return brut
+    nom = nom_existant or (getattr(settings, "EMAIL_FROM_NAME", "") or "").strip()
+    return formataddr((nom, adresse)) if nom else adresse
+
+
 def envoyer_maintenant(
     sujet: str,
     gabarit: str,
@@ -223,17 +234,30 @@ def envoyer_maintenant(
         # message de service automatisé, et certains filtres les pénalisent.
         subject=f"ITEAG - {sujet}",
         body=strip_tags(html),
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=_adresse_expediteur(),
         to=destinataires,
         cc=copie or [],
         # Répondre à un avis de la plateforme doit atteindre quelqu'un, quelle
         # que soit l'adresse d'expédition que le relais SMTP impose.
         reply_to=[secretariat] if secretariat else None,
+        headers={
+            "Auto-Submitted": "auto-generated",
+            "X-Auto-Response-Suppress": "All",
+        },
     )
     message.attach_alternative(html, "text/html")
     racine_statique = Path(settings.BASE_DIR) / "static"
-    pieces = [(LOGO_CID, chemin_logo, "logo-iteag.png")]
-    pieces += [(cid, racine_statique / relatif, Path(relatif).name) for cid, relatif in (images or {}).items()]
+    pieces = []
+    # N'attacher une image inline que si le HTML la référence réellement. Les
+    # liens d'activation utilisent volontairement un gabarit transactionnel
+    # léger : ajouter un logo MIME inutile alourdit l'empreinte antispam.
+    if f"cid:{LOGO_CID}" in html and chemin_logo.exists():
+        pieces.append((LOGO_CID, chemin_logo, "logo-iteag.png"))
+    pieces += [
+        (cid, racine_statique / relatif, Path(relatif).name)
+        for cid, relatif in (images or {}).items()
+        if f"cid:{cid}" in html
+    ]
     pieces = [piece for piece in pieces if piece[1].exists()]
     if pieces:
         message.mixed_subtype = "related"
