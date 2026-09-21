@@ -289,3 +289,62 @@ class TestMigrationPatriciaAlphonse:
         assert compte.email == "p.alphonse@example.org"
         assert compte.check_password("Choisi-par-elle-2026")
         assert mail.outbox == []
+
+
+class TestRenvoiAlainNisus:
+    migration = importlib.import_module("apps.accounts.migrations.0010_renvoi_invitation_alain_nisus")
+
+    @staticmethod
+    def _base_en_service():
+        from wagtail.models import Page
+
+        from apps.website.models import HomePage
+
+        Page.get_first_root_node().add_child(instance=HomePage(title="Accueil", slug="accueil-nisus"))
+
+    def test_seul_alain_nisus_recoit_un_nouveau_lien(self, settings):
+        from django.apps import apps
+        from django.utils import timezone
+
+        settings.OTP_ENFORCE = True
+        installer_personnel_iteag()
+        # Même s'il s'est déjà connecté une fois : il demande à rentrer.
+        User.objects.filter(username="alain.nisus").update(last_login=timezone.now())
+        self._base_en_service()
+        mail.outbox.clear()
+
+        self.migration.renvoyer_a_alain_nisus(apps, None)
+
+        assert [m.to for m in mail.outbox] == [["anisus971@gmail.com"]]
+        assert mail.outbox[0].cc == []
+        assert "remplace le précédent" in mail.outbox[0].alternatives[0].content
+        assert _lien(mail.outbox[0])
+
+    def test_une_adresse_corrigee_a_la_main_est_respectee(self):
+        from django.apps import apps
+
+        fiche = Professeur.objects.create(nom="Nisus", prenom="Alain", slug="alain-nisus")
+        compte = User.objects.create_user(
+            username="alain.nisus",
+            email="a.nisus@example.org",
+            password="Choisi-par-lui-2026",
+            role=User.Role.ENSEIGNANT,
+        )
+        fiche.user = compte
+        fiche.save()
+        self._base_en_service()
+
+        self.migration.renvoyer_a_alain_nisus(apps, None)
+
+        assert [m.to for m in mail.outbox] == [["a.nisus@example.org"]]
+        assert User.objects.get(username="alain.nisus").check_password("Choisi-par-lui-2026")
+
+    def test_sans_arborescence_wagtail_rien_ne_part(self):
+        from django.apps import apps
+
+        installer_personnel_iteag()
+        mail.outbox.clear()
+
+        self.migration.renvoyer_a_alain_nisus(apps, None)
+
+        assert mail.outbox == []

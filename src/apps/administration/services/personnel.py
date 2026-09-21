@@ -217,6 +217,21 @@ def renvoyer_invitations_illustrees(membres=PERSONNEL_ITEAG) -> list[str]:
     return renvoyes
 
 
+def renvoyer_invitation(identifiant: str, membres=PERSONNEL_ITEAG) -> bool:
+    """Renvoie l'invitation à un seul membre du personnel, qu'il se soit connecté ou non.
+
+    Pour qui n'arrive plus à entrer : le lien remplace le précédent. Un compte
+    encore dans son état de démonstration est d'abord repris, ce qui l'invite.
+    """
+    membre = next(m for m in membres if m.identifiant == identifiant)
+    compte, invitation = ouvrir_compte(membre)
+    if invitation:
+        return True
+    if compte is None or not compte.is_active or not compte.email:
+        return False
+    return inviter(compte, renvoi=True)
+
+
 def _a_reprendre(compte: User) -> bool:
     """Compte encore dans son état de démonstration, sans titulaire joignable."""
     adresse = (compte.email or "").strip().casefold()
