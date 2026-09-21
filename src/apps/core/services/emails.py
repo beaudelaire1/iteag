@@ -25,6 +25,7 @@ from django.utils.html import strip_tags
 logger = logging.getLogger(__name__)
 
 LOGO_CID = "logo-iteag"
+DOMAINE_EMAIL_SANS_MX = "@iteag.org"
 SITE_CONTEXT = {
     "SITE_NAME": "ITEAG",
     "SITE_FULL_NAME": "Institut de Théologie Évangélique des Antilles et de la Guyane",
@@ -34,6 +35,32 @@ SITE_CONTEXT = {
     "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
     "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
 }
+
+
+def filtrer_destinataires(adresses: list[str] | None) -> list[str]:
+    """Écarte les adresses internes historiques qui ne correspondent à aucune boîte réelle.
+
+    Le domaine iteag.org ne porte pas de messagerie. Des comptes de démonstration
+    et d'anciennes données peuvent néanmoins encore contenir une adresse en
+    @iteag.org. Ce garde-fou est volontairement placé au niveau du service
+    d'envoi afin de couvrir tous les appelants, y compris les anciennes tâches
+    Celery déjà mises en file.
+    """
+    valides: list[str] = []
+    deja_vues: set[str] = set()
+    for adresse in adresses or []:
+        adresse = (adresse or "").strip()
+        if not adresse:
+            continue
+        cle = adresse.casefold()
+        if cle.endswith(DOMAINE_EMAIL_SANS_MX):
+            logger.warning("Destinataire sans boîte réelle ignoré : %s", adresse)
+            continue
+        if cle in deja_vues:
+            continue
+        deja_vues.add(cle)
+        valides.append(adresse)
+    return valides
 
 
 def adresses_en_copie(destinataires: list[str]) -> list[str]:
@@ -80,7 +107,7 @@ def envoyer_email(
     chargées depuis le site : Orange ou Outlook bloquent les images distantes
     par défaut, et un guide illustré sans ses illustrations n'explique rien.
     """
-    destinataires = [d for d in destinataires if d]
+    destinataires = filtrer_destinataires(destinataires)
     if not destinataires:
         return False
     copie = [] if confidentiel else adresses_en_copie(destinataires)
@@ -167,6 +194,14 @@ def envoyer_maintenant(
     images: dict[str, str] | None = None,
 ) -> bool:
     """Rendu et envoi immédiats. Ne lève pas : un courriel perdu n'arrête pas un workflow."""
+    # Une tâche Celery peut avoir été mise en file avant un déploiement. On
+    # refiltre donc ici, et pas seulement dans envoyer_email(), pour empêcher
+    # une ancienne tâche d'expédier encore vers une adresse @iteag.org.
+    destinataires = filtrer_destinataires(destinataires)
+    copie = filtrer_destinataires(copie)
+    if not destinataires:
+        return False
+
     chemin_logo = _chemin_logo()
     secretariat = getattr(settings, "ITEAG_COURRIEL_SECRETARIAT", "")
     contexte = {

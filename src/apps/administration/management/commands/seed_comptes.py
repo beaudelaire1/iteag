@@ -52,7 +52,7 @@ class Command(BaseCommand):
         crees = []
         crees += self._compte_de_service(
             "secretariat_iteag",
-            "secretariat.demo@example.org",
+            "",
             "Secrétariat",
             "ITEAG",
             User.Role.SECRETARIAT,
@@ -61,7 +61,7 @@ class Command(BaseCommand):
         )
         crees += self._compte_de_service(
             "direction_iteag",
-            "direction.demo@example.org",
+            "",
             "Direction",
             "ITEAG",
             User.Role.ADMIN,
@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
             utilisateur = User.objects.create_user(
                 username=identifiant,
-                email=f"{identifiant}@iteag.org",
+                email="",
                 password=mot_de_passe,
                 first_name=professeur.prenom,
                 last_name=professeur.nom,
