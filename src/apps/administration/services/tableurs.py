@@ -157,6 +157,33 @@ def _parcours_import_etudiant(ligne: dict[str, str]):
     )
 
 
+def _promotion_import_etudiant(ligne: dict[str, str], parcours):
+    """Accepte une année simple (ex. 2026) et crée la promotion si nécessaire."""
+    brut = (ligne.get("promotion") or "").strip()
+    if not brut:
+        return None
+
+    promotion = Promotion.objects.filter(nom__iexact=brut).first()
+    if promotion is not None:
+        return promotion
+
+    if brut.isdigit() and len(brut) == 4 and parcours is not None:
+        annee = int(brut)
+        promotion = Promotion.objects.filter(parcours=parcours, annee_debut=annee).first()
+        if promotion is not None:
+            return promotion
+        duree = parcours.duree_annees or 0
+        return Promotion.objects.create(
+            nom=f"Promotion {annee} — {parcours.nom}",
+            parcours=parcours,
+            annee_debut=annee,
+            annee_fin=annee + duree,
+            actif=True,
+        )
+
+    raise ValidationError(f"Promotion inconnue : « {brut} ». Créez-la d'abord, ou laissez la colonne vide.")
+
+
 def _slug_libre(modele, base: str, champ: str = "slug") -> str:
     """Un slug unique dérivé du titre, sans écraser un existant."""
     racine = slugify(base)[:180] or "entree"
@@ -235,7 +262,7 @@ COLONNES_ETUDIANTS = [
     Colonne("email", "Adresse électronique", requise=True, exemple="josiane.marceline@example.org"),
     Colonne("telephone", "Téléphone", exemple="+590 690 00 00 00"),
     Colonne("parcours", "Nom du parcours — créé automatiquement s'il n'existe pas, ou vide", exemple="Parcours libre"),
-    Colonne("promotion", "Nom exact d'une promotion existante, ou vide", exemple="Promotion 2026"),
+    Colonne("promotion", "Nom exact d'une promotion existante, année à 4 chiffres, ou vide", exemple="2026"),
     Colonne("statut", "actif, inscrit, pre_inscrit, suspendu, diplome", exemple="actif"),
     Colonne("eglise", "Église d'appartenance", exemple="Église de Pointe-à-Pitre"),
 ]
@@ -312,7 +339,7 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
 
     numero = (ligne.get("numero_etudiant") or "").strip()
     parcours = _parcours_import_etudiant(ligne)
-    promotion = _rattachement(Promotion, ligne, "promotion", "Promotion inconnue")
+    promotion = _promotion_import_etudiant(ligne, parcours)
 
     statut = (ligne.get("statut") or ProfilEtudiant.StatutInscription.PRE_INSCRIT).strip().lower()
     if statut not in ProfilEtudiant.StatutInscription.values:
