@@ -24,7 +24,10 @@ def heartbeat_celery() -> str:
     return instant
 
 
-@shared_task(name="core.envoyer_email", rate_limit=getattr(settings, "EMAIL_TASK_RATE_LIMIT", "6/m"))
+@shared_task(
+    name="core.envoyer_email",
+    rate_limit=getattr(settings, "EMAIL_TASK_RATE_LIMIT", "6/m"),
+)
 def envoyer_email_tache(
     sujet: str,
     gabarit: str,
