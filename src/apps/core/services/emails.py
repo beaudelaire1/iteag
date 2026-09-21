@@ -54,11 +54,7 @@ def filtrer_destinataires(adresses: list[str] | None) -> list[str]:
         if not adresse:
             continue
         cle = adresse.casefold()
-        domaine_interne_injoignable = (
-            cle.endswith(DOMAINE_EMAIL_SANS_MX)
-            and not getattr(settings, "ITEAG_EMAIL_DOMAIN_RECEIVABLE", False)
-        )
-        if domaine_interne_injoignable:
+        if cle.endswith(DOMAINE_EMAIL_SANS_MX):
             logger.warning("Destinataire sans boîte réelle ignoré : %s", adresse)
             continue
         if cle in deja_vues:
