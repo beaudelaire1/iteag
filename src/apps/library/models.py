@@ -27,6 +27,7 @@ class NoticeBibliographique(TimeStampedModel):
         related_name="notices",
     )
     description = models.TextField(blank=True, verbose_name="Résumé / description")
+    nombre_exemplaires = models.PositiveIntegerField(default=1, verbose_name="Nombre d'exemplaires")
     disponible = models.BooleanField(default=True, verbose_name="Disponible en bibliothèque")
 
     search_vector = SearchVectorField(null=True, blank=True)
