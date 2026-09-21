@@ -286,6 +286,23 @@ class TestServiceEmail:
         assert message.extra_headers["Auto-Submitted"] == "auto-generated"
         assert message.extra_headers["X-Auto-Response-Suppress"] == "All"
 
+    @override_settings(
+        EMAIL_HOST="smtp.gmail.com",
+        EMAIL_HOST_USER="contact.iteag@gmail.com",
+        DEFAULT_FROM_EMAIL="secretariat.iteag@gmail.com",
+        EMAIL_FROM_NAME="ITEAG",
+    )
+    def test_gmail_force_le_from_sur_le_compte_smtp_authentifie(self):
+        assert envoyer_email(
+            sujet="Identité Gmail",
+            gabarit="core/emails/notification.html",
+            contexte={"titre": "Information", "message": "Message de contrôle."},
+            destinataires=["lecteur@example.org"],
+            differe=False,
+        )
+
+        assert mail.outbox[0].from_email == "ITEAG <contact.iteag@gmail.com>"
+
     def test_activation_etudiant_reste_legere_sans_logo_inline(self):
         assert envoyer_email(
             sujet="Votre compte étudiant ITEAG est prêt",
