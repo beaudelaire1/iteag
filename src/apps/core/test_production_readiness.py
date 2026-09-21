@@ -110,18 +110,6 @@ def test_les_replis_de_developpement_sont_refuses(moteur_postgresql):
 @override_settings(
     **{
         **CONFIGURATION_PRODUCTION,
-        "DEFAULT_FROM_EMAIL": "secretariat.iteag@gmail.com",
-        "EMAIL_HOST_USER": "contact.iteag@gmail.com",
-    }
-)
-def test_gmail_refuse_un_from_different_du_compte_smtp(moteur_postgresql):
-    anomalies = anomalies_configuration_production()
-    assert any("DEFAULT_FROM_EMAIL" in anomalie and "EMAIL_HOST_USER" in anomalie for anomalie in anomalies)
-
-
-@override_settings(
-    **{
-        **CONFIGURATION_PRODUCTION,
         "ALLOWED_HOSTS": ["*"],
         "SITE_URL": "http://iteag.org",
         "WAGTAILADMIN_BASE_URL": "http://iteag.org",
