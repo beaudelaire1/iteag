@@ -268,10 +268,9 @@ class TestServiceEmail:
         assert mail.outbox[0].alternatives  # une version HTML accompagne le texte
 
     @override_settings(
-        DEFAULT_FROM_EMAIL="secretariat@iteag.org",
+        DEFAULT_FROM_EMAIL="contact.iteag@gmail.com",
         EMAIL_FROM_NAME="ITEAG",
-        ITEAG_COURRIEL_SECRETARIAT="secretariat@iteag.org",
-        ITEAG_EMAIL_DOMAIN_RECEIVABLE=True,
+        ITEAG_COURRIEL_SECRETARIAT="secretariat.iteag@gmail.com",
     )
     def test_email_transactionnel_a_une_identite_expediteur_stable(self):
         assert envoyer_email(
@@ -283,7 +282,7 @@ class TestServiceEmail:
         )
 
         message = mail.outbox[0]
-        assert message.from_email == "ITEAG <secretariat@iteag.org>"
+        assert message.from_email == "ITEAG <contact.iteag@gmail.com>"
         assert message.extra_headers["Auto-Submitted"] == "auto-generated"
         assert message.extra_headers["X-Auto-Response-Suppress"] == "All"
 
