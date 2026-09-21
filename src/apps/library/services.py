@@ -58,6 +58,22 @@ def etat_emprunteur(emprunteur) -> dict:
     }
 
 
+STATUTS_EMPRUNT_ACTIFS = [Emprunt.Statut.RESERVE, Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD]
+
+
+def _nombre_emprunts_actifs(notice: NoticeBibliographique) -> int:
+    return Emprunt.objects.filter(notice=notice, statut__in=STATUTS_EMPRUNT_ACTIFS).count()
+
+
+def synchroniser_disponibilite(notice: NoticeBibliographique) -> bool:
+    """Aligne le booléen historique sur le stock réellement encore disponible."""
+    disponible = _nombre_emprunts_actifs(notice) < notice.nombre_exemplaires
+    if notice.disponible != disponible:
+        notice.disponible = disponible
+        notice.save(update_fields=["disponible", "updated_at"])
+    return disponible
+
+
 def verifier_droit_emprunt(emprunteur) -> None:
     retard = emprunt_en_retard_actif(emprunteur)
     if retard is not None:
@@ -86,8 +102,9 @@ def reserver_ouvrage(
     """Réserve un ouvrage physique disponible pour retrait à l'institut."""
     verifier_droit_emprunt(emprunteur)
     notice = NoticeBibliographique.objects.select_for_update().get(pk=notice.pk)
-    if not notice.disponible:
-        raise ValidationError("Cet ouvrage est déjà emprunté ou indisponible.")
+    actifs = _nombre_emprunts_actifs(notice)
+    if not notice.disponible or actifs >= notice.nombre_exemplaires:
+        raise ValidationError("Aucun exemplaire de cet ouvrage n'est actuellement disponible.")
 
     if Emprunt.objects.filter(
         notice=notice,
@@ -104,8 +121,7 @@ def reserver_ouvrage(
         date_retour_prevue=date_retour,
     )
 
-    notice.disponible = False
-    notice.save(update_fields=["disponible", "updated_at"])
+    synchroniser_disponibilite(notice)
 
     notifier(
         emprunteur,
@@ -129,9 +145,8 @@ def annuler_reservation(emprunt: Emprunt, emprunteur) -> NoticeBibliographique:
         raise ValidationError("Seule une réservation en attente de retrait peut être annulée.")
 
     notice = emprunt.notice
-    notice.disponible = True
-    notice.save(update_fields=["disponible", "updated_at"])
     emprunt.delete()
+    synchroniser_disponibilite(notice)
 
     notifier(
         emprunteur,
@@ -173,8 +188,7 @@ def restituer_ouvrage(emprunt: Emprunt, *, commentaire: str = "") -> Emprunt:
     emprunt.save(update_fields=["statut", "date_retour_effectif", "commentaire", "updated_at"])
 
     notice = emprunt.notice
-    notice.disponible = True
-    notice.save(update_fields=["disponible", "updated_at"])
+    synchroniser_disponibilite(notice)
 
     if jours_retard > 0:
         jours_suspension = _duree_suspension(jours_retard)

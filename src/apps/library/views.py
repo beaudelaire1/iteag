@@ -374,9 +374,8 @@ class EmpruntCreateView(StaffRoleRequiredMixin, CreateView):
     def form_valid(self, form):
         emprunt = form.save(commit=False)
         notice = emprunt.notice
-        notice.disponible = False
-        notice.save(update_fields=["disponible", "updated_at"])
         emprunt.save()
+        services.synchroniser_disponibilite(notice)
         messages.success(
             self.request,
             f"L'emprunt pour « {notice.titre} » a été créé avec succès.",
@@ -400,6 +399,7 @@ class EmpruntUpdateView(StaffRoleRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         emprunt = form.save()
+        services.synchroniser_disponibilite(emprunt.notice)
         messages.success(
             self.request,
             f"L'emprunt de « {emprunt.notice.titre} » a été mis à jour avec succès.",

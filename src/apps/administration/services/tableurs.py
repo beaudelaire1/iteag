@@ -76,6 +76,114 @@ def _rattachement(modele, ligne: dict[str, str], champ: str, libelle: str):
     return trouve
 
 
+def _parcours_import_etudiant(ligne: dict[str, str]):
+    """Retrouve ou crée le parcours porté par un fichier étudiant.
+
+    Les listes historiques utilisent plusieurs libellés pour les quatre parcours
+    officiels (par exemple « Diplôme ITEAG »). Ils sont normalisés vers le
+    référentiel public. Un libellé réellement nouveau est conservé tel quel :
+    l'import ne doit plus exiger une création manuelle préalable.
+    """
+    brut = (ligne.get("parcours") or "").strip()
+    if not brut:
+        return None
+
+    alias = {
+        "iteag-pro": {
+            "nom": "ITEAG Pro",
+            "type_parcours": Parcours.TypeParcours.PRO,
+            "ects_requis": 0,
+            "duree_annees": 0,
+        },
+        "diplome-iteag": {
+            "nom": "Parcours diplômant ITEAG",
+            "type_parcours": Parcours.TypeParcours.DIPLOMANT_ITEAG,
+            "ects_requis": 180,
+            "duree_annees": 6,
+        },
+        "parcours-diplomant-iteag": {
+            "nom": "Parcours diplômant ITEAG",
+            "type_parcours": Parcours.TypeParcours.DIPLOMANT_ITEAG,
+            "ects_requis": 180,
+            "duree_annees": 6,
+        },
+        "bachelor-flte": {
+            "nom": "Bachelor FLTE",
+            "type_parcours": Parcours.TypeParcours.BACHELOR_FLTE,
+            "ects_requis": 180,
+            "duree_annees": 6,
+        },
+        "parcours-libre": {
+            "nom": "Parcours libre",
+            "type_parcours": Parcours.TypeParcours.LIBRE,
+            "ects_requis": 0,
+            "duree_annees": 0,
+        },
+    }
+
+    configuration = alias.get(slugify(brut))
+    if configuration:
+        parcours = (
+            Parcours.objects.filter(type_parcours=configuration["type_parcours"]).first()
+            or Parcours.objects.filter(nom__iexact=configuration["nom"]).first()
+        )
+        if parcours is not None:
+            return parcours
+        return Parcours.objects.create(
+            nom=configuration["nom"],
+            slug=_slug_libre(Parcours, configuration["nom"]),
+            type_parcours=configuration["type_parcours"],
+            ects_requis=configuration["ects_requis"],
+            duree_annees=configuration["duree_annees"],
+            actif=True,
+        )
+
+    parcours = Parcours.objects.filter(nom__iexact=brut).first()
+    if parcours is not None:
+        return parcours
+
+    # Le modèle étudiant porte aujourd'hui un seul FK de parcours. Si le
+    # fichier historique contient un libellé composite, on le conserve donc
+    # sans perte sous un parcours dédié plutôt que d'en choisir arbitrairement
+    # une moitié.
+    return Parcours.objects.create(
+        nom=brut,
+        slug=_slug_libre(Parcours, brut),
+        type_parcours=Parcours.TypeParcours.LIBRE,
+        ects_requis=0,
+        duree_annees=0,
+        actif=True,
+        description="Parcours créé automatiquement lors d'un import étudiant.",
+    )
+
+
+def _promotion_import_etudiant(ligne: dict[str, str], parcours):
+    """Accepte une année simple (ex. 2026) et crée la promotion si nécessaire."""
+    brut = (ligne.get("promotion") or "").strip()
+    if not brut:
+        return None
+
+    promotion = Promotion.objects.filter(nom__iexact=brut).first()
+    if promotion is not None:
+        return promotion
+
+    if brut.isdigit() and len(brut) == 4 and parcours is not None:
+        annee = int(brut)
+        promotion = Promotion.objects.filter(parcours=parcours, annee_debut=annee).first()
+        if promotion is not None:
+            return promotion
+        duree = parcours.duree_annees or 0
+        return Promotion.objects.create(
+            nom=f"Promotion {annee} — {parcours.nom}",
+            parcours=parcours,
+            annee_debut=annee,
+            annee_fin=annee + duree,
+            actif=True,
+        )
+
+    raise ValidationError(f"Promotion inconnue : « {brut} ». Créez-la d'abord, ou laissez la colonne vide.")
+
+
 def _slug_libre(modele, base: str, champ: str = "slug") -> str:
     """Un slug unique dérivé du titre, sans écraser un existant."""
     racine = slugify(base)[:180] or "entree"
@@ -153,8 +261,8 @@ COLONNES_ETUDIANTS = [
     Colonne("prenom", "Prénom", requise=True, exemple="Josiane"),
     Colonne("email", "Adresse électronique", requise=True, exemple="josiane.marceline@example.org"),
     Colonne("telephone", "Téléphone", exemple="+590 690 00 00 00"),
-    Colonne("parcours", "Nom exact d'un parcours existant, ou vide", exemple="Licence en théologie"),
-    Colonne("promotion", "Nom exact d'une promotion existante, ou vide", exemple="Promotion 2026"),
+    Colonne("parcours", "Nom du parcours — créé automatiquement s'il n'existe pas, ou vide", exemple="Parcours libre"),
+    Colonne("promotion", "Nom exact d'une promotion existante, année à 4 chiffres, ou vide", exemple="2026"),
     Colonne("statut", "actif, inscrit, pre_inscrit, suspendu, diplome", exemple="actif"),
     Colonne("eglise", "Église d'appartenance", exemple="Église de Pointe-à-Pitre"),
 ]
@@ -230,8 +338,8 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
     _verrouiller_email_import_etudiant(email)
 
     numero = (ligne.get("numero_etudiant") or "").strip()
-    parcours = _rattachement(Parcours, ligne, "parcours", "Parcours inconnu")
-    promotion = _rattachement(Promotion, ligne, "promotion", "Promotion inconnue")
+    parcours = _parcours_import_etudiant(ligne)
+    promotion = _promotion_import_etudiant(ligne, parcours)
 
     statut = (ligne.get("statut") or ProfilEtudiant.StatutInscription.PRE_INSCRIT).strip().lower()
     if statut not in ProfilEtudiant.StatutInscription.values:
@@ -418,6 +526,7 @@ COLONNES_BIBLIOTHEQUE = [
     Colonne("cote", "Cote de rangement", exemple="TH-100"),
     Colonne("mots_cles", "Mots-clés séparés par des virgules", exemple="dogmatique, doctrine"),
     Colonne("discipline", "Nom exact de la discipline", exemple="Théologie"),
+    Colonne("nombre_exemplaires", "Nombre total d'exemplaires physiques", exemple="1"),
     Colonne("disponible", "oui ou non", exemple="oui"),
 ]
 
@@ -453,6 +562,14 @@ def _importer_notice(ligne: dict[str, str]) -> bool:
     notice.isbn = isbn
     notice.cote = (ligne.get("cote") or "").strip()
     notice.mots_cles = (ligne.get("mots_cles") or "").strip()
+    brut_exemplaires = (ligne.get("nombre_exemplaires") or "").strip()
+    if brut_exemplaires:
+        nombre_exemplaires = _entier(ligne, "nombre_exemplaires")
+        if nombre_exemplaires < 1:
+            raise ValidationError("« nombre_exemplaires » doit être supérieur ou égal à 1.")
+        notice.nombre_exemplaires = nombre_exemplaires
+    elif cree:
+        notice.nombre_exemplaires = 1
     notice.disponible = _booleen(ligne, "disponible")
     notice.save()
     return cree
@@ -469,6 +586,7 @@ def _exporter_notices():
             notice.cote,
             notice.mots_cles,
             notice.discipline.nom if notice.discipline_id else "",
+            notice.nombre_exemplaires,
             "oui" if notice.disponible else "non",
         ]
 

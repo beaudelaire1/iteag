@@ -22,6 +22,7 @@ class NoticeForm(FormulaireModeleITEAG):
             "discipline",
             "mots_cles",
             "description",
+            "nombre_exemplaires",
             "disponible",
         ]
         widgets = {
@@ -33,8 +34,24 @@ class NoticeForm(FormulaireModeleITEAG):
             "cote": "Emplacement en rayon. Sert aussi de référence unique de la notice.",
             "date_publication": "Année de parution, telle qu'elle figure sur l'ouvrage.",
             "mots_cles": "Séparés par des virgules. Ils alimentent la recherche du catalogue.",
-            "disponible": "Décocher lorsque l'ouvrage est emprunté, égaré ou en reliure.",
+            "nombre_exemplaires": "Nombre total d'exemplaires physiques de cette notice.",
+            "disponible": "Indique si au moins un exemplaire peut actuellement être emprunté.",
         }
+
+    def clean_nombre_exemplaires(self):
+        nombre = self.cleaned_data.get("nombre_exemplaires") or 0
+        if nombre < 1:
+            raise forms.ValidationError("Le nombre d'exemplaires doit être supérieur ou égal à 1.")
+        if self.instance.pk:
+            actifs = self.instance.emprunts.filter(
+                statut__in=[Emprunt.Statut.RESERVE, Emprunt.Statut.EN_COURS, Emprunt.Statut.EN_RETARD]
+            ).count()
+            if nombre < actifs:
+                raise forms.ValidationError(
+                    f"{actifs} exemplaire(s) sont actuellement réservés ou empruntés : "
+                    "le total ne peut pas être inférieur."
+                )
+        return nombre
 
     def clean_cote(self):
         cote = (self.cleaned_data.get("cote") or "").strip()
