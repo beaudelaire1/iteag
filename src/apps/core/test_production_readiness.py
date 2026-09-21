@@ -29,16 +29,15 @@ CONFIGURATION_PRODUCTION = {
     "ROLES_2FA_OBLIGATOIRE": ["admin", "secretariat"],
     "AXES_FAILURE_LIMIT": 5,
     "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
-    "EMAIL_HOST": "smtp.example.test",
-    "EMAIL_HOST_USER": "iteag",
+    "EMAIL_HOST": "smtp.gmail.com",
+    "EMAIL_HOST_USER": "contact.iteag@gmail.com",
     "EMAIL_HOST_PASSWORD": "secret",
     "EMAIL_USE_TLS": True,
     "EMAIL_USE_SSL": False,
-    "DEFAULT_FROM_EMAIL": "secretariat@iteag.org",
+    "DEFAULT_FROM_EMAIL": "contact.iteag@gmail.com",
     "EMAIL_FROM_NAME": "ITEAG",
     "EMAIL_TASK_RATE_LIMIT": "6/m",
-    "ITEAG_EMAIL_DOMAIN_RECEIVABLE": True,
-    "SERVER_EMAIL": "errors@iteag.org",
+    "SERVER_EMAIL": "contact.iteag@gmail.com",
     "CLOUDFLARE_TURNSTILE_ENABLED": True,
     "CLOUDFLARE_TURNSTILE_SITE_KEY": "site-key",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY": "secret-key",
@@ -111,13 +110,13 @@ def test_les_replis_de_developpement_sont_refuses(moteur_postgresql):
 @override_settings(
     **{
         **CONFIGURATION_PRODUCTION,
-        "DEFAULT_FROM_EMAIL": "contact.iteag@gmail.com",
-        "ITEAG_EMAIL_DOMAIN_RECEIVABLE": True,
+        "DEFAULT_FROM_EMAIL": "secretariat.iteag@gmail.com",
+        "EMAIL_HOST_USER": "contact.iteag@gmail.com",
     }
 )
-def test_un_domaine_institutionnel_actif_refuse_un_from_gmail(moteur_postgresql):
+def test_gmail_refuse_un_from_different_du_compte_smtp(moteur_postgresql):
     anomalies = anomalies_configuration_production()
-    assert any("DEFAULT_FROM_EMAIL" in anomalie and "@iteag.org" in anomalie for anomalie in anomalies)
+    assert any("DEFAULT_FROM_EMAIL" in anomalie and "EMAIL_HOST_USER" in anomalie for anomalie in anomalies)
 
 
 @override_settings(
