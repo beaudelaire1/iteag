@@ -212,13 +212,17 @@ def anomalies_configuration_production() -> list[str]:
     if getattr(settings, "EMAIL_USE_TLS", False) and getattr(settings, "EMAIL_USE_SSL", False):
         anomalies.append("EMAIL_USE_TLS et EMAIL_USE_SSL ne doivent pas être actifs simultanément.")
 
-    if getattr(settings, "ITEAG_EMAIL_DOMAIN_RECEIVABLE", False):
-        adresse_expediteur = parseaddr(getattr(settings, "DEFAULT_FROM_EMAIL", ""))[1].casefold()
-        if not adresse_expediteur.endswith("@iteag.org"):
+    hote_email = (getattr(settings, "EMAIL_HOST", "") or "").strip().casefold()
+    utilisateur_smtp = (getattr(settings, "EMAIL_HOST_USER", "") or "").strip().casefold()
+    adresse_expediteur = parseaddr(getattr(settings, "DEFAULT_FROM_EMAIL", ""))[1].casefold()
+    if hote_email == "smtp.gmail.com":
+        if adresse_expediteur != utilisateur_smtp:
             anomalies.append(
-                "DEFAULT_FROM_EMAIL doit utiliser le domaine @iteag.org lorsque "
-                "ITEAG_EMAIL_DOMAIN_RECEIVABLE=True."
+                "Avec smtp.gmail.com, DEFAULT_FROM_EMAIL doit être la même adresse "
+                "que EMAIL_HOST_USER afin d'éviter une réécriture du From par Gmail."
             )
+        if not utilisateur_smtp.endswith("@gmail.com"):
+            anomalies.append("EMAIL_HOST_USER doit être une adresse Gmail pour le relais smtp.gmail.com.")
 
     if not getattr(settings, "CLOUDFLARE_TURNSTILE_ENABLED", False):
         anomalies.append("Cloudflare Turnstile doit être activé sur les formulaires publics.")
