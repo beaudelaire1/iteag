@@ -260,17 +260,29 @@ class TestMiseAJourSansDoublon:
         assert profil.parcours_id == parcours.pk
         assert profil.promotion_id == promotion.pk
 
-    def test_un_parcours_inconnu_reste_refuse(self, referentiel):
-        """Vide est permis ; mal orthographié ne l'est pas."""
+    def test_un_parcours_inconnu_est_cree_automatiquement(self, referentiel):
         contenu = _csv(
             ["nom", "prenom", "email", "parcours"],
-            [["Marceline", "Josiane", "josiane@example.org", "Licence en théologi"]],
+            [["Marceline", "Josiane", "josiane@example.org", "Parcours mission locale"]],
         )
         rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
 
-        assert rapport.est_en_echec
-        assert "Parcours inconnu" in rapport.erreurs[0][1]
-        assert ProfilEtudiant.objects.count() == 0
+        assert not rapport.est_en_echec
+        profil = ProfilEtudiant.objects.get()
+        assert profil.parcours.nom == "Parcours mission locale"
+        assert profil.parcours.type_parcours == Parcours.TypeParcours.LIBRE
+
+    def test_un_alias_de_parcours_reutilise_le_referentiel_officiel(self, referentiel):
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours"],
+            [["Marceline", "Josiane", "josiane.alias@example.org", "Diplôme ITEAG"]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert not rapport.est_en_echec
+        profil = ProfilEtudiant.objects.get()
+        assert profil.parcours.type_parcours == Parcours.TypeParcours.DIPLOMANT_ITEAG
+        assert profil.parcours.nom == "Parcours diplômant ITEAG"
 
     def test_l_email_est_desormais_exige(self, referentiel):
         """Sans lui, le compte créé serait injoignable pour définir son mot de passe."""
@@ -409,6 +421,16 @@ class TestMiseAJourSansDoublon:
 
         assert NoticeBibliographique.objects.count() == 1
         assert NoticeBibliographique.objects.get().titre == "Théologie systématique"
+
+    def test_import_bibliotheque_prend_le_nombre_d_exemplaires(self, referentiel):
+        contenu = _csv(
+            ["titre", "auteur", "isbn", "nombre_exemplaires"],
+            [["Théologie pastorale", "Auteur test", "978201", "4"]],
+        )
+        rapport = executer(SCHEMAS["bibliotheque"], _fichier("b.csv", contenu))
+
+        assert not rapport.est_en_echec
+        assert NoticeBibliographique.objects.get(isbn="978201").nombre_exemplaires == 4
 
     def test_un_cours_est_reconnu_par_son_code(self, referentiel):
         discipline, _, _ = referentiel
