@@ -562,10 +562,14 @@ def _importer_notice(ligne: dict[str, str]) -> bool:
     notice.isbn = isbn
     notice.cote = (ligne.get("cote") or "").strip()
     notice.mots_cles = (ligne.get("mots_cles") or "").strip()
-    nombre_exemplaires = _entier(ligne, "nombre_exemplaires", 1)
-    if nombre_exemplaires < 1:
-        raise ValidationError("« nombre_exemplaires » doit être supérieur ou égal à 1.")
-    notice.nombre_exemplaires = nombre_exemplaires
+    brut_exemplaires = (ligne.get("nombre_exemplaires") or "").strip()
+    if brut_exemplaires:
+        nombre_exemplaires = _entier(ligne, "nombre_exemplaires")
+        if nombre_exemplaires < 1:
+            raise ValidationError("« nombre_exemplaires » doit être supérieur ou égal à 1.")
+        notice.nombre_exemplaires = nombre_exemplaires
+    elif cree:
+        notice.nombre_exemplaires = 1
     notice.disponible = _booleen(ligne, "disponible")
     notice.save()
     return cree
