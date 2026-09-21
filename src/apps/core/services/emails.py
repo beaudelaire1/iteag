@@ -54,11 +54,7 @@ def filtrer_destinataires(adresses: list[str] | None) -> list[str]:
         if not adresse:
             continue
         cle = adresse.casefold()
-        domaine_interne_injoignable = (
-            cle.endswith(DOMAINE_EMAIL_SANS_MX)
-            and not getattr(settings, "ITEAG_EMAIL_DOMAIN_RECEIVABLE", False)
-        )
-        if domaine_interne_injoignable:
+        if cle.endswith(DOMAINE_EMAIL_SANS_MX):
             logger.warning("Destinataire sans boîte réelle ignoré : %s", adresse)
             continue
         if cle in deja_vues:
@@ -191,9 +187,18 @@ def envoyer_notification_email(
 
 
 def _adresse_expediteur() -> str:
-    """Construit un Header From stable et lisible sans masquer l'adresse SMTP."""
+    """Construit un From cohérent avec le compte qui s'authentifie réellement."""
     brut = (getattr(settings, "DEFAULT_FROM_EMAIL", "") or "").strip()
     nom_existant, adresse = parseaddr(brut)
+
+    # Gmail peut réécrire un From différent du compte SMTP authentifié. On ne
+    # laisse donc pas deux identités contradictoires dans le même message :
+    # smtp.gmail.com envoie explicitement sous EMAIL_HOST_USER.
+    hote = (getattr(settings, "EMAIL_HOST", "") or "").strip().casefold()
+    utilisateur_smtp = (getattr(settings, "EMAIL_HOST_USER", "") or "").strip()
+    if hote == "smtp.gmail.com" and utilisateur_smtp:
+        adresse = utilisateur_smtp
+
     if not adresse:
         return brut
     nom = nom_existant or (getattr(settings, "EMAIL_FROM_NAME", "") or "").strip()

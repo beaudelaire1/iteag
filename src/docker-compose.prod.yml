@@ -59,7 +59,7 @@ x-application: &application
     EMAIL_TIMEOUT: ${EMAIL_TIMEOUT:-10}
     EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-ITEAG}
     EMAIL_TASK_RATE_LIMIT: ${EMAIL_TASK_RATE_LIMIT:-6/m}
-    ITEAG_EMAIL_DOMAIN_RECEIVABLE: ${ITEAG_EMAIL_DOMAIN_RECEIVABLE:-False}
+    ITEAG_COURRIEL_ENVOI: ${ITEAG_COURRIEL_ENVOI:-contact.iteag@gmail.com}
     # Boîtes réelles de l'institut. Déclarées ici, avec leur valeur par défaut,
     # pour paraître dans la fiche Coolify et s'y modifier sans toucher au code :
     # tout courriel adressé au secrétariat part en copie à la seconde.

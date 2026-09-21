@@ -74,11 +74,6 @@ class TestDestinatairesSansBoite:
         assert not _envoyer(["direction@iteag.org"])
         assert mail.outbox == []
 
-    def test_le_domaine_iteag_devient_joignable_apres_activation(self, settings):
-        settings.ITEAG_EMAIL_DOMAIN_RECEIVABLE = True
-        assert _envoyer(["direction@iteag.org"])
-        assert mail.outbox[0].to == ["direction@iteag.org"]
-
     def test_un_lot_mixte_ne_garde_que_les_adresses_reelles(self):
         assert _envoyer(["direction@iteag.org", "etudiant@example.org"])
 

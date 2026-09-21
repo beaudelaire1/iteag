@@ -400,22 +400,22 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 # Email
 # ──────────────────────────────────────────────
 
-# Boîtes réelles de l'institut. Le domaine iteag.org ne porte aucun
-# enregistrement MX (constaté le 15/09/2026) : les adresses en @iteag.org,
-# longtemps affichées partout, n'ont jamais rien reçu. Tout ce qui s'adresse au
-# secrétariat part vers la boîte Gmail qu'il relève, avec copie à la boîte de
-# contact — voir apps/core/services/emails.py.
+# Boîtes Gmail réelles de l'institut. Le domaine iteag.org ne porte pas de
+# messagerie : il ne doit donc pas être utilisé comme expéditeur ni comme
+# destinataire technique. contact.iteag@gmail.com est la boîte d'expédition ;
+# les réponses fonctionnelles reviennent au secrétariat via Reply-To.
+ITEAG_COURRIEL_ENVOI = env("ITEAG_COURRIEL_ENVOI", default="contact.iteag@gmail.com")
 ITEAG_COURRIEL_SECRETARIAT = env("ITEAG_COURRIEL_SECRETARIAT", default="secretariat.iteag@gmail.com")
 ITEAG_COURRIEL_COPIE = env("ITEAG_COURRIEL_COPIE", default="contact.iteag@gmail.com")
 
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=ITEAG_COURRIEL_SECRETARIAT)
-EMAIL_FROM_NAME = env("EMAIL_FROM_NAME", default="ITEAG")
-SERVER_EMAIL = env("SERVER_EMAIL", default="errors@iteag.org")
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default=ITEAG_COURRIEL_ENVOI)
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=ITEAG_COURRIEL_ENVOI)
+EMAIL_FROM_NAME = env("EMAIL_FROM_NAME", default="ITEAG")
+SERVER_EMAIL = env("SERVER_EMAIL", default=ITEAG_COURRIEL_ENVOI)
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
@@ -424,10 +424,6 @@ EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 # le profil que les filtres de réception (notamment Orange) classent facilement
 # comme envoi automatisé agressif.
 EMAIL_TASK_RATE_LIMIT = env("EMAIL_TASK_RATE_LIMIT", default="6/m")
-# Tant que le domaine iteag.org ne porte pas de boîte réellement joignable,
-# les anciennes adresses internes restent filtrées. Passer cette valeur à True
-# uniquement après configuration MX + boîte + SPF/DKIM/DMARC.
-ITEAG_EMAIL_DOMAIN_RECEIVABLE = env.bool("ITEAG_EMAIL_DOMAIN_RECEIVABLE", default=False)
 EMAIL_TEST_RECIPIENT = env("EMAIL_TEST_RECIPIENT", default="")
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
 
