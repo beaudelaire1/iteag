@@ -6,7 +6,6 @@ repli de développement ou une protection critique désactivée.
 """
 
 import re
-from email.utils import parseaddr
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -214,15 +213,8 @@ def anomalies_configuration_production() -> list[str]:
 
     hote_email = (getattr(settings, "EMAIL_HOST", "") or "").strip().casefold()
     utilisateur_smtp = (getattr(settings, "EMAIL_HOST_USER", "") or "").strip().casefold()
-    adresse_expediteur = parseaddr(getattr(settings, "DEFAULT_FROM_EMAIL", ""))[1].casefold()
-    if hote_email == "smtp.gmail.com":
-        if adresse_expediteur != utilisateur_smtp:
-            anomalies.append(
-                "Avec smtp.gmail.com, DEFAULT_FROM_EMAIL doit être la même adresse "
-                "que EMAIL_HOST_USER afin d'éviter une réécriture du From par Gmail."
-            )
-        if not utilisateur_smtp.endswith("@gmail.com"):
-            anomalies.append("EMAIL_HOST_USER doit être une adresse Gmail pour le relais smtp.gmail.com.")
+    if hote_email == "smtp.gmail.com" and not utilisateur_smtp.endswith("@gmail.com"):
+        anomalies.append("EMAIL_HOST_USER doit être une adresse Gmail pour le relais smtp.gmail.com.")
 
     if not getattr(settings, "CLOUDFLARE_TURNSTILE_ENABLED", False):
         anomalies.append("Cloudflare Turnstile doit être activé sur les formulaires publics.")
