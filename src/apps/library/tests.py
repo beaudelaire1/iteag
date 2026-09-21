@@ -139,6 +139,23 @@ class TestEmprunts:
         notice.refresh_from_db()
         assert notice.disponible is False
 
+    def test_plusieurs_exemplaires_restent_empruntables(self, notice):
+        from apps.accounts.models import User
+        from apps.library import services
+
+        notice.nombre_exemplaires = 2
+        notice.save(update_fields=["nombre_exemplaires"])
+        premier = User.objects.create_user(username="lecteur_multi_1", email="lm1@example.org", password="password123")
+        second = User.objects.create_user(username="lecteur_multi_2", email="lm2@example.org", password="password123")
+
+        services.reserver_ouvrage(notice, premier)
+        notice.refresh_from_db()
+        assert notice.disponible is True
+
+        services.reserver_ouvrage(notice, second)
+        notice.refresh_from_db()
+        assert notice.disponible is False
+
     def test_reserver_ouvrage_deja_indisponible_refuse(self, notice):
         from django.core.exceptions import ValidationError
 
@@ -149,7 +166,7 @@ class TestEmprunts:
         notice.disponible = False
         notice.save()
 
-        with pytest.raises(ValidationError, match="déjà emprunté ou indisponible"):
+        with pytest.raises(ValidationError, match="Aucun exemplaire"):
             services.reserver_ouvrage(notice, user)
 
     def test_valider_retrait_et_restitution(self, notice):
