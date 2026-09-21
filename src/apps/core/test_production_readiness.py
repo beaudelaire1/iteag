@@ -34,7 +34,10 @@ CONFIGURATION_PRODUCTION = {
     "EMAIL_HOST_PASSWORD": "secret",
     "EMAIL_USE_TLS": True,
     "EMAIL_USE_SSL": False,
-    "DEFAULT_FROM_EMAIL": "secretariat.iteag@gmail.com",
+    "DEFAULT_FROM_EMAIL": "secretariat@iteag.org",
+    "EMAIL_FROM_NAME": "ITEAG",
+    "EMAIL_TASK_RATE_LIMIT": "6/m",
+    "ITEAG_EMAIL_DOMAIN_RECEIVABLE": True,
     "SERVER_EMAIL": "errors@iteag.org",
     "CLOUDFLARE_TURNSTILE_ENABLED": True,
     "CLOUDFLARE_TURNSTILE_SITE_KEY": "site-key",
@@ -103,6 +106,18 @@ def test_les_replis_de_developpement_sont_refuses(moteur_postgresql):
     assert any("EMAIL_BACKEND" in anomalie for anomalie in anomalies)
     assert any("Turnstile" in anomalie for anomalie in anomalies)
     assert any("SENTRY_DSN" in anomalie for anomalie in anomalies)
+
+
+@override_settings(
+    **{
+        **CONFIGURATION_PRODUCTION,
+        "DEFAULT_FROM_EMAIL": "contact.iteag@gmail.com",
+        "ITEAG_EMAIL_DOMAIN_RECEIVABLE": True,
+    }
+)
+def test_un_domaine_institutionnel_actif_refuse_un_from_gmail(moteur_postgresql):
+    anomalies = anomalies_configuration_production()
+    assert any("DEFAULT_FROM_EMAIL" in anomalie and "@iteag.org" in anomalie for anomalie in anomalies)
 
 
 @override_settings(

@@ -6,6 +6,7 @@ repli de développement ou une protection critique désactivée.
 """
 
 import re
+from email.utils import parseaddr
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -210,6 +211,14 @@ def anomalies_configuration_production() -> list[str]:
             anomalies.append(f"{nom} doit être renseigné.")
     if getattr(settings, "EMAIL_USE_TLS", False) and getattr(settings, "EMAIL_USE_SSL", False):
         anomalies.append("EMAIL_USE_TLS et EMAIL_USE_SSL ne doivent pas être actifs simultanément.")
+
+    if getattr(settings, "ITEAG_EMAIL_DOMAIN_RECEIVABLE", False):
+        adresse_expediteur = parseaddr(getattr(settings, "DEFAULT_FROM_EMAIL", ""))[1].casefold()
+        if not adresse_expediteur.endswith("@iteag.org"):
+            anomalies.append(
+                "DEFAULT_FROM_EMAIL doit utiliser le domaine @iteag.org lorsque "
+                "ITEAG_EMAIL_DOMAIN_RECEIVABLE=True."
+            )
 
     if not getattr(settings, "CLOUDFLARE_TURNSTILE_ENABLED", False):
         anomalies.append("Cloudflare Turnstile doit être activé sur les formulaires publics.")

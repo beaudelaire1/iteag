@@ -267,6 +267,51 @@ class TestServiceEmail:
         assert mail.outbox[0].subject == "ITEAG - Test"
         assert mail.outbox[0].alternatives  # une version HTML accompagne le texte
 
+    @override_settings(
+        DEFAULT_FROM_EMAIL="secretariat@iteag.org",
+        EMAIL_FROM_NAME="ITEAG",
+        ITEAG_COURRIEL_SECRETARIAT="secretariat@iteag.org",
+        ITEAG_EMAIL_DOMAIN_RECEIVABLE=True,
+    )
+    def test_email_transactionnel_a_une_identite_expediteur_stable(self):
+        assert envoyer_email(
+            sujet="Identité expéditeur",
+            gabarit="core/emails/notification.html",
+            contexte={"titre": "Information", "message": "Message de contrôle."},
+            destinataires=["lecteur@example.org"],
+            differe=False,
+        )
+
+        message = mail.outbox[0]
+        assert message.from_email == "ITEAG <secretariat@iteag.org>"
+        assert message.extra_headers["Auto-Submitted"] == "auto-generated"
+        assert message.extra_headers["X-Auto-Response-Suppress"] == "All"
+
+    def test_activation_etudiant_reste_legere_sans_logo_inline(self):
+        assert envoyer_email(
+            sujet="Votre compte étudiant ITEAG est prêt",
+            gabarit="administration/emails/compte_etudiant_importe.html",
+            contexte={
+                "prenom": "Jean",
+                "numero_etudiant": "ETU2026001",
+                "parcours": "Parcours libre",
+                "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/",
+            },
+            destinataires=["lecteur@example.org"],
+            differe=False,
+            confidentiel=True,
+        )
+
+        message = mail.outbox[0]
+        html = message.alternatives[0].content
+        assert "facebook" not in html.casefold()
+        assert "youtube" not in html.casefold()
+        assert 'src="cid:logo-iteag"' not in html
+        assert not [
+            piece for piece in message.attachments
+            if piece.get_content_type() == "image/png"
+        ]
+
     def test_email_integre_logo_et_identite_complete(self):
         assert envoyer_email(
             sujet="Identité ITEAG",

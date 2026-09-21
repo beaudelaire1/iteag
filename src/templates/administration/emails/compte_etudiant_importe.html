@@ -1,57 +1,37 @@
-{% extends "core/emails/base_email.html" %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Votre compte étudiant ITEAG est prêt</title>
+</head>
+<body style="margin:0;padding:24px;background:#f7f7f7;font-family:Arial,Helvetica,sans-serif;color:#222;">
+    <div style="max-width:620px;margin:0 auto;background:#fff;padding:28px;border:1px solid #e5e5e5;">
+        <p style="margin:0 0 18px;font-size:22px;font-weight:700;">ITEAG</p>
+        <p>Bonjour {{ prenom }},</p>
 
-{% block sujet %}Votre compte étudiant ITEAG est prêt{% endblock %}
-{% block preheader %}Activez votre compte étudiant et définissez votre mot de passe.{% endblock %}
-{% block categorie %}Espace étudiant{% endblock %}
+        <p>Votre compte étudiant ITEAG a été créé.</p>
 
-{% block corps %}
-<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
-    Compte étudiant créé
-</p>
-<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
-           font-weight:normal;line-height:1.25;color:#1A2D29;">
-    Bienvenue, {{ prenom }}
-</h1>
+        {% if numero_etudiant %}
+        <p><strong>Numéro étudiant :</strong> {{ numero_etudiant }}</p>
+        {% endif %}
+        {% if parcours %}
+        <p><strong>Parcours :</strong> {{ parcours }}</p>
+        {% endif %}
 
-<p style="margin:0 0 18px;">
-    Un compte étudiant a été créé pour vous sur la plateforme de l'ITEAG.
-</p>
+        <p>Pour définir votre mot de passe et activer votre accès, ouvrez ce lien personnel :</p>
 
-<div style="margin:0 0 25px;padding:19px 21px;background-color:#F0F6F5;border-left:4px solid #457D70;
-            border-radius:0 4px 4px 0;color:#263F3B;">
-    {% if numero_etudiant %}
-    <p style="margin:0 0 8px;"><strong>Numéro étudiant :</strong> {{ numero_etudiant }}</p>
-    {% endif %}
-    {% if parcours %}
-    <p style="margin:0;"><strong>Parcours :</strong> {{ parcours }}</p>
-    {% endif %}
-    {% if not numero_etudiant and not parcours %}
-    Votre espace étudiant est désormais disponible.
-    {% endif %}
-</div>
+        <p style="word-break:break-all;">
+            <a href="{{ lien_activation }}">{{ lien_activation }}</a>
+        </p>
 
-<p style="margin:0 0 23px;color:#544B3D;">
-    Pour activer votre accès, définissez votre mot de passe. Vous pourrez ensuite
-    vous connecter avec l'adresse électronique qui a reçu ce message.
-</p>
+        <p>Si le lien n'est plus valide, utilisez « Mot de passe oublié » depuis la page de connexion.</p>
 
-<p style="margin:0 0 20px;">
-    <a class="button" href="{{ lien_activation }}"
-       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
-              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;letter-spacing:.03em;">
-        Définir mon mot de passe
-        <span style="color:#EEC671;">&nbsp;→</span>
-    </a>
-</p>
-
-<p style="margin:0;font-size:11px;line-height:1.55;color:#978B72;">
-    Lien d'activation :
-    <a href="{{ lien_activation }}" style="color:#355952;word-break:break-all;">{{ lien_activation }}</a>
-</p>
-
-<p style="margin:25px 0 0;padding:15px 18px;background-color:#FDF8EC;border:1px solid #F3D9A0;
-          border-radius:4px;font-size:12px;line-height:1.6;color:#736957;">
-    Si le lien a expiré, utilisez « mot de passe oublié » depuis la page de connexion
-    pour en recevoir un nouveau.
-</p>
-{% endblock %}
+        <p style="margin-top:26px;">
+            Institut de Théologie Évangélique des Antilles et de la Guyane<br>
+            {{ SITE_ADDRESS }}<br>
+            {{ SITE_PHONE }}
+        </p>
+    </div>
+</body>
+</html>
