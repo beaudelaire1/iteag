@@ -284,6 +284,19 @@ class TestMiseAJourSansDoublon:
         assert profil.parcours.type_parcours == Parcours.TypeParcours.DIPLOMANT_ITEAG
         assert profil.parcours.nom == "Parcours diplômant ITEAG"
 
+    def test_une_annee_de_promotion_est_creee_si_absente(self, referentiel):
+        _, parcours, _ = referentiel
+        contenu = _csv(
+            ["nom", "prenom", "email", "parcours", "promotion"],
+            [["Marceline", "Josiane", "josiane.promo@example.org", parcours.nom, "2026"]],
+        )
+        rapport = executer(SCHEMAS["etudiants"], _fichier("e.csv", contenu))
+
+        assert not rapport.est_en_echec
+        profil = ProfilEtudiant.objects.get()
+        assert profil.promotion.annee_debut == 2026
+        assert profil.promotion.parcours == parcours
+
     def test_l_email_est_desormais_exige(self, referentiel):
         """Sans lui, le compte créé serait injoignable pour définir son mot de passe."""
         _, parcours, promotion = referentiel
