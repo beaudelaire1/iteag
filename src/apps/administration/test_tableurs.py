@@ -445,6 +445,23 @@ class TestMiseAJourSansDoublon:
         assert not rapport.est_en_echec
         assert NoticeBibliographique.objects.get(isbn="978201").nombre_exemplaires == 4
 
+    def test_reimport_sans_colonne_exemplaires_preserve_le_stock(self, referentiel):
+        notice = NoticeBibliographique.objects.create(
+            titre="Ouvrage avec stock",
+            auteur="Auteur test",
+            isbn="978202",
+            nombre_exemplaires=5,
+        )
+        contenu = _csv(
+            ["titre", "auteur", "isbn"],
+            [["Ouvrage avec stock corrigé", "Auteur test", notice.isbn]],
+        )
+        rapport = executer(SCHEMAS["bibliotheque"], _fichier("b.csv", contenu))
+
+        assert not rapport.est_en_echec
+        notice.refresh_from_db()
+        assert notice.nombre_exemplaires == 5
+
     def test_un_cours_est_reconnu_par_son_code(self, referentiel):
         discipline, _, _ = referentiel
         entetes = ["code", "titre", "discipline", "ects"]
