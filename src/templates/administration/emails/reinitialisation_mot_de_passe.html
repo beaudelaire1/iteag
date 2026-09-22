@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Réinitialisation du mot de passe ITEAG</title>
+</head>
+<body style="margin:0;padding:24px;background:#f7f7f7;font-family:Arial,Helvetica,sans-serif;color:#222;">
+    <div style="max-width:620px;margin:0 auto;background:#fff;padding:28px;border:1px solid #e5e5e5;">
+        <p style="margin:0 0 18px;font-size:22px;font-weight:700;">ITEAG</p>
+        <p>Bonjour{% if prenom %} {{ prenom }}{% endif %},</p>
+
+        <p>Une réinitialisation de votre mot de passe a été demandée depuis l'administration ITEAG.</p>
+
+        <p>Pour choisir un nouveau mot de passe, ouvrez ce lien personnel :</p>
+        <p style="word-break:break-all;"><a href="{{ lien_reinitialisation }}">{{ lien_reinitialisation }}</a></p>
+
+        <p>Votre mot de passe actuel reste valable tant que vous n'avez pas utilisé ce lien pour en définir un nouveau.</p>
+
+        <p>Si vous n'êtes pas à l'origine de cette demande, prévenez le secrétariat.</p>
+
+        <p style="margin-top:26px;">
+            Institut de Théologie Évangélique des Antilles et de la Guyane<br>
+            {{ SITE_ADDRESS }}<br>
+            {{ SITE_PHONE }}
+        </p>
+    </div>
+</body>
+</html>
