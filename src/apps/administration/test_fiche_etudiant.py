@@ -116,3 +116,25 @@ def test_la_liste_renvoie_vers_la_fiche(client, dossier):
     client.force_login(_compte(User.Role.SECRETARIAT, "secretaire2"))
     corps = client.get(reverse("administration:etudiants")).content.decode()
     assert reverse("administration:etudiant_detail", args=[dossier.pk]) in corps
+
+
+def test_la_fiche_etudiant_affiche_la_derniere_connexion(client, dossier):
+    from django.utils import timezone
+
+    dossier.utilisateur.last_login = timezone.now()
+    dossier.utilisateur.save(update_fields=["last_login"])
+
+    client.force_login(_compte(User.Role.SECRETARIAT, "secretaire-connexion"))
+    corps = client.get(reverse("administration:etudiant_detail", args=[dossier.pk])).content.decode()
+
+    assert "Dernière connexion" in corps
+    assert dossier.utilisateur.last_login.strftime("%d/%m/%Y") in corps
+
+
+def test_la_fiche_etudiant_indique_jamais_connecte(client, dossier):
+    assert dossier.utilisateur.last_login is None
+
+    client.force_login(_compte(User.Role.SECRETARIAT, "secretaire-jamais"))
+    corps = client.get(reverse("administration:etudiant_detail", args=[dossier.pk])).content.decode()
+
+    assert "Jamais connecté" in corps
