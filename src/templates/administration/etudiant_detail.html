@@ -93,6 +93,16 @@
                     <dt class="text-warm-500">Formule tarifaire</dt>
                     <dd class="font-medium text-navy-900">{{ profil.formule_tarif|default:"—" }}</dd>
                 </div>
+                <div>
+                    <dt class="text-warm-500">Dernière connexion</dt>
+                    <dd class="font-medium text-navy-900">
+                        {% if compte.last_login %}
+                            {{ compte.last_login|date:"d/m/Y à H:i" }}
+                        {% else %}
+                            Jamais connecté
+                        {% endif %}
+                    </dd>
+                </div>
             </dl>
         </section>
 

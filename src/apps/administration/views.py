@@ -602,6 +602,7 @@ class AdminUserUpdateView(StaffRoleRequiredMixin, UpdateView):
         ctx = super().get_context_data(**kwargs)
         ctx["form_title"] = f"Modifier — {self.object}"
         ctx["nav"] = "utilisateurs"
+        ctx["compte_admin"] = self.object
         return ctx
 
     def form_valid(self, form):
