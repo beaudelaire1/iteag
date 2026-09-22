@@ -207,3 +207,111 @@ def test_la_fiche_de_modification_utilisateur_affiche_l_activite(client, secreta
     assert "Dernière connexion" in corps
     assert compte.last_login.strftime("%d/%m/%Y") in corps
     assert "Compte créé le" in corps
+
+
+@pytest.mark.django_db
+def test_le_secretariat_peut_desactiver_et_reactiver_un_utilisateur(client, secretaire):
+    compte = User.objects.create_user(
+        username="compte_a_basculer",
+        email="basculer@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+    client.force_login(secretaire)
+    url = reverse("administration:user_action", args=[compte.pk])
+
+    assert client.post(url, {"action": "basculer_actif"}).status_code == 302
+    compte.refresh_from_db()
+    assert compte.is_active is False
+
+    assert client.post(url, {"action": "basculer_actif"}).status_code == 302
+    compte.refresh_from_db()
+    assert compte.is_active is True
+
+
+@pytest.mark.django_db
+def test_un_utilisateur_ne_peut_pas_se_desactiver_lui_meme(client, secretaire):
+    client.force_login(secretaire)
+    reponse = client.post(
+        reverse("administration:user_action", args=[secretaire.pk]),
+        {"action": "basculer_actif"},
+    )
+
+    assert reponse.status_code == 302
+    secretaire.refresh_from_db()
+    assert secretaire.is_active is True
+
+
+@pytest.mark.django_db
+def test_le_secretariat_ne_peut_pas_agir_sur_un_compte_de_direction(client, secretaire, directrice):
+    client.force_login(secretaire)
+    reponse = client.post(
+        reverse("administration:user_action", args=[directrice.pk]),
+        {"action": "basculer_actif"},
+    )
+
+    assert reponse.status_code == 302
+    directrice.refresh_from_db()
+    assert directrice.is_active is True
+
+
+@pytest.mark.django_db
+def test_renvoyer_invitation_depuis_la_liste(client, secretaire, mocker):
+    compte = User.objects.create_user(
+        username="invite_action",
+        email="invite@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+    envoi = mocker.patch(
+        "apps.administration.services.comptes.renvoyer_invitation_utilisateur",
+        return_value=True,
+    )
+
+    client.force_login(secretaire)
+    reponse = client.post(
+        reverse("administration:user_action", args=[compte.pk]),
+        {"action": "renvoyer_invitation"},
+    )
+
+    assert reponse.status_code == 302
+    envoi.assert_called_once_with(compte)
+
+
+@pytest.mark.django_db
+def test_reinitialiser_mot_de_passe_depuis_la_liste(client, secretaire, mocker):
+    compte = User.objects.create_user(
+        username="reset_action",
+        email="reset@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+    envoi = mocker.patch(
+        "apps.administration.services.comptes.envoyer_reinitialisation_mot_de_passe",
+        return_value=True,
+    )
+
+    client.force_login(secretaire)
+    reponse = client.post(
+        reverse("administration:user_action", args=[compte.pk]),
+        {"action": "reinitialiser_mot_de_passe"},
+    )
+
+    assert reponse.status_code == 302
+    envoi.assert_called_once_with(compte)
+
+
+@pytest.mark.django_db
+def test_les_actions_apparaissent_dans_la_liste_utilisateurs(client, secretaire):
+    User.objects.create_user(
+        username="actions_visibles",
+        email="actions@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+    client.force_login(secretaire)
+    corps = client.get(reverse("administration:utilisateurs")).content.decode()
+
+    assert "Désactiver" in corps
+    assert "Renvoyer l'invitation" in corps
+    assert "Réinitialiser le mot de passe" in corps
