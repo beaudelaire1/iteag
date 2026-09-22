@@ -63,6 +63,10 @@
                     <td class="px-6 py-3">
                         <span class="font-medium text-navy-900">{{ u.get_full_name|default:u.username }}</span>
                         <span class="block text-xs mt-0.5 md:hidden text-warm-400">{{ u.email }}</span>
+                        <span class="block text-xs mt-1 lg:hidden text-warm-400">
+                            Dernière connexion :
+                            {% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}Jamais connecté{% endif %}
+                        </span>
                     </td>
                     <td class="px-6 py-3 hidden md:table-cell text-warm-600">{{ u.email }}</td>
                     <td class="px-6 py-3">
@@ -86,7 +90,7 @@
                         {% endif %}
                     </td>
                     <td class="px-6 py-3 hidden lg:table-cell text-xs text-warm-400">
-                        {% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+                        {% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}Jamais connecté{% endif %}
                     </td>
                     <td class="px-6 py-3 text-right">
                         <a href="{% url 'administration:user_update' u.pk %}" class="text-xs font-medium mr-3 text-navy-600">Modifier</a>
