@@ -633,6 +633,9 @@ class AdminUserActionView(StaffRoleRequiredMixin, View):
         compte = get_object_or_404(User, pk=pk)
         action = request.POST.get("action", "").strip()
 
+        if compte.is_superuser and not request.user.is_superuser:
+            messages.error(request, "Un superutilisateur ne se gère que depuis un autre superutilisateur.")
+            return redirect("administration:utilisateurs")
         if (
             compte.role == User.Role.ADMIN
             and not request.user.is_superuser
