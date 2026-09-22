@@ -624,6 +624,105 @@ class AdminUserUpdateView(StaffRoleRequiredMixin, UpdateView):
         return response
 
 
+class AdminUserActionView(StaffRoleRequiredMixin, View):
+    """Actions rapides sur un compte sans ouvrir son formulaire de modification."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        compte = get_object_or_404(User, pk=pk)
+        action = request.POST.get("action", "").strip()
+
+        if compte.is_superuser and not request.user.is_superuser:
+            messages.error(request, "Un superutilisateur ne se gère que depuis un autre superutilisateur.")
+            return redirect("administration:utilisateurs")
+        if (
+            compte.role == User.Role.ADMIN
+            and not request.user.is_superuser
+            and request.user.role == User.Role.SECRETARIAT
+        ):
+            messages.error(request, "Un compte de direction ne se gère que depuis la direction.")
+            return redirect("administration:utilisateurs")
+
+        if action == "basculer_actif":
+            return self._basculer_actif(request, compte)
+        if action == "renvoyer_invitation":
+            return self._renvoyer_invitation(request, compte)
+        if action == "reinitialiser_mot_de_passe":
+            return self._reinitialiser_mot_de_passe(request, compte)
+
+        messages.error(request, "Action utilisateur inconnue.")
+        return redirect("administration:utilisateurs")
+
+    def _basculer_actif(self, request, compte):
+        if compte.pk == request.user.pk:
+            messages.error(request, "Vous ne pouvez pas désactiver votre propre compte.")
+            return redirect("administration:utilisateurs")
+
+        if compte.is_active and compte.role == User.Role.ADMIN:
+            autres = User.objects.filter(is_active=True, role=User.Role.ADMIN).exclude(pk=compte.pk).count()
+            if autres == 0:
+                messages.error(request, "Le dernier compte d'administration actif ne peut pas être désactivé.")
+                return redirect("administration:utilisateurs")
+
+        compte.is_active = not compte.is_active
+        compte.save(update_fields=["is_active"])
+        operation = "reactivation" if compte.is_active else "desactivation"
+        journaliser(
+            "changement_statut",
+            request=request,
+            objet=compte,
+            objet_libelle=f"Compte « {compte} »",
+            operation=operation,
+            actif=compte.is_active,
+        )
+        messages.success(
+            request,
+            f"Utilisateur « {compte} » {'réactivé' if compte.is_active else 'désactivé'}.",
+        )
+        return redirect("administration:utilisateurs")
+
+    def _renvoyer_invitation(self, request, compte):
+        from apps.administration.services.comptes import renvoyer_invitation_utilisateur
+
+        if not compte.is_active:
+            messages.error(request, "Réactivez d'abord ce compte avant de renvoyer une invitation.")
+        elif not compte.email:
+            messages.error(request, "Ce compte n'a pas d'adresse e-mail.")
+        elif renvoyer_invitation_utilisateur(compte):
+            journaliser(
+                "modification",
+                request=request,
+                objet=compte,
+                objet_libelle=f"Compte « {compte} »",
+                operation="renvoi_invitation",
+            )
+            messages.success(request, f"Invitation renvoyée à {compte.email}.")
+        else:
+            messages.error(request, "L'invitation n'a pas pu être envoyée.")
+        return redirect("administration:utilisateurs")
+
+    def _reinitialiser_mot_de_passe(self, request, compte):
+        from apps.administration.services.comptes import envoyer_reinitialisation_mot_de_passe
+
+        if not compte.is_active:
+            messages.error(request, "Réactivez d'abord ce compte avant de réinitialiser son mot de passe.")
+        elif not compte.email:
+            messages.error(request, "Ce compte n'a pas d'adresse e-mail.")
+        elif envoyer_reinitialisation_mot_de_passe(compte):
+            journaliser(
+                "modification",
+                request=request,
+                objet=compte,
+                objet_libelle=f"Compte « {compte} »",
+                operation="lien_reinitialisation_mot_de_passe",
+            )
+            messages.success(request, f"Lien de réinitialisation envoyé à {compte.email}.")
+        else:
+            messages.error(request, "Le lien de réinitialisation n'a pas pu être envoyé.")
+        return redirect("administration:utilisateurs")
+
+
 class AdminUserDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteView):
     """
     Supprimer un compte emportait le profil étudiant en cascade, et avec lui
@@ -643,6 +742,8 @@ class AdminUserDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteVie
         if self.object.pk == self.request.user.pk:
             return "Vous ne pouvez pas supprimer votre propre compte."
         acteur = self.request.user
+        if self.object.is_superuser and not acteur.is_superuser:
+            return "Un superutilisateur ne se supprime que depuis un autre superutilisateur."
         if self.object.role == User.Role.ADMIN and not acteur.is_superuser and acteur.role == User.Role.SECRETARIAT:
             return "Un compte de direction ne se supprime que depuis la direction."
         if hasattr(self.object, "profil_etudiant"):

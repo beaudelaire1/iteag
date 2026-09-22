@@ -445,6 +445,7 @@ FABRIQUES = {
     "administration:tarif_update": (ADMIN, lambda m: {"pk": m["tarif"].pk}),
     "administration:tarif_delete": (ADMIN, lambda m: {"pk": m["tarif"].pk}),
     "administration:user_update": (ADMIN, lambda m: {"pk": m[ETUDIANT].pk}),
+    "administration:user_action": (SECRETARIAT, lambda m: {"pk": m[ETUDIANT].pk}),
     "administration:user_delete": (ADMIN, lambda m: {"pk": m[ETUDIANT].pk}),
     # ── Portail administratif — tableurs ──
     "administration:tableur_detail": (SECRETARIAT, lambda m: {"cle": "etudiants"}),

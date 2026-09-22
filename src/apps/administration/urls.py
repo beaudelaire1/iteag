@@ -193,6 +193,7 @@ urlpatterns = [
     path("utilisateurs/", views.AdminUserListView.as_view(), name="utilisateurs"),
     path("utilisateurs/ajouter/", views.AdminUserCreateView.as_view(), name="user_create"),
     path("utilisateurs/<int:pk>/modifier/", views.AdminUserUpdateView.as_view(), name="user_update"),
+    path("utilisateurs/<int:pk>/action/", views.AdminUserActionView.as_view(), name="user_action"),
     path("utilisateurs/<int:pk>/supprimer/", views.AdminUserDeleteView.as_view(), name="user_delete"),
     # Exports CSV
     path("export/candidatures/", views.ExportCandidaturesCsvView.as_view(), name="export_candidatures"),
