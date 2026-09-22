@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Votre accès ITEAG</title>
+</head>
+<body style="margin:0;padding:24px;background:#f7f7f7;font-family:Arial,Helvetica,sans-serif;color:#222;">
+    <div style="max-width:620px;margin:0 auto;background:#fff;padding:28px;border:1px solid #e5e5e5;">
+        <p style="margin:0 0 18px;font-size:22px;font-weight:700;">ITEAG</p>
+        <p>Bonjour{% if prenom %} {{ prenom }}{% endif %},</p>
+
+        {% if deja_connecte %}
+        <p>Un nouveau lien d'accès à votre compte ITEAG vous a été envoyé depuis l'administration.</p>
+        {% else %}
+        <p>Votre compte ITEAG est prêt. Vous pouvez maintenant définir votre mot de passe.</p>
+        {% endif %}
+
+        <p><strong>Identifiant :</strong> {{ identifiant }}</p>
+        {% if numero_etudiant %}<p><strong>Numéro étudiant :</strong> {{ numero_etudiant }}</p>{% endif %}
+        <p><strong>Accès :</strong> {{ espace }}</p>
+
+        <p>Pour définir votre mot de passe, ouvrez ce lien personnel :</p>
+        <p style="word-break:break-all;"><a href="{{ lien_activation }}">{{ lien_activation }}</a></p>
+
+        <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message et prévenir le secrétariat.</p>
+
+        <p style="margin-top:26px;">
+            Institut de Théologie Évangélique des Antilles et de la Guyane<br>
+            {{ SITE_ADDRESS }}<br>
+            {{ SITE_PHONE }}
+        </p>
+    </div>
+</body>
+</html>
