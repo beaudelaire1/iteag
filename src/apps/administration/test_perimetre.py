@@ -256,16 +256,20 @@ def test_le_secretariat_ne_peut_pas_agir_sur_un_compte_de_direction(client, secr
 
 
 @pytest.mark.django_db
-def test_renvoyer_invitation_depuis_la_liste(client, secretaire, mocker):
+def test_renvoyer_invitation_depuis_la_liste(client, secretaire, monkeypatch):
     compte = User.objects.create_user(
         username="invite_action",
         email="invite@example.org",
         password="motdepasse-long-12",
         role=User.Role.ETUDIANT,
     )
-    envoi = mocker.patch(
-        "apps.administration.services.comptes.renvoyer_invitation_utilisateur",
-        return_value=True,
+    from apps.administration.services import comptes as service_comptes
+
+    appels = []
+    monkeypatch.setattr(
+        service_comptes,
+        "renvoyer_invitation_utilisateur",
+        lambda cible: appels.append(cible.pk) or True,
     )
 
     client.force_login(secretaire)
@@ -275,20 +279,24 @@ def test_renvoyer_invitation_depuis_la_liste(client, secretaire, mocker):
     )
 
     assert reponse.status_code == 302
-    envoi.assert_called_once_with(compte)
+    assert appels == [compte.pk]
 
 
 @pytest.mark.django_db
-def test_reinitialiser_mot_de_passe_depuis_la_liste(client, secretaire, mocker):
+def test_reinitialiser_mot_de_passe_depuis_la_liste(client, secretaire, monkeypatch):
     compte = User.objects.create_user(
         username="reset_action",
         email="reset@example.org",
         password="motdepasse-long-12",
         role=User.Role.ETUDIANT,
     )
-    envoi = mocker.patch(
-        "apps.administration.services.comptes.envoyer_reinitialisation_mot_de_passe",
-        return_value=True,
+    from apps.administration.services import comptes as service_comptes
+
+    appels = []
+    monkeypatch.setattr(
+        service_comptes,
+        "envoyer_reinitialisation_mot_de_passe",
+        lambda cible: appels.append(cible.pk) or True,
     )
 
     client.force_login(secretaire)
@@ -298,7 +306,7 @@ def test_reinitialiser_mot_de_passe_depuis_la_liste(client, secretaire, mocker):
     )
 
     assert reponse.status_code == 302
-    envoi.assert_called_once_with(compte)
+    assert appels == [compte.pk]
 
 
 @pytest.mark.django_db
