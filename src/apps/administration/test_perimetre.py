@@ -157,3 +157,53 @@ def test_un_enseignant_n_entre_pas_dans_le_back_office(client, db):
     client.force_login(enseignant)
     for nom_url, _ in GESTION + PILOTAGE:
         assert client.get(reverse(nom_url)).status_code in (302, 403), nom_url
+
+
+@pytest.mark.django_db
+def test_la_liste_utilisateurs_affiche_la_derniere_connexion_et_jamais_connecte(client, secretaire):
+    from django.utils import timezone
+
+    connecte = User.objects.create_user(
+        username="compte_connecte",
+        email="connecte@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+    connecte.last_login = timezone.now()
+    connecte.save(update_fields=["last_login"])
+
+    User.objects.create_user(
+        username="compte_jamais",
+        email="jamais@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+
+    client.force_login(secretaire)
+    corps = client.get(reverse("administration:utilisateurs")).content.decode()
+
+    assert "Dernière connexion" in corps
+    assert connecte.last_login.strftime("%d/%m/%Y") in corps
+    assert "Jamais connecté" in corps
+
+
+@pytest.mark.django_db
+def test_la_fiche_de_modification_utilisateur_affiche_l_activite(client, secretaire):
+    from django.utils import timezone
+
+    compte = User.objects.create_user(
+        username="activite_compte",
+        email="activite@example.org",
+        password="motdepasse-long-12",
+        role=User.Role.ETUDIANT,
+    )
+    compte.last_login = timezone.now()
+    compte.save(update_fields=["last_login"])
+
+    client.force_login(secretaire)
+    corps = client.get(reverse("administration:user_update", args=[compte.pk])).content.decode()
+
+    assert "Informations du compte" in corps
+    assert "Dernière connexion" in corps
+    assert compte.last_login.strftime("%d/%m/%Y") in corps
+    assert "Compte créé le" in corps
