@@ -93,8 +93,37 @@
                         {% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}Jamais connecté{% endif %}
                     </td>
                     <td class="px-6 py-3 text-right">
-                        <a href="{% url 'administration:user_update' u.pk %}" class="text-xs font-medium mr-3 text-navy-600">Modifier</a>
-                        <a href="{% url 'administration:user_delete' u.pk %}" class="lien-danger">Supprimer</a>
+                        <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 min-w-[13rem]">
+                            <a href="{% url 'administration:user_update' u.pk %}" class="text-xs font-medium text-navy-600">Modifier</a>
+
+                            {% if u.role != 'admin' or user.role == 'admin' or user.is_superuser %}
+                                {% if u.pk != user.pk %}
+                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="basculer_actif">
+                                    <button type="submit" class="text-xs font-medium {% if u.is_active %}text-red-600{% else %}text-emerald-700{% endif %}">
+                                        {% if u.is_active %}Désactiver{% else %}Réactiver{% endif %}
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% if u.is_active and u.email %}
+                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="renvoyer_invitation">
+                                    <button type="submit" class="text-xs font-medium text-navy-600">Renvoyer l'invitation</button>
+                                </form>
+
+                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reinitialiser_mot_de_passe">
+                                    <button type="submit" class="text-xs font-medium text-navy-600">Réinitialiser le mot de passe</button>
+                                </form>
+                                {% endif %}
+                            {% endif %}
+
+                            <a href="{% url 'administration:user_delete' u.pk %}" class="lien-danger">Supprimer</a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
