@@ -98,7 +98,8 @@
 
                             {% if u.role != 'admin' or user.role == 'admin' or user.is_superuser %}
                                 {% if u.pk != user.pk %}
-                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline">
+                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline"
+                                      data-confirmer="{% if u.is_active %}Désactiver {{ u.get_full_name|default:u.username }} ? Son accès à la plateforme sera bloqué.{% else %}Réactiver {{ u.get_full_name|default:u.username }} ?{% endif %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="basculer_actif">
                                     <button type="submit" class="text-xs font-medium {% if u.is_active %}text-red-600{% else %}text-emerald-700{% endif %}">
@@ -108,13 +109,15 @@
                                 {% endif %}
 
                                 {% if u.is_active and u.email %}
-                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline">
+                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline"
+                                      data-confirmer="Renvoyer une invitation à {{ u.email }} ?">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="renvoyer_invitation">
                                     <button type="submit" class="text-xs font-medium text-navy-600">Renvoyer l'invitation</button>
                                 </form>
 
-                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline">
+                                <form method="post" action="{% url 'administration:user_action' u.pk %}" class="inline"
+                                      data-confirmer="Envoyer un lien de réinitialisation à {{ u.email }} ? Son mot de passe actuel restera valable jusqu'à ce qu'il en choisisse un nouveau.">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="reinitialiser_mot_de_passe">
                                     <button type="submit" class="text-xs font-medium text-navy-600">Réinitialiser le mot de passe</button>
