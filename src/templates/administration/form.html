@@ -21,6 +21,28 @@
 
 {% block portal_content %}
 <div class="max-w-2xl">
+    {% if compte_admin %}
+    <section class="card-elevated mb-6">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4 text-navy-800">Informations du compte</h2>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+                <dt class="text-warm-500">Dernière connexion</dt>
+                <dd class="font-medium text-navy-900">
+                    {% if compte_admin.last_login %}
+                        {{ compte_admin.last_login|date:"d/m/Y à H:i" }}
+                    {% else %}
+                        Jamais connecté
+                    {% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-warm-500">Compte créé le</dt>
+                <dd class="font-medium text-navy-900">{{ compte_admin.date_joined|date:"d/m/Y à H:i" }}</dd>
+            </div>
+        </dl>
+    </section>
+    {% endif %}
+
     <form method="post" enctype="multipart/form-data" class="card-elevated space-y-5">
         {% csrf_token %}
 
