@@ -63,6 +63,8 @@ class AdminUserForm(FormulaireModeleITEAG):
 
     def clean(self):
         donnees = super().clean()
+        if self.instance.pk and self.instance.is_superuser and not getattr(self.auteur, "is_superuser", False):
+            raise forms.ValidationError("Un superutilisateur ne se modifie que depuis un autre superutilisateur.")
         if self.instance.pk and self.instance.role == User.Role.ADMIN and self._auteur_est_secretariat():
             raise forms.ValidationError("Un compte de direction ne se modifie que depuis la direction.")
         return donnees
