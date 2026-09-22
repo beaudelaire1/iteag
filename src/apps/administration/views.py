@@ -742,6 +742,8 @@ class AdminUserDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, DeleteVie
         if self.object.pk == self.request.user.pk:
             return "Vous ne pouvez pas supprimer votre propre compte."
         acteur = self.request.user
+        if self.object.is_superuser and not acteur.is_superuser:
+            return "Un superutilisateur ne se supprime que depuis un autre superutilisateur."
         if self.object.role == User.Role.ADMIN and not acteur.is_superuser and acteur.role == User.Role.SECRETARIAT:
             return "Un compte de direction ne se supprime que depuis la direction."
         if hasattr(self.object, "profil_etudiant"):
