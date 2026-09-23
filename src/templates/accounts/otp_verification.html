@@ -28,11 +28,14 @@
             <button type="submit" class="btn-primary w-full justify-center">Vérifier</button>
         </form>
 
-        <p class="mt-6 text-center text-sm">
-            <a href="{% url 'accounts:logout' %}" class="link-reveal text-warm-500">
+        <form method="post" action="{% url 'accounts:logout' %}" class="mt-6 text-center text-sm">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'accounts:login' %}">
+            <button type="submit"
+                    class="link-reveal text-warm-500 bg-transparent border-0 p-0 cursor-pointer">
                 Se connecter avec un autre compte
-            </a>
-        </p>
+            </button>
+        </form>
 
     </div>
 </section>
