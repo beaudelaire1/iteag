@@ -1,5 +1,7 @@
 """Contrôles de configuration du transport des notifications."""
 
+import smtplib
+
 from django.test import override_settings
 
 from apps.core.checks import configuration_smtp
@@ -39,3 +41,18 @@ def test_un_smtp_complet_est_accepte():
 def test_tls_et_ssl_ne_sont_pas_actives_ensemble():
     problemes = configuration_smtp(None)
     assert [probleme.id for probleme in problemes] == ["core.E005"]
+
+
+
+def test_une_reponse_smtp_421_est_temporaire():
+    from apps.core.services.emails import _est_erreur_smtp_temporaire
+
+    erreur = smtplib.SMTPConnectError(421, b"4.4.5 Server busy, try again later.")
+    assert _est_erreur_smtp_temporaire(erreur)
+
+
+def test_une_erreur_smtp_5xx_n_est_pas_rejouee():
+    from apps.core.services.emails import _est_erreur_smtp_temporaire
+
+    erreur = smtplib.SMTPAuthenticationError(535, b"5.7.8 Bad credentials")
+    assert not _est_erreur_smtp_temporaire(erreur)

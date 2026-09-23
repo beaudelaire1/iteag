@@ -12,6 +12,7 @@ définition de mot de passe) y échappent.
 """
 
 import logging
+import smtplib
 from email.mime.image import MIMEImage
 from email.utils import formataddr, parseaddr
 from pathlib import Path
@@ -24,6 +25,16 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
+
+
+class ErreurSMTPTemporaire(RuntimeError):
+    """Signale au worker qu'un relais SMTP a demandé de réessayer plus tard."""
+
+
+def _est_erreur_smtp_temporaire(exc: BaseException) -> bool:
+    """Les réponses SMTP 4xx sont temporaires et peuvent être rejouées sans délai humain."""
+    return isinstance(exc, smtplib.SMTPResponseException) and 400 <= int(exc.smtp_code) < 500
+
 
 LOGO_CID = "logo-iteag"
 DOMAINE_EMAIL_SANS_MX = "@iteag.org"
@@ -212,8 +223,10 @@ def envoyer_maintenant(
     destinataires: list[str],
     copie: list[str] | None = None,
     images: dict[str, str] | None = None,
+    *,
+    propager_erreur_smtp_temporaire: bool = False,
 ) -> bool:
-    """Rendu et envoi immédiats. Ne lève pas : un courriel perdu n'arrête pas un workflow."""
+    """Rendu et envoi immédiats. Ne lève que les erreurs SMTP temporaires demandées par Celery."""
     # Une tâche Celery peut avoir été mise en file avant un déploiement. On
     # refiltre donc ici, et pas seulement dans envoyer_email(), pour empêcher
     # une ancienne tâche d'expédier encore vers une adresse @iteag.org.
@@ -277,7 +290,19 @@ def envoyer_maintenant(
         message.attach(image)
     try:
         message.send(fail_silently=False)
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        if _est_erreur_smtp_temporaire(exc):
+            logger.warning(
+                "SMTP temporairement indisponible (code %s) pour « %s » ; "
+                "une nouvelle tentative sera planifiée si l'envoi est asynchrone.",
+                getattr(exc, "smtp_code", "?"),
+                sujet,
+            )
+            if propager_erreur_smtp_temporaire:
+                raise ErreurSMTPTemporaire(
+                    f"{type(exc).__name__}: {exc}"
+                ) from exc
+            return False
         logger.exception("Échec d'envoi du courriel « %s » à %s", sujet, destinataires)
         return False
     return True

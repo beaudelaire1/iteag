@@ -25,10 +25,13 @@ def heartbeat_celery() -> str:
 
 
 @shared_task(
+    bind=True,
     name="core.envoyer_email",
     rate_limit=getattr(settings, "EMAIL_TASK_RATE_LIMIT", "6/m"),
+    max_retries=5,
 )
 def envoyer_email_tache(
+    self,
     sujet: str,
     gabarit: str,
     contexte: dict,
@@ -36,9 +39,26 @@ def envoyer_email_tache(
     copie: list[str] | None = None,
     images: dict[str, str] | None = None,
 ) -> bool:
-    from apps.core.services.emails import envoyer_maintenant
+    from apps.core.services.emails import ErreurSMTPTemporaire, envoyer_maintenant
 
-    return envoyer_maintenant(sujet, gabarit, contexte, destinataires, copie, images)
+    try:
+        return envoyer_maintenant(
+            sujet,
+            gabarit,
+            contexte,
+            destinataires,
+            copie,
+            images,
+            propager_erreur_smtp_temporaire=True,
+        )
+    except ErreurSMTPTemporaire as exc:
+        # Gmail renvoie notamment 421 / 4.4.5 quand le relais est momentanément
+        # occupé. Ce n'est ni un mauvais mot de passe ni une adresse invalide :
+        # on espace les reprises au lieu de perdre le courriel et de créer un
+        # incident Sentry à la première réponse temporaire.
+        delais = (60, 120, 300, 600, 900)
+        delai = delais[min(self.request.retries, len(delais) - 1)]
+        raise self.retry(exc=exc, countdown=delai) from exc
 
 
 @shared_task(name="core.purger_notifications")
