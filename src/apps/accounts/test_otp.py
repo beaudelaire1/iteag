@@ -165,6 +165,30 @@ class TestVerification:
         assert reponse.status_code == 200
         assert JournalAudit.objects.filter(action="connexion_echec", objet_libelle="Second facteur invalide").exists()
 
+
+
+    def test_autre_compte_deconnecte_et_revient_a_la_connexion(self, client, secretaire):
+        """Le lien de l'écran OTP doit utiliser le POST exigé par Django."""
+        TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
+        client.force_login(secretaire)
+
+        page = client.get(reverse("accounts:otp_verification"))
+        contenu = page.content.decode()
+        assert f'action="{reverse("accounts:logout")}"' in contenu
+        assert 'method="post"' in contenu
+        assert f'name="next" value="{reverse("accounts:login")}"' in contenu
+
+        reponse = client.post(
+            reverse("accounts:logout"),
+            {"next": reverse("accounts:login")},
+        )
+        assert reponse.status_code == 302
+        assert reponse.url == reverse("accounts:login")
+
+        connexion = client.get(reverse("accounts:login"))
+        assert connexion.status_code == 200
+        assert "_auth_user_id" not in client.session
+
     def test_une_redirection_externe_est_refusee(self, client, secretaire):
         """La page ne doit pas servir de tremplin vers un site tiers."""
         appareil = TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
