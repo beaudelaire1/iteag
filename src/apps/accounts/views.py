@@ -1,5 +1,6 @@
 import base64
 import io
+import time
 
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -8,7 +9,10 @@ from django.contrib.auth.views import LoginView, LogoutView, PasswordResetConfir
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import TemplateView
+from django.utils import timezone
 from django_otp import login as otp_login
+from django_otp import verify_token as verifier_otp
+from django_otp.oath import TOTP
 
 from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.services.audit import journaliser
@@ -224,6 +228,41 @@ class _BaseOTPView(LoginRequiredMixin, TemplateView):
             return propose
         return tableau_de_bord(self.request.user) or "/"
 
+    @staticmethod
+    def _attente_avant_nouvel_essai(appareil) -> int:
+        """Retourne le délai de throttling restant, sans confondre attente et mauvais code."""
+        autorise, donnees = appareil.verify_is_allowed()
+        if autorise:
+            return 0
+        verrou_jusqua = (donnees or {}).get("locked_until")
+        if verrou_jusqua is None:
+            return 1
+        secondes = (verrou_jusqua - timezone.now()).total_seconds()
+        return max(1, int(secondes) + 1)
+
+    @staticmethod
+    def _correspond_a_un_code_totp(appareil, code: str) -> bool:
+        """Détecte un code TOTP authentique déjà consommé, sans le réaccepter."""
+        try:
+            jeton = int(code)
+        except (TypeError, ValueError):
+            return False
+        totp = TOTP(appareil.bin_key, appareil.step, appareil.t0, appareil.digits, appareil.drift)
+        totp.time = time.time()
+        return totp.verify(jeton, appareil.tolerance)
+
+    def _message_echec_code(self, appareil, code: str) -> None:
+        if self._correspond_a_un_code_totp(appareil, code):
+            messages.error(
+                self.request,
+                "Ce code a déjà été utilisé. Attendez le prochain code affiché par votre application, puis réessayez.",
+            )
+        else:
+            messages.error(
+                self.request,
+                "Code incorrect ou expiré. Vérifiez que la date et l’heure du téléphone sont réglées automatiquement.",
+            )
+
 
 class OTPActivationView(_BaseOTPView):
     """Enrôlement d'un appareil TOTP : QR code, secret, puis vérification."""
@@ -252,15 +291,24 @@ class OTPActivationView(_BaseOTPView):
         appareil = appareil_en_attente(request.user)
         code = request.POST.get("code", "").strip().replace(" ", "")
 
-        if appareil.verify_token(code):
-            appareil.confirmed = True
-            appareil.save(update_fields=["confirmed"])
-            otp_login(request, appareil)
+        attente = self._attente_avant_nouvel_essai(appareil)
+        if attente:
+            messages.warning(
+                request,
+                f"Trop de tentatives rapprochées. Réessayez dans {attente} seconde{'s' if attente > 1 else ''}.",
+            )
+            return self.render_to_response(self.get_context_data(**kwargs))
+
+        appareil_verifie = verifier_otp(request.user, appareil.persistent_id, code)
+        if appareil_verifie is not None:
+            appareil_verifie.confirmed = True
+            appareil_verifie.save(update_fields=["confirmed"])
+            otp_login(request, appareil_verifie)
             journaliser("modification", request=request, objet_libelle="Activation du second facteur")
             messages.success(request, "Double authentification activée.")
             return redirect(self.suivant())
 
-        messages.error(request, "Code incorrect. Vérifiez l'heure de votre téléphone et réessayez.")
+        self._message_echec_code(appareil, code)
         return self.render_to_response(self.get_context_data(**kwargs))
 
     @staticmethod
@@ -297,10 +345,23 @@ class OTPVerificationView(_BaseOTPView):
         appareil = appareil_confirme(request.user)
         code = request.POST.get("code", "").strip().replace(" ", "")
 
-        if appareil is not None and appareil.verify_token(code):
-            otp_login(request, appareil)
+        if appareil is None:
+            return redirect(reverse("accounts:otp_activation"))
+
+        attente = self._attente_avant_nouvel_essai(appareil)
+        if attente:
+            journaliser("connexion_echec", request=request, objet_libelle="Second facteur temporairement limité")
+            messages.warning(
+                request,
+                f"Trop de tentatives rapprochées. Réessayez dans {attente} seconde{'s' if attente > 1 else ''}.",
+            )
+            return self.render_to_response(self.get_context_data(**kwargs))
+
+        appareil_verifie = verifier_otp(request.user, appareil.persistent_id, code)
+        if appareil_verifie is not None:
+            otp_login(request, appareil_verifie)
             return redirect(self.suivant())
 
         journaliser("connexion_echec", request=request, objet_libelle="Second facteur invalide")
-        messages.error(request, "Code incorrect ou expiré.")
+        self._message_echec_code(appareil, code)
         return self.render_to_response(self.get_context_data(**kwargs))
