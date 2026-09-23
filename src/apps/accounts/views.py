@@ -8,8 +8,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import TemplateView
 from django.utils import timezone
+from django.views.generic import TemplateView
 from django_otp import login as otp_login
 from django_otp import verify_token as verifier_otp
 from django_otp.oath import TOTP
