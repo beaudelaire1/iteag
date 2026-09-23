@@ -166,8 +166,6 @@ class TestVerification:
         assert reponse.status_code == 200
         assert JournalAudit.objects.filter(action="connexion_echec", objet_libelle="Second facteur invalide").exists()
 
-
-
     def test_autre_compte_deconnecte_et_revient_a_la_connexion(self, client, secretaire):
         """Le lien de l'écran OTP doit utiliser le POST exigé par Django."""
         TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
@@ -189,7 +187,6 @@ class TestVerification:
         connexion = client.get(reverse("accounts:login"))
         assert connexion.status_code == 200
         assert "_auth_user_id" not in client.session
-
 
     def test_un_code_deja_utilise_est_identifie_comme_tel(self, client, secretaire):
         appareil = TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
