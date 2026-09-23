@@ -4,6 +4,7 @@ import time
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -165,8 +166,6 @@ class TestVerification:
         assert reponse.status_code == 200
         assert JournalAudit.objects.filter(action="connexion_echec", objet_libelle="Second facteur invalide").exists()
 
-
-
     def test_autre_compte_deconnecte_et_revient_a_la_connexion(self, client, secretaire):
         """Le lien de l'écran OTP doit utiliser le POST exigé par Django."""
         TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
@@ -188,6 +187,41 @@ class TestVerification:
         connexion = client.get(reverse("accounts:login"))
         assert connexion.status_code == 200
         assert "_auth_user_id" not in client.session
+
+    def test_un_code_deja_utilise_est_identifie_comme_tel(self, client, secretaire):
+        appareil = TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
+        client.force_login(secretaire)
+        code = code_valide(appareil)
+
+        premiere = client.post(reverse("accounts:otp_verification"), {"code": code})
+        assert premiere.status_code == 302
+
+        client.post(reverse("accounts:logout"))
+        client.force_login(secretaire)
+        seconde = client.post(reverse("accounts:otp_verification"), {"code": code})
+
+        assert seconde.status_code == 200
+        assert "déjà été utilisé" in seconde.content.decode()
+
+    def test_le_throttling_n_est_pas_affiche_comme_un_mauvais_code(self, client, secretaire):
+        appareil = TOTPDevice.objects.create(
+            user=secretaire,
+            name="ITEAG",
+            confirmed=True,
+            throttling_failure_count=3,
+            throttling_failure_timestamp=timezone.now(),
+        )
+        client.force_login(secretaire)
+
+        reponse = client.post(
+            reverse("accounts:otp_verification"),
+            {"code": code_valide(appareil)},
+        )
+
+        assert reponse.status_code == 200
+        assert "Trop de tentatives rapprochées" in reponse.content.decode()
+        appareil.refresh_from_db()
+        assert appareil.throttling_failure_count == 3
 
     def test_une_redirection_externe_est_refusee(self, client, secretaire):
         """La page ne doit pas servir de tremplin vers un site tiers."""
