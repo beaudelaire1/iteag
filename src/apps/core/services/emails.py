@@ -271,8 +271,8 @@ def envoyer_maintenant(
     racine_statique = Path(settings.BASE_DIR) / "static"
     pieces = []
     # N'attacher une image inline que si le HTML la référence réellement. Les
-    # liens d'activation utilisent volontairement un gabarit transactionnel
-    # léger : ajouter un logo MIME inutile alourdit l'empreinte antispam.
+    # liens personnels héritent de core/emails/base_transactionnel.html, qui
+    # compose la marque en texte : un logo MIME alourdirait l'empreinte antispam.
     if f"cid:{LOGO_CID}" in html and chemin_logo.exists():
         pieces.append((LOGO_CID, chemin_logo, "logo-iteag.png"))
     pieces += [

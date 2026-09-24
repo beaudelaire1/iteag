@@ -1,0 +1,15 @@
+{% extends "core/emails/base_email.html" %}
+{% comment %}
+Charte ITEAG des courriels porteurs d'un lien personnel (activation, invitation,
+réinitialisation). Même mise en page que les autres envois, mais la marque est
+composée en texte et les réseaux sociaux sont retirés : sans image référencée,
+envoyer_maintenant() ne joint aucune pièce MIME, ce qui allège l'empreinte que
+les filtres d'Orange ou d'Outlook pénalisent sur ce type de message.
+{% endcomment %}
+
+{% block marque %}
+<span style="font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:bold;
+             letter-spacing:.08em;color:#ffffff;">ITEAG</span>
+{% endblock %}
+
+{% block reseaux_sociaux %}{% endblock %}

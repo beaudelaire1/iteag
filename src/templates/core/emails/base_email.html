@@ -36,6 +36,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td valign="middle">
+                                        {% block marque %}
                                         {% if EMAIL_LOGO_CID %}
                                         <img class="brand-logo" src="cid:{{ EMAIL_LOGO_CID }}" width="220"
                                              alt="ITEAG" style="display:block;width:220px;max-width:100%;height:auto;border:0;">
@@ -43,6 +44,7 @@
                                         <span style="font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:bold;
                                                      letter-spacing:.08em;color:#ffffff;">ITEAG</span>
                                         {% endif %}
+                                        {% endblock %}
                                     </td>
                                     <td class="header-category" align="right" valign="middle"
                                         style="font-size:10px;line-height:1.5;font-weight:bold;letter-spacing:.16em;
@@ -96,10 +98,12 @@
                             </p>
                             <p style="margin:0 0 14px;font-size:11px;">
                                 <a href="{{ SITE_URL }}" style="color:#EEC671;text-decoration:none;">iteag.org</a>
+                                {% block reseaux_sociaux %}
                                 <span style="color:#544B3D;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
                                 <a href="{{ SITE_FACEBOOK }}" style="color:#EEC671;text-decoration:none;">Facebook</a>
                                 <span style="color:#544B3D;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
                                 <a href="{{ SITE_YOUTUBE }}" style="color:#EEC671;text-decoration:none;">YouTube</a>
+                                {% endblock %}
                             </p>
                             <p style="margin:0;font-size:10px;line-height:1.55;color:#736957;">
                                 © {{ ANNEE_COURANTE }} ITEAG · Tous droits réservés.<br>

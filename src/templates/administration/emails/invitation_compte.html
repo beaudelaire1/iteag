@@ -1,35 +1,54 @@
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Votre accès ITEAG</title>
-</head>
-<body style="margin:0;padding:24px;background:#f7f7f7;font-family:Arial,Helvetica,sans-serif;color:#222;">
-    <div style="max-width:620px;margin:0 auto;background:#fff;padding:28px;border:1px solid #e5e5e5;">
-        <p style="margin:0 0 18px;font-size:22px;font-weight:700;">ITEAG</p>
-        <p>Bonjour{% if prenom %} {{ prenom }}{% endif %},</p>
+{% extends "core/emails/base_transactionnel.html" %}
 
-        {% if deja_connecte %}
-        <p>Un nouveau lien d'accès à votre compte ITEAG vous a été envoyé depuis l'administration.</p>
-        {% else %}
-        <p>Votre compte ITEAG est prêt. Vous pouvez maintenant définir votre mot de passe.</p>
-        {% endif %}
+{% block sujet %}Votre accès ITEAG{% endblock %}
+{% block preheader %}Choisissez votre mot de passe pour accéder à {{ espace }}.{% endblock %}
+{% block categorie %}Comptes{% endblock %}
 
-        <p><strong>Identifiant :</strong> {{ identifiant }}</p>
-        {% if numero_etudiant %}<p><strong>Numéro étudiant :</strong> {{ numero_etudiant }}</p>{% endif %}
-        <p><strong>Accès :</strong> {{ espace }}</p>
+{% block corps %}
+<p style="margin:0 0 11px;font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#D4990F;">
+    {% if deja_connecte %}Nouveau lien d'accès{% else %}Première connexion{% endif %}
+</p>
+<h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:29px;
+           font-weight:normal;line-height:1.25;color:#1A2D29;">
+    Bonjour{% if prenom %} {{ prenom }}{% endif %}
+</h1>
 
-        <p>Pour définir votre mot de passe, ouvrez ce lien personnel :</p>
-        <p style="word-break:break-all;"><a href="{{ lien_activation }}">{{ lien_activation }}</a></p>
+<p style="margin:0 0 18px;">
+    {% if deja_connecte %}
+    L'administration de l'ITEAG vous adresse un nouveau lien d'accès à <strong>{{ espace }}</strong>.
+    {% else %}
+    Votre compte sur la plateforme de l'ITEAG est prêt. Il vous donne accès à <strong>{{ espace }}</strong>.
+    {% endif %}
+</p>
 
-        <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message et prévenir le secrétariat.</p>
+<div style="margin:0 0 25px;padding:19px 21px;background-color:#F0F6F5;border-left:4px solid #457D70;
+            border-radius:0 4px 4px 0;color:#263F3B;">
+    <p style="margin:0 0 8px;"><strong>Identifiant :</strong> {{ identifiant }}</p>
+    {% if courriel %}<p style="margin:0{% if numero_etudiant %} 0 8px{% endif %};"><strong>Adresse :</strong> {{ courriel }}</p>{% endif %}
+    {% if numero_etudiant %}<p style="margin:0;"><strong>Numéro étudiant :</strong> {{ numero_etudiant }}</p>{% endif %}
+</div>
 
-        <p style="margin-top:26px;">
-            Institut de Théologie Évangélique des Antilles et de la Guyane<br>
-            {{ SITE_ADDRESS }}<br>
-            {{ SITE_PHONE }}
-        </p>
-    </div>
-</body>
-</html>
+<p style="margin:0 0 23px;color:#544B3D;">
+    Choisissez votre mot de passe pour vous connecter. Personne d'autre que vous ne le connaîtra.
+</p>
+
+<p style="margin:0 0 20px;">
+    <a class="button" href="{{ lien_activation }}"
+       style="display:inline-block;padding:14px 26px;background-color:#355952;color:#ffffff;
+              text-decoration:none;border-radius:4px;font-size:13px;font-weight:bold;letter-spacing:.03em;">
+        Choisir mon mot de passe
+        <span style="color:#EEC671;">&nbsp;→</span>
+    </a>
+</p>
+
+<p style="margin:0;font-size:11px;line-height:1.55;color:#978B72;">
+    Lien personnel :
+    <a href="{{ lien_activation }}" style="color:#355952;word-break:break-all;">{{ lien_activation }}</a>
+</p>
+
+<p style="margin:25px 0 0;padding:15px 18px;background-color:#FDF8EC;border:1px solid #F3D9A0;
+          border-radius:4px;font-size:12px;line-height:1.6;color:#736957;">
+    Si le lien a expiré, utilisez « Mot de passe oublié » depuis la page de connexion pour en recevoir un nouveau.
+    Si vous n'êtes pas à l'origine de cette demande, ignorez ce message et prévenez le secrétariat.
+</p>
+{% endblock %}

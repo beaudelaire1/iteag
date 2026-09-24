@@ -303,16 +303,30 @@ class TestServiceEmail:
 
         assert mail.outbox[0].from_email == "ITEAG <contact.iteag@gmail.com>"
 
-    def test_activation_etudiant_reste_legere_sans_logo_inline(self):
+    @pytest.mark.parametrize(
+        ("gabarit", "contexte"),
+        [
+            (
+                "administration/emails/compte_etudiant_importe.html",
+                {"prenom": "Jean", "numero_etudiant": "ETU2026001", "parcours": "Parcours libre",
+                 "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/"},
+            ),
+            (
+                "administration/emails/invitation_compte.html",
+                {"prenom": "Jean", "identifiant": "jean.test", "espace": "l'espace étudiant",
+                 "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/"},
+            ),
+            (
+                "administration/emails/reinitialisation_mot_de_passe.html",
+                {"prenom": "Jean", "lien_reinitialisation": "https://iteag.org/mot-de-passe/confirmer/x/y/"},
+            ),
+        ],
+    )
+    def test_lien_personnel_porte_la_charte_sans_image_jointe(self, gabarit, contexte):
         assert envoyer_email(
-            sujet="Votre compte étudiant ITEAG est prêt",
-            gabarit="administration/emails/compte_etudiant_importe.html",
-            contexte={
-                "prenom": "Jean",
-                "numero_etudiant": "ETU2026001",
-                "parcours": "Parcours libre",
-                "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/",
-            },
+            sujet="Lien personnel",
+            gabarit=gabarit,
+            contexte=contexte,
             destinataires=["lecteur@example.org"],
             differe=False,
             confidentiel=True,
@@ -320,6 +334,11 @@ class TestServiceEmail:
 
         message = mail.outbox[0]
         html = message.alternatives[0].content
+        # La charte ITEAG : bandeau, bouton et pied de contact communs.
+        assert "#1A2D29" in html
+        assert "Nous contacter" in html
+        assert "https://iteag.org/mot-de-passe/confirmer/x/y/" in html
+        # Mais rien de ce qui alourdit un lien d'activation aux yeux des filtres.
         assert "facebook" not in html.casefold()
         assert "youtube" not in html.casefold()
         assert 'src="cid:logo-iteag"' not in html
