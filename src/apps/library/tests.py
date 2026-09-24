@@ -131,7 +131,7 @@ class TestEmprunts:
         from apps.library import services
         from apps.library.models import Emprunt
 
-        user = User.objects.create_user(username="lecteur1", email="l1@iteag.org", password="password123")
+        user = User.objects.create_user(username="lecteur1", email="l1@example.org", password="password123")
         emprunt = services.reserver_ouvrage(notice, user)
 
         assert emprunt.statut == Emprunt.Statut.RESERVE
@@ -162,7 +162,7 @@ class TestEmprunts:
         from apps.accounts.models import User
         from apps.library import services
 
-        user = User.objects.create_user(username="lecteur2", email="l2@iteag.org", password="password123")
+        user = User.objects.create_user(username="lecteur2", email="l2@example.org", password="password123")
         notice.disponible = False
         notice.save()
 
@@ -174,7 +174,7 @@ class TestEmprunts:
         from apps.library import services
         from apps.library.models import Emprunt
 
-        user = User.objects.create_user(username="lecteur3", email="l3@iteag.org", password="password123")
+        user = User.objects.create_user(username="lecteur3", email="l3@example.org", password="password123")
         emprunt = services.reserver_ouvrage(notice, user)
 
         emprunt = services.valider_retrait(emprunt)
@@ -196,7 +196,7 @@ class TestEmprunts:
         from apps.library import services
         from apps.library.models import Emprunt
 
-        user = User.objects.create_user(username="lecteur4", email="l4@iteag.org", password="password123")
+        user = User.objects.create_user(username="lecteur4", email="l4@example.org", password="password123")
         emprunt = services.reserver_ouvrage(notice, user)
         services.valider_retrait(emprunt)
         emprunt.date_retour_prevue = timezone.localdate() - timedelta(days=5)
@@ -212,7 +212,7 @@ class TestEmprunts:
         from apps.library import services
         from apps.library.models import Emprunt
 
-        user = User.objects.create_user(username="lecteur_annule", email="la@iteag.org", password="password123")
+        user = User.objects.create_user(username="lecteur_annule", email="la@example.org", password="password123")
         emprunt = services.reserver_ouvrage(notice, user)
         notice.refresh_from_db()
         assert notice.disponible is False
@@ -227,7 +227,7 @@ class TestEmprunts:
         from apps.library import services
         from apps.library.models import Emprunt
 
-        user = User.objects.create_user(username="lecteur_view", email="lv@iteag.org", password="password123")
+        user = User.objects.create_user(username="lecteur_view", email="lv@example.org", password="password123")
         emprunt = services.reserver_ouvrage(notice, user)
 
         client.force_login(user)

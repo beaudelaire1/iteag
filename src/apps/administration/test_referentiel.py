@@ -28,7 +28,7 @@ def parcours(db):
 @pytest.fixture
 def admin(db):
     return User.objects.create_user(
-        username="admin_ref", email="admin_ref@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+        username="admin_ref", email="admin_ref@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
     )
 
 
@@ -36,7 +36,7 @@ def admin(db):
 def secretaire(db):
     return User.objects.create_user(
         username="secretaire_ref",
-        email="secretaire_ref@iteag.org",
+        email="secretaire_ref@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
@@ -46,7 +46,7 @@ def secretaire(db):
 def etudiant(db, parcours):
     utilisateur = User.objects.create_user(
         username="etu_ref",
-        email="etu_ref@iteag.org",
+        email="etu_ref@example.org",
         password="motdepasse-long-12",
         first_name="Paul",
         last_name="Sainte-Rose",
@@ -265,7 +265,7 @@ class TestRemonteeDeLaProductionPedagogique:
         from apps.formations.models import Professeur
 
         enseignant_utilisateur = User.objects.create_user(
-            username="prof_tdb", email="prof_tdb@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="prof_tdb", email="prof_tdb@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
         )
         professeur = Professeur.objects.create(
             user=enseignant_utilisateur, nom="Bernard", prenom="Élie", slug="elie-bernard"

@@ -36,7 +36,7 @@ def parcours(db):
 def etudiant(db, parcours):
     utilisateur = User.objects.create_user(
         username="etu_pdf",
-        email="etu_pdf@iteag.org",
+        email="etu_pdf@example.org",
         password="motdepasse-long-12",
         first_name="Estelle",
         last_name="Marceline",
@@ -110,7 +110,7 @@ class TestReleveDeNotes:
         discipline = Discipline.objects.create(nom="Exégèse", slug="exegese-pdf")
         cours = Cours.objects.create(titre="Exégèse de Romains", slug="exegese-romains", discipline=discipline)
         utilisateur = User.objects.create_user(
-            username="prof_pdf", email="prof_pdf@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="prof_pdf", email="prof_pdf@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
         )
         professeur = Professeur.objects.create(user=utilisateur, nom="Duval", prenom="Anne", slug="anne-duval")
         cours_session = CoursDeSession.objects.create(session=session, cours=cours, enseignant=professeur)
@@ -252,7 +252,7 @@ class TestMiseEnPage:
         f = SimpleUploadedFile("signature.png", image_png, content_type="image/png")
         User.objects.create_user(
             username="secretaire_pdf",
-            email="sec@iteag.org",
+            email="sec@example.org",
             password="password123",
             first_name="Jean",
             last_name="Valjean",

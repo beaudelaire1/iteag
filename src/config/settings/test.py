@@ -23,6 +23,18 @@ PASSWORD_HASHERS = [
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
+# L'identité d'envoi est celle de la production : le relais Gmail de l'institut.
+# Un compte SMTP personnel présent dans le .env local ne doit pas changer
+# l'expéditeur que les tests vérifient.
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = "contact.iteag@gmail.com"
+EMAIL_HOST_PASSWORD = ""
+ITEAG_COURRIEL_ENVOI = "contact.iteag@gmail.com"
+ITEAG_COURRIEL_SECRETARIAT = "secretariat.iteag@gmail.com"
+ITEAG_COURRIEL_COPIE = "contact.iteag@gmail.com"
+DEFAULT_FROM_EMAIL = ITEAG_COURRIEL_ENVOI
+EMAIL_FROM_NAME = "ITEAG"
+
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 AXES_ENABLED = False

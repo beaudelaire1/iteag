@@ -130,7 +130,7 @@ class TestGestionnaires:
         from apps.formations.models import Professeur
 
         autre_utilisateur = User.objects.create_user(
-            username="autreprof", email="autreprof@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="autreprof", email="autreprof@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
         )
         Professeur.objects.create(user=autre_utilisateur, nom="Labeth", prenom="Ruth", slug="ruth-labeth")
         assert verifier_acces(autre_utilisateur, lecon).autorise is False
@@ -165,7 +165,7 @@ class TestProfilEtudiant:
         from apps.accounts.models import User
 
         simple = User.objects.create_user(
-            username="sansprofil", email="sansprofil@iteag.org", password="motdepasse-long-12"
+            username="sansprofil", email="sansprofil@example.org", password="motdepasse-long-12"
         )
         decision = verifier_acces(simple, lecon)
         assert decision.autorise is False
@@ -195,7 +195,7 @@ class TestExistenceDuDroit:
         from apps.elearning.services.octroi import octroyer
 
         autre_utilisateur = User.objects.create_user(
-            username="paul", email="paul@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="paul", email="paul@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         autre_profil = ProfilEtudiant.objects.create(
             utilisateur=autre_utilisateur,

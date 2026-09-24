@@ -28,7 +28,7 @@ class TestLoginView:
     def test_un_superutilisateur_est_route_vers_l_administration(self, db):
         admin = User.objects.create_superuser(
             username="super-route",
-            email="super-route@iteag.org",
+            email="super-route@example.org",
             password="admin123!",
         )
 
@@ -37,7 +37,7 @@ class TestLoginView:
     def test_un_compte_etudiant_sans_profil_n_est_pas_route_vers_un_espace_refuse(self, db):
         utilisateur = User.objects.create_user(
             username="etudiant-sans-profil",
-            email="sans-profil@iteag.org",
+            email="sans-profil@example.org",
             password="testpass123!",
             role=User.Role.ETUDIANT,
         )

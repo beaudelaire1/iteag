@@ -38,7 +38,7 @@ def cours(db):
     discipline = Discipline.objects.create(nom="Théologie", slug="theologie")
     matiere = Cours.objects.create(titre="Herméneutique", slug="hermeneutique", discipline=discipline)
     compte = User.objects.create_user(
-        username="enseignant", email="ens@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="enseignant", email="ens@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(nom="Nisus", prenom="Alain", slug="alain-nisus", user=compte)
     session = SessionAcademique.objects.create(
@@ -56,7 +56,7 @@ def _etudiant(cours, suffixe="1"):
     )
     compte = User.objects.create_user(
         username=f"etudiant{suffixe}",
-        email=f"etudiant{suffixe}@iteag.org",
+        email=f"etudiant{suffixe}@example.org",
         password=MOT_DE_PASSE,
         first_name="Léonie",
         last_name=f"Abaul {suffixe}",
@@ -385,7 +385,7 @@ def test_un_groupe_ne_propose_que_les_inscrits_du_cours(cours, etudiant):
     parcours = Parcours.objects.get(slug="bachelor")
     promotion = Promotion.objects.get(nom="Promotion 2026")
     exterieur = User.objects.create_user(
-        username="exterieur", email="ext@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="exterieur", email="ext@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     ProfilEtudiant.objects.create(
         utilisateur=exterieur, parcours=parcours, promotion=promotion, numero_etudiant="ETU-EXT-001"
@@ -422,7 +422,7 @@ def test_l_enseignant_gere_ses_groupes_et_pas_ceux_d_un_confrere(client, cours, 
     assert "Équipe 1" in corps
 
     autre = User.objects.create_user(
-        username="confrere", email="confrere@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="confrere", email="confrere@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     Professeur.objects.create(nom="Labeth", prenom="Ruth", slug="ruth-labeth", user=autre)
     client.force_login(autre)

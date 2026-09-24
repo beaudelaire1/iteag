@@ -28,7 +28,7 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_atelier", email="pa@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_atelier", email="pa@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-atelier", user=compte)
 
@@ -36,7 +36,7 @@ def enseignant(db):
 @pytest.fixture
 def autre_enseignant(db):
     compte = User.objects.create_user(
-        username="prof_autre", email="pb@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_autre", email="pb@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Labeth", prenom="Ruth", slug="labeth-atelier", user=compte)
 
@@ -44,7 +44,7 @@ def autre_enseignant(db):
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_atelier", email="sa@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_atelier", email="sa@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
@@ -69,7 +69,7 @@ class TestAccesDuSecretariat:
 
     def test_un_etudiant_reste_dehors(self, client, db):
         etudiant = User.objects.create_user(
-            username="etu_atelier", email="ea@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+            username="etu_atelier", email="ea@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
         )
         client.force_login(etudiant)
         assert client.get(reverse("elearning:enseignant_modules")).status_code in (302, 403)
@@ -120,7 +120,7 @@ class TestAtteignableDepuisLeMenu:
 
     def test_la_barre_de_la_direction_mene_a_l_atelier(self, client, db):
         directrice = User.objects.create_user(
-            username="dir_atelier", email="da@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+            username="dir_atelier", email="da@example.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
         )
         client.force_login(directrice)
         contenu = client.get(reverse("administration:dashboard")).content.decode()

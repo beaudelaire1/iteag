@@ -15,7 +15,7 @@ from apps.formations.models import Parcours
 def staff_user(db):
     return User.objects.create_user(
         username="admin_staff",
-        email="admin@iteag.org",
+        email="admin@example.org",
         password="pass123!",
         role="admin",
         is_staff=True,

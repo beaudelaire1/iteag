@@ -129,7 +129,7 @@ class TestAcceptationDeCandidature:
     def test_la_numerotation_suit_le_dernier_numero_de_l_annee(self, db, parcours, promotion):
         """Le rang se lit dans le numéro : sans tiret, il faut le retrouver autrement."""
         compte = User.objects.create_user(
-            username="deja-la", email="deja@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="deja-la", email="deja@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         ProfilEtudiant.objects.create(
             utilisateur=compte, parcours=parcours, promotion=promotion, numero_etudiant="ETU2030007"
@@ -143,7 +143,7 @@ class TestVueAcceptation:
     def secretaire(self, db):
         return User.objects.create_user(
             username="sec",
-            email="sec@iteag.org",
+            email="sec@example.org",
             password="motdepasse-long-12",
             role=User.Role.SECRETARIAT,
             is_staff=True,
@@ -206,7 +206,7 @@ class TestAcceptationGroupee:
     def secretaire(self, db):
         return User.objects.create_user(
             username="sec-groupee",
-            email="sec-groupee@iteag.org",
+            email="sec-groupee@example.org",
             password="motdepasse-long-12",
             role=User.Role.SECRETARIAT,
             is_staff=True,
@@ -278,7 +278,7 @@ class TestAcceptationGroupee:
         dossier = _dossier(parcours, "Zoé", "Intruse")
         intrus = User.objects.create_user(
             username="intrus-groupee",
-            email="intrus-groupee@iteag.org",
+            email="intrus-groupee@example.org",
             password="motdepasse-long-12",
             role=User.Role.ETUDIANT,
         )

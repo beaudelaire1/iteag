@@ -26,7 +26,7 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_notes", email="prof@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_notes", email="prof@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Nisus", prenom="Alain", slug="alain-nisus-notes", user=compte)
 
@@ -49,7 +49,7 @@ def etudiant(db):
     parcours = Parcours.objects.create(nom="Bachelor", slug="bachelor-notes", type_parcours=Parcours.TypeParcours.LIBRE)
     promotion = Promotion.objects.create(nom="Promo notes", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
-        username="etu_notes", email="etu@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etu_notes", email="etu@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     return ProfilEtudiant.objects.create(
         utilisateur=compte,
@@ -102,7 +102,7 @@ class TestPublicationUnitaire:
     def test_les_autres_copies_du_cours_ne_bougent_pas(self, client, enseignant, offre, copie_notee, etudiant, db):
         """C'est tout l'objet : publier l'une n'oblige pas à publier les autres."""
         autre_compte = User.objects.create_user(
-            username="etu2", email="etu2@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+            username="etu2", email="etu2@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
         )
         autre = ProfilEtudiant.objects.create(
             utilisateur=autre_compte,
@@ -136,7 +136,7 @@ class TestPublicationUnitaire:
     def test_on_ne_publie_pas_la_copie_d_un_autre_enseignant(self, client, db, copie_notee, etudiant):
         """Le cours fait autorité : un identifiant deviné ne suffit pas."""
         intrus_compte = User.objects.create_user(
-            username="intrus_prof", email="ip@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+            username="intrus_prof", email="ip@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
         )
         Professeur.objects.create(nom="Intrus", prenom="Prof", slug="intrus-prof", user=intrus_compte)
 

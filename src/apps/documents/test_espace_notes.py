@@ -28,7 +28,7 @@ def etudiant(db):
     parcours = Parcours.objects.create(nom="Bachelor", slug="bach-doc", type_parcours=Parcours.TypeParcours.LIBRE)
     promotion = Promotion.objects.create(nom="Promo doc", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
-        username="etu_doc", email="ed@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etu_doc", email="ed@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     return ProfilEtudiant.objects.create(
         utilisateur=compte,
@@ -42,7 +42,7 @@ def etudiant(db):
 @pytest.fixture
 def offre(db):
     compte = User.objects.create_user(
-        username="prof_doc", email="pdoc@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_doc", email="pdoc@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-doc", user=compte)
     discipline = Discipline.objects.create(nom="Théologie", slug="theo-doc")
@@ -100,7 +100,7 @@ def test_l_ecran_reste_lisible_sans_aucune_note(client, etudiant):
 
 def test_les_notes_d_un_autre_etudiant_ne_paraissent_pas(client, etudiant, offre, db):
     autre_compte = User.objects.create_user(
-        username="autre_etu", email="ae@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="autre_etu", email="ae@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     autre = ProfilEtudiant.objects.create(
         utilisateur=autre_compte,

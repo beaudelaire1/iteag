@@ -68,7 +68,7 @@ def demande(parcours):
     aujourd_hui = timezone.localdate()
     promotion = Promotion.objects.create(nom="Promotion 2026", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
-        username="etudiante", email="etudiante@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etudiante", email="etudiante@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     profil = ProfilEtudiant.objects.create(
         utilisateur=compte,
@@ -171,13 +171,13 @@ def test_le_secretariat_ouvre_la_fiche_d_un_etudiant(client, secretaire, demande
 def test_la_creation_d_une_formation_avertit_tous_les_etudiants_actifs(client, secretaire, demande):
     autre_etudiant = User.objects.create_user(
         username="autre_etudiant_formation",
-        email="autre-formation@iteag.org",
+        email="autre-formation@example.org",
         password=MOT_DE_PASSE,
         role=User.Role.ETUDIANT,
     )
     etudiant_inactif = User.objects.create_user(
         username="etudiant_inactif_formation",
-        email="inactif-formation@iteag.org",
+        email="inactif-formation@example.org",
         password=MOT_DE_PASSE,
         role=User.Role.ETUDIANT,
         is_active=False,

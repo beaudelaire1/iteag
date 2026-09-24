@@ -41,7 +41,7 @@ def univers(db):
     promotion = Promotion.objects.create(nom="Promo pilotage", parcours=parcours, annee_debut=2027, annee_fin=2033)
     discipline = Discipline.objects.create(nom="Dogmatique", slug="dogmatique-pil")
     utilisateur_prof = User.objects.create_user(
-        username="prof_pil", email="pp@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_pil", email="pp@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(user=utilisateur_prof, nom="Léger", prenom="Paul", slug="paul-leger")
     cours = Cours.objects.create(titre="Le Credo", slug="le-credo", discipline=discipline)
@@ -58,7 +58,7 @@ def univers(db):
 
     utilisateur = User.objects.create_user(
         username="etu_pil",
-        email="ep@iteag.org",
+        email="ep@example.org",
         password="motdepasse-long-12",
         first_name="Nadia",
         last_name="Roche",
@@ -280,7 +280,7 @@ class TestRenduDuTableauDeBord:
     @pytest.fixture
     def administrateur(self, db):
         return User.objects.create_user(
-            username="admin_pil", email="ap@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+            username="admin_pil", email="ap@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
         )
 
     def test_les_montants_reels_apparaissent(self, client, administrateur, univers):

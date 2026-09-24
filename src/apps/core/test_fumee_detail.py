@@ -119,7 +119,7 @@ def univers(db, settings, tmp_path):
     for role in (ADMIN, SECRETARIAT, ENSEIGNANT, ETUDIANT):
         monde[role] = User.objects.create_user(
             username=f"detail_{role}",
-            email=f"detail_{role}@iteag.org",
+            email=f"detail_{role}@example.org",
             password="motdepasse-long-12",
             first_name="Test",
             last_name=role.capitalize(),
@@ -761,13 +761,13 @@ def test_un_tiers_du_meme_role_n_atteint_pas_le_bien_d_un_autre(client, univers)
     intrus = {
         ENSEIGNANT: User.objects.create_user(
             username="intrus_prof",
-            email="intrus_prof@iteag.org",
+            email="intrus_prof@example.org",
             password="motdepasse-long-12",
             role=ENSEIGNANT,
         ),
         ETUDIANT: User.objects.create_user(
             username="intrus_etu",
-            email="intrus_etu@iteag.org",
+            email="intrus_etu@example.org",
             password="motdepasse-long-12",
             role=ETUDIANT,
         ),

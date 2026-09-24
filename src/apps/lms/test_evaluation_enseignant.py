@@ -35,7 +35,7 @@ from apps.lms.models import Evaluation
 @pytest.fixture
 def professeur(db):
     utilisateur = User.objects.create_user(
-        username="prof_eval", email="pe@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_eval", email="pe@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(user=utilisateur, nom="Nestor", prenom="Alix", slug="alix-nestor")
 
@@ -67,7 +67,7 @@ def etudiant(db, cours_session):
     parcours = Parcours.objects.first()
     promotion = Promotion.objects.create(nom="Promo eval", parcours=parcours, annee_debut=2025, annee_fin=2028)
     utilisateur = User.objects.create_user(
-        username="etu_eval", email="ee@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+        username="etu_eval", email="ee@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
     )
     profil = ProfilEtudiant.objects.create(
         utilisateur=utilisateur,
@@ -278,7 +278,7 @@ class TestNotation:
 
     def test_un_enseignant_ne_note_pas_le_cours_d_un_autre(self, client, db, evaluation):
         intrus_utilisateur = User.objects.create_user(
-            username="autre_prof", email="ap@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="autre_prof", email="ap@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
         )
         Professeur.objects.create(user=intrus_utilisateur, nom="Autre", prenom="Prof", slug="autre-prof")
 
@@ -308,7 +308,7 @@ class TestConfidentialiteDesCopies:
     def test_un_enseignant_etranger_ne_telecharge_pas_la_copie(self, client, db, evaluation):
         """Le contrôle porte sur la copie, pas seulement sur la page qui y mène."""
         intrus_utilisateur = User.objects.create_user(
-            username="curieux", email="c@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="curieux", email="c@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
         )
         Professeur.objects.create(user=intrus_utilisateur, nom="Curieux", prenom="Jean", slug="jean-curieux")
         evaluation.fichier_soumis.save("devoir.pdf", copie(), save=True)

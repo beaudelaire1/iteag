@@ -21,7 +21,7 @@ LIEN_YOUTUBE = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_video", email="pv@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_video", email="pv@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-video", user=compte)
     return compte
@@ -94,7 +94,7 @@ def test_un_lien_invalide_est_refuse(client, enseignant, video):
 def test_on_ne_modifie_pas_la_video_d_un_collegue(client, db, video):
     """Le déposant fait autorité : un identifiant deviné ne suffit pas."""
     intrus = User.objects.create_user(
-        username="intrus_video", email="iv@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="intrus_video", email="iv@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     Professeur.objects.create(nom="Intrus", prenom="Prof", slug="intrus-video", user=intrus)
 

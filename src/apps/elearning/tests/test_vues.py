@@ -245,7 +245,7 @@ class TestAttestations:
         from apps.elearning.models import AttestationModule
 
         attestation = AttestationModule.objects.create(inscription=acces)
-        intrus = User.objects.create_user(username="intrus", email="i@iteag.org", password="motdepasse-long-12")
+        intrus = User.objects.create_user(username="intrus", email="i@example.org", password="motdepasse-long-12")
         client.force_login(intrus)
         assert (
             client.get(reverse("elearning:attestation_telecharger", kwargs={"pk": attestation.pk})).status_code == 404

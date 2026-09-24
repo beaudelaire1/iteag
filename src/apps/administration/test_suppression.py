@@ -33,7 +33,7 @@ from apps.formations.models import Cours, Discipline, Parcours, Professeur
 @pytest.fixture
 def administrateur(db):
     return User.objects.create_user(
-        username="admin_supp", email="as@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+        username="admin_supp", email="as@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
     )
 
 
@@ -45,7 +45,7 @@ def univers(db):
     promotion = Promotion.objects.create(nom="Promo supp", parcours=parcours, annee_debut=2027, annee_fin=2033)
     discipline = Discipline.objects.create(nom="Patrologie", slug="patrologie-supp")
     utilisateur_prof = User.objects.create_user(
-        username="prof_supp", email="ps@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_supp", email="ps@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(user=utilisateur_prof, nom="Marc", prenom="Jean", slug="jean-marc-supp")
     cours = Cours.objects.create(titre="Les conciles", slug="les-conciles", discipline=discipline)
@@ -58,7 +58,7 @@ def univers(db):
     )
     utilisateur = User.objects.create_user(
         username="etu_supp",
-        email="es@iteag.org",
+        email="es@example.org",
         password="motdepasse-long-12",
         first_name="Claire",
         last_name="Mathieu",
@@ -118,7 +118,7 @@ class TestSuppressionDUnCompte:
         deux administrateurs, la règle du compte propre suffit déjà.
         """
         superutilisateur = User.objects.create_superuser(
-            username="root_supp", email="rs@iteag.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
+            username="root_supp", email="rs@example.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
         )
         client.force_login(superutilisateur)
         supprimer(client, "administration:user_delete", administrateur)
@@ -127,7 +127,7 @@ class TestSuppressionDUnCompte:
     def test_un_administrateur_sur_deux_reste_supprimable(self, client, administrateur, db):
         """La protection vise la dernière porte d'entrée, pas toute suppression."""
         second = User.objects.create_user(
-            username="admin_2", email="a2@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+            username="admin_2", email="a2@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
         )
         client.force_login(administrateur)
         supprimer(client, "administration:user_delete", second)
@@ -136,7 +136,7 @@ class TestSuppressionDUnCompte:
     def test_un_compte_sans_attache_se_supprime(self, client, administrateur, db):
         """La protection ne doit pas empêcher le geste légitime."""
         jetable = User.objects.create_user(
-            username="jetable", email="j@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="jetable", email="j@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         client.force_login(administrateur)
         supprimer(client, "administration:user_delete", jetable)
@@ -218,7 +218,7 @@ class TestInventaireDesPertes:
 
     def test_l_objet_lui_meme_n_est_pas_un_dommage_collateral(self, db):
         vierge = User.objects.create_user(
-            username="vierge", email="v@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="vierge", email="v@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         assert inventaire_des_pertes(vierge) == []
 
@@ -271,7 +271,7 @@ class TestLeSecretariatSupprimeAussi:
     )
     def test_le_secretariat_atteint_l_ecran_de_confirmation(self, client, univers, nom_route, cle, db):
         secretaire = User.objects.create_user(
-            username="sec_supp", email="ss@iteag.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
+            username="sec_supp", email="ss@example.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
         )
         client.force_login(secretaire)
         assert client.get(reverse(nom_route, args=[univers[cle].pk])).status_code == 200

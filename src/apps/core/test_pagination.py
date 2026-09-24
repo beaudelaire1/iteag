@@ -85,7 +85,7 @@ class TestLesFiltresSurviventAuChangementDePage:
     @pytest.fixture
     def administrateur(self, db):
         return User.objects.create_user(
-            username="admin_pag", email="apg@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+            username="admin_pag", email="apg@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
         )
 
     @pytest.fixture
@@ -97,7 +97,7 @@ class TestLesFiltresSurviventAuChangementDePage:
         for rang in range(25):
             utilisateur = User.objects.create_user(
                 username=f"etu_pag_{rang}",
-                email=f"ep{rang}@iteag.org",
+                email=f"ep{rang}@example.org",
                 password="motdepasse-long-12",
                 first_name="Martin",
                 last_name=f"Nom{rang}",

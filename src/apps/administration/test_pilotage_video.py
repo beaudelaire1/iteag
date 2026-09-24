@@ -15,7 +15,7 @@ from apps.formations.models import Parcours
 def secretaire(db):
     return User.objects.create_user(
         username="sec_video",
-        email="sec_video@iteag.org",
+        email="sec_video@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
@@ -39,7 +39,7 @@ def etudiants(db, parcours, promotion):
     for rang in range(3):
         utilisateur = User.objects.create_user(
             username=f"etu{rang}",
-            email=f"etu{rang}@iteag.org",
+            email=f"etu{rang}@example.org",
             password="motdepasse-long-12",
             first_name=f"Prénom{rang}",
             last_name=f"Nom{rang}",

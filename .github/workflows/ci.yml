@@ -130,7 +130,7 @@ jobs:
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
       DEFAULT_FROM_EMAIL: secretariat.iteag@gmail.com
-      SERVER_EMAIL: errors@iteag.org
+      SERVER_EMAIL: contact.iteag@gmail.com
       EMAIL_HOST: smtp.example.invalid
       EMAIL_PORT: "587"
       EMAIL_HOST_USER: ci-user

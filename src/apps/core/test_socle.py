@@ -21,7 +21,7 @@ from apps.core.services.emails import envoyer_email
 @pytest.fixture
 def etudiant(db):
     return User.objects.create_user(
-        username="etu", email="etu@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+        username="etu", email="etu@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
     )
 
 
@@ -80,7 +80,7 @@ class TestServiceNotifications:
         assert service_notifications.compter_non_lues(etudiant) == 0
 
     def test_notifications_d_un_autre_ne_sont_pas_comptees(self, etudiant, db):
-        autre = User.objects.create_user(username="autre", email="a@iteag.org", password="motdepasse-long-12")
+        autre = User.objects.create_user(username="autre", email="a@example.org", password="motdepasse-long-12")
         service_notifications.notifier(autre, "Pour l'autre")
         assert service_notifications.compter_non_lues(etudiant) == 0
 
@@ -98,7 +98,7 @@ class TestVuesNotifications:
         assert "Ma notification à moi" in contenu
 
     def test_on_ne_peut_pas_lire_la_notification_d_un_autre(self, client, etudiant, db):
-        autre = User.objects.create_user(username="autre2", email="a2@iteag.org", password="motdepasse-long-12")
+        autre = User.objects.create_user(username="autre2", email="a2@example.org", password="motdepasse-long-12")
         notification = service_notifications.notifier(autre, "Confidentiel")
         client.force_login(etudiant)
         reponse = client.post(reverse("core:notification_lue", kwargs={"pk": notification.pk}))
@@ -167,11 +167,11 @@ class TestJournalAudit:
 @pytest.mark.django_db
 class TestJournalisationConnexion:
     def test_une_connexion_reussie_est_tracee(self, client, etudiant):
-        client.post(reverse("accounts:login"), {"username": "etu@iteag.org", "password": "motdepasse-long-12"})
+        client.post(reverse("accounts:login"), {"username": "etu@example.org", "password": "motdepasse-long-12"})
         assert JournalAudit.objects.filter(action="connexion", utilisateur=etudiant).exists()
 
     def test_un_echec_est_trace(self, client, etudiant):
-        client.post(reverse("accounts:login"), {"username": "etu@iteag.org", "password": "mauvais"})
+        client.post(reverse("accounts:login"), {"username": "etu@example.org", "password": "mauvais"})
         assert JournalAudit.objects.filter(action="connexion_echec").exists()
 
 

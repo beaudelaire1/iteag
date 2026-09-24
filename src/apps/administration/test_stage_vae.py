@@ -29,7 +29,7 @@ def parcours(db):
 @pytest.fixture
 def admin(db):
     return User.objects.create_user(
-        username="admin_sv", email="admin_sv@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+        username="admin_sv", email="admin_sv@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
     )
 
 
@@ -37,7 +37,7 @@ def admin(db):
 def secretaire(db):
     return User.objects.create_user(
         username="secretaire_sv",
-        email="secretaire_sv@iteag.org",
+        email="secretaire_sv@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
@@ -47,7 +47,7 @@ def secretaire(db):
 def etudiant(db, parcours):
     utilisateur = User.objects.create_user(
         username="etu_sv",
-        email="etu_sv@iteag.org",
+        email="etu_sv@example.org",
         password="motdepasse-long-12",
         first_name="Marie",
         last_name="Céleste",

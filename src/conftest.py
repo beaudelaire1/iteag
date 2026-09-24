@@ -32,7 +32,7 @@ def request_factory():
 def user(db):
     return User.objects.create_user(
         username="testuser",
-        email="test@iteag.org",
+        email="test@example.org",
         password="testpass123!",
         first_name="Test",
         last_name="User",
@@ -43,6 +43,6 @@ def user(db):
 def admin_user(db):
     return User.objects.create_superuser(
         username="admin",
-        email="admin@iteag.org",
+        email="admin@example.org",
         password="adminpass123!",
     )

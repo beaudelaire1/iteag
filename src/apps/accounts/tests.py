@@ -8,14 +8,14 @@ class TestUserModel:
     def test_create_user(self):
         user = User.objects.create_user(
             username="jean",
-            email="jean@iteag.org",
+            email="jean@example.org",
             password="pass123!",
             first_name="Jean",
             last_name="Dupont",
             role="etudiant",
         )
         assert user.pk is not None
-        assert user.email == "jean@iteag.org"
+        assert user.email == "jean@example.org"
         assert user.role == "etudiant"
         assert user.is_etudiant
         assert not user.is_admin
@@ -23,7 +23,7 @@ class TestUserModel:
     def test_create_superuser(self):
         admin = User.objects.create_superuser(
             username="superadmin",
-            email="superadmin@iteag.org",
+            email="superadmin@example.org",
             password="admin123!",
         )
         assert admin.is_superuser
@@ -36,7 +36,7 @@ class TestUserModel:
     def test_default_role(self):
         user = User.objects.create_user(
             username="default",
-            email="default@iteag.org",
+            email="default@example.org",
             password="pass123!",
         )
         assert user.role == "etudiant"

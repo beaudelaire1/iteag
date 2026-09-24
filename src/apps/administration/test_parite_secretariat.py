@@ -38,7 +38,7 @@ RESERVES = [
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_barre", email="sb@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_barre", email="sb@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 

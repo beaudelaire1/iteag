@@ -33,7 +33,7 @@ MP4 = b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" + b"\x00" * 64
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_depot", email="pd@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_depot", email="pd@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     Professeur.objects.create(nom="Labeth", prenom="Ruth", slug="labeth-depot", user=compte)
     return compte

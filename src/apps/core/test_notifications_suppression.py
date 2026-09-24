@@ -20,14 +20,14 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def etudiant(db):
     return User.objects.create_user(
-        username="jdupont", email="jdupont@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="jdupont", email="jdupont@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
 
 
 @pytest.fixture
 def autre(db):
     return User.objects.create_user(
-        username="autre", email="autre@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="autre", email="autre@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
 
 

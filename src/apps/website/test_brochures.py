@@ -69,14 +69,14 @@ def _fichier_jpg(nom="affiche.jpg") -> SimpleUploadedFile:
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_brochure", email="sb@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_brochure", email="sb@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
 @pytest.fixture
 def etudiant(db):
     return User.objects.create_user(
-        username="etu_brochure", email="eb@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etu_brochure", email="eb@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
 
 

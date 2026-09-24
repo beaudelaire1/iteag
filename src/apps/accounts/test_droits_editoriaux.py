@@ -18,7 +18,7 @@ MOT_DE_PASSE = "motdepasse-long-12"
 
 
 def _compte(role, nom):
-    return User.objects.create_user(username=nom, email=f"{nom}@iteag.org", password=MOT_DE_PASSE, role=role)
+    return User.objects.create_user(username=nom, email=f"{nom}@example.org", password=MOT_DE_PASSE, role=role)
 
 
 def _dans_le_groupe(compte) -> bool:

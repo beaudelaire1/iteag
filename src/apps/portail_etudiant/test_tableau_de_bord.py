@@ -28,7 +28,7 @@ def etudiant(db):
     promotion = Promotion.objects.create(nom="Promo TDB", parcours=parcours, annee_debut=2026, annee_fin=2032)
     utilisateur = User.objects.create_user(
         username="etu_tdb",
-        email="etu_tdb@iteag.org",
+        email="etu_tdb@example.org",
         password="motdepasse-long-12",
         first_name="Judith",
         last_name="Alexis",
@@ -47,7 +47,7 @@ def etudiant(db):
 def module(db):
     discipline = Discipline.objects.create(nom="Missiologie", slug="missiologie-tdb")
     utilisateur = User.objects.create_user(
-        username="prof_tdb", email="prof_tdb@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_tdb", email="prof_tdb@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(user=utilisateur, nom="Robert", prenom="Léa", slug="lea-robert")
     return ModuleFormation.objects.create(

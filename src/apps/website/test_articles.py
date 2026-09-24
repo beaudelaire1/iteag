@@ -41,7 +41,7 @@ def _png_minimal() -> bytes:
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_art", email="pa@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_art", email="pa@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-art", user=compte)
 
@@ -50,14 +50,14 @@ def enseignant(db):
 def relecteur(db):
     """La direction, et elle seule : voir « TestPerimetreDeLaRelecture »."""
     return User.objects.create_user(
-        username="dir_art", email="da@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+        username="dir_art", email="da@example.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
     )
 
 
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_art", email="sa@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_art", email="sa@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
@@ -65,7 +65,7 @@ def secretaire(db):
 def etudiant(db):
     return User.objects.create_user(
         username="etu_art",
-        email="ea@iteag.org",
+        email="ea@example.org",
         password=MOT_DE_PASSE,
         first_name="Maya",
         last_name="Jean",
@@ -316,7 +316,7 @@ class TestEcransEnseignant:
 
     def test_on_ne_modifie_pas_l_article_d_un_collegue(self, client, db, article):
         autre = User.objects.create_user(
-            username="autre_prof_art", email="apa@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+            username="autre_prof_art", email="apa@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
         )
         Professeur.objects.create(nom="Autre", prenom="Prof", slug="autre-art", user=autre)
 
@@ -367,7 +367,7 @@ class TestEcransEnseignant:
 
     def test_on_ne_supprime_pas_l_article_d_un_collegue(self, client, db, article):
         autre = User.objects.create_user(
-            username="voleur_prof", email="vp@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+            username="voleur_prof", email="vp@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
         )
         Professeur.objects.create(nom="Voleur", prenom="Prof", slug="voleur-art", user=autre)
 

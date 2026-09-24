@@ -34,7 +34,7 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_tab", email="st@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_tab", email="st@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
@@ -404,10 +404,11 @@ class TestMiseAJourSansDoublon:
         _, parcours, promotion = referentiel
         mail.outbox.clear()
         contenu = _csv(
-            ["nom", "prenom", "email", "parcours", "promotion"],
+            ["nom", "prenom", "email", "parcours", "promotion", "statut"],
             [
-                ["Marceline", "Josiane", "josiane.rollback@example.org", parcours.nom, promotion.nom],
-                ["Erreur", "Etudiant", "erreur.rollback@example.org", "Parcours inexistant", promotion.nom],
+                ["Marceline", "Josiane", "josiane.rollback@example.org", parcours.nom, promotion.nom, ""],
+                # Un parcours inconnu est créé à la volée : seul un statut invalide bloque encore la ligne.
+                ["Erreur", "Etudiant", "erreur.rollback@example.org", parcours.nom, promotion.nom, "statut-inconnu"],
             ],
         )
 
@@ -553,7 +554,7 @@ class TestEcrans:
 
     def test_un_etudiant_n_accede_ni_a_l_export_ni_a_l_import(self, client, db):
         intrus = User.objects.create_user(
-            username="intrus_tab", email="it@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+            username="intrus_tab", email="it@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
         )
         client.force_login(intrus)
 

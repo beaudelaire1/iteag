@@ -42,7 +42,7 @@ def _bunny(settings):
 @pytest.fixture
 def professeur(db):
     utilisateur = User.objects.create_user(
-        username="prof_bunny", email="pb@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_bunny", email="pb@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(user=utilisateur, nom="Alcide", prenom="Paul", slug="paul-alcide")
 
@@ -97,7 +97,7 @@ def etudiant(db):
     )
     promotion = Promotion.objects.create(nom="Promo bunny", parcours=parcours, annee_debut=2027, annee_fin=2033)
     utilisateur = User.objects.create_user(
-        username="etu_bunny", email="eb@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+        username="etu_bunny", email="eb@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
     )
     return ProfilEtudiant.objects.create(
         utilisateur=utilisateur,

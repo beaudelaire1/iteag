@@ -44,7 +44,7 @@ def session_courante(db):
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_liste", email="pl@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_liste", email="pl@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-liste", user=compte)
 
@@ -64,7 +64,7 @@ def etudiant(db):
     parcours = Parcours.objects.create(nom="Bachelor", slug="bach-liste", type_parcours=Parcours.TypeParcours.LIBRE)
     promotion = Promotion.objects.create(nom="Promo liste", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
-        username="etu_liste", email="el@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etu_liste", email="el@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     return ProfilEtudiant.objects.create(
         utilisateur=compte, parcours=parcours, promotion=promotion, numero_etudiant="ETU2026801"
@@ -86,7 +86,7 @@ def test_seuls_les_cours_de_cet_enseignant_paraissent(client, enseignant, discip
     """La scolarité complète relève du secrétariat, pas de cet écran."""
     le_mien = _cours(discipline, session_courante, enseignant, "Herméneutique", "herm-mien")
     autre_compte = User.objects.create_user(
-        username="autre_prof", email="ap@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="autre_prof", email="ap@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     autre_prof = Professeur.objects.create(nom="Autre", prenom="Prof", slug="autre-liste", user=autre_compte)
     celui_d_un_autre = _cours(discipline, session_courante, autre_prof, "Patristique", "patristique-liste")

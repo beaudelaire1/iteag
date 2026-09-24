@@ -26,7 +26,7 @@ from apps.core.services.notifications import notifier
 def etudiant(db):
     return User.objects.create_user(
         username="jdupont",
-        email="jdupont@iteag.org",
+        email="jdupont@example.org",
         password="motdepasse-long-12",
         first_name="Jean",
         last_name="Dupont",
@@ -50,7 +50,7 @@ class TestLesInitiales:
         """Une saisie en minuscules ne doit pas descendre dans la pastille."""
         utilisateur = User.objects.create_user(
             username="mnoel",
-            email="mnoel@iteag.org",
+            email="mnoel@example.org",
             password="motdepasse-long-12",
             first_name="marie",
             last_name="noël",

@@ -27,7 +27,7 @@ from apps.formations.models import Professeur
 def autre_enseignant(db):
     utilisateur = User.objects.create_user(
         username="autreprof",
-        email="autreprof@iteag.org",
+        email="autreprof@example.org",
         password="motdepasse-long-12",
         role=User.Role.ENSEIGNANT,
     )
@@ -328,7 +328,7 @@ class TestPublicationControlee:
     def test_un_module_complet_se_publie(self, client, enseignant, module, lecon, acces):
         autre_etudiant = User.objects.create_user(
             username="etudiant_sans_acces_module",
-            email="autre-etudiant@iteag.org",
+            email="autre-etudiant@example.org",
             password="motdepasse-long-12",
             role=User.Role.ETUDIANT,
         )

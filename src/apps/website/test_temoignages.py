@@ -37,7 +37,7 @@ def promotion(parcours):
 def etudiant(parcours, promotion):
     utilisateur = User.objects.create_user(
         username="etu_tem",
-        email="etu-tem@iteag.org",
+        email="etu-tem@example.org",
         password=MOT_DE_PASSE,
         role=User.Role.ETUDIANT,
         first_name="Maya",
@@ -56,7 +56,7 @@ def etudiant(parcours, promotion):
 def admin(db):
     return User.objects.create_user(
         username="dir_tem",
-        email="dir-tem@iteag.org",
+        email="dir-tem@example.org",
         password=MOT_DE_PASSE,
         role=User.Role.ADMIN,
     )
@@ -66,7 +66,7 @@ def admin(db):
 def secretaire(db):
     return User.objects.create_user(
         username="sec_tem",
-        email="sec-tem@iteag.org",
+        email="sec-tem@example.org",
         password=MOT_DE_PASSE,
         role=User.Role.SECRETARIAT,
     )

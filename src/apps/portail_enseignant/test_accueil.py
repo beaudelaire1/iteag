@@ -23,7 +23,7 @@ from apps.lms.models import Evaluation
 def enseignant(db):
     utilisateur = User.objects.create_user(
         username="prof_accueil",
-        email="prof_accueil@iteag.org",
+        email="prof_accueil@example.org",
         password="motdepasse-long-12",
         first_name="Emmanuel",
         last_name="Dorival",
@@ -85,7 +85,7 @@ class TestAccueilUnifie:
             nom="Promo accueil", parcours=referentiel["parcours"], annee_debut=2027, annee_fin=2033
         )
         utilisateur = User.objects.create_user(
-            username="etu_acc", email="etu_acc@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="etu_acc", email="etu_acc@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         profil = ProfilEtudiant.objects.create(
             utilisateur=utilisateur,
@@ -114,7 +114,7 @@ class TestAccueilUnifie:
             nom="Promo vidéo", parcours=referentiel["parcours"], annee_debut=2027, annee_fin=2033
         )
         utilisateur = User.objects.create_user(
-            username="etu_vid", email="etu_vid@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="etu_vid", email="etu_vid@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         profil = ProfilEtudiant.objects.create(
             utilisateur=utilisateur,
@@ -149,7 +149,7 @@ class TestAccueilUnifie:
         """
         utilisateur = User.objects.create_user(
             username="prof_sans_fiche_acc",
-            email="psfa@iteag.org",
+            email="psfa@example.org",
             password="motdepasse-long-12",
             role=User.Role.ENSEIGNANT,
         )
@@ -163,7 +163,7 @@ class TestAccueilUnifie:
             nom="Promo refus", parcours=referentiel["parcours"], annee_debut=2027, annee_fin=2033
         )
         utilisateur = User.objects.create_user(
-            username="etu_refus", email="er@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="etu_refus", email="er@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         ProfilEtudiant.objects.create(
             utilisateur=utilisateur,
@@ -177,7 +177,7 @@ class TestAccueilUnifie:
     def test_l_enseignant_ne_voit_pas_le_contenu_d_un_confrere(self, client, enseignant, referentiel):
         """La restriction de propriété vaut aussi pour les compteurs d'accueil."""
         autre_utilisateur = User.objects.create_user(
-            username="autre_prof_acc", email="apa@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="autre_prof_acc", email="apa@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
         )
         autre = Professeur.objects.create(user=autre_utilisateur, nom="Autre", prenom="Prof", slug="autre-prof-acc")
         ModuleFormation.objects.create(

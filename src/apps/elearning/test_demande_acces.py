@@ -39,7 +39,7 @@ def etudiant(db, parcours):
     promotion = Promotion.objects.create(nom="Promo demande", parcours=parcours, annee_debut=2027, annee_fin=2033)
     utilisateur = User.objects.create_user(
         username="etu_demande",
-        email="etu_demande@iteag.org",
+        email="etu_demande@example.org",
         password="motdepasse-long-12",
         first_name="Rose",
         last_name="Delmas",
@@ -58,7 +58,7 @@ def etudiant(db, parcours):
 def module(db):
     discipline = Discipline.objects.create(nom="Patristique", slug="patristique-dem")
     utilisateur = User.objects.create_user(
-        username="prof_dem", email="prof_dem@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_dem", email="prof_dem@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(user=utilisateur, nom="Sylvain", prenom="Marc", slug="marc-sylvain")
     return ModuleFormation.objects.create(
@@ -83,7 +83,7 @@ def lecon(db, module):
 def secretaire(db):
     return User.objects.create_user(
         username="secretaire_dem",
-        email="sec_dem@iteag.org",
+        email="sec_dem@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
@@ -263,7 +263,7 @@ class TestDecisionDuSecretariat:
     def test_les_demandes_remontent_au_tableau_de_bord(self, client, etudiant, module, db):
         octroi.demander(etudiant, module)
         administrateur = User.objects.create_user(
-            username="admin_dem", email="ad@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+            username="admin_dem", email="ad@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
         )
         client.force_login(administrateur)
         assert client.get(reverse("administration:dashboard")).context["demandes_acces_video"] == 1

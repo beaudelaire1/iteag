@@ -32,7 +32,7 @@ def discipline(db):
 def utilisateur_etudiant(db):
     return User.objects.create_user(
         username="marie",
-        email="marie@iteag.org",
+        email="marie@example.org",
         password="motdepasse-long-12",
         first_name="Marie",
         last_name="Durand",
@@ -55,7 +55,7 @@ def profil(db, utilisateur_etudiant, parcours, promotion):
 def enseignant(db):
     utilisateur = User.objects.create_user(
         username="prof",
-        email="prof@iteag.org",
+        email="prof@example.org",
         password="motdepasse-long-12",
         role=User.Role.ENSEIGNANT,
     )
@@ -66,7 +66,7 @@ def enseignant(db):
 def secretaire(db):
     return User.objects.create_user(
         username="secretaire",
-        email="secretaire@iteag.org",
+        email="secretaire@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )

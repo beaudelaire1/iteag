@@ -35,7 +35,7 @@ def secretaire(db, tmp_path, settings):
     settings.MEDIA_ROOT = tmp_path
     return User.objects.create_user(
         username="secretaire_signature",
-        email="secretaire.signature@iteag.org",
+        email="secretaire.signature@example.org",
         password="motdepasse-long-12",
         first_name="Jeanne",
         last_name="Bertrand",
@@ -52,7 +52,7 @@ class TestUneSignatureAbsenteResteUneDegradationAcceptee:
     def test_utilisateur_sans_signature(self):
         compte = User.objects.create_user(
             username="sans_signature",
-            email="sans.signature@iteag.org",
+            email="sans.signature@example.org",
             password="motdepasse-long-12",
             role=User.Role.SECRETARIAT,
         )
@@ -105,7 +105,7 @@ class TestLaGenerationEchoueAuLieuDeLivrerUnePieceNonSignee:
 
         etudiant = User.objects.create_user(
             username="etudiant_signature",
-            email="etudiant.signature@iteag.org",
+            email="etudiant.signature@example.org",
             password="motdepasse-long-12",
             role=User.Role.ETUDIANT,
         )

@@ -19,7 +19,7 @@ from apps.formations.models import Cours, Discipline, Parcours
 def secretaire(db):
     return User.objects.create_user(
         username="secretaire_form",
-        email="secretaire_form@iteag.org",
+        email="secretaire_form@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
@@ -122,7 +122,7 @@ class TestLesParcoursSeTiennentDansLApplication:
         client.force_login(secretaire)
         promotion = Promotion.objects.create(nom="Promo form", parcours=parcours, annee_debut=2026, annee_fin=2032)
         utilisateur = User.objects.create_user(
-            username="etu_form", email="etu_form@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="etu_form", email="etu_form@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         ProfilEtudiant.objects.create(
             utilisateur=utilisateur, parcours=parcours, promotion=promotion, numero_etudiant="ETU-FORM-1"
@@ -146,7 +146,7 @@ class TestLesParcoursSeTiennentDansLApplication:
 @pytest.mark.django_db
 def test_un_etudiant_n_atteint_pas_le_referentiel(client, db, discipline):
     utilisateur = User.objects.create_user(
-        username="intrus_form", email="intrus_form@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+        username="intrus_form", email="intrus_form@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
     )
     client.force_login(utilisateur)
     for route, args in [

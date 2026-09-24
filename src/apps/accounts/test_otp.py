@@ -39,7 +39,7 @@ def secretaire(db):
 def etudiant(db):
     return User.objects.create_user(
         username="etudiant2fa",
-        email="etudiant2fa@iteag.org",
+        email="etudiant2fa@example.org",
         password="motdepasse-long-12",
         role=User.Role.ETUDIANT,
     )

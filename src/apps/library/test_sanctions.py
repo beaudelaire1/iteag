@@ -17,7 +17,7 @@ pytestmark = pytest.mark.django_db
 def lecteur():
     return User.objects.create_user(
         username="lecteur_sanction",
-        email="lecteur-sanction@iteag.org",
+        email="lecteur-sanction@example.org",
         password="motdepasse-long-12",
     )
 
@@ -83,7 +83,7 @@ def test_la_suspension_bloque_apres_restitution_puis_la_levee_retablit_le_droit(
 
     agent = User.objects.create_user(
         username="agent_bibliotheque",
-        email="agent@iteag.org",
+        email="agent@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )

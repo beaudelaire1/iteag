@@ -39,7 +39,7 @@ def promotion(db, parcours):
 def creer_etudiant(parcours, promotion, suffixe: str) -> ProfilEtudiant:
     utilisateur = User.objects.create_user(
         username=f"etu_doc{suffixe}",
-        email=f"etu_doc{suffixe}@iteag.org",
+        email=f"etu_doc{suffixe}@example.org",
         password="motdepasse-long-12",
         first_name="Anne",
         last_name=f"Martin{suffixe}",
@@ -69,7 +69,7 @@ def _cours_de_session(etudiant: ProfilEtudiant) -> CoursDeSession:
     discipline = Discipline.objects.create(nom="Exégèse", slug="exegese-doc")
     cours = Cours.objects.create(titre="Exégèse de Romains", slug="exegese-romains-doc", discipline=discipline)
     utilisateur = User.objects.create_user(
-        username="prof_doc", email="prof_doc@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_doc", email="prof_doc@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(user=utilisateur, nom="Duval", prenom="Anne", slug="anne-duval-doc")
     session = SessionAcademique.objects.create(
@@ -93,7 +93,7 @@ class TestListeDesDocuments:
 
     def test_un_compte_sans_profil_etudiant_est_refuse(self, client, db):
         utilisateur = User.objects.create_user(
-            username="sans_profil_doc", email="spd@iteag.org", password="motdepasse-long-12"
+            username="sans_profil_doc", email="spd@example.org", password="motdepasse-long-12"
         )
         client.force_login(utilisateur)
         assert client.get(reverse("documents:list")).status_code in (302, 403)

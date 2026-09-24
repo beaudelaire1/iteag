@@ -25,7 +25,7 @@ MOT_DE_PASSE = "Secret!123456"
 def secretaire(db):
     return User.objects.create_user(
         username="secretaire_test",
-        email="secretaire@iteag.org",
+        email="secretaire@example.org",
         password=MOT_DE_PASSE,
         first_name="Marie",
         last_name="DUPONT",
@@ -48,7 +48,7 @@ def session_et_cours(db):
     cours.parcours.add(parcours)
 
     prof_user = User.objects.create_user(
-        username="prof_test", email="prof@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_test", email="prof@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     prof = Professeur.objects.create(user=prof_user, nom="MARTIN", prenom="Paul", slug="paul-martin")
 
@@ -69,7 +69,7 @@ def session_et_cours(db):
     # Création d'un étudiant
     etudiant_user = User.objects.create_user(
         username="etudiant1",
-        email="etudiant1@iteag.org",
+        email="etudiant1@example.org",
         password=MOT_DE_PASSE,
         first_name="Jean",
         last_name="VALJEAN",

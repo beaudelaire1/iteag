@@ -50,21 +50,21 @@ def index_actualites(db):
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_parcours", email="sp@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_parcours", email="sp@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
 @pytest.fixture
 def directrice(db):
     return User.objects.create_user(
-        username="dir_parcours", email="dp@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+        username="dir_parcours", email="dp@example.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
     )
 
 
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_parcours", email="pp@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_parcours", email="pp@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-parcours", user=compte)
 
@@ -77,7 +77,7 @@ def etudiante(db, enseignant):
     test qui l'examine passerait à côté de son objet sans rien signaler.
     """
     compte = User.objects.create_user(
-        username="etu_parcours", email="ep@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etu_parcours", email="ep@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     parcours = Parcours.objects.create(
         nom="Licence", slug="licence-parcours", type_parcours=Parcours.TypeParcours.DIPLOMANT_ITEAG

@@ -24,7 +24,7 @@ MOT_DE_PASSE = "MotDePasseSolide!2026"
 def _compte(role=User.Role.ETUDIANT, username="titulaire", **extra):
     return User.objects.create_user(
         username=username,
-        email=f"{username}@iteag.org",
+        email=f"{username}@example.org",
         password=MOT_DE_PASSE,
         first_name="Jean",
         last_name="Dupont",
@@ -37,7 +37,7 @@ def _coordonnees(**champs):
     base = {
         "first_name": "Jean",
         "last_name": "Dupont",
-        "email": "titulaire@iteag.org",
+        "email": "titulaire@example.org",
         "phone": "",
         "adresse": "",
         "complement_adresse": "",
@@ -68,7 +68,7 @@ def test_le_changement_de_telephone_est_annonce(client, db, _boite_vide, django_
     assert "réinitialisez immédiatement votre mot de passe" in notification.message
 
     assert len(mail.outbox) == 1
-    assert mail.outbox[0].to == ["titulaire@iteag.org"]
+    assert mail.outbox[0].to == ["titulaire@example.org"]
     assert "Réinitialiser mon mot de passe" in mail.outbox[0].alternatives[0][0]
 
 
@@ -83,7 +83,7 @@ def test_le_changement_d_adresse_electronique_previent_aussi_l_ancienne(
         client.post(reverse("accounts:profil"), _coordonnees(email="pirate@ailleurs.test"))
 
     destinataires = {adresse for message in mail.outbox for adresse in message.to}
-    assert destinataires == {"titulaire@iteag.org", "pirate@ailleurs.test"}
+    assert destinataires == {"titulaire@example.org", "pirate@ailleurs.test"}
     # Un envoi par adresse : deux destinataires ne se découvrent pas l'un l'autre.
     assert all(len(message.to) == 1 for message in mail.outbox)
 

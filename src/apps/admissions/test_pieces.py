@@ -43,7 +43,7 @@ def dossier(db, parcours):
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_pieces", email="s@iteag.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
+        username="sec_pieces", email="s@example.org", password="motdepasse-long-12", role=User.Role.SECRETARIAT
     )
 
 

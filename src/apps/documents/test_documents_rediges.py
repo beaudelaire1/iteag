@@ -26,14 +26,14 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_doc", email="sd@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_doc", email="sd@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
 @pytest.fixture
 def directrice(db):
     return User.objects.create_user(
-        username="dir_doc", email="dd@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+        username="dir_doc", email="dd@example.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
     )
 
 
@@ -187,14 +187,14 @@ class TestPerimetre:
 
     def test_un_enseignant_n_y_accede_pas(self, client, db):
         prof = User.objects.create_user(
-            username="prof_doc", email="pd@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+            username="prof_doc", email="pd@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
         )
         client.force_login(prof)
         assert client.get(reverse("redaction:documents")).status_code in (302, 403)
 
     def test_un_etudiant_n_y_accede_pas(self, client, db):
         etudiant = User.objects.create_user(
-            username="etu_doc", email="ed@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+            username="etu_doc", email="ed@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
         )
         client.force_login(etudiant)
         assert client.get(reverse("redaction:documents")).status_code in (302, 403)

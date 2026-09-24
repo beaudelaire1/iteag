@@ -41,7 +41,7 @@ def promotion(db, parcours):
 def direction(db):
     return User.objects.create_user(
         username="direction_stats",
-        email="direction_stats@iteag.org",
+        email="direction_stats@example.org",
         password="motdepasse-long-12",
         role=User.Role.ADMIN,
     )
@@ -50,7 +50,7 @@ def direction(db):
 def _etudiant(parcours, promotion, rang, statut=ProfilEtudiant.StatutInscription.ACTIF):
     utilisateur = User.objects.create_user(
         username=f"etu_stats_{rang}",
-        email=f"etu_stats_{rang}@iteag.org",
+        email=f"etu_stats_{rang}@example.org",
         password="motdepasse-long-12",
         role=User.Role.ETUDIANT,
     )

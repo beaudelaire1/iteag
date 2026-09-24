@@ -43,7 +43,7 @@ def referentiel(db):
         date_fin="2027-07-10",
     )
     utilisateur = User.objects.create_user(
-        username="prof_cout", email="prof_cout@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_cout", email="prof_cout@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(user=utilisateur, nom="Coût", prenom="Prof", slug="prof-cout")
     return {
@@ -58,7 +58,7 @@ def referentiel(db):
 @pytest.fixture
 def admin(db):
     return User.objects.create_user(
-        username="admin_cout", email="admin_cout@iteag.org", password="motdepasse-long-12", role=User.Role.ADMIN
+        username="admin_cout", email="admin_cout@example.org", password="motdepasse-long-12", role=User.Role.ADMIN
     )
 
 
@@ -67,7 +67,7 @@ def creer_etudiants(referentiel, nombre: int, prefixe: str):
     for i in range(nombre):
         utilisateur = User.objects.create_user(
             username=f"{prefixe}{i}",
-            email=f"{prefixe}{i}@iteag.org",
+            email=f"{prefixe}{i}@example.org",
             password="motdepasse-long-12",
             first_name="Prénom",
             last_name=f"Nom{i}",
@@ -202,7 +202,7 @@ class TestAnnotationDesEcts:
     def test_un_etudiant_sans_credit_affiche_zero(self, client, admin, referentiel):
         """Sans crédit, la somme est nulle et non « None » — la page l'affiche."""
         utilisateur = User.objects.create_user(
-            username="sans_credit", email="sc@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+            username="sans_credit", email="sc@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
         )
         ProfilEtudiant.objects.create(
             utilisateur=utilisateur,

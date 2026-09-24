@@ -33,7 +33,7 @@ def parcours(db):
 @pytest.fixture
 def enseignant(db):
     utilisateur = User.objects.create_user(
-        username="prof_ects", email="prof_ects@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_ects", email="prof_ects@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(user=utilisateur, nom="Nathan", prenom="Ruth", slug="ruth-nathan")
 
@@ -56,7 +56,7 @@ def cours_session(db, enseignant):
 def etudiant(db, parcours, cours_session):
     utilisateur = User.objects.create_user(
         username="etu_ects",
-        email="etu_ects@iteag.org",
+        email="etu_ects@example.org",
         password="motdepasse-long-12",
         first_name="Sarah",
         last_name="Lubin",

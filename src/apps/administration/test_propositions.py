@@ -25,14 +25,14 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec", email="sec@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec", email="sec@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
 @pytest.fixture
 def compte_enseignant(db):
     return User.objects.create_user(
-        username="prof", email="prof@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof", email="prof@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
 
 
@@ -71,7 +71,7 @@ class TestProposition:
         assert reponse.status_code == 200
         contenu = reponse.content.decode()
         assert "Alain Nisus" in contenu
-        assert "prof@iteag.org" in contenu
+        assert "prof@example.org" in contenu
 
     def test_proposer_n_affecte_pas_encore_le_cours(self, client, secretaire, professeur, offre, titulaire):
         client.force_login(secretaire)

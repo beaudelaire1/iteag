@@ -115,7 +115,7 @@ def module_certifiant_termine(db):
     promotion = Promotion.objects.create(nom="Promotion d'essai", parcours=parcours, annee_debut=2026, annee_fin=2029)
     utilisateur = User.objects.create_user(
         username="apprenant",
-        email="apprenant@iteag.org",
+        email="apprenant@example.org",
         password="MotDePasse!2026",
         first_name="Léonie",
         last_name="Abaul",

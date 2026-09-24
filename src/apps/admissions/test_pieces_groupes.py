@@ -27,13 +27,13 @@ def univers_pieces_groupes(db):
     )
     secretaire = User.objects.create_user(
         username="secretariat_lot",
-        email="secretariat-lot@iteag.org",
+        email="secretariat-lot@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
     admin = User.objects.create_user(
         username="admin_lot",
-        email="admin-lot@iteag.org",
+        email="admin-lot@example.org",
         password="motdepasse-long-12",
         role=User.Role.ADMIN,
     )

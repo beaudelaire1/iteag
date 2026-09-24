@@ -64,7 +64,7 @@ def comptes(db, parcours):
     for role in (User.Role.ADMIN, User.Role.SECRETARIAT, User.Role.ENSEIGNANT, User.Role.ETUDIANT):
         faits[role] = User.objects.create_user(
             username=f"nav_{role}",
-            email=f"nav_{role}@iteag.org",
+            email=f"nav_{role}@example.org",
             password="motdepasse-long-12",
             first_name="Test",
             last_name=role.capitalize(),

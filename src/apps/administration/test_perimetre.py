@@ -49,7 +49,7 @@ PILOTAGE = [
 def secretaire(db):
     return User.objects.create_user(
         username="sec_perimetre",
-        email="sec@iteag.org",
+        email="sec@example.org",
         password="motdepasse-long-12",
         role=User.Role.SECRETARIAT,
     )
@@ -59,7 +59,7 @@ def secretaire(db):
 def directrice(db):
     return User.objects.create_user(
         username="dir_perimetre",
-        email="dir@iteag.org",
+        email="dir@example.org",
         password="motdepasse-long-12",
         role=User.Role.ADMIN,
     )
@@ -111,7 +111,7 @@ def test_le_secretariat_ne_se_hisse_pas_a_la_direction(client, secretaire):
             "username": "tentative",
             "first_name": "",
             "last_name": "",
-            "email": "tentative@iteag.org",
+            "email": "tentative@example.org",
             "phone": "",
             "role": User.Role.ADMIN,
             "is_active": "on",
@@ -152,7 +152,7 @@ def test_la_grille_tarifaire_se_modifie_au_secretariat(client, secretaire):
 @pytest.mark.django_db
 def test_un_enseignant_n_entre_pas_dans_le_back_office(client, db):
     enseignant = User.objects.create_user(
-        username="ens_perimetre", email="e@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="ens_perimetre", email="e@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     client.force_login(enseignant)
     for nom_url, _ in GESTION + PILOTAGE:

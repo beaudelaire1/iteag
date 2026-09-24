@@ -39,7 +39,7 @@ def ressource(db, lecon, enseignant):
 def autre_enseignant(db):
     utilisateur = User.objects.create_user(
         username="autreprof",
-        email="autreprof@iteag.org",
+        email="autreprof@example.org",
         password="motdepasse-long-12",
         role=User.Role.ENSEIGNANT,
     )

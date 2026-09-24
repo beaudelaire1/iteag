@@ -81,7 +81,7 @@ def session_academique(db):
 def etudiant_user(db):
     return User.objects.create_user(
         username="etudiant1",
-        email="etudiant@iteag.org",
+        email="etudiant@example.org",
         password="pass123!",
         first_name="Jean",
         last_name="Petit",
@@ -299,7 +299,7 @@ class TestTeacherPortalAccess:
     def test_teacher_access(self, client: Client, professeur):
         teacher_user = User.objects.create_user(
             username="enseignant1",
-            email="teach@iteag.org",
+            email="teach@example.org",
             password="pass!",
             role="enseignant",
         )
@@ -319,7 +319,7 @@ class TestTeacherPortalAccess:
     def test_courses_list(self, client: Client, professeur):
         teacher_user = User.objects.create_user(
             username="enseignant2",
-            email="teach2@iteag.org",
+            email="teach2@example.org",
             password="pass!",
             role="enseignant",
         )

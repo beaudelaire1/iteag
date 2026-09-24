@@ -37,7 +37,7 @@ def enrollment_context(db):
     utilisateur = User.objects.create_user(
         username="etudiant-demandes",
         password="motdepasse-solide-123",
-        email="etudiant-demandes@iteag.org",
+        email="etudiant-demandes@example.org",
         first_name="Anne",
         last_name="Durand",
         role=User.Role.ETUDIANT,

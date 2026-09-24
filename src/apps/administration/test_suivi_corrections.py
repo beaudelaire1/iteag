@@ -33,7 +33,7 @@ MOT_DE_PASSE = "motdepasse-long-12"
 @pytest.fixture
 def enseignant(db):
     compte = User.objects.create_user(
-        username="prof_corr", email="pc@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_corr", email="pc@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-corr", user=compte)
 
@@ -41,7 +41,7 @@ def enseignant(db):
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_corr", email="sc@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_corr", email="sc@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
@@ -64,7 +64,7 @@ def cours_session(db, enseignant):
 @pytest.fixture
 def etudiant(db, cours_session):
     compte = User.objects.create_user(
-        username="etu_corr", email="ec@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username="etu_corr", email="ec@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     return ProfilEtudiant.objects.create(utilisateur=compte, numero_etudiant="ETU-CORR-1")
 

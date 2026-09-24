@@ -48,7 +48,7 @@ def promotions(db, parcours):
 @pytest.fixture
 def offre(db):
     compte = User.objects.create_user(
-        username="prof_dest", email="pd@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="prof_dest", email="pd@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(nom="Nisus", prenom="Alain", slug="nisus-dest", user=compte)
     discipline = Discipline.objects.create(nom="Théologie", slug="theo-dest")
@@ -62,7 +62,7 @@ def offre(db):
 
 def _etudiant(parcours, promotion, suffixe, inscrit_a=None):
     compte = User.objects.create_user(
-        username=f"etu-{suffixe}", email=f"{suffixe}@iteag.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
+        username=f"etu-{suffixe}", email=f"{suffixe}@example.org", password=MOT_DE_PASSE, role=User.Role.ETUDIANT
     )
     profil = ProfilEtudiant.objects.create(
         utilisateur=compte, parcours=parcours, promotion=promotion, numero_etudiant=f"ETU2026{suffixe}"

@@ -45,7 +45,7 @@ def cours(db):
     discipline = Discipline.objects.create(nom="Théologie", slug="theologie")
     matiere = Cours.objects.create(titre="Herméneutique", slug="hermeneutique", discipline=discipline)
     compte = User.objects.create_user(
-        username="enseignant", email="ens@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="enseignant", email="ens@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     professeur = Professeur.objects.create(nom="Nisus", prenom="Alain", slug="alain-nisus", user=compte)
     session = SessionAcademique.objects.create(
@@ -60,7 +60,7 @@ def etudiant(db, cours):
     promotion = Promotion.objects.create(nom="Promotion 2026", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
         username="apprenante",
-        email="apprenante@iteag.org",
+        email="apprenante@example.org",
         password=MOT_DE_PASSE,
         first_name="Léonie",
         last_name="Abaul",
@@ -313,7 +313,7 @@ def test_l_enseignant_voit_ses_devoirs(client, cours, etudiant):
 def test_un_enseignant_n_ouvre_pas_le_devoir_d_un_confrere(client, cours, etudiant):
     devoir = _devoir(cours)
     autre_compte = User.objects.create_user(
-        username="confrere", email="confrere@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+        username="confrere", email="confrere@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
     )
     Professeur.objects.create(nom="Labeth", prenom="Ruth", slug="ruth-labeth", user=autre_compte)
     client.force_login(autre_compte)
@@ -331,7 +331,7 @@ def test_mes_etudiants_liste_les_inscrits_et_leurs_coordonnees(client, cours, et
     client.force_login(cours.enseignant.user)
     corps = client.get(reverse("lms:etudiants_list")).content.decode()
     assert "Léonie Abaul" in corps
-    assert "apprenante@iteag.org" in corps
+    assert "apprenante@example.org" in corps
 
 
 def test_le_depot_refuse_s_affiche_sans_404(client, cours, etudiant):

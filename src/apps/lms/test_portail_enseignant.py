@@ -31,7 +31,7 @@ def parcours(db):
 @pytest.fixture
 def enseignant(db):
     utilisateur = User.objects.create_user(
-        username="prof_lms", email="prof_lms@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_lms", email="prof_lms@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(user=utilisateur, nom="Guillet", prenom="Stéphane", slug="stephane-guillet")
 
@@ -39,7 +39,7 @@ def enseignant(db):
 @pytest.fixture
 def autre_enseignant(db):
     utilisateur = User.objects.create_user(
-        username="prof_lms2", email="prof_lms2@iteag.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+        username="prof_lms2", email="prof_lms2@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
     )
     return Professeur.objects.create(user=utilisateur, nom="Eugène", prenom="Cédric", slug="cedric-eugene")
 
@@ -61,7 +61,7 @@ def cours_session(db, discipline, enseignant):
 def etudiant_inscrit(db, parcours, cours_session):
     utilisateur = User.objects.create_user(
         username="etu_lms",
-        email="etu_lms@iteag.org",
+        email="etu_lms@example.org",
         password="motdepasse-long-12",
         first_name="Jean",
         last_name="Petit",
@@ -102,7 +102,7 @@ class TestPagesDuPortail:
         """Un compte enseignant sans fiche professeur doit voir une page vide, pas une erreur."""
         utilisateur = User.objects.create_user(
             username="prof_sans_fiche",
-            email="psf@iteag.org",
+            email="psf@example.org",
             password="motdepasse-long-12",
             role=User.Role.ENSEIGNANT,
         )

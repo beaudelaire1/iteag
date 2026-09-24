@@ -37,7 +37,7 @@ def dossier(parcours):
 def staff_user(db):
     return User.objects.create_user(
         username="staff",
-        email="staff@iteag.org",
+        email="staff@example.org",
         password="staffpass123!",
         role="admin",
         is_staff=True,

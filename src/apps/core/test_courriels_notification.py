@@ -28,7 +28,7 @@ pytestmark = pytest.mark.django_db
 def etudiante(db):
     return User.objects.create_user(
         username="lea_courriel",
-        email="lea@iteag.org",
+        email="lea@example.org",
         password="motdepasse-long-12",
         first_name="Léa",
         last_name="Abaul",
@@ -59,7 +59,7 @@ def test_le_courriel_salue_le_destinataire_par_son_prenom(etudiante, django_capt
 def test_un_compte_sans_prenom_reste_salue_correctement(db, django_capture_on_commit_callbacks):
     """« Bonjour , » serait pire que pas de prénom du tout."""
     anonyme = User.objects.create_user(
-        username="sans_prenom", email="sp@iteag.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
+        username="sans_prenom", email="sp@example.org", password="motdepasse-long-12", role=User.Role.ETUDIANT
     )
     mail.outbox.clear()
     with django_capture_on_commit_callbacks(execute=True):

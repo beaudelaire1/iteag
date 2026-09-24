@@ -37,14 +37,14 @@ def index(db):
 @pytest.fixture
 def secretaire(db):
     return User.objects.create_user(
-        username="sec_actu", email="sa@iteag.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
+        username="sec_actu", email="sa@example.org", password=MOT_DE_PASSE, role=User.Role.SECRETARIAT
     )
 
 
 @pytest.fixture
 def directrice(db):
     return User.objects.create_user(
-        username="dir_actu", email="da@iteag.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
+        username="dir_actu", email="da@example.org", password=MOT_DE_PASSE, role=User.Role.ADMIN
     )
 
 
@@ -270,7 +270,7 @@ class TestPerimetre:
 
     def test_un_enseignant_n_y_accede_pas(self, client, db, index):
         prof = User.objects.create_user(
-            username="prof_actu", email="pa@iteag.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
+            username="prof_actu", email="pa@example.org", password=MOT_DE_PASSE, role=User.Role.ENSEIGNANT
         )
         client.force_login(prof)
         assert client.get(reverse("website:actualites_gestion")).status_code in (302, 403)

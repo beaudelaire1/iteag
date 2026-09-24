@@ -36,7 +36,7 @@ def dossier():
     promotion = Promotion.objects.create(nom="Promotion 2026", parcours=parcours, annee_debut=2026, annee_fin=2029)
     compte = User.objects.create_user(
         username="etudiante",
-        email="etudiante@iteag.org",
+        email="etudiante@example.org",
         password=MOT_DE_PASSE,
         first_name="Rosemonde",
         last_name="Lauriette",
@@ -74,7 +74,7 @@ def dossier():
 
 
 def _compte(role, username):
-    return User.objects.create_user(username=username, email=f"{username}@iteag.org", password=MOT_DE_PASSE, role=role)
+    return User.objects.create_user(username=username, email=f"{username}@example.org", password=MOT_DE_PASSE, role=role)
 
 
 def test_le_secretariat_lit_la_fiche(client, dossier):
@@ -85,7 +85,7 @@ def test_le_secretariat_lit_la_fiche(client, dossier):
     assert reponse.status_code == 200
     assert "Rosemonde Lauriette" in corps
     assert "ETU-FICHE-001" in corps
-    assert "etudiante@iteag.org" in corps
+    assert "etudiante@example.org" in corps
     assert "0690112233" in corps
     assert "8 impasse des Manguiers, 97110 Pointe-à-Pitre" in corps
     assert "Église Évangélique des Abymes" in corps

@@ -4,9 +4,9 @@ L'ordre de lecture de la page d'accueil.
 Les actualités se lisaient après l'équipe professorale. Or ce sont elles qui
 portent les annonces datées — l'ouverture d'une formation, un atelier, une
 rentrée : l'information la plus périssable du site arrivait donc en avant-
-dernier, derrière une section qui, elle, ne change presque jamais. La suite
-« ce que nous proposons → ce qui se passe maintenant → qui l'enseigne » répond
-aux questions dans l'ordre où le visiteur se les pose.
+dernier, derrière une section qui, elle, ne change presque jamais. Elles
+suivent désormais immédiatement la présentation : « qui nous sommes → ce qui
+se passe maintenant → ce que nous proposons → qui l'enseigne ».
 
 Ce test fige la suite : elle se casse d'un simple déplacement de bloc dans le
 gabarit, sans qu'aucune erreur ne le signale.
@@ -59,8 +59,8 @@ def test_la_suite_des_sections_va_de_l_offre_a_l_inscription(client, accueil_gar
     contenu = client.get(accueil_garni.url).content.decode()
     reperes = [
         "Qui sommes-nous",
-        "Nos formations",
         "Nos dernières nouvelles",
+        "Nos formations",
         "Notre équipe",
         "Prêt à vous former ?",
     ]

@@ -18,7 +18,7 @@ MOT_DE_PASSE = "MotDePasseSolide!2026"
 def _compte(role, username="titulaire", **extra):
     return User.objects.create_user(
         username=username,
-        email=f"{username}@iteag.org",
+        email=f"{username}@example.org",
         password=MOT_DE_PASSE,
         first_name="Jean",
         last_name="Dupont",
@@ -54,7 +54,7 @@ def test_coordonnees_enregistrees(client, db):
         {
             "first_name": "Jean-Marc",
             "last_name": "Dupont",
-            "email": "jm.dupont@iteag.org",
+            "email": "jm.dupont@example.org",
             "phone": "0690123456",
             "adresse": "12 rue des Flamboyants",
             "complement_adresse": "",
@@ -67,7 +67,7 @@ def test_coordonnees_enregistrees(client, db):
 
     utilisateur.refresh_from_db()
     assert utilisateur.first_name == "Jean-Marc"
-    assert utilisateur.email == "jm.dupont@iteag.org"
+    assert utilisateur.email == "jm.dupont@example.org"
     assert utilisateur.phone == "0690123456"
     assert utilisateur.adresse_postale == "12 rue des Flamboyants, 97139 Les Abymes"
 
@@ -83,7 +83,7 @@ def test_adresse_deja_prise_refusee(client, db):
         {
             "first_name": "Jean",
             "last_name": "Dupont",
-            "email": "autre@iteag.org",
+            "email": "autre@example.org",
             "phone": "",
             "adresse": "",
             "complement_adresse": "",
@@ -96,7 +96,7 @@ def test_adresse_deja_prise_refusee(client, db):
     assert "déjà utilisée" in reponse.content.decode()
 
     utilisateur.refresh_from_db()
-    assert utilisateur.email == "titulaire@iteag.org"
+    assert utilisateur.email == "titulaire@example.org"
 
 
 def test_le_role_n_est_pas_modifiable_depuis_le_profil(client, db):
@@ -109,7 +109,7 @@ def test_le_role_n_est_pas_modifiable_depuis_le_profil(client, db):
         {
             "first_name": "Jean",
             "last_name": "Dupont",
-            "email": "titulaire@iteag.org",
+            "email": "titulaire@example.org",
             "phone": "",
             "adresse": "",
             "complement_adresse": "",
@@ -197,7 +197,7 @@ def _coordonnees(**remplace):
     donnees = {
         "first_name": "Jean",
         "last_name": "Dupont",
-        "email": "titulaire@iteag.org",
+        "email": "titulaire@example.org",
         "phone": "",
         "adresse": "",
         "complement_adresse": "",

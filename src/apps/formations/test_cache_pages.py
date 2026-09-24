@@ -27,7 +27,7 @@ from apps.formations.models import Professeur
 def etudiante(db):
     return User.objects.create_user(
         username="cmartin",
-        email="cmartin@iteag.org",
+        email="cmartin@example.org",
         password="motdepasse-long-12",
         first_name="Claire",
         last_name="Martin",
