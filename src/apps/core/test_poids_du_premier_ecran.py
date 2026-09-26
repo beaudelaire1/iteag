@@ -30,18 +30,12 @@ def test_l_entree_du_heros_est_decrite_par_la_feuille_de_style():
     css = CSS_SOURCE.read_text(encoding="utf-8")
     depart = css.index("[data-motion-hero] .reveal {")
     bloc = css[depart : css.index("}", depart)]
-    assert "animation:" in bloc, (
-        "L'entrée du héros doit partir du premier rendu, pas d'une classe posée par un script."
-    )
+    assert "animation:" in bloc, "L'entrée du héros doit partir du premier rendu, pas d'une classe posée par un script."
 
 
 def test_le_script_global_ne_touche_plus_au_heros():
     js = JS_GLOBAL.read_text(encoding="utf-8")
-    lignes = [
-        ligne
-        for ligne in js.splitlines()
-        if "data-motion-hero" in ligne and not ligne.strip().startswith("//")
-    ]
+    lignes = [ligne for ligne in js.splitlines() if "data-motion-hero" in ligne and not ligne.strip().startswith("//")]
     assert not lignes, f"Le héros redevient tributaire du script : {lignes}"
 
 
@@ -59,9 +53,7 @@ def test_aucune_police_livree_ne_depasse_le_plafond():
     trop_lourdes = {
         fichier.name: fichier.stat().st_size for fichier in fichiers if fichier.stat().st_size > PLAFOND_OCTETS
     }
-    assert not trop_lourdes, (
-        f"Polices non réduites (relancer scripts/reduire_polices.py) : {trop_lourdes}"
-    )
+    assert not trop_lourdes, f"Polices non réduites (relancer scripts/reduire_polices.py) : {trop_lourdes}"
 
 
 def test_chaque_police_declare_la_plage_qu_elle_couvre():
@@ -75,4 +67,4 @@ def test_chaque_police_declare_la_plage_qu_elle_couvre():
     # Chaque fichier déclaré doit exister, et chaque fichier présent être déclaré.
     declares = set(re.findall(r"url\('([^']+)'\)", fonts_css))
     presents = {fichier.name for fichier in POLICES.glob("*.woff2")}
-    assert declares == presents, (declares ^ presents)
+    assert declares == presents, declares ^ presents

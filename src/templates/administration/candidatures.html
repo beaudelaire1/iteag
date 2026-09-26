@@ -21,43 +21,55 @@
 {% block portal_content %}
 
 {# ── Filtres par statut ── #}
-<div class="flex flex-wrap gap-2 mb-6">
+<nav class="flex flex-wrap gap-2 mb-6" aria-label="Filtrer par statut">
     <a href="{% url 'administration:candidatures' %}"
+       {% if not current_statut %}aria-current="page"{% endif %}
        class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors
-              {% if not current_statut %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200 hover:bg-warm-50{% endif %}">
-        Toutes <span class="ml-1 opacity-60">{{ total_candidatures|default:"0" }}</span>
+              {% if not current_statut %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-300 hover:bg-warm-50{% endif %}">
+        Toutes <span class="ml-1">({{ total_candidatures }})</span>
     </a>
-    {% for value, label in statut_choices %}
+    {% for value, label, nombre in filtres_statut %}
     <a href="{% url 'administration:candidatures' %}?statut={{ value }}"
+       {% if current_statut == value %}aria-current="page"{% endif %}
        class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors
-              {% if current_statut == value %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-200 hover:bg-warm-50{% endif %}">
-        {{ label }} <span class="ml-1 opacity-60">{{ counts|dictsort:value }}</span>
+              {% if current_statut == value %}bg-navy-700 text-white{% else %}bg-white text-warm-600 border border-warm-300 hover:bg-warm-50{% endif %}">
+        {{ label }} <span class="ml-1">({{ nombre }})</span>
     </a>
     {% endfor %}
-</div>
+</nav>
 
 {# ── Recherche ── #}
 <div class="mb-6">
-    <form method="get" class="flex gap-3">
+    <form method="get" class="flex flex-wrap gap-3">
         {% if current_statut %}<input type="hidden" name="statut" value="{{ current_statut }}">{% endif %}
         <label for="recherche-candidatures" class="sr-only">Rechercher une candidature</label>
         <input type="text" id="recherche-candidatures" name="q" value="{{ query }}"
-               placeholder="Rechercher un nom, prénom ou email…"
-               class="form-input flex-1 max-w-[24rem]">
+               placeholder="Nom, prénom ou courriel…"
+               class="form-input flex-1 min-w-[14rem] max-w-[24rem]">
         <button type="submit" class="btn-primary [padding:0.5rem_1.25rem]">Rechercher</button>
-        {% if query %}<a href="{% url 'administration:candidatures' %}{% if current_statut %}?statut={{ current_statut }}{% endif %}" class="btn-ghost self-center text-xs">Effacer</a>{% endif %}
+        {% if query %}<a href="{% url 'administration:candidatures' %}{% if current_statut %}?statut={{ current_statut }}{% endif %}" class="btn-ghost self-center text-xs">Effacer la recherche</a>{% endif %}
     </form>
 </div>
 
-{# ── Tableau et action groupée ── #}
-<form method="post" action="{% url 'administration:candidatures_bulk_status' %}">
+{% comment %}
+L'action groupée n'est proposée qu'en affichage compact.
+
+« Accepté », appliqué à une sélection, crée des comptes étudiants et envoie
+des courriels : un geste qu'on ne rattrape pas. En affichage confortable, chaque
+décision se prend depuis la fiche du candidat, où l'on voit ce que l'on décide.
+Là où elle reste proposée, aucun statut n'est présélectionné et l'envoi demande
+une confirmation.
+{% endcomment %}
+<form method="post" action="{% url 'administration:candidatures_bulk_status' %}"
+      data-confirmer="Appliquer ce statut à tous les dossiers cochés ? Les candidats concernés peuvent recevoir un courriel, et « Accepté » crée leur compte étudiant.">
     {% csrf_token %}
 
-    {% if dossiers %}
+    {% if dossiers and not user.affichage_confortable %}
     <div class="card-elevated mb-4 flex flex-wrap items-end gap-4">
         <div>
-            <label class="form-label" for="bulk_statut">Statut à appliquer à la sélection</label>
-            <select name="bulk_statut" id="bulk_statut" class="form-select">
+            <label class="form-label" for="bulk_statut">Statut à appliquer aux dossiers cochés</label>
+            <select name="bulk_statut" id="bulk_statut" class="form-select" required>
+                <option value="">— Choisir un statut —</option>
                 {% for value, label in statut_choices %}
                 <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -77,44 +89,41 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-warm-50">
-                    <th class="px-5 py-3"><span class="sr-only">Sélection</span></th>
+                    {% if not user.affichage_confortable %}<th class="px-5 py-3"><span class="sr-only">Sélection</span></th>{% endif %}
                     <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-warm-500">Candidat</th>
                     <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-warm-500">Parcours</th>
-                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-warm-500">Date</th>
+                    <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-warm-500">Reçue le</th>
                     <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-warm-500">Statut</th>
-                    <th class="px-5 py-3"></th>
+                    <th class="px-5 py-3"><span class="sr-only">Action</span></th>
                 </tr>
             </thead>
             <tbody class="divide-y border-warm-100">
                 {% for d in dossiers %}
                 <tr class="hover:bg-warm-50 transition-colors">
+                    {% if not user.affichage_confortable %}
                     <td class="px-5 py-3">
                         <label class="sr-only" for="dossier-{{ d.pk }}">Sélectionner le dossier de {{ d.nom_complet }}</label>
                         <input type="checkbox" name="selected" id="dossier-{{ d.pk }}" value="{{ d.pk }}">
                     </td>
+                    {% endif %}
                     <td class="px-5 py-3">
                         <p class="font-medium text-navy-900">{{ d.nom_complet }}</p>
-                        <p class="text-xs text-warm-400">{{ d.email }}</p>
+                        <p class="text-xs text-warm-500">{{ d.email }}</p>
                     </td>
                     <td class="px-5 py-3 text-warm-600">{{ d.parcours_souhaite }}</td>
-                    <td class="px-5 py-3 text-warm-500">{{ d.date_soumission|date:"d/m/Y" }}</td>
+                    <td class="px-5 py-3 text-warm-600">{{ d.date_soumission|date:"d/m/Y" }}</td>
                     <td class="px-5 py-3">
-                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                            {% if d.statut == 'soumis' %}badge-info
-                            {% elif d.statut == 'en_examen' %}bg-amber-50 text-amber-700
-                            {% elif d.statut == 'accepte' %}bg-emerald-50 text-emerald-700
-                            {% elif d.statut == 'refuse' %}bg-red-50 text-rose-700
-                            {% else %}bg-orange-50 text-orange-700{% endif %}">
+                        <span class="badge {% if d.statut == 'soumis' %}badge-info{% elif d.statut == 'en_examen' %}badge-warning{% elif d.statut == 'accepte' %}badge-success{% elif d.statut == 'refuse' %}badge-danger{% else %}badge-gold{% endif %}">
                             {{ d.get_statut_display }}
                         </span>
                     </td>
                     <td class="px-5 py-3 text-right">
-                        <a href="{% url 'administration:candidature_detail' d.pk %}" class="text-xs font-semibold uppercase tracking-wider text-navy-600">Voir →</a>
+                        <a href="{% url 'administration:candidature_detail' d.pk %}" class="btn-secondary">Ouvrir<span class="sr-only"> le dossier de {{ d.nom_complet }}</span></a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-5 py-10 text-center text-warm-400">Aucune candidature trouvée.</td>
+                    <td colspan="{% if not user.affichage_confortable %}6{% else %}5{% endif %}" class="px-5 py-10 text-center text-warm-600">Aucune candidature trouvée.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -122,19 +131,6 @@
     </div>
 </div>
 </form>
-
-{# ── Pagination ── #}
-{% if is_paginated %}
-<div class="mt-6 flex justify-center gap-2">
-    {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn-ghost text-xs">← Précédent</a>
-    {% endif %}
-    <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-warm-500">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn-ghost text-xs">Suivant →</a>
-    {% endif %}
-</div>
-{% endif %}
 
 {% include "partials/pagination.html" %}
 {% endblock %}

@@ -1,0 +1,477 @@
+/* Espaces privés — secrétariat, direction, enseignants, étudiants.
+
+   Deux publics à servir avec la même interface :
+   - le personnel actuel de l'institut, qui n'a pas grandi avec le numérique ;
+   - celles et ceux qui lui succéderont, plus à l'aise, et qui voudront voir
+     davantage de choses à l'écran.
+
+   L'affichage « confortable » est celui de tous par défaut (classe posée sur
+   <body> par « portal_base.html »). L'affichage « compact » retrouve la
+   densité d'origine. Chacun bascule depuis le bas du volet de navigation.
+
+   Cette feuille est hors couche : elle doit l'emporter sur les composants
+   (@layer components) comme sur les utilitaires. Tout y est donc restreint à
+   « .espace-prive » ou « .affichage-confortable », pour ne rien toucher au
+   site public. */
+
+/* ═══════════════════════════════════════════
+   1. Corrections communes aux deux affichages
+   ═══════════════════════════════════════════ */
+
+/* Le contour doré de la charte (1,8:1 sur crème) ne se voyait pas. Dans le
+   contenu, le focus devient vert profond ; l'en-tête, sur fond sombre, garde
+   ses propres règles. */
+.espace-prive #main-content :focus-visible {
+  outline: 3px solid var(--color-navy-800);
+  outline-offset: 2px;
+}
+
+/* Bord des champs : warm-300 donnait 1,6:1 sur blanc, sous le seuil de 3:1
+   exigé pour un composant (WCAG 1.4.11). */
+.espace-prive #main-content :is(.form-input, .form-select) {
+  border-color: #9a8e75;
+}
+
+/* Une adresse électronique ne se coupe pas d'elle-même : dans une grille, elle
+   débordait sur la colonne voisine. */
+.espace-prive #main-content :is(dd, td) {
+  overflow-wrap: anywhere;
+}
+
+/* ── Pied du volet : aide, affichage, déconnexion ── */
+.portal-outils {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-warm-300);
+}
+.portal-outils--mobile {
+  margin-top: 0;
+  padding: 0.75rem;
+  border-top: 1px solid var(--color-warm-100);
+}
+.portal-outil-formulaire {
+  margin: 0;
+}
+.portal-outil {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--color-warm-700);
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.portal-outil:hover {
+  color: var(--color-navy-800);
+  background-color: var(--color-warm-100);
+}
+.portal-outil--sortie {
+  color: #991b1b;
+}
+.portal-outil--sortie:hover {
+  color: #7f1d1d;
+  background-color: #fef2f2;
+}
+
+/* ── Avertissement d'expiration de session ── */
+.session-dialogue {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: 1.5rem;
+  width: min(34rem, calc(100vw - 2rem));
+  padding: 1.25rem 1.5rem;
+  background: #fff;
+  border: 2px solid var(--color-navy-700);
+  border-radius: 6px;
+  box-shadow: 0 20px 50px rgb(13 24 21 / 0.25);
+  transform: translateX(-50%);
+}
+.session-dialogue[hidden] {
+  display: none;
+}
+.session-dialogue-titre {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-navy-900);
+}
+.session-dialogue-texte {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--color-warm-800);
+}
+.session-dialogue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Libellé « Fermer » des messages : visible en affichage confortable seulement. */
+.flash-fermer-libelle {
+  display: none;
+}
+
+/* ── Formulaires : réglages facultatifs repliés ──
+   Ce qu'une tâche courante n'exige pas (adresse web, ordre d'affichage,
+   délais par défaut…) se range sous « Plus d'options ». Rien n'est perdu :
+   tout reste modifiable, mais ne s'impose plus à qui ne s'en sert pas. */
+.options-avancees {
+  background: var(--color-warm-50);
+  border: 1px solid var(--color-warm-300);
+  border-radius: 4px;
+}
+.options-avancees > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  font-weight: 600;
+  color: var(--color-navy-800);
+  list-style: none;
+  cursor: pointer;
+}
+.options-avancees > summary::-webkit-details-marker {
+  display: none;
+}
+.options-avancees > summary::after {
+  content: "+";
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.options-avancees[open] > summary::after {
+  content: "−";
+}
+.options-avancees-aide {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-warm-700);
+}
+.options-avancees-corps {
+  display: grid;
+  gap: 1.25rem;
+  padding: 0.25rem 1rem 1.25rem;
+}
+
+/* ── Décision sur une candidature : chaque choix se lit en entier ── */
+.choix-decision {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.choix-decision-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: #fff;
+  border: 1.5px solid var(--color-warm-300);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.choix-decision-option:hover {
+  border-color: var(--color-navy-500);
+}
+.choix-decision-option:has(input:checked) {
+  background: var(--color-navy-50);
+  border-color: var(--color-navy-700);
+  box-shadow: inset 4px 0 0 var(--color-navy-700);
+}
+.choix-decision-option input {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  accent-color: var(--color-navy-700);
+}
+.choix-decision-titre {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-navy-900);
+}
+.choix-decision-effet {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-warm-700);
+}
+.choix-decision-option--grave .choix-decision-titre {
+  color: #991b1b;
+}
+
+/* ── Tuiles de tâches du tableau de bord ── */
+.taches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+.tache {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1.5px solid var(--color-warm-300);
+  border-radius: 6px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.tache:hover {
+  border-color: var(--color-navy-600);
+  box-shadow: var(--shadow-soft);
+}
+.tache--urgente {
+  border-color: var(--color-gold-500);
+}
+.tache-icone {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-navy-700);
+  background: var(--color-navy-50);
+  border-radius: 50%;
+}
+.tache-icone svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.tache-titre {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-navy-900);
+}
+.tache-detail {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-warm-700);
+}
+.tache-compteur {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-gold-800);
+  background: var(--color-gold-100);
+  border-radius: 6px;
+}
+
+/* ── Page d'aide ── */
+.aide-etapes {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding-left: 1.4rem;
+  list-style: decimal;
+}
+.aide-section + .aide-section {
+  margin-top: 1.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   2. Affichage confortable
+   ═══════════════════════════════════════════
+   Repères retenus pour un public de plus de soixante ans :
+   texte courant à 16-17 px et rien d'utile sous 14 px ; contraste d'au
+   moins 7:1 pour le texte (WCAG 1.4.6, AAA) ; pas de capitales espacées ;
+   cibles d'au moins 44 px ; tout ce qui sert au quotidien reste visible. */
+
+.affichage-confortable #main-content,
+.affichage-confortable #messages {
+  /* Échelle des utilitaires : chaque « text-xs », « text-sm »… des gabarits
+     grandit d'un cran sans qu'aucun gabarit ne change. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+
+  /* Teintes de texte assombries : de 5:1 à plus de 7:1 sur les fonds clairs.
+     warm-400 servait surtout à des textes « discrets » à 2,2:1. */
+  --color-warm-400: #5a5040;
+  --color-warm-500: #544b3d;
+  --color-warm-600: #4f4738;
+  --color-warm-700: #373127;
+  --color-navy-600: #355952;
+  --color-gold-600: #7d5a09;
+  --color-gold-700: #533c06;
+
+  --tracking-wide: 0;
+  --tracking-wider: 0;
+  --tracking-widest: 0.02em;
+}
+
+/* Les capitales espacées font perdre aux mots leur silhouette. */
+.affichage-confortable #main-content :is(
+    .uppercase,
+    .overline,
+    .form-label,
+    .stat-label,
+    .badge,
+    .btn-primary,
+    .btn-gold,
+    .btn-ghost,
+    .btn-danger,
+    .btn-secondary,
+    th,
+    .portal-nav-group,
+    .portal-nav-pill,
+    .portal-mobile-menu-kicker
+  ) {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.affichage-confortable #main-content .overline {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.affichage-confortable #main-content .stat-label {
+  font-size: 0.9375rem;
+}
+.affichage-confortable #main-content .badge {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem;
+}
+.affichage-confortable #main-content th {
+  font-size: 0.9375rem;
+}
+
+/* ── Formulaires ── */
+.affichage-confortable #main-content .form-label {
+  margin-bottom: 0.375rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-warm-800);
+}
+.affichage-confortable #main-content :is(.form-input, .form-select) {
+  min-height: 3rem;
+  font-size: 1.0625rem;
+  border-color: #8a7e66;
+}
+.affichage-confortable #main-content .form-input::placeholder {
+  color: #796e59;
+}
+.affichage-confortable #main-content :is(.form-aide, .form-erreur) {
+  font-size: 0.9375rem;
+}
+.affichage-confortable #main-content :is(input[type="checkbox"], input[type="radio"]) {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+.affichage-confortable #main-content .tache-titre {
+  font-size: 1.0625rem;
+}
+.affichage-confortable #main-content :is(.tache-detail, .tache-compteur) {
+  font-size: 0.9375rem;
+}
+.affichage-confortable #main-content .choix-decision-titre {
+  font-size: 1.0625rem;
+}
+.affichage-confortable #main-content .choix-decision-effet,
+.affichage-confortable #main-content .options-avancees-aide {
+  font-size: 0.9375rem;
+}
+
+/* ── Boutons ── */
+.affichage-confortable #main-content :is(.btn-primary, .btn-gold, .btn-ghost, .btn-danger, .btn-secondary) {
+  min-height: 3rem;
+  font-size: 1rem;
+}
+.affichage-confortable .session-dialogue {
+  bottom: 2rem;
+}
+
+/* ── Volet de navigation : grandes cibles, rubriques toujours visibles ── */
+.affichage-confortable .portal-nav-link {
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 1rem;
+  color: var(--color-warm-700);
+}
+.affichage-confortable .portal-nav-link.active {
+  box-shadow: inset 4px 0 0 var(--color-navy-700);
+}
+.affichage-confortable .portal-nav-group {
+  margin: 1.5rem 0 0.375rem;
+  padding: 0 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-navy-800);
+}
+.affichage-confortable .portal-nav-count {
+  min-width: 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+}
+.affichage-confortable .portal-outil {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+.affichage-confortable .portal-nav-pill {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+.affichage-confortable .portal-mobile-menu-kicker {
+  font-size: 0.875rem;
+}
+.affichage-confortable .portal-mobile-menu-title {
+  font-size: 1.0625rem;
+}
+
+/* ── Messages de confirmation : dans la page, jusqu'à ce qu'on les ferme ──
+   Dans un coin, en petit, pendant cinq secondes : un « Paiement enregistré »
+   passait inaperçu, et l'on refaisait la saisie par doute. */
+.affichage-confortable #messages {
+  position: static;
+  width: auto;
+  max-width: 64rem;
+  margin: 1.25rem auto 0;
+  padding: 0 1rem;
+}
+.affichage-confortable #messages .flash {
+  padding: 1rem 1.25rem;
+  font-size: 1.0625rem;
+  border-width: 2px;
+  box-shadow: none;
+}
+.affichage-confortable .flash-fermer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.5;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  opacity: 1;
+}
+.affichage-confortable .flash-fermer-libelle {
+  display: inline;
+}

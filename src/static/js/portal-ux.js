@@ -3,6 +3,11 @@
 
   function transformerNavigation(nav) {
     if (!nav || nav.dataset.portalNavReady === "true") return;
+    /* En affichage confortable, toutes les rubriques restent visibles : on
+       ne retrouve pas une fonction rangée dans un groupe replié si l'on ne
+       sait pas déjà dans lequel elle se trouve. Les accordéons ne servent
+       qu'à l'affichage compact, pour qui connaît la barre par cœur. */
+    if (document.body.classList.contains("affichage-confortable")) return;
     const enfants = Array.from(nav.children);
     const groupes = enfants.filter((element) => element.classList.contains("portal-nav-group"));
     if (!groupes.length) return;

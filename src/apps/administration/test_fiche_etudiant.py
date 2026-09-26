@@ -74,7 +74,9 @@ def dossier():
 
 
 def _compte(role, username):
-    return User.objects.create_user(username=username, email=f"{username}@example.org", password=MOT_DE_PASSE, role=role)
+    return User.objects.create_user(
+        username=username, email=f"{username}@example.org", password=MOT_DE_PASSE, role=role
+    )
 
 
 def test_le_secretariat_lit_la_fiche(client, dossier):
@@ -128,7 +130,7 @@ def test_la_fiche_etudiant_affiche_la_derniere_connexion(client, dossier):
     corps = client.get(reverse("administration:etudiant_detail", args=[dossier.pk])).content.decode()
 
     assert "Dernière connexion" in corps
-    assert dossier.utilisateur.last_login.strftime("%d/%m/%Y") in corps
+    assert timezone.localtime(dossier.utilisateur.last_login).strftime("%d/%m/%Y") in corps
 
 
 def test_la_fiche_etudiant_indique_jamais_connecte(client, dossier):

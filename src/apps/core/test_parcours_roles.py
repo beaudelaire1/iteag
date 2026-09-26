@@ -125,16 +125,25 @@ class TestParcoursSecretariat:
         secrétariat déjà complète. Deux fois le même lien, sous deux intitulés
         de groupe différents, se lit comme deux écrans distincts.
 
-        Deux occurrences attendues, et pas une de plus : la barre latérale et
-        le menu mobile, qui coexistent dans la même page.
+        Une occurrence attendue dans chacune des deux barres — latérale et
+        mobile —, qui coexistent dans la même page. Le reste de la page (les
+        tuiles « Que voulez-vous faire ? » de l'accueil) peut légitimement
+        mener aux mêmes écrans : seules les barres sont comptées.
         """
         client.force_login(secretaire)
         page = client.get(reverse("secretariat:dashboard")).content.decode()
 
+        def barre(debut: str) -> str:
+            position = page.index(debut)
+            return page[position : page.index("</nav>", position)]
+
+        laterale = barre("data-portal-nav")
+        mobile = barre('class="portal-mobile-menu-links"')
         for route in ("administration:tableurs", "accounts:profil", "administration:utilisateurs"):
-            assert page.count(_lien(route)) == 2, (
-                f"{route} paraît {page.count(_lien(route))} fois : la barre latérale et le menu mobile, pas davantage."
-            )
+            for nom, contenu in (("latérale", laterale), ("mobile", mobile)):
+                assert contenu.count(_lien(route)) == 1, (
+                    f"{route} paraît {contenu.count(_lien(route))} fois dans la barre {nom} : une seule attendue."
+                )
 
     def test_la_barre_ne_mene_pas_a_la_relecture_des_articles(self, client, secretaire):
         client.force_login(secretaire)

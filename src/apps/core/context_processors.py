@@ -92,6 +92,9 @@ def site_context(request):
         "SITE_FACEBOOK": "https://fr-fr.facebook.com/iteag",
         "SITE_YOUTUBE": "https://www.youtube.com/@formationiteag327",
         "ASSET_VERSION": asset_version,
+        # Lu par « session-active.js » : l'avertissement d'expiration doit
+        # tomber avant la fin réelle de la session, pas après.
+        "DUREE_SESSION": settings.SESSION_COOKIE_AGE,
         "HOTE_INDEXABLE": hote_indexable,
         # Identité légale de l'éditeur, exposée globalement parce que le pied de
         # page y renvoie depuis toutes les pages.

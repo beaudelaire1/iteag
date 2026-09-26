@@ -308,13 +308,21 @@ class TestServiceEmail:
         [
             (
                 "administration/emails/compte_etudiant_importe.html",
-                {"prenom": "Jean", "numero_etudiant": "ETU2026001", "parcours": "Parcours libre",
-                 "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/"},
+                {
+                    "prenom": "Jean",
+                    "numero_etudiant": "ETU2026001",
+                    "parcours": "Parcours libre",
+                    "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/",
+                },
             ),
             (
                 "administration/emails/invitation_compte.html",
-                {"prenom": "Jean", "identifiant": "jean.test", "espace": "l'espace étudiant",
-                 "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/"},
+                {
+                    "prenom": "Jean",
+                    "identifiant": "jean.test",
+                    "espace": "l'espace étudiant",
+                    "lien_activation": "https://iteag.org/mot-de-passe/confirmer/x/y/",
+                },
             ),
             (
                 "administration/emails/reinitialisation_mot_de_passe.html",
@@ -342,10 +350,7 @@ class TestServiceEmail:
         assert "facebook" not in html.casefold()
         assert "youtube" not in html.casefold()
         assert 'src="cid:logo-iteag"' not in html
-        assert not [
-            piece for piece in message.attachments
-            if piece.get_content_type() == "image/png"
-        ]
+        assert not [piece for piece in message.attachments if piece.get_content_type() == "image/png"]
 
     def test_email_integre_logo_et_identite_complete(self):
         assert envoyer_email(

@@ -49,7 +49,7 @@
         <link rel="stylesheet" href="{% static 'css/noscript.css' %}">
     </noscript>
 </head>
-<body class="min-h-screen flex flex-col antialiased bg-warm text-warm-900">
+<body class="min-h-screen flex flex-col antialiased bg-warm text-warm-900{% block body_class %}{% endblock %}">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:rounded bg-navy-700 text-white">
         Aller au contenu principal
     </a>
@@ -65,9 +65,9 @@
                     {% elif message.tags == 'error' %}bg-red-50/95 text-red-900 border-red-200
                     {% elif message.tags == 'warning' %}bg-amber-50/95 text-amber-900 border-amber-200
                     {% else %}bg-sky-50/95 text-sky-900 border-sky-200{% endif %}"
-             data-flash="{% if message.tags == 'success' or message.tags == 'info' %}5000{% else %}0{% endif %}">
+             data-flash="{% if user.is_authenticated and user.affichage_confortable %}0{% elif message.tags == 'success' or message.tags == 'info' %}5000{% else %}0{% endif %}">
             <span class="flex-1">{{ message }}</span>
-            <button type="button" data-flash-close aria-label="Fermer ce message" class="shrink-0 opacity-40 hover:opacity-100 transition-opacity text-lg leading-none">&times;</button>
+            <button type="button" data-flash-close aria-label="Fermer ce message" class="flash-fermer shrink-0 opacity-40 hover:opacity-100 transition-opacity text-lg leading-none"><span aria-hidden="true">&times;</span><span class="flash-fermer-libelle" aria-hidden="true">Fermer</span></button>
         </div>
         {% endfor %}
     </div>

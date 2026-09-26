@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Compte momentanément bloqué — {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow max-w-[34rem]">
+        <div class="card-elevated space-y-5 text-base">
+            <h1 class="text-[clamp(1.6rem,_3vw,_2.1rem)]">Votre compte est bloqué pour 30 minutes</h1>
+            <p class="text-warm-800">
+                Le mot de passe a été mal saisi {{ failure_limit }} fois de suite. Par sécurité, la connexion est
+                suspendue pendant <strong>30 minutes</strong>{% if username %} pour l’identifiant
+                <strong>{{ username }}</strong>{% endif %}. Rien n’a été modifié sur votre compte.
+            </p>
+
+            <div class="rounded border border-warm-300 bg-warm-50 p-4 text-warm-800">
+                <p class="font-semibold text-navy-900">Que faire maintenant ?</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <li>Attendez 30 minutes, puis reconnectez-vous.</li>
+                    <li>Si vous n’êtes pas sûr de votre mot de passe, demandez-en un nouveau : un lien vous sera envoyé par courriel.</li>
+                    <li>Besoin d’aide ? Appelez le secrétariat au <strong>{{ SITE_PHONE }}</strong>.</li>
+                </ul>
+            </div>
+
+            <div class="flex flex-wrap gap-3 pt-1">
+                <a href="{% url 'accounts:password_reset' %}" class="btn-primary">Recevoir un nouveau mot de passe</a>
+                <a href="/" class="btn-ghost">Retour à l’accueil</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

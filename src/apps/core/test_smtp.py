@@ -43,7 +43,6 @@ def test_tls_et_ssl_ne_sont_pas_actives_ensemble():
     assert [probleme.id for probleme in problemes] == ["core.E005"]
 
 
-
 def test_une_reponse_smtp_421_est_temporaire():
     from apps.core.services.emails import _est_erreur_smtp_temporaire
 

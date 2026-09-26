@@ -70,7 +70,7 @@
                             <div class="grid gap-4 rounded border border-warm-200 p-4 lg:grid-cols-[minmax(0,1fr)_150px_minmax(180px,1fr)] lg:items-center">
                                 <div><p class="text-sm font-semibold text-navy-900">{{ piece.libelle }}</p>{% if piece.precisions %}<p class="mt-1 text-xs text-warm-500">{{ piece.precisions }}</p>{% endif %}{% if piece.fichier %}<a href="{% url 'administration:piece_fichier' piece.pk %}" class="mt-2 inline-block text-sm font-semibold text-navy-600">Télécharger le fichier</a>{% endif %}</div>
                                 {% if piece.statut == 'deposee' %}
-                                <div><label class="form-label" for="decision_{{ piece.pk }}">Décision</label><select id="decision_{{ piece.pk }}" name="decision_{{ piece.pk }}" class="form-input"><option value="valider">Valider</option><option value="refuser">Refuser</option></select></div>
+                                <div><label class="form-label" for="decision_{{ piece.pk }}">Décision</label><select id="decision_{{ piece.pk }}" name="decision_{{ piece.pk }}" class="form-select" required><option value="">— Choisir —</option><option value="valider">Valider</option><option value="refuser">Refuser</option></select></div>
                                 <div><label class="form-label" for="motif_{{ piece.pk }}">Motif si refus</label><input id="motif_{{ piece.pk }}" name="motif_{{ piece.pk }}" class="form-input" placeholder="Ex. document illisible"></div>
                                 {% else %}<div class="lg:col-span-2"><span class="badge badge-success">{{ piece.get_statut_display }}</span></div>{% endif %}
                             </div>
@@ -100,16 +100,28 @@
 
     <aside class="space-y-6">
         <section class="card-elevated">
-            <p class="overline mb-1">Prochaine action</p><h2 class="mb-5 text-lg font-semibold">Statut du dossier</h2>
-            {% if statut_choices %}
-            <form method="post" class="space-y-4">
+            <p class="overline mb-1">Prochaine action</p><h2 class="mb-2 text-lg font-semibold">Votre décision</h2>
+            {% if decisions %}
+            <form method="post" class="space-y-4" data-confirmer-choix>
                 {% csrf_token %}
-                <div><label class="form-label" for="id_statut">Nouveau statut</label><select name="statut" id="id_statut" class="form-input">{% for value, label in statut_choices %}<option value="{{ value }}" {% if value == dossier.statut %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-                {% if not dossier.utilisateur_cree %}<div><label class="form-label" for="id_promotion">Promotion d’affectation</label><select name="promotion" id="id_promotion" class="form-input"><option value="">— Choisir —</option>{% for promotion in promotions %}<option value="{{ promotion.pk }}">{{ promotion.nom }}</option>{% endfor %}</select><p class="mt-2 text-xs text-warm-500">Requise uniquement pour accepter la candidature.</p></div>{% endif %}
-                <div><label class="form-label" for="id_commentaire">Commentaire</label><textarea name="commentaire" id="id_commentaire" rows="3" class="form-input" placeholder="Précision interne ou motif…"></textarea></div>
-                <button type="submit" class="btn-primary w-full justify-center">Mettre à jour</button>
+                <fieldset class="choix-decision">
+                    <legend class="mb-3 text-sm text-warm-600">Choisissez ce que vous voulez faire de ce dossier.</legend>
+                    {% for decision in decisions %}
+                    <label class="choix-decision-option{% if decision.grave %} choix-decision-option--grave{% endif %}">
+                        <input type="radio" name="statut" value="{{ decision.valeur }}" required
+                               {% if decision.confirmation %}data-confirmer="{{ decision.confirmation }}"{% endif %}>
+                        <span>
+                            <span class="choix-decision-titre">{{ decision.titre }}</span>
+                            <span class="choix-decision-effet">{{ decision.effet }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </fieldset>
+                {% if acceptation_possible %}<div><label class="form-label" for="id_promotion">Promotion (pour une acceptation)</label><select name="promotion" id="id_promotion" class="form-select"><option value="">— Choisir une promotion —</option>{% for promotion in promotions %}<option value="{{ promotion.pk }}">{{ promotion.nom }}</option>{% endfor %}</select></div>{% endif %}
+                <div><label class="form-label" for="id_commentaire">Note pour le dossier (facultatif)</label><textarea name="commentaire" id="id_commentaire" rows="3" class="form-input" placeholder="Visible par le secrétariat seulement"></textarea></div>
+                <button type="submit" class="btn-primary w-full justify-center">Enregistrer ma décision</button>
             </form>
-            {% else %}<p class="text-sm text-warm-500">Ce dossier a atteint un statut final.</p>{% endif %}
+            {% else %}<p class="text-sm text-warm-500">Ce dossier a reçu une réponse définitive. Il n’y a plus de décision à prendre.</p>{% endif %}
         </section>
 
         <section class="card-elevated"><p class="overline mb-1">Résumé</p><dl class="mt-4 space-y-3 text-sm"><div class="flex justify-between gap-4"><dt class="text-warm-500">Soumis le</dt><dd class="font-medium text-navy-800">{{ dossier.date_soumission|date:"d/m/Y" }}</dd></div><div class="flex justify-between gap-4"><dt class="text-warm-500">Dernière mise à jour</dt><dd class="font-medium text-navy-800">{{ dossier.date_derniere_maj|date:"d/m/Y" }}</dd></div><div class="flex justify-between gap-4"><dt class="text-warm-500">Église fondatrice</dt><dd class="font-medium text-navy-800">{% if dossier.eglise_fondatrice %}Oui{% else %}Non{% endif %}</dd></div></dl></section>

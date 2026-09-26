@@ -8,11 +8,11 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, TemplateView, UpdateView
 
 from apps.academics.models import (
     CoursDeSession,
@@ -45,6 +45,7 @@ from .forms import (
     AdminSessionForm,
     AdminUserCreateForm,
     AdminUserForm,
+    InscriptionEtudiantForm,
 )
 
 logger = logging.getLogger(__name__)
@@ -267,10 +268,57 @@ class AdminCandidatureListView(StaffRoleRequiredMixin, ListView):
         ctx["statut_choices"] = DossierCandidature.Statut.choices
         ctx["current_statut"] = self.request.GET.get("statut", "")
         ctx["query"] = self.request.GET.get("q", "")
-        ctx["counts"] = {
-            s[0]: DossierCandidature.objects.filter(statut=s[0]).count() for s in DossierCandidature.Statut.choices
+        # Un seul passage en base pour tous les compteurs. Le gabarit lisait
+        # auparavant un total jamais fourni (« Toutes 0 ») et des nombres par
+        # statut que le filtre employé ne savait pas extraire : la liste
+        # contredisait la pastille de la barre latérale.
+        par_statut = {
+            ligne["statut"]: ligne["nombre"]
+            for ligne in DossierCandidature.objects.order_by().values("statut").annotate(nombre=Count("id"))
         }
+        ctx["total_candidatures"] = sum(par_statut.values())
+        ctx["filtres_statut"] = [
+            (valeur, libelle, par_statut.get(valeur, 0)) for valeur, libelle in DossierCandidature.Statut.choices
+        ]
         return ctx
+
+
+# Ce que chaque décision déclenche, dit avant qu'on la prenne.
+#
+# La fiche proposait une liste « Nouveau statut » dont la première option
+# (« Incomplet ») était choisie d'office : un clic sur « Mettre à jour » sans
+# rien changer suffisait à écrire au candidat que son dossier était incomplet.
+# Chaque choix s'affiche désormais en entier, aucun n'est présélectionné, et
+# ceux qui envoient un courriel le disent et demandent confirmation.
+DECISIONS_CANDIDATURE = {
+    DossierCandidature.Statut.EN_EXAMEN: {
+        "titre": "Prendre le dossier en charge",
+        "effet": "Le dossier passe « en examen ». Le candidat n’est pas prévenu.",
+        "grave": False,
+        "confirmation": "",
+    },
+    DossierCandidature.Statut.INCOMPLET: {
+        "titre": "Signaler un dossier incomplet",
+        "effet": "Le candidat reçoit un courriel lui demandant de compléter son dossier.",
+        "grave": False,
+        "confirmation": "Un courriel va être envoyé au candidat pour lui dire que son dossier est incomplet. "
+        "Continuer ?",
+    },
+    DossierCandidature.Statut.ACCEPTE: {
+        "titre": "Accepter la candidature",
+        "effet": "Crée le compte étudiant, ouvre les accès et envoie un courriel de bienvenue. "
+        "Choisissez la promotion ci-dessous.",
+        "grave": False,
+        "confirmation": "Accepter cette candidature ? Le compte étudiant sera créé et un courriel de bienvenue "
+        "sera envoyé. Cette décision est définitive.",
+    },
+    DossierCandidature.Statut.REFUSE: {
+        "titre": "Refuser la candidature",
+        "effet": "Le candidat reçoit un courriel de réponse. Cette décision est définitive.",
+        "grave": True,
+        "confirmation": "Refuser cette candidature ? Le candidat recevra un courriel et la décision est définitive.",
+    },
+}
 
 
 class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
@@ -283,6 +331,14 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
 
         ctx = super().get_context_data(**kwargs)
         ctx["statut_choices"] = available_status_choices(self.object)
+        ctx["decisions"] = [
+            {"valeur": valeur, **DECISIONS_CANDIDATURE[valeur]}
+            for valeur, _libelle in ctx["statut_choices"]
+            if valeur in DECISIONS_CANDIDATURE
+        ]
+        ctx["acceptation_possible"] = not self.object.utilisateur_cree and any(
+            decision["valeur"] == DossierCandidature.Statut.ACCEPTE for decision in ctx["decisions"]
+        )
         ctx["historique"] = self.object.historique.select_related("modifie_par")
         ctx["promotions"] = Promotion.objects.filter(actif=True, parcours=self.object.parcours_souhaite).order_by(
             "-annee_debut"
@@ -314,7 +370,15 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         except ValidationError as exc:
             messages.error(request, exc.messages[0])
         else:
-            messages.success(request, f"Statut mis à jour : {self.object.get_statut_display()}")
+            prevenu = (
+                " Le candidat a été prévenu par courriel."
+                if DECISIONS_CANDIDATURE.get(self.object.statut, {}).get("confirmation")
+                else ""
+            )
+            messages.success(
+                request,
+                f"Décision enregistrée : le dossier est maintenant « {self.object.get_statut_display()} ».{prevenu}",
+            )
         return redirect("administration:candidature_detail", pk=self.object.pk)
 
     def _accepter(self, request, commentaire):
@@ -904,22 +968,50 @@ class AdminProfesseurDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, Del
 # ══════════════════════════════════════════════
 
 
-class AdminEtudiantCreateView(StaffRoleRequiredMixin, CreateView):
-    model = ProfilEtudiant
-    form_class = AdminEtudiantForm
+class AdminEtudiantCreateView(StaffRoleRequiredMixin, FormView):
+    """Inscrire un étudiant : la personne, puis son dossier, en un seul écran."""
+
+    form_class = InscriptionEtudiantForm
     template_name = "administration/form.html"
-    success_url = reverse_lazy("administration:etudiants")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["form_title"] = "Nouveau profil étudiant"
+        ctx["form_title"] = "Inscrire un nouvel étudiant"
+        ctx["form_intro"] = (
+            "Le compte et le numéro étudiant sont créés automatiquement. "
+            "Pour une candidature déjà reçue, acceptez-la plutôt depuis sa fiche : le dossier s'y crée tout seul."
+        )
+        ctx["form_submit"] = "Inscrire l'étudiant"
         ctx["nav"] = "etudiants"
+        ctx["cancel_url"] = reverse("administration:etudiants")
         return ctx
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, f"Profil étudiant « {self.object} » créé.")
-        return response
+        from apps.administration.services.comptes import inscrire_etudiant
+
+        donnees = form.cleaned_data
+        profil = inscrire_etudiant(
+            prenom=donnees["prenom"].strip(),
+            nom=donnees["nom"].strip(),
+            email=donnees["email"],
+            telephone=donnees.get("telephone", "").strip(),
+            parcours=donnees.get("parcours"),
+            promotion=donnees.get("promotion"),
+            eglise=donnees.get("eglise", "").strip(),
+            statut_inscription=donnees.get("statut_inscription"),
+            formule_tarif=donnees.get("formule_tarif"),
+            eglise_fondatrice=donnees.get("eglise_fondatrice", False),
+            envoyer_invitation=donnees.get("envoyer_invitation", False),
+        )
+        journaliser("creation", request=self.request, objet=profil, objet_libelle=f"Inscription de {profil}")
+        suite = (
+            " Un courriel lui a été envoyé pour choisir son mot de passe." if donnees.get("envoyer_invitation") else ""
+        )
+        messages.success(
+            self.request,
+            f"{profil.utilisateur.get_full_name()} est inscrit(e) sous le numéro {profil.numero_etudiant}.{suite}",
+        )
+        return redirect("administration:etudiant_detail", pk=profil.pk)
 
 
 class AdminEtudiantUpdateView(StaffRoleRequiredMixin, UpdateView):

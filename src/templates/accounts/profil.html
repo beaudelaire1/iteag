@@ -107,6 +107,24 @@
             <a href="{% url 'accounts:otp_activation' %}" class="btn-ghost w-full justify-center">Activer</a>
             {% endif %}
         </div>
+
+        <form method="post" action="{% url 'accounts:affichage' %}" class="card space-y-4" id="affichage">
+            {% csrf_token %}
+            <input type="hidden" name="suivant" value="{% url 'accounts:profil' %}">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Affichage de mon espace</h2>
+            <fieldset class="choix-decision">
+                <legend class="sr-only">Affichage</legend>
+                <label class="choix-decision-option">
+                    <input type="radio" name="affichage" value="confortable" {% if user.affichage_confortable %}checked{% endif %}>
+                    <span><span class="choix-decision-titre">Confortable</span><span class="choix-decision-effet">Grands caractères, menu entièrement déplié, confirmations qui restent affichées.</span></span>
+                </label>
+                <label class="choix-decision-option">
+                    <input type="radio" name="affichage" value="compact" {% if not user.affichage_confortable %}checked{% endif %}>
+                    <span><span class="choix-decision-titre">Compact</span><span class="choix-decision-effet">Plus d’informations par écran, menu replié par rubriques, actions groupées sur les listes.</span></span>
+                </label>
+            </fieldset>
+            <button type="submit" class="btn-ghost w-full justify-center">Appliquer ce choix</button>
+        </form>
     </section>
 
 </div>

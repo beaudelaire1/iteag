@@ -513,6 +513,21 @@
         }
       });
     });
+
+    /* Variante : la question dépend du choix coché. Le formulaire porte
+       « data-confirmer-choix » ; chaque option qui a des conséquences porte
+       sa propre question (« Un courriel va être envoyé… »). Une option sans
+       question part sans détour. */
+    document.querySelectorAll("form[data-confirmer-choix]").forEach((formulaire) => {
+      formulaire.addEventListener("submit", (evenement) => {
+        const choix = formulaire.querySelector(
+          "input[data-confirmer]:checked, option[data-confirmer]:checked"
+        );
+        if (choix && !window.confirm(choix.getAttribute("data-confirmer"))) {
+          evenement.preventDefault();
+        }
+      });
+    });
   }
 
   /* ── Boot ── */

@@ -62,6 +62,24 @@ class User(AbstractUser):
     ville = models.CharField(max_length=120, blank=True, verbose_name="Ville")
     pays = models.CharField(max_length=120, blank=True, default="Guadeloupe", verbose_name="Pays")
 
+    # ── Affichage des espaces privés ──
+    #
+    # Le personnel qui ouvre la plateforme n'a pas grandi avec le numérique :
+    # l'affichage « confortable » (grands caractères, menus dépliés, pas
+    # d'action groupée) est donc celui de tout le monde par défaut. Le mode
+    # « compact » rend la densité d'origine à qui la préfère — c'est un choix
+    # de chacun, pas un réglage de l'institut.
+    class Affichage(models.TextChoices):
+        CONFORTABLE = "confortable", "Confortable"
+        COMPACT = "compact", "Compact"
+
+    affichage = models.CharField(
+        max_length=12,
+        choices=Affichage.choices,
+        default=Affichage.CONFORTABLE,
+        verbose_name="Affichage des espaces",
+    )
+
     class Meta:
         verbose_name = "Utilisateur"
         verbose_name_plural = "Utilisateurs"
@@ -81,6 +99,10 @@ class User(AbstractUser):
         """Adresse sur une ligne, sans virgule orpheline si un champ manque."""
         lignes = [self.adresse, self.complement_adresse, " ".join(filter(None, [self.code_postal, self.ville]))]
         return ", ".join(part for part in (ligne.strip() for ligne in lignes) if part)
+
+    @property
+    def affichage_confortable(self) -> bool:
+        return self.affichage != self.Affichage.COMPACT
 
     @property
     def is_admin(self):

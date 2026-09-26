@@ -1,0 +1,41 @@
+{% comment %}
+Pied du volet des espaces privés : de l'aide, le choix de l'affichage et la
+sortie, toujours au même endroit.
+
+La déconnexion ne se trouvait que dans le menu déroulant du nom, en haut de
+l'écran : on ne l'y cherche pas quand on ne sait pas qu'il se déplie. L'aide,
+elle, n'était nulle part — le guide existait en dehors de la plateforme.
+
+Le choix d'affichage part d'ici plutôt que du profil : on le change au moment
+où l'écran gêne, sans perdre la page où l'on se trouve.
+{% endcomment %}
+<div class="portal-outils{% if mobile %} portal-outils--mobile{% endif %}">
+    <a href="{% url 'accounts:aide' %}" class="portal-outil">
+        {% include "partials/nav_icon.html" with name="help" only %}
+        Aide et mode d’emploi
+    </a>
+    <form method="post" action="{% url 'accounts:affichage' %}" class="portal-outil-formulaire">
+        {% csrf_token %}
+        <input type="hidden" name="suivant" value="{{ request.get_full_path }}">
+        {% if user.affichage_confortable %}
+        <input type="hidden" name="affichage" value="compact">
+        <button type="submit" class="portal-outil" title="Plus d’informations par écran, caractères plus petits, actions groupées">
+            {% include "partials/nav_icon.html" with name="eye" only %}
+            Passer en affichage compact
+        </button>
+        {% else %}
+        <input type="hidden" name="affichage" value="confortable">
+        <button type="submit" class="portal-outil" title="Grands caractères, menus dépliés, confirmations visibles">
+            {% include "partials/nav_icon.html" with name="eye" only %}
+            Passer en affichage confortable
+        </button>
+        {% endif %}
+    </form>
+    <form method="post" action="{% url 'accounts:logout' %}" class="portal-outil-formulaire">
+        {% csrf_token %}
+        <button type="submit" class="portal-outil portal-outil--sortie">
+            {% include "partials/nav_icon.html" with name="logout" only %}
+            Se déconnecter
+        </button>
+    </form>
+</div>

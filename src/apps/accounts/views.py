@@ -2,13 +2,17 @@ import base64
 import io
 import time
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views import View
 from django.views.generic import TemplateView
 from django_otp import login as otp_login
 from django_otp import verify_token as verifier_otp
@@ -54,7 +58,25 @@ class IteagLoginView(LoginView):
             request=self.request,
             objet_libelle=form.data.get("username", "")[:250],
         )
-        return super().form_invalid(form)
+        reponse = super().form_invalid(form)
+        reponse.context_data["essais_restants"] = self._essais_restants(form)
+        return reponse
+
+    def _essais_restants(self, form) -> int | None:
+        """Essais avant le verrouillage, annoncés quand il en reste peu.
+
+        Le blocage tombait sans prévenir : au cinquième échec, la personne qui
+        se trompait d'une majuscule perdait l'accès pendant une demi-heure
+        sans avoir été avertie qu'il approchait.
+        """
+        identifiant = form.data.get("username", "").strip()
+        if not identifiant or not getattr(settings, "AXES_ENABLED", True):
+            return None
+        from axes.handlers.proxy import AxesProxyHandler
+
+        echecs = AxesProxyHandler.get_failures(self.request, {"username": identifiant})
+        restants = settings.AXES_FAILURE_LIMIT - echecs
+        return restants if 0 < restants <= 2 else None
 
     def get_success_url(self):
         cible = tableau_de_bord(self.request.user)
@@ -365,3 +387,71 @@ class OTPVerificationView(_BaseOTPView):
         journaliser("connexion_echec", request=request, objet_libelle="Second facteur invalide")
         self._message_echec_code(appareil, code)
         return self.render_to_response(self.get_context_data(**kwargs))
+
+
+class AffichageView(LoginRequiredMixin, View):
+    """Bascule entre l'affichage confortable et l'affichage compact.
+
+    Le choix revient à la page d'où il a été fait : on change d'affichage parce
+    que l'écran présent gêne, pas pour aller régler un profil.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request):
+        from .models import User
+
+        choix = request.POST.get("affichage")
+        if choix in User.Affichage.values and choix != request.user.affichage:
+            request.user.affichage = choix
+            request.user.save(update_fields=["affichage"])
+            if choix == User.Affichage.COMPACT:
+                messages.info(
+                    request, "Affichage compact activé. Le bouton en bas du menu permet de revenir en arrière."
+                )
+            else:
+                messages.info(request, "Affichage confortable activé : grands caractères et menus dépliés.")
+
+        suivant = request.POST.get("suivant", "")
+        if not url_has_allowed_host_and_scheme(
+            suivant, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            suivant = tableau_de_bord(request.user) or reverse("accounts:profil")
+        return redirect(suivant)
+
+
+class SessionActiveView(LoginRequiredMixin, View):
+    """Prolonge la session de quelqu'un qui travaille sans changer de page.
+
+    Taper une longue réponse ne fait aucune requête : la session expirait au
+    milieu de la saisie, et l'enregistrement renvoyait vers la connexion en
+    perdant le texte. Le script n'appelle cette adresse que si la personne a
+    tapé, cliqué ou fait défiler récemment — une vraie inactivité de trente
+    minutes ferme toujours la session, comme le prévoit le cahier des charges.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request):
+        # « SESSION_SAVE_EVERY_REQUEST » repousse l'échéance à chaque requête :
+        # il suffit de répondre.
+        return HttpResponse(status=204)
+
+
+class AideView(LoginRequiredMixin, TemplateView):
+    """Mode d'emploi des tâches courantes, rédigé pour qui n'est pas du métier."""
+
+    template_name = "accounts/aide.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        navigation = gabarit_navigation(self.request.user)
+        utilisateur = self.request.user
+        contexte.update(
+            {
+                "gabarit_navigation": navigation,
+                "gabarit_navigation_mobile": navigation.replace("nav.html", "nav_mobile.html"),
+                "personnel": utilisateur.is_admin or utilisateur.is_secretariat,
+            }
+        )
+        return contexte

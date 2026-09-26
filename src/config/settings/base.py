@@ -222,6 +222,10 @@ AXES_COOLOFF_TIME = 0.5  # 30 minutes
 # « secretariat » portent en outre un second facteur obligatoire.
 AXES_LOCKOUT_PARAMETERS = ["username"]
 AXES_RESET_ON_SUCCESS = True
+# Sans gabarit, le verrouillage répondait par une page blanche d'une ligne,
+# sans durée ni issue : la personne bloquée ne savait ni combien de temps
+# attendre, ni qui appeler.
+AXES_LOCKOUT_TEMPLATE = "accounts/verrouillage.html"
 
 # ──────────────────────────────────────────────
 # Internationalization

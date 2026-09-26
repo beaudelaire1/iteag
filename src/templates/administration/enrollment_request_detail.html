@@ -66,11 +66,25 @@
 
     <aside>
     {% if decision_form.action.field.choices %}
-    <form method="post" action="{% url 'administration:enrollment_request_action' demande.pk %}" class="card-elevated sticky top-24 space-y-5">
+    <form method="post" action="{% url 'administration:enrollment_request_action' demande.pk %}" class="card-elevated sticky top-24 space-y-5" data-confirmer-choix>
         {% csrf_token %}
-        <div><h2 class="text-lg font-semibold text-navy-900">Décision du secrétariat</h2><p class="mt-1 text-xs leading-5 text-warm-500">La confirmation crée automatiquement l’inscription au cours. Si un montant est dû, un paiement confirmé ou une exonération motivée est obligatoire.</p></div>
+        <div><h2 class="text-lg font-semibold text-navy-900">Décision du secrétariat</h2><p class="mt-1 text-xs leading-5 text-warm-500">La confirmation crée automatiquement l’inscription au cours. Si un montant est dû, un paiement confirmé ou une dispense motivée est obligatoire.</p></div>
         {% for field in decision_form %}
+        {% if field.name == "action" %}
+        <fieldset class="choix-decision">
+            <legend class="form-label">{{ field.label }}</legend>
+            {% for option in field %}
+            <label class="choix-decision-option{% if option.data.value == 'refuser' %} choix-decision-option--grave{% endif %}">
+                {{ option.tag }}
+                <span><span class="choix-decision-titre">{{ option.choice_label }}</span></span>
+            </label>
+            {% endfor %}
+        </fieldset>
+        {% elif field.field.widget.input_type == "checkbox" %}
+        <label class="flex items-start gap-2.5 cursor-pointer" for="{{ field.id_for_label }}">{{ field }}<span class="text-sm text-warm-700">{{ field.label }}</span></label>
+        {% else %}
         <div><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="mt-1 text-xs text-warm-500">{{ field.help_text }}</p>{% endif %}</div>
+        {% endif %}
         {% endfor %}
         <button type="submit" class="btn-primary w-full">Appliquer la décision</button>
     </form>

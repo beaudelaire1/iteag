@@ -64,9 +64,48 @@ def habiller(formulaire) -> None:
             widget.attrs.setdefault("aria-required", "true")
 
         widget.attrs["class"] = " ".join(dict.fromkeys(classes))
+        _choix_vide_lisible(champ)
 
 
-class FormulaireITEAG(forms.Form):
+# « --------- » : la valeur vide que Django affiche en tête de liste. Pour qui
+# ne connaît pas la convention, c'est un trait, pas une invitation à choisir.
+TIRETS_DJANGO = "---------"
+CHOIX_VIDE = "— Choisir —"
+
+
+def _choix_vide_lisible(champ) -> None:
+    if isinstance(champ, forms.ModelChoiceField):
+        if champ.empty_label == TIRETS_DJANGO:
+            champ.empty_label = CHOIX_VIDE
+        return
+    if isinstance(champ, forms.ChoiceField) and not isinstance(champ, forms.MultipleChoiceField):
+        choix = list(champ.choices)
+        if any(libelle == TIRETS_DJANGO for _valeur, libelle in choix):
+            champ.choices = [(valeur, CHOIX_VIDE if libelle == TIRETS_DJANGO else libelle) for valeur, libelle in choix]
+
+
+class ChampsAvances:
+    """Range les réglages rarement utiles sous « Plus d'options ».
+
+    Un formulaire déclare « champs_avances » : ces champs restent modifiables,
+    mais le gabarit les replie sous un bouton, pour que la tâche courante
+    n'affiche que ce qu'elle exige. Le bloc s'ouvre de lui-même quand l'un de
+    ses champs est en erreur — une erreur cachée serait introuvable.
+    """
+
+    champs_avances: tuple[str, ...] = ()
+
+    def champs_principaux(self):
+        return [self[nom] for nom in self.fields if nom not in self.champs_avances]
+
+    def champs_optionnels(self):
+        return [self[nom] for nom in self.fields if nom in self.champs_avances]
+
+    def options_avancees_en_erreur(self) -> bool:
+        return any(self[nom].errors for nom in self.fields if nom in self.champs_avances)
+
+
+class FormulaireITEAG(ChampsAvances, forms.Form):
     """Formulaire simple habillé à la charte."""
 
     def __init__(self, *args, **kwargs):
@@ -74,7 +113,7 @@ class FormulaireITEAG(forms.Form):
         habiller(self)
 
 
-class FormulaireModeleITEAG(forms.ModelForm):
+class FormulaireModeleITEAG(ChampsAvances, forms.ModelForm):
     """Formulaire de modèle habillé à la charte."""
 
     def __init__(self, *args, **kwargs):

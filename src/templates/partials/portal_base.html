@@ -3,6 +3,7 @@
 {% load static %}
 
 {% block robots %}noindex, nofollow{% endblock %}
+{% block body_class %} espace-prive{% if user.affichage_confortable %} affichage-confortable{% endif %}{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/portal-ux.css' %}?v={{ ASSET_VERSION }}">
@@ -27,6 +28,7 @@
                 <nav data-portal-nav class="space-y-1 pr-1" aria-label="Navigation de l’espace personnel">
                     {% block portal_nav %}{% endblock %}
                 </nav>
+                {% include "partials/portal_outils.html" %}
             </aside>
 
             <div class="lg:hidden mb-6">
@@ -38,6 +40,7 @@
                     <nav class="portal-mobile-menu-links" aria-label="Navigation mobile de l’espace personnel">
                         {% block portal_nav_mobile %}{% endblock %}
                     </nav>
+                    {% include "partials/portal_outils.html" with mobile=True %}
                 </details>
             </div>
 
@@ -49,5 +52,17 @@
         </div>
     </div>
 </div>
+{% comment %}Avertissement d'expiration de session — piloté par « session-active.js ».{% endcomment %}
+<div id="session-active" data-duree="{{ DUREE_SESSION }}" data-prolonger="{% url 'accounts:session_active' %}" data-connexion="{% url 'accounts:login' %}">
+    <div class="session-dialogue" data-session-dialogue role="alertdialog" aria-labelledby="session-titre" aria-describedby="session-texte" hidden>
+        <p id="session-titre" class="session-dialogue-titre">Êtes-vous toujours là ?</p>
+        <p id="session-texte" class="session-dialogue-texte" data-session-texte></p>
+        <div class="session-dialogue-actions">
+            <button type="button" class="btn-primary" data-session-rester>Rester connecté</button>
+            <a class="btn-primary" data-session-reconnexion href="{% url 'accounts:login' %}" hidden>Me reconnecter</a>
+        </div>
+    </div>
+</div>
 <script src="{% static 'js/portal-ux.js' %}?v={{ ASSET_VERSION }}" defer></script>
+<script src="{% static 'js/session-active.js' %}?v={{ ASSET_VERSION }}" defer></script>
 {% endblock %}

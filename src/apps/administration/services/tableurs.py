@@ -309,11 +309,7 @@ def _envoyer_activation_compte_etudiant(compte_id: int) -> None:
         contexte={
             "prenom": compte.first_name,
             "numero_etudiant": profil.numero_etudiant if profil is not None else "",
-            "parcours": (
-                profil.parcours.nom
-                if profil is not None and profil.parcours_id
-                else ""
-            ),
+            "parcours": (profil.parcours.nom if profil is not None and profil.parcours_id else ""),
             "lien_activation": lien_activation,
         },
         destinataires=[compte.email],
@@ -346,7 +342,9 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         attendus = ", ".join(ProfilEtudiant.StatutInscription.values)
         raise ValidationError(f"Statut inconnu : « {statut} ». Valeurs attendues : {attendus}.")
 
-    profil_par_email = ProfilEtudiant.objects.filter(utilisateur__email__iexact=email).select_related("utilisateur").first()
+    profil_par_email = (
+        ProfilEtudiant.objects.filter(utilisateur__email__iexact=email).select_related("utilisateur").first()
+    )
     if numero:
         profil = ProfilEtudiant.objects.filter(numero_etudiant=numero).select_related("utilisateur").first()
         if profil is None and profil_par_email is not None:
@@ -366,16 +364,14 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         comptes = list(User.objects.filter(email__iexact=email).order_by("pk")[:2])
         if len(comptes) > 1:
             raise ValidationError(
-                f"Plusieurs comptes utilisent l'adresse « {email} ». "
-                "Corrigez ce doublon avant l'import."
+                f"Plusieurs comptes utilisent l'adresse « {email} ». Corrigez ce doublon avant l'import."
             )
 
         compte = comptes[0] if comptes else None
         if compte is not None:
             if compte.role != User.Role.ETUDIANT:
                 raise ValidationError(
-                    f"L'adresse « {email} » appartient déjà à un compte "
-                    f"« {compte.get_role_display()} »."
+                    f"L'adresse « {email} » appartient déjà à un compte « {compte.get_role_display()} »."
                 )
             # Le compte existe déjà : on le rattache au nouveau dossier étudiant
             # au lieu de créer un second identifiant pour la même personne.
@@ -413,9 +409,7 @@ def _importer_etudiant(ligne: dict[str, str]) -> bool:
         compte = profil.utilisateur
         autre_compte = User.objects.filter(email__iexact=email).exclude(pk=compte.pk).first()
         if autre_compte is not None:
-            raise ValidationError(
-                f"L'adresse « {email} » est déjà utilisée par un autre compte."
-            )
+            raise ValidationError(f"L'adresse « {email} » est déjà utilisée par un autre compte.")
         compte.first_name = prenom
         compte.last_name = nom
         compte.email = email

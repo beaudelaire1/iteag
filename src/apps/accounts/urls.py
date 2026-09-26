@@ -2,6 +2,8 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from .views import (
+    AffichageView,
+    AideView,
     IteagLoginView,
     IteagLogoutView,
     IteagPasswordResetConfirmView,
@@ -9,6 +11,7 @@ from .views import (
     OTPActivationView,
     OTPVerificationView,
     ProfilView,
+    SessionActiveView,
     SignatureView,
 )
 
@@ -19,6 +22,9 @@ urlpatterns = [
     path("deconnexion/", IteagLogoutView.as_view(), name="logout"),
     path("comptes/profil/", ProfilView.as_view(), name="profil"),
     path("comptes/signature/", SignatureView.as_view(), name="signature"),
+    path("comptes/affichage/", AffichageView.as_view(), name="affichage"),
+    path("comptes/session/", SessionActiveView.as_view(), name="session_active"),
+    path("comptes/aide/", AideView.as_view(), name="aide"),
     # Double authentification
     path("comptes/securite/activer/", OTPActivationView.as_view(), name="otp_activation"),
     path("comptes/securite/verifier/", OTPVerificationView.as_view(), name="otp_verification"),

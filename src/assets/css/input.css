@@ -246,6 +246,33 @@
     background-color: var(--color-navy-50);
   }
 
+  /* Action secondaire d'une ligne de tableau (« Modifier », « Présences »…).
+     Employée par une dizaine d'écrans du secrétariat sans avoir jamais été
+     définie : ces liens s'affichaient comme du texte nu, sans rien qui dise
+     qu'on pouvait cliquer. */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-navy-700);
+    background: #fff;
+    border: 1.5px solid var(--color-navy-300);
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--duration-base) var(--ease-premium);
+  }
+  .btn-secondary:hover {
+    color: var(--color-navy-900);
+    border-color: var(--color-navy-700);
+    background-color: var(--color-navy-50);
+  }
+
   /* Action destructrice : une seule apparence dans tout le projet, au lieu
      d'un rouge redéclaré en style incrusté à chaque écran de suppression. */
   .btn-danger {

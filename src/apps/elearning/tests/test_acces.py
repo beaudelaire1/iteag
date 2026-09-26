@@ -130,7 +130,10 @@ class TestGestionnaires:
         from apps.formations.models import Professeur
 
         autre_utilisateur = User.objects.create_user(
-            username="autreprof", email="autreprof@example.org", password="motdepasse-long-12", role=User.Role.ENSEIGNANT
+            username="autreprof",
+            email="autreprof@example.org",
+            password="motdepasse-long-12",
+            role=User.Role.ENSEIGNANT,
         )
         Professeur.objects.create(user=autre_utilisateur, nom="Labeth", prenom="Ruth", slug="ruth-labeth")
         assert verifier_acces(autre_utilisateur, lecon).autorise is False

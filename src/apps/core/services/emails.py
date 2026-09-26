@@ -299,9 +299,7 @@ def envoyer_maintenant(
                 sujet,
             )
             if propager_erreur_smtp_temporaire:
-                raise ErreurSMTPTemporaire(
-                    f"{type(exc).__name__}: {exc}"
-                ) from exc
+                raise ErreurSMTPTemporaire(f"{type(exc).__name__}: {exc}") from exc
             return False
         logger.exception("Échec d'envoi du courriel « %s » à %s", sujet, destinataires)
         return False

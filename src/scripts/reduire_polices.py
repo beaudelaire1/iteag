@@ -31,10 +31,7 @@ LATIN = (
 )
 # Latin étendu : polonais, tchèque, turc, roumain, vietnamien. Rare sur le
 # site, donc isolé : le navigateur ne le demande que s'il en croise un signe.
-LATIN_ETENDU = (
-    "U+0100-02AF,U+0305-036F,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,"
-    "U+2113,U+2C60-2C7F,U+A720-A7FF"
-)
+LATIN_ETENDU = "U+0100-02AF,U+0305-036F,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF"
 # Grec moderne et polytonique (grec ancien du texte biblique).
 GREC = "U+0370-03FF,U+1F00-1FFF"
 

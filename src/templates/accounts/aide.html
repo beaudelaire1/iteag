@@ -1,0 +1,158 @@
+{% extends "partials/portal_base.html" %}
+
+{% block title %}Aide — {{ SITE_NAME }}{% endblock %}
+
+{% block portal_nav %}
+{% with nav='aide' %}{% if gabarit_navigation %}{% include gabarit_navigation %}{% endif %}{% endwith %}
+{% endblock %}
+{% block portal_nav_mobile %}
+{% with nav='aide' %}{% if gabarit_navigation_mobile %}{% include gabarit_navigation_mobile %}{% endif %}{% endwith %}
+{% endblock %}
+
+{% block portal_header %}
+<div class="mb-8 max-w-3xl">
+    <p class="overline mb-2">Aide</p>
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Mode d’emploi</h1>
+    <p class="mt-2 text-warm-600">
+        Les gestes les plus courants, étape par étape. Vous ne risquez rien à essayer : avant tout envoi de
+        courriel ou toute décision définitive, la plateforme vous demande de confirmer.
+    </p>
+</div>
+{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-3xl space-y-6">
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Une question, un blocage ?</h2>
+        <p class="mt-2 text-warm-700">
+            Appelez le secrétariat au <strong>{{ SITE_PHONE }}</strong> ou écrivez à
+            <strong>{{ SITE_EMAIL }}</strong>. Notez, si vous le pouvez, le nom de l’écran où vous étiez et le
+            message affiché.
+        </p>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Voir plus grand, ou voir plus de choses</h2>
+        <p class="mt-2 text-warm-700">
+            En bas du menu, à gauche, le bouton <strong>« Passer en affichage compact »</strong> réduit la taille du
+            texte et replie les rubriques du menu : plus de choses tiennent à l’écran. Le même bouton, qui devient
+            <strong>« Passer en affichage confortable »</strong>, ramène les grands caractères. Ce choix ne concerne que
+            vous.
+        </p>
+        <p class="mt-2 text-warm-700">
+            Pour agrandir encore le texte, maintenez la touche <strong>Ctrl</strong> et appuyez sur <strong>+</strong>
+            (sur Mac : <strong>Cmd</strong> et <strong>+</strong>). <strong>Ctrl</strong> et <strong>0</strong> revient à la
+            taille normale.
+        </p>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">La connexion</h2>
+        <ol class="aide-etapes text-warm-700">
+            <li>Saisissez votre adresse électronique (ou votre identifiant) et votre mot de passe.</li>
+            {% if personnel %}
+            <li>Ouvrez l’application d’authentification de votre téléphone (Google Authenticator, par exemple) et
+                recopiez le code à 6 chiffres affiché pour « ITEAG ». Le code change toutes les 30 secondes : s’il est
+                refusé, attendez le suivant.</li>
+            {% endif %}
+            <li>Sans activité pendant 30 minutes, la session se ferme par sécurité. Cinq minutes avant, un message
+                vous le signale : cliquez sur <strong>« Rester connecté »</strong>. Tant que vous tapez ou cliquez, la
+                session reste ouverte.</li>
+            <li>Mot de passe oublié ? Sur la page de connexion, cliquez sur <strong>« Mot de passe oublié ? »</strong> :
+                vous recevrez un lien par courriel. Après cinq erreurs de suite, le compte se bloque 30 minutes.</li>
+        </ol>
+    </section>
+
+    {% if personnel %}
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Répondre à une candidature</h2>
+        <ol class="aide-etapes text-warm-700">
+            <li>Dans le menu, cliquez sur <strong>Candidatures</strong>. Le nombre à côté indique les dossiers qui
+                attendent une réponse.</li>
+            <li>Cliquez sur <strong>« Ouvrir »</strong> en face du candidat.</li>
+            <li>Lisez le dossier. Les pièces jointes s’ouvrent en cliquant dessus.</li>
+            <li>À droite, dans <strong>« Votre décision »</strong>, cochez ce que vous voulez faire. Chaque choix dit
+                ce qu’il déclenche, par exemple l’envoi d’un courriel au candidat.</li>
+            <li>Pour accepter, choisissez aussi la <strong>promotion</strong> de l’étudiant.</li>
+            <li>Cliquez sur <strong>« Enregistrer ma décision »</strong>, puis confirmez. Un message vert confirme
+                l’enregistrement ; il reste affiché jusqu’à ce que vous cliquiez sur « Fermer ».</li>
+        </ol>
+        <p class="mt-3 text-warm-700">Il manque un document ? Cliquez sur <strong>« Nouvelle demande »</strong> dans
+            « Demandes de pièces » : le candidat reçoit la liste et dépose ses fichiers en ligne.</p>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Valider une inscription à un cours</h2>
+        <ol class="aide-etapes text-warm-700">
+            <li>Menu <strong>Demandes d’inscription</strong>, puis <strong>« Traiter »</strong> en face de l’étudiant.</li>
+            <li>Vérifiez dans l’encadré « Paiement » si l’étudiant a payé. Sinon, cliquez sur
+                <strong>« + Enregistrer un paiement »</strong> (voir plus bas).</li>
+            <li>Dans « Votre décision », cochez <strong>« Confirmer l’inscription »</strong>, puis cliquez sur
+                <strong>« Appliquer la décision »</strong> et confirmez.</li>
+            <li>Si le paiement n’est pas encore arrivé, cochez plutôt
+                <strong>« Valider administrativement et demander le paiement »</strong> : l’étudiant est prévenu.</li>
+        </ol>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Enregistrer un paiement</h2>
+        <ol class="aide-etapes text-warm-700">
+            <li>Depuis l’accueil, cliquez sur <strong>« Enregistrer un paiement »</strong>.</li>
+            <li>Choisissez l’étudiant dans la liste : tapez la première lettre de son nom pour y aller directement.</li>
+            <li>Indiquez le montant, la date (celle du jour est déjà remplie), le moyen de paiement et la session.</li>
+            <li>Laissez « En attente » tant que l’argent n’est pas arrivé sur le compte ; choisissez
+                « Confirmé » quand il l’est.</li>
+            <li>La référence du virement et le reçu sont dans <strong>« Plus d’options »</strong> : facultatifs.</li>
+        </ol>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Inscrire un nouvel étudiant</h2>
+        <p class="mt-2 text-warm-700">
+            Si la personne a déposé une candidature, <strong>acceptez sa candidature</strong> : tout se crée seul. Sinon :
+        </p>
+        <ol class="aide-etapes text-warm-700">
+            <li>Depuis l’accueil, cliquez sur <strong>« Inscrire un nouvel étudiant »</strong>.</li>
+            <li>Remplissez le prénom, le nom et l’adresse électronique, puis le parcours et la promotion si vous les
+                connaissez.</li>
+            <li>Cliquez sur <strong>« Inscrire l’étudiant »</strong>. Le numéro étudiant est attribué
+                automatiquement ; l’étudiant reçoit un courriel pour choisir son mot de passe.</li>
+        </ol>
+        <p class="mt-3 text-warm-700">Pour inscrire beaucoup d’étudiants d’un coup, utilisez plutôt
+            <strong>Imports et exports Excel</strong>.</p>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Programmer un cours dans une session</h2>
+        <ol class="aide-etapes text-warm-700">
+            <li>Depuis l’accueil, cliquez sur <strong>« Programmer un cours »</strong>.</li>
+            <li>Choisissez le cours, la session et l’enseignant, puis indiquez s’il a lieu en présentiel ou à distance.</li>
+            <li>Les jours, horaires et la salle sont facultatifs. Le nombre de places (30), la date limite et les frais
+                gardent les valeurs habituelles, modifiables dans <strong>« Plus d’options »</strong>.</li>
+        </ol>
+    </section>
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Travailler avec Excel</h2>
+        <ol class="aide-etapes text-warm-700">
+            <li>Menu <strong>Imports et exports Excel</strong>, puis <strong>« Ouvrir »</strong> sur la liste voulue
+                (étudiants, enseignants, cours, bibliothèque).</li>
+            <li>Pour modifier des données existantes, téléchargez d’abord les <strong>données actuelles</strong> en
+                Excel, corrigez-les, puis réimportez le fichier.</li>
+            <li>Pour une nouvelle liste, téléchargez le <strong>gabarit vide</strong> : les colonnes y sont déjà.</li>
+            <li>À l’import, si une seule ligne pose problème, rien n’est enregistré : la page indique la ligne et la
+                raison. Corrigez et recommencez.</li>
+        </ol>
+    </section>
+    {% endif %}
+
+    <section class="card-elevated">
+        <h2 class="text-lg font-semibold text-navy-900">Quitter la plateforme</h2>
+        <p class="mt-2 text-warm-700">
+            Sur un ordinateur partagé, cliquez toujours sur <strong>« Se déconnecter »</strong>, en bas du menu, avant
+            de partir.
+        </p>
+    </section>
+</div>
+{% endblock %}

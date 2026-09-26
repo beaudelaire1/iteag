@@ -183,7 +183,7 @@ def test_la_liste_utilisateurs_affiche_la_derniere_connexion_et_jamais_connecte(
     corps = client.get(reverse("administration:utilisateurs")).content.decode()
 
     assert "Dernière connexion" in corps
-    assert connecte.last_login.strftime("%d/%m/%Y") in corps
+    assert timezone.localtime(connecte.last_login).strftime("%d/%m/%Y") in corps
     assert "Jamais connecté" in corps
 
 
@@ -205,7 +205,7 @@ def test_la_fiche_de_modification_utilisateur_affiche_l_activite(client, secreta
 
     assert "Informations du compte" in corps
     assert "Dernière connexion" in corps
-    assert compte.last_login.strftime("%d/%m/%Y") in corps
+    assert timezone.localtime(compte.last_login).strftime("%d/%m/%Y") in corps
     assert "Compte créé le" in corps
 
 

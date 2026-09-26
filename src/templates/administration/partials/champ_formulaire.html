@@ -1,0 +1,21 @@
+{% comment %}
+Un champ du formulaire d'administration. Les cases multiples (disciplines,
+parcours…) s'affichent en liste de cases à cocher ; tout le reste passe par
+le gabarit commun « partials/champ.html ».
+{% endcomment %}
+{% if field.field.widget.allow_multiple_selected and field.field.widget.input_type == 'checkbox' %}
+<fieldset class="champ{% if field.errors %} champ--invalide{% endif %}">
+    <legend class="form-label">{{ field.label }}{% if field.field.required %}<span class="obligatoire" aria-hidden="true">*</span>{% endif %}</legend>
+    <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-1">
+        {% for choice in field %}
+        <label class="inline-flex items-center gap-2 text-sm cursor-pointer text-navy-800">
+            {{ choice.tag }} {{ choice.choice_label }}
+        </label>
+        {% endfor %}
+    </div>
+    {% if field.help_text %}<p class="form-aide">{{ field.help_text }}</p>{% endif %}
+    {% for erreur in field.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+</fieldset>
+{% else %}
+{% include "partials/champ.html" %}
+{% endif %}

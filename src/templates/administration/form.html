@@ -48,28 +48,33 @@
 
         {% include "partials/erreurs_formulaire.html" %}
 
-        {% for field in form %}
-        {% if field.name == 'disciplines' %}
-        <div class="champ">
-            <label class="form-label">{{ field.label }}</label>
-            <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-1">
-                {% for choice in field %}
-                <label class="inline-flex items-center gap-2 text-sm cursor-pointer text-navy-800">
-                    {{ choice.tag }} {{ choice.choice_label }}
-                </label>
-                {% endfor %}
-            </div>
-            {% if field.help_text %}<p class="form-aide">{{ field.help_text }}</p>{% endif %}
-            {% for erreur in field.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
-        </div>
-        {% else %}
-        {% include "partials/champ.html" %}
-        {% endif %}
+        {% if form_intro %}<p class="text-sm text-warm-600">{{ form_intro }}</p>{% endif %}
+
+        {% for field in form.champs_principaux|default:form %}
+        {% include "administration/partials/champ_formulaire.html" %}
         {% endfor %}
 
+        {% with optionnels=form.champs_optionnels %}
+        {% if optionnels %}
+        <details class="options-avancees"{% if form.options_avancees_en_erreur %} open{% endif %}>
+            <summary>
+                <span>
+                    Plus d’options
+                    <span class="options-avancees-aide">Facultatif — les valeurs habituelles sont déjà remplies.</span>
+                </span>
+            </summary>
+            <div class="options-avancees-corps">
+                {% for field in optionnels %}
+                {% include "administration/partials/champ_formulaire.html" %}
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+        {% endwith %}
+
         <div class="flex items-center gap-4 pt-2">
-            <button type="submit" class="btn-primary">Enregistrer</button>
-            <a href="{% if cancel_url %}{{ cancel_url }}{% elif user.is_secretariat %}{% url 'secretariat:dashboard' %}{% else %}{% url 'administration:dashboard' %}{% endif %}" class="text-sm font-medium text-warm-500">Annuler</a>
+            <button type="submit" class="btn-primary">{{ form_submit|default:"Enregistrer" }}</button>
+            <a href="{% if cancel_url %}{{ cancel_url }}{% elif user.is_secretariat %}{% url 'secretariat:dashboard' %}{% else %}{% url 'administration:dashboard' %}{% endif %}" class="btn-ghost">Annuler</a>
         </div>
     </form>
 </div>

@@ -141,10 +141,12 @@
     {% include "partials/nav_icon.html" with name="table" only %}
     Imports et exports
 </a>
+{% if user.is_superuser or not user.affichage_confortable %}
 <a href="/django-admin/" class="portal-nav-link">
     {% include "partials/nav_icon.html" with name="settings" only %}
     Django Admin (avancé)
 </a>
+{% endif %}
 <a href="{% url 'accounts:profil' %}" class="portal-nav-link {% if nav == 'profil' %}active{% endif %}">
     {% include "partials/nav_icon.html" with name="profile" only %}
     Mon profil
