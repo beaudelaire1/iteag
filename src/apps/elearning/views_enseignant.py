@@ -151,6 +151,15 @@ class ModuleCreateView(ProfesseurMixin, CreateView):
         kwargs["personnel"] = self.est_personnel
         return kwargs
 
+    def get_initial(self):
+        initial = super().get_initial()
+        # « Nouvel atelier de prédication » ouvre le formulaire déjà réglé :
+        # on n'a pas à savoir qu'un atelier est une sorte de module.
+        if self.request.GET.get("genre") == ModuleFormation.Genre.ATELIER:
+            initial["genre"] = ModuleFormation.Genre.ATELIER
+            initial["politique_acces"] = ModuleFormation.PolitiqueAcces.SUR_OCTROI
+        return initial
+
     def form_valid(self, form):
         module = form.save(commit=False)
         # Le personnel désigne le responsable ; l'enseignant l'est d'office.
@@ -159,7 +168,10 @@ class ModuleCreateView(ProfesseurMixin, CreateView):
         module.save()
         form.save_m2m()
         journaliser("creation", request=self.request, objet=module)
-        messages.success(self.request, "Module créé. Ajoutez-y des chapitres et des leçons.")
+        if module.genre == ModuleFormation.Genre.ATELIER:
+            messages.success(self.request, "Atelier créé. Ajoutez-y maintenant ses séances et leurs vidéos.")
+        else:
+            messages.success(self.request, "Module créé. Ajoutez-y des chapitres et des leçons.")
         return redirect(reverse("elearning:enseignant_structure", kwargs={"slug": module.slug}))
 
 

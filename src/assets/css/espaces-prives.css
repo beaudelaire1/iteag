@@ -38,6 +38,50 @@
   overflow-wrap: anywhere;
 }
 
+/* ── Masquer / afficher le volet latéral ──
+   Le bouton n'existe qu'à partir de la largeur où le volet s'affiche : sur
+   téléphone, la navigation est déjà repliée dans « Toutes les fonctions ». */
+.portal-bascule-zone {
+  display: none;
+}
+@media (min-width: 64rem) {
+  .portal-bascule-zone {
+    display: flex;
+    margin-bottom: 1.25rem;
+  }
+  .portal-layout--sans-volet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .portal-layout--sans-volet .portal-sidebar {
+    display: none;
+  }
+  .portal-layout--sans-volet .portal-main {
+    padding-left: 0;
+  }
+}
+.portal-bascule-volet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-navy-700);
+  background: #fff;
+  border: 1.5px solid var(--color-navy-300);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.portal-bascule-volet:hover {
+  color: var(--color-navy-900);
+  border-color: var(--color-navy-700);
+  background: var(--color-navy-50);
+}
+.affichage-confortable .portal-bascule-volet {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+
 /* ── Pied du volet : aide, affichage, déconnexion ── */
 .portal-outils {
   display: grid;

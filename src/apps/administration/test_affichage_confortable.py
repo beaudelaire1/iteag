@@ -291,3 +291,37 @@ class TestFormulairesAlleges:
         formulaire = PromotionForm(data={"parcours": parcours.pk, "annee_debut": 2026, "annee_fin": 2029})
         assert not formulaire.is_valid()
         assert "nom" in formulaire.errors
+
+
+# ──────────────────────────────────────────────
+# Volet de navigation masquable
+# ──────────────────────────────────────────────
+
+
+class TestVoletMasquable:
+    def test_le_volet_est_affiche_par_defaut_avec_son_bouton(self, client, secretaire):
+        client.force_login(secretaire)
+        page = client.get(reverse("secretariat:dashboard")).content.decode()
+        assert "Masquer le menu" in page
+        assert "portal-layout--sans-volet" not in page
+
+    def test_masquer_est_memorise_sur_le_compte(self, client, secretaire):
+        client.force_login(secretaire)
+        origine = reverse("administration:candidatures")
+        reponse = client.post(reverse("accounts:volet"), {"volet": "masque", "suivant": origine})
+        assert reponse.url == origine
+        secretaire.refresh_from_db()
+        assert secretaire.volet_masque is True
+
+        page = client.get(origine).content.decode()
+        assert "portal-layout--sans-volet" in page
+        assert "Afficher le menu" in page
+
+    def test_le_script_enregistre_sans_recharger(self, client, secretaire):
+        secretaire.volet_masque = True
+        secretaire.save(update_fields=["volet_masque"])
+        client.force_login(secretaire)
+        reponse = client.post(reverse("accounts:volet"), {"volet": "affiche"}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        assert reponse.status_code == 204
+        secretaire.refresh_from_db()
+        assert secretaire.volet_masque is False

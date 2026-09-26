@@ -56,7 +56,38 @@
     nav.dataset.portalNavReady = "true";
   }
 
+  /* Masquer ou afficher le volet latéral. Le basculement est immédiat ; le
+     choix est enregistré sur le compte en tâche de fond, et la page suivante
+     s'ouvre dans le même état. Sans script, le formulaire part normalement. */
+  function brancherBasculeVolet(formulaire) {
+    const disposition = document.querySelector("[data-portal-layout]");
+    const bouton = formulaire.querySelector("button");
+    const libelle = formulaire.querySelector("[data-bascule-libelle]");
+    const valeur = formulaire.querySelector("[data-bascule-valeur]");
+    if (!disposition || !bouton || !libelle || !valeur) return;
+
+    formulaire.addEventListener("submit", (evenement) => {
+      evenement.preventDefault();
+      const masque = disposition.classList.toggle("portal-layout--sans-volet");
+      bouton.setAttribute("aria-expanded", masque ? "false" : "true");
+      libelle.textContent = masque ? "Afficher le menu" : "Masquer le menu";
+
+      const envoi = new FormData(formulaire);
+      envoi.set("volet", masque ? "masque" : "affiche");
+      valeur.value = masque ? "affiche" : "masque";
+      fetch(formulaire.action, {
+        method: "POST",
+        body: envoi,
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      }).catch(() => {
+        /* Hors ligne : l'affichage a changé, le choix sera repris au prochain clic. */
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[data-portal-nav]").forEach(transformerNavigation);
+    document.querySelectorAll("[data-bascule-volet]").forEach(brancherBasculeVolet);
   });
 })();

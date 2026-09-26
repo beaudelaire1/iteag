@@ -1,50 +1,80 @@
 {% extends "partials/portal_base.html" %}
 {% load static %}
 
-{% block title %}{% if object %}Modifier{% else %}Nouveau{% endif %} module — {{ SITE_NAME }}{% endblock %}
+{% block title %}{% if object %}Modifier « {{ object.titre }} »{% elif form.est_atelier %}Nouvel atelier{% else %}Nouveau module{% endif %} — {{ SITE_NAME }}{% endblock %}
 {% block portal_nav %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav.html" %}{% endwith %}{% endblock %}
 {% block portal_nav_mobile %}{% with nav='modules' %}{% include "elearning/enseignant/partials/nav_mobile.html" %}{% endwith %}{% endblock %}
 {% block extra_js %}<script src="{% static 'js/elearning-formulaires.js' %}?v={{ ASSET_VERSION }}" defer></script>{% endblock %}
 
+{% comment %}
+Un seul formulaire pour les modules et les ateliers de prédication.
+
+Choisir « Atelier de prédication » masque ce qu'un atelier n'a pas à dire
+(code, niveau, discipline, cours, objectifs, crédits, seuil, attestation) :
+les blocs concernés portent « data-seulement-formation ». Les textes qui
+changent avec la nature portent leur variante dans « data-texte-atelier ».
+Sans script, tout reste affiché et l'enregistrement fonctionne : le
+formulaire neutralise lui-même ces champs pour un atelier.
+{% endcomment %}
+
 {% block portal_header %}
 <div class="mb-8 max-w-3xl">
     <p class="overline mb-2">E-Learning</p>
-    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">{% if object %}Modifier « {{ object.titre }} »{% else %}Créer un module E-Learning{% endif %}</h1>
-    <p class="mt-3 text-sm text-warm-600">
-        Définissez d’abord le cadre du module. Les chapitres et les leçons seront ajoutés après l’enregistrement.
+    {% if object %}
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Modifier « {{ object.titre }} »</h1>
+    {% else %}
+    <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]" data-texte-atelier="Créer un atelier de prédication" data-texte-formation="Créer un module E-Learning">{% if form.est_atelier %}Créer un atelier de prédication{% else %}Créer un module E-Learning{% endif %}</h1>
+    {% endif %}
+    <p class="mt-3 text-sm text-warm-600" data-texte-atelier="Quelques informations suffisent. Les séances et leurs vidéos s’ajoutent après l’enregistrement." data-texte-formation="Définissez d’abord le cadre du module. Les chapitres et les leçons seront ajoutés après l’enregistrement.">
+        {% if form.est_atelier %}Quelques informations suffisent. Les séances et leurs vidéos s’ajoutent après l’enregistrement.{% else %}Définissez d’abord le cadre du module. Les chapitres et les leçons seront ajoutés après l’enregistrement.{% endif %}
     </p>
 </div>
 {% endblock %}
 
 {% block portal_content %}
-<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-8" data-module-form>
+<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-8" data-module-form{% if not object %} data-creation{% endif %}>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="note alert max-w-none" role="alert">{{ form.non_field_errors }}</div>{% endif %}
 
     <section class="card-elevated space-y-5">
-        <div><p class="overline mb-1">Étape 1</p><h2 class="text-lg font-semibold">Identifier le module</h2>
-        <p class="mt-1 text-sm text-warm-500">Nommez le module et rattachez-le à l’offre de formation.</p></div>
+        <div><p class="overline mb-1" data-etape>Étape 1</p><h2 class="text-lg font-semibold">Que créez-vous ?</h2></div>
+        <fieldset class="choix-decision">
+            <legend class="sr-only">{{ form.genre.label }}</legend>
+            {% for option in form.genre %}
+            <label class="choix-decision-option">
+                {{ option.tag }}
+                <span>
+                    <span class="choix-decision-titre">{{ option.choice_label }}</span>
+                    <span class="choix-decision-effet">
+                        {% if option.data.value == "atelier" %}Des séances filmées, présentées à part. Pas de crédits ni d’attestation : seuls le titre, la présentation et l’accès sont demandés.{% else %}Un cours en vidéo en plusieurs chapitres, qui peut donner des crédits ECTS et une attestation.{% endif %}
+                    </span>
+                </span>
+            </label>
+            {% endfor %}
+        </fieldset>
+        {% for erreur in form.genre.errors %}<p class="form-erreur" role="alert">{{ erreur }}</p>{% endfor %}
+    </section>
+
+    <section class="card-elevated space-y-5">
+        <div><p class="overline mb-1" data-etape>Étape 2</p><h2 class="text-lg font-semibold" data-texte-atelier="Présenter l’atelier" data-texte-formation="Identifier le module">{% if form.est_atelier %}Présenter l’atelier{% else %}Identifier le module{% endif %}</h2>
+        <p class="mt-1 text-sm text-warm-500" data-texte-atelier="Son titre, qui l’anime, et ce que les participants y trouveront." data-texte-formation="Nommez le module et rattachez-le à l’offre de formation.">{% if form.est_atelier %}Son titre, qui l’anime, et ce que les participants y trouveront.{% else %}Nommez le module et rattachez-le à l’offre de formation.{% endif %}</p></div>
         {% include "partials/champ.html" with field=form.titre %}
-        {% include "partials/champ.html" with field=form.genre %}
         {% if form.responsable %}{% include "partials/champ.html" with field=form.responsable %}{% endif %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5" data-seulement-formation{% if form.est_atelier %} hidden{% endif %}>
             {% include "partials/champ.html" with field=form.code %}
             {% include "partials/champ.html" with field=form.niveau %}
             {% include "partials/champ.html" with field=form.discipline %}
             {% include "partials/champ.html" with field=form.cours %}
         </div>
-    </section>
-
-    <section class="card-elevated space-y-5">
-        <div><p class="overline mb-1">Étape 2</p><h2 class="text-lg font-semibold">Présenter le contenu</h2>
-        <p class="mt-1 text-sm text-warm-500">Expliquez clairement ce que l’étudiant va apprendre.</p></div>
         {% include "partials/champ.html" with field=form.description %}
-        {% include "partials/champ.html" with field=form.objectifs %}
+        <div data-seulement-formation{% if form.est_atelier %} hidden{% endif %}>
+            {% include "partials/champ.html" with field=form.objectifs %}
+        </div>
         {% include "partials/champ.html" with field=form.image_couverture %}
     </section>
 
-    <section class="card-elevated space-y-5">
-        <div><p class="overline mb-1">Étape 3</p><h2 class="text-lg font-semibold">Définir la validation</h2>
+    <section class="card-elevated space-y-5" data-seulement-formation{% if form.est_atelier %} hidden{% endif %}>
+        <div><p class="overline mb-1" data-etape>Étape 3</p><h2 class="text-lg font-semibold">Définir la validation</h2>
         <p class="mt-1 text-sm text-warm-500">Précisez les crédits, le seuil de complétion et l’attestation.</p></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             {% include "partials/champ.html" with field=form.ects %}
@@ -55,13 +85,17 @@
     </section>
 
     <section class="card-elevated space-y-5">
-        <div><p class="overline mb-1">Étape 4</p><h2 class="text-lg font-semibold">Choisir les conditions d’accès</h2>
-        <p class="mt-1 text-sm text-warm-500">Indiquez qui pourra consulter le module. Les aperçus se règlent leçon par leçon.</p></div>
+        <div><p class="overline mb-1" data-etape>{% if form.est_atelier %}Étape 3{% else %}Étape 4{% endif %}</p><h2 class="text-lg font-semibold">Choisir qui peut regarder</h2>
+        <p class="mt-1 text-sm text-warm-500" data-texte-atelier="Pour un atelier, « Sur octroi individuel » est proposé : le secrétariat ouvre l’accès aux personnes inscrites." data-texte-formation="Indiquez qui pourra consulter le module. Les aperçus se règlent leçon par leçon.">{% if form.est_atelier %}Pour un atelier, « Sur octroi individuel » est proposé : le secrétariat ouvre l’accès aux personnes inscrites.{% else %}Indiquez qui pourra consulter le module. Les aperçus se règlent leçon par leçon.{% endif %}</p></div>
         {% include "partials/champ.html" with field=form.politique_acces %}
     </section>
 
     <div class="flex flex-wrap gap-4">
-        <button type="submit" class="btn-primary">{% if object %}Enregistrer les modifications{% else %}Créer le module et continuer{% endif %}</button>
+        {% if object %}
+        <button type="submit" class="btn-primary">Enregistrer les modifications</button>
+        {% else %}
+        <button type="submit" class="btn-primary" data-texte-atelier="Créer l’atelier et continuer" data-texte-formation="Créer le module et continuer">{% if form.est_atelier %}Créer l’atelier et continuer{% else %}Créer le module et continuer{% endif %}</button>
+        {% endif %}
         <a href="{% url 'elearning:enseignant_modules' %}" class="btn-ghost">Annuler</a>
     </div>
 </form>

@@ -11,7 +11,10 @@
         <p class="overline mb-2">E-Learning</p>
         <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Bonjour {{ professeur.prenom }}</h1>
     </div>
-    <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Nouveau module</a>
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'elearning:enseignant_module_creer' %}?genre=atelier" class="btn-ghost">Nouvel atelier de prédication</a>
+        <a href="{% url 'elearning:enseignant_module_creer' %}" class="btn-primary">Nouveau module</a>
+    </div>
 </div>
 {% endblock %}
 

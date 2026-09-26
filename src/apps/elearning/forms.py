@@ -18,14 +18,37 @@ FICHIER = "form-file"
 
 
 class ModuleForm(FormulaireModeleITEAG):
-    """Création et édition d'un module par son responsable."""
+    """Création et édition d'un module par son responsable.
+
+    Un atelier de prédication se présente et se compose comme un module, mais
+    il ne délivre ni crédits ni attestation, ne se rattache à aucun cours du
+    référentiel et ne se classe pas par niveau. Quand « atelier » est choisi,
+    le formulaire n'affiche que ce qui le décrit (titre, présentation, image,
+    accès) ; les champs propres aux modules reçoivent ici des valeurs neutres,
+    pour qu'une saisie faite avant de changer d'avis ne s'enregistre pas en
+    silence.
+    """
+
+    # Ce qu'un atelier n'a pas à renseigner. Le gabarit masque ces champs, et
+    # « clean » les neutralise : le masquage seul ne suffirait pas.
+    CHAMPS_FORMATION = (
+        "code",
+        "niveau",
+        "discipline",
+        "cours",
+        "objectifs",
+        "ects",
+        "seuil_completion",
+        "certifiant",
+        "autorise_revision",
+    )
 
     class Meta:
         model = ModuleFormation
         fields = [
+            "genre",
             "titre",
             "code",
-            "genre",
             "description",
             "objectifs",
             "discipline",
@@ -52,13 +75,20 @@ class ModuleForm(FormulaireModeleITEAG):
             "objectifs": forms.Textarea(attrs={"class": INPUT, "rows": 4}),
             "discipline": forms.Select(attrs={"class": SELECT}),
             "cours": forms.Select(attrs={"class": SELECT}),
-            "genre": forms.Select(attrs={"class": SELECT}),
+            "genre": forms.RadioSelect(),
             "responsable": forms.Select(attrs={"class": SELECT}),
             "niveau": forms.Select(attrs={"class": SELECT}),
             "image_couverture": forms.ClearableFileInput(attrs={"class": FICHIER}),
             "ects": forms.NumberInput(attrs={"class": INPUT, "min": 0, "step": "0.5"}),
             "politique_acces": forms.Select(attrs={"class": SELECT}),
             "seuil_completion": forms.NumberInput(attrs={"class": INPUT, "min": 50, "max": 100}),
+        }
+        labels = {
+            "genre": "Que créez-vous ?",
+            "responsable": "Enseignant responsable",
+            "description": "Présentation",
+            "image_couverture": "Image de couverture",
+            "politique_acces": "Qui peut regarder ?",
         }
         help_texts = {
             "seuil_completion": "Part du module à visionner pour qu'il soit considéré comme terminé.",
@@ -79,6 +109,13 @@ class ModuleForm(FormulaireModeleITEAG):
         # Un module est une formation sauf mention contraire : ne pas cocher la
         # nature ne doit pas refuser l'enregistrement.
         self.fields["genre"].required = False
+        self.fields["genre"].help_text = ""
+        # Masqués pour un atelier, ces champs ne peuvent pas rester exigés :
+        # leurs valeurs par défaut s'appliquent quand ils sont laissés vides.
+        for nom in ("genre", "niveau", "ects", "seuil_completion"):
+            self.fields[nom].required = False
+            # Posé par l'habillage quand le champ était encore exigé.
+            self.fields[nom].widget.attrs.pop("aria-required", None)
 
         if personnel:
             # Un module sans responsable n'a personne à relancer ni à qui
@@ -94,6 +131,38 @@ class ModuleForm(FormulaireModeleITEAG):
     def clean_genre(self):
         return self.cleaned_data.get("genre") or ModuleFormation.Genre.FORMATION
 
+    @property
+    def est_atelier(self) -> bool:
+        """Nature retenue, lue avant validation pour le premier affichage."""
+        if self.is_bound:
+            valeur = self.data.get(self.add_prefix("genre"))
+        else:
+            valeur = self.initial.get("genre") or self.instance.genre
+        return valeur == ModuleFormation.Genre.ATELIER
+
+    def clean(self):
+        donnees = super().clean()
+        champ = ModuleFormation._meta.get_field
+        if donnees.get("genre") == ModuleFormation.Genre.ATELIER:
+            donnees.update(
+                {
+                    "code": "",
+                    "niveau": champ("niveau").default,
+                    "discipline": None,
+                    "cours": None,
+                    "objectifs": "",
+                    "ects": 0,
+                    "seuil_completion": champ("seuil_completion").default,
+                    "certifiant": False,
+                    "autorise_revision": True,
+                }
+            )
+        else:
+            for nom in ("niveau", "ects", "seuil_completion"):
+                if donnees.get(nom) in (None, ""):
+                    donnees[nom] = champ(nom).default
+        return donnees
+
     def clean_politique_acces(self):
         """Resserrer la politique ne doit pas rendre le module inlisible.
 
@@ -103,8 +172,21 @@ class ModuleForm(FormulaireModeleITEAG):
         leçons devenaient incompatibles sans que personne ne l'apprenne avant la
         prochaine tentative de publication.
         """
-        politique = self.cleaned_data.get("politique_acces") or self.instance.politique_acces
-        if self.instance.pk is None:
+        politique = self.cleaned_data.get("politique_acces")
+        if not politique:
+            # Un atelier n'est rattaché à aucun parcours : « réservé aux inscrits
+            # du parcours » n'y ouvrirait l'accès à personne. Les participants
+            # s'inscrivent au secrétariat, qui leur octroie l'accès.
+            # « pk » est un UUID attribué dès l'instanciation : seul « adding »
+            # dit qu'un module n'existe pas encore.
+            if self.instance._state.adding and self.cleaned_data.get("genre") == ModuleFormation.Genre.ATELIER:
+                politique = ModuleFormation.PolitiqueAcces.SUR_OCTROI
+                # Un champ absent de l'envoi n'est pas recopié dans l'instance
+                # (le défaut du modèle l'emporterait) : on le pose soi-même.
+                self.instance.politique_acces = politique
+            else:
+                politique = self.instance.politique_acces
+        if self.instance._state.adding:
             return politique
 
         incompatibles = [

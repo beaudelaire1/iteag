@@ -420,6 +420,30 @@ class AffichageView(LoginRequiredMixin, View):
         return redirect(suivant)
 
 
+class VoletView(LoginRequiredMixin, View):
+    """Masque ou réaffiche le volet de navigation des espaces privés.
+
+    Le script bascule l'affichage aussitôt et enregistre le choix en tâche de
+    fond ; sans script, le bouton envoie le formulaire et la page revient.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request):
+        masque = request.POST.get("volet") == "masque"
+        if request.user.volet_masque != masque:
+            request.user.volet_masque = masque
+            request.user.save(update_fields=["volet_masque"])
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return HttpResponse(status=204)
+        suivant = request.POST.get("suivant", "")
+        if not url_has_allowed_host_and_scheme(
+            suivant, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            suivant = tableau_de_bord(request.user) or reverse("accounts:profil")
+        return redirect(suivant)
+
+
 class SessionActiveView(LoginRequiredMixin, View):
     """Prolonge la session de quelqu'un qui travaille sans changer de page.
 

@@ -171,3 +171,88 @@ class TestNatureDuModule:
         client.post(reverse("elearning:enseignant_module_creer"), saisie(titre="Christologie"))
 
         assert ModuleFormation.objects.get().genre == ModuleFormation.Genre.FORMATION
+
+
+class TestFormulaireDAtelier:
+    """Un atelier de prédication ne demande que ce qui le décrit.
+
+    Pas de code, de niveau, de discipline, de cours, d'objectifs, de crédits,
+    de seuil ni d'attestation : choisir « atelier » les masque, et le serveur
+    les neutralise pour qu'une saisie abandonnée ne s'enregistre pas.
+    """
+
+    def test_titre_et_responsable_suffisent(self, client, secretaire, enseignant):
+        client.force_login(secretaire)
+
+        reponse = client.post(
+            reverse("elearning:enseignant_module_creer"),
+            {"genre": ModuleFormation.Genre.ATELIER, "titre": "Prêcher les Psaumes", "responsable": enseignant.pk},
+        )
+
+        assert reponse.status_code == 302
+        atelier = ModuleFormation.objects.get()
+        assert atelier.genre == ModuleFormation.Genre.ATELIER
+        assert atelier.ects == 0
+        assert atelier.certifiant is False
+        # Rattaché à aucun parcours : l'accès passe par le secrétariat.
+        assert atelier.politique_acces == ModuleFormation.PolitiqueAcces.SUR_OCTROI
+
+    def test_une_saisie_de_module_abandonnee_ne_s_enregistre_pas(self, client, secretaire, enseignant):
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("elearning:enseignant_module_creer"),
+            saisie(
+                genre=ModuleFormation.Genre.ATELIER,
+                responsable=enseignant.pk,
+                code="HOM-201",
+                objectifs="Maîtriser l'exégèse",
+                ects="5",
+                certifiant="on",
+                niveau="avance",
+            ),
+        )
+
+        atelier = ModuleFormation.objects.get()
+        assert (atelier.code, atelier.objectifs, atelier.ects, atelier.certifiant) == ("", "", 0, False)
+        assert atelier.niveau == ModuleFormation.Niveau.INITIATION
+
+    def test_un_choix_d_acces_explicite_est_respecte(self, client, secretaire, enseignant):
+        client.force_login(secretaire)
+
+        client.post(
+            reverse("elearning:enseignant_module_creer"),
+            {
+                "genre": ModuleFormation.Genre.ATELIER,
+                "titre": "Atelier ouvert",
+                "responsable": enseignant.pk,
+                "politique_acces": ModuleFormation.PolitiqueAcces.PUBLIC,
+            },
+        )
+
+        assert ModuleFormation.objects.get().politique_acces == ModuleFormation.PolitiqueAcces.PUBLIC
+
+    def test_le_lien_nouvel_atelier_ouvre_le_formulaire_simplifie(self, client, secretaire):
+        client.force_login(secretaire)
+
+        contenu = client.get(reverse("elearning:enseignant_module_creer") + "?genre=atelier").content.decode()
+
+        assert 'id="id_genre_1" checked' in contenu
+        assert "Créer un atelier de prédication" in contenu
+        assert "data-seulement-formation hidden" in contenu
+        assert 'value="sur_octroi" selected' in contenu
+
+    def test_la_liste_propose_de_creer_un_atelier(self, client, secretaire):
+        client.force_login(secretaire)
+        contenu = client.get(reverse("elearning:enseignant_modules")).content.decode()
+        assert "?genre=atelier" in contenu
+
+    def test_un_module_de_formation_garde_ses_valeurs_par_defaut(self, client, enseignant):
+        client.force_login(enseignant.user)
+
+        client.post(reverse("elearning:enseignant_module_creer"), {"titre": "Christologie", "genre": "formation"})
+
+        module = ModuleFormation.objects.get()
+        assert module.genre == ModuleFormation.Genre.FORMATION
+        assert module.seuil_completion == 80
+        assert module.politique_acces == ModuleFormation.PolitiqueAcces.INSCRIT_PARCOURS

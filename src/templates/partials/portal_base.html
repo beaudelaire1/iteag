@@ -10,8 +10,15 @@
 
 <div class="min-h-[calc(100vh-4rem)] bg-warm-100">
     <div class="container-wide py-8 lg:py-12">
-        <div class="portal-layout">
-            <aside class="portal-sidebar hidden lg:block">
+        {% comment %}
+        Le volet se masque d'un clic (« Masquer le menu »), pour rendre toute la
+        largeur à un tableau ou à un long formulaire. Le choix est gardé sur le
+        compte et lu ici, au rendu : la page s'ouvre directement dans l'état
+        choisi, sans afficher le menu puis le retirer.
+        {% endcomment %}
+        {% with volet_masque=user.volet_masque %}
+        <div class="portal-layout{% if volet_masque %} portal-layout--sans-volet{% endif %}" data-portal-layout>
+            <aside id="volet-lateral" class="portal-sidebar hidden lg:block">
                 <div class="mb-6 rounded border border-warm-200 bg-white p-4">
                     <div class="flex items-center gap-3">
                         {% if user.photo %}
@@ -45,11 +52,22 @@
             </div>
 
             <div class="portal-main min-w-0">
+                <form method="post" action="{% url 'accounts:volet' %}" class="portal-bascule-zone" data-bascule-volet>
+                    {% csrf_token %}
+                    <input type="hidden" name="suivant" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="volet" value="{% if volet_masque %}affiche{% else %}masque{% endif %}" data-bascule-valeur>
+                    <button type="submit" class="portal-bascule-volet" aria-controls="volet-lateral"
+                            aria-expanded="{% if volet_masque %}false{% else %}true{% endif %}">
+                        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5v15H3.75v-15Zm5.25 0v15"/></svg>
+                        <span data-bascule-libelle>{% if volet_masque %}Afficher le menu{% else %}Masquer le menu{% endif %}</span>
+                    </button>
+                </form>
                 {% block portal_header %}{% endblock %}
                 {% include "partials/portal_priorities.html" %}
                 {% block portal_content %}{% endblock %}
             </div>
         </div>
+        {% endwith %}
     </div>
 </div>
 {% comment %}Avertissement d'expiration de session — piloté par « session-active.js ».{% endcomment %}

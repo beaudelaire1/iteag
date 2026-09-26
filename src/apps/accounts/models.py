@@ -79,6 +79,12 @@ class User(AbstractUser):
         default=Affichage.CONFORTABLE,
         verbose_name="Affichage des espaces",
     )
+    # Le volet de navigation se masque pour rendre toute la largeur à un
+    # tableau ou à un long formulaire. Gardé sur le compte plutôt que dans un
+    # cookie : la politique du site soumet les réglages d'interface stockés
+    # dans le navigateur au consentement, et le choix suit ainsi la personne
+    # d'un poste à l'autre.
+    volet_masque = models.BooleanField(default=False, verbose_name="Volet de navigation masqué")
 
     class Meta:
         verbose_name = "Utilisateur"

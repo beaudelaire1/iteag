@@ -13,6 +13,7 @@ from .views import (
     ProfilView,
     SessionActiveView,
     SignatureView,
+    VoletView,
 )
 
 app_name = "accounts"
@@ -24,6 +25,7 @@ urlpatterns = [
     path("comptes/signature/", SignatureView.as_view(), name="signature"),
     path("comptes/affichage/", AffichageView.as_view(), name="affichage"),
     path("comptes/session/", SessionActiveView.as_view(), name="session_active"),
+    path("comptes/volet/", VoletView.as_view(), name="volet"),
     path("comptes/aide/", AideView.as_view(), name="aide"),
     # Double authentification
     path("comptes/securite/activer/", OTPActivationView.as_view(), name="otp_activation"),
