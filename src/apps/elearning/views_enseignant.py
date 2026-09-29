@@ -717,6 +717,43 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         return redirect(reverse("elearning:enseignant_videos"))
 
 
+class VideoRetryUploadView(ProfesseurMixin, View):
+    """Relance un dépôt Bunny échoué sans redemander le fichier à l'enseignant."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, video_pk):
+        video = get_object_or_404(
+            VideoAsset.objects.filter(uploade_par=request.user),
+            pk=video_pk,
+        )
+        if (
+            video.fournisseur != "bunny"
+            or video.statut_traitement != VideoAsset.StatutTraitement.ERREUR
+            or not video.fichier_source
+        ):
+            messages.warning(request, "Cette vidéo n'a pas d'envoi Bunny à relancer.")
+            return redirect(reverse("elearning:enseignant_videos"))
+
+        from apps.elearning.tasks import televerser_video_bunny
+
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_ATTENTE
+        video.message_erreur = ""
+        video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+        televerser_video_bunny.delay(str(video.pk))
+        journaliser(
+            "modification",
+            request=request,
+            objet=video,
+            objet_libelle=f"Relance du téléversement : {video.titre}",
+        )
+        messages.success(
+            request,
+            "Nouvelle tentative lancée. Le fichier est conservé : vous n'avez rien à déposer de nouveau.",
+        )
+        return redirect(reverse("elearning:enseignant_videos"))
+
+
 class VideoUpdateView(ProfesseurMixin, TemplateView):
     """Corriger une vidéo déjà référencée, plutôt que la supprimer et refaire.
 
