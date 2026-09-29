@@ -90,6 +90,11 @@
                     <td class="num">{% if video.duree_secondes %}{% widthratio video.duree_secondes 60 1 %} min{% else %}—{% endif %}</td>
                     <td class="num">{{ video.lecons.count }} leçon(s)</td>
                     <td><span class="flex flex-wrap gap-3">
+                        {% if video.statut_traitement == "erreur" and video.fournisseur == "bunny" and video.fichier_source %}
+                        <form method="post" action="{% url 'elearning:enseignant_video_relancer' video.pk %}">
+                            {% csrf_token %}<button type="submit" class="text-sm link-reveal font-semibold">Réessayer l’envoi</button>
+                        </form>
+                        {% endif %}
                         <a href="{% url 'elearning:enseignant_video_modifier' video.pk %}" class="text-sm link-reveal">Modifier</a>
                         <a href="{% url 'elearning:enseignant_soustitre' video.pk %}" class="text-sm link-reveal">Sous-titres</a>
                         <form method="post" action="{% url 'elearning:enseignant_video_supprimer' video.pk %}" data-confirmer="Retirer cette référence ?">
