@@ -523,6 +523,10 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
+    "elearning-recuperer-videos-bunny": {
+        "task": "elearning.recuperer_videos_bunny_en_cours",
+        "schedule": 60,
+    },
     "elearning-expirer-acces": {
         "task": "elearning.expirer_acces",
         "schedule": 24 * 60 * 60,
