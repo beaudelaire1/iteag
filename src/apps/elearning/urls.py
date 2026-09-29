@@ -22,6 +22,11 @@ urlpatterns = [
     ),
     path("espace-enseignant/videos/", views_enseignant.VideoUploadView.as_view(), name="enseignant_videos"),
     path(
+        "espace-enseignant/videos/<uuid:video_pk>/relancer/",
+        views_enseignant.VideoRetryUploadView.as_view(),
+        name="enseignant_video_relancer",
+    ),
+    path(
         "espace-enseignant/videos/<uuid:video_pk>/sous-titres/",
         views_enseignant.SousTitreCreateView.as_view(),
         name="enseignant_soustitre",
