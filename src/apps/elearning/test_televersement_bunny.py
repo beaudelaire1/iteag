@@ -432,11 +432,10 @@ class TestTacheDEnvoi:
             "apps.elearning.tasks.verifier_encodage_bunny.apply_async",
             lambda *, args, countdown: appels.update(args=args, countdown=countdown),
         )
-        monkeypatch.setattr(
-            bunny,
-            "etat_video",
-            lambda _id: (_ for _ in ()).throw(AssertionError("Le suivi ne doit pas se faire dans la tâche d'envoi")),
-        )
+        def suivi_interdit(_identifiant):
+            raise AssertionError("Le suivi ne doit pas se faire dans la tâche d'envoi")
+
+        monkeypatch.setattr(bunny, "etat_video", suivi_interdit)
 
         assert televerser_video_bunny(str(video.pk)) == "envoyee"
 
@@ -486,6 +485,49 @@ class TestTacheDEnvoi:
         video.refresh_from_db()
         assert video.statut_traitement == VideoAsset.StatutTraitement.EN_COURS
         assert video.fichier_source
+
+    def test_le_mode_eager_ne_boucle_pas_sur_les_verifications(
+        self, video, bunny_configure, monkeypatch, settings
+    ):
+        from apps.elearning.tasks import verifier_encodage_bunny
+
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_ENCODAGE)
+
+        assert verifier_encodage_bunny(str(video.pk), tentative=1) == "en_attente"
+
+    def test_la_recuperation_relance_uniquement_un_suivi_devenu_stale(
+        self, video, enseignant, monkeypatch
+    ):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.elearning.tasks import recuperer_videos_bunny_en_cours
+
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        VideoAsset.objects.filter(pk=video.pk).update(updated_at=timezone.now() - timedelta(minutes=2))
+
+        recente = VideoAsset.objects.create(
+            titre="Vidéo encore suivie",
+            cle_stockage="guid-bunny-recente",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+        )
+        appels = []
+        monkeypatch.setattr(
+            "apps.elearning.tasks.verifier_encodage_bunny.delay",
+            lambda video_id: appels.append(video_id),
+        )
+
+        assert recuperer_videos_bunny_en_cours(age_secondes=45) == 1
+        assert appels == [str(video.pk)]
+        assert str(recente.pk) not in appels
 
     def test_un_echec_bunny_laisse_la_raison_sur_la_fiche(
         self, video, bunny_configure, monkeypatch
