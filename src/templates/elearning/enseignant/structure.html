@@ -93,8 +93,8 @@
                     {% if lecon.type_lecon == "video" %}
                         {% if not lecon.video %}
                         <span class="badge badge-danger shrink-0">Sans vidéo</span>
-                        {% elif lecon.video.statut_traitement != "pret" %}
-                        <span class="badge badge-warning shrink-0">{{ lecon.video.get_statut_traitement_display }}</span>
+                        {% else %}
+                        {% include "elearning/enseignant/partials/video_status_badge.html" with video=lecon.video %}
                         {% endif %}
                     {% endif %}
                 </span>
