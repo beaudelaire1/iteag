@@ -315,6 +315,53 @@ class TestDepuisLaLecon:
         assert any("hébergée par ITEAG" in str(message) for message in reponse.context["messages"])
 
 
+class TestRelanceDepuisLaBibliotheque:
+    def test_une_video_bunny_en_erreur_peut_etre_relancee(
+        self, client, enseignant, bunny_configure, monkeypatch
+    ):
+        appels = {}
+        video = VideoAsset.objects.create(
+            titre="Prédication — séquence interrompue",
+            cle_stockage="guid-bunny-erreur",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.ERREUR,
+            message_erreur="Bunny a refusé l'appel (500).",
+        )
+        monkeypatch.setattr(
+            "apps.elearning.tasks.televerser_video_bunny.delay",
+            lambda video_id: appels.setdefault("video_id", video_id),
+        )
+
+        client.force_login(enseignant)
+        reponse = client.post(reverse("elearning:enseignant_video_relancer", args=[video.pk]))
+
+        assert reponse.status_code == 302
+        video.refresh_from_db()
+        assert video.statut_traitement == VideoAsset.StatutTraitement.EN_ATTENTE
+        assert video.message_erreur == ""
+        assert appels["video_id"] == str(video.pk)
+
+    def test_la_bibliotheque_affiche_relancer_uniquement_quand_le_fichier_est_encore_present(
+        self, client, enseignant, bunny_configure
+    ):
+        video = VideoAsset.objects.create(
+            titre="Vidéo à reprendre",
+            cle_stockage="guid-bunny-affichage",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.ERREUR,
+        )
+
+        client.force_login(enseignant)
+        contenu = client.get(reverse("elearning:enseignant_videos")).content.decode()
+
+        assert reverse("elearning:enseignant_video_relancer", args=[video.pk]) in contenu
+        assert "Réessayer l’envoi" in contenu
+
+
 class TestTacheDEnvoi:
     @pytest.fixture
     def video(self, enseignant):
