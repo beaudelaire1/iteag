@@ -361,6 +361,52 @@ class TestRelanceDepuisLaBibliotheque:
         assert reverse("elearning:enseignant_video_relancer", args=[video.pk]) in contenu
         assert "Réessayer l’envoi" in contenu
 
+    def test_une_video_en_preparation_peut_forcer_une_verification(
+        self, client, enseignant, monkeypatch
+    ):
+        appels = {}
+        video = VideoAsset.objects.create(
+            titre="Vidéo déjà envoyée",
+            cle_stockage="guid-bunny-suivi",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+        )
+        monkeypatch.setattr(
+            "apps.elearning.tasks.verifier_encodage_bunny.delay",
+            lambda video_id: appels.setdefault("video_id", video_id),
+        )
+
+        client.force_login(enseignant)
+        reponse = client.post(reverse("elearning:enseignant_video_relancer", args=[video.pk]))
+
+        assert reponse.status_code == 302
+        assert appels["video_id"] == str(video.pk)
+
+    def test_le_badge_en_preparation_s_actualise_toutes_les_dix_secondes(self, client, enseignant):
+        video = VideoAsset.objects.create(
+            titre="Vidéo suivie",
+            cle_stockage="guid-bunny-badge",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+        )
+
+        client.force_login(enseignant)
+        contenu = client.get(reverse("elearning:enseignant_video_etat", args=[video.pk])).content.decode()
+
+        assert "En préparation" in contenu
+        assert 'hx-trigger="every 10s"' in contenu
+
+        video.statut_traitement = VideoAsset.StatutTraitement.PRET
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        contenu = client.get(reverse("elearning:enseignant_video_etat", args=[video.pk])).content.decode()
+
+        assert "Prête" in contenu
+        assert "hx-trigger" not in contenu
+
 
 class TestTacheDEnvoi:
     @pytest.fixture
