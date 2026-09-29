@@ -239,6 +239,8 @@ def verifier_encodage_bunny(video_id: str, tentative: int = 0) -> str:
 
 def _reprogrammer_verification_bunny(video, tentative: int) -> str:
     """Planifie le prochain contrôle sans dormir dans un processus Celery."""
+    from django.conf import settings
+
     from apps.elearning.models import VideoAsset
 
     if tentative + 1 >= MAX_VERIFICATIONS_BUNNY:
@@ -249,6 +251,16 @@ def _reprogrammer_verification_bunny(video, tentative: int) -> str:
         )
         video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
         return "delai_depasse"
+
+    # Sert aussi de heartbeat : la tâche de récupération ne doit relancer que
+    # les vidéos dont le suivi s'est réellement interrompu.
+    video.save(update_fields=["updated_at"])
+
+    # En test et en développement eager, Celery ignore le countdown et exécute
+    # immédiatement la tâche suivante. Se reprogrammer créerait alors une
+    # récursion de 120 appels. La production n'utilise jamais ce mode.
+    if settings.CELERY_TASK_ALWAYS_EAGER:
+        return "en_attente"
 
     verifier_encodage_bunny.apply_async(
         args=[str(video.pk), tentative + 1],
@@ -283,6 +295,38 @@ def _finaliser_video_bunny(video) -> None:
         lecon.chapitre.module.recalculer_duree()
 
     _notifier_depositaire(video)
+
+
+@shared_task(name="elearning.recuperer_videos_bunny_en_cours")
+def recuperer_videos_bunny_en_cours(age_secondes: int = 45) -> int:
+    """Relance le suivi des vidéos abandonnées par un redémarrage du worker.
+
+    Une tâche de suivi normale rafraîchit updated_at à chaque passage. Une
+    vidéo en_cours dont ce timestamp est ancien n’est donc pas simplement
+    lente : plus personne ne la surveille. Beat remet uniquement ces fiches en
+    file, ce qui rend un redéploiement sans conséquence pour un encodage Bunny.
+    """
+    from apps.elearning.models import VideoAsset
+
+    limite = timezone.now() - timedelta(seconds=age_secondes)
+    identifiants = list(
+        VideoAsset.objects.filter(
+            fournisseur="bunny",
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+            updated_at__lt=limite,
+        )
+        .order_by("updated_at")
+        .values_list("pk", flat=True)[:50]
+    )
+    if not identifiants:
+        return 0
+
+    # Réserve ces fiches avant de publier les tâches : le prochain passage de
+    # Beat ne doit pas les remettre une seconde fois en file.
+    VideoAsset.objects.filter(pk__in=identifiants).update(updated_at=timezone.now())
+    for identifiant in identifiants:
+        verifier_encodage_bunny.delay(str(identifiant))
+    return len(identifiants)
 
 
 @shared_task(name="elearning.expirer_acces")
