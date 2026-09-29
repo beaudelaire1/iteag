@@ -146,8 +146,8 @@ def basculer_bunny_en_iteag(video, *, raison: str = ""):
 
 
 MESSAGE_REPLI = (
-    "Bunny n'a pas accepté le dépôt : la vidéo est donc hébergée par ITEAG. "
+    "Bunny n'a pas pu prendre le dépôt : la vidéo est donc hébergée par ITEAG. "
     "Elle est lisible dès maintenant, et le restera. Signalez-le à "
-    "l'administrateur du site, qui pourra la basculer chez Bunny une fois la "
-    "clé d'API corrigée."
+    "l'administrateur du site, qui pourra la basculer chez Bunny lorsque le "
+    "service sera de nouveau disponible ou la configuration corrigée."
 )
