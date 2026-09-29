@@ -76,10 +76,7 @@ def _heberger_ici(fichier, titre: str, enseignant):
     from apps.elearning.models import VideoAsset
 
     nom = getattr(fichier, "name", "") or "video.mp4"
-    cle = nouvelle_cle(nom)
-    if hasattr(fichier, "seek"):
-        fichier.seek(0)
-    cle_reelle = LocalStockageVideo().televerser(fichier, cle) or cle
+    cle_reelle = _copier_sur_stockage_iteag(fichier, nom)
 
     return VideoAsset.objects.create(
         titre=titre,
@@ -92,9 +89,65 @@ def _heberger_ici(fichier, titre: str, enseignant):
     )
 
 
+def _copier_sur_stockage_iteag(fichier, nom: str) -> str:
+    """Copie un flux sur le stockage privé utilisé pour le repli ITEAG."""
+    cle = nouvelle_cle(nom or "video.mp4")
+    if hasattr(fichier, "seek"):
+        fichier.seek(0)
+    return LocalStockageVideo().televerser(fichier, cle) or cle
+
+
+def basculer_bunny_en_iteag(video, *, raison: str = ""):
+    """Transforme en place une vidéo Bunny non envoyée en vidéo locale prête.
+
+    La fiche existe déjà et peut être rattachée à une leçon. Créer une seconde
+    VideoAsset casserait ce rattachement ; on conserve donc la même fiche, on
+    copie son fichier temporaire sous une clé de lecture privée, puis on retire
+    le dépôt temporaire.
+    """
+    from apps.elearning.models import VideoAsset
+
+    if video.fournisseur != BUNNY:
+        return video
+    if not video.fichier_source:
+        raise RuntimeError("Aucun fichier source n'est disponible pour le repli ITEAG.")
+
+    nom = video.nom_origine or getattr(video.fichier_source, "name", "") or "video.mp4"
+    taille = video.fichier_source.size
+    with video.fichier_source.open("rb") as fichier:
+        cle_reelle = _copier_sur_stockage_iteag(fichier, nom)
+
+    # La copie locale est désormais la source de lecture. Le dépôt temporaire
+    # n'a plus de rôle et peut être supprimé sans toucher à la nouvelle clé.
+    video.fichier_source.delete(save=False)
+    video.fichier_source = ""
+    video.cle_stockage = cle_reelle
+    video.fournisseur = ITEAG
+    video.taille_octets = taille
+    video.statut_traitement = VideoAsset.StatutTraitement.PRET
+    video.message_erreur = ""
+    video.save(
+        update_fields=[
+            "fichier_source",
+            "cle_stockage",
+            "fournisseur",
+            "taille_octets",
+            "statut_traitement",
+            "message_erreur",
+            "updated_at",
+        ]
+    )
+    logger.warning(
+        "Vidéo %s basculée sur l'hébergement ITEAG après indisponibilité Bunny%s",
+        video.pk,
+        f" : {raison}" if raison else "",
+    )
+    return video
+
+
 MESSAGE_REPLI = (
-    "Bunny n'a pas accepté le dépôt : la vidéo est donc hébergée par ITEAG. "
+    "Bunny n'a pas pu prendre le dépôt : la vidéo est donc hébergée par ITEAG. "
     "Elle est lisible dès maintenant, et le restera. Signalez-le à "
-    "l'administrateur du site, qui pourra la basculer chez Bunny une fois la "
-    "clé d'API corrigée."
+    "l'administrateur du site, qui pourra la basculer chez Bunny lorsque le "
+    "service sera de nouveau disponible ou la configuration corrigée."
 )

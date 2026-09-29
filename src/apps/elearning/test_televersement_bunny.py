@@ -315,6 +315,53 @@ class TestDepuisLaLecon:
         assert any("hébergée par ITEAG" in str(message) for message in reponse.context["messages"])
 
 
+class TestRelanceDepuisLaBibliotheque:
+    def test_une_video_bunny_en_erreur_peut_etre_relancee(
+        self, client, enseignant, bunny_configure, monkeypatch
+    ):
+        appels = {}
+        video = VideoAsset.objects.create(
+            titre="Prédication — séquence interrompue",
+            cle_stockage="guid-bunny-erreur",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.ERREUR,
+            message_erreur="Bunny a refusé l'appel (500).",
+        )
+        monkeypatch.setattr(
+            "apps.elearning.tasks.televerser_video_bunny.delay",
+            lambda video_id: appels.setdefault("video_id", video_id),
+        )
+
+        client.force_login(enseignant)
+        reponse = client.post(reverse("elearning:enseignant_video_relancer", args=[video.pk]))
+
+        assert reponse.status_code == 302
+        video.refresh_from_db()
+        assert video.statut_traitement == VideoAsset.StatutTraitement.EN_ATTENTE
+        assert video.message_erreur == ""
+        assert appels["video_id"] == str(video.pk)
+
+    def test_la_bibliotheque_affiche_relancer_uniquement_quand_le_fichier_est_encore_present(
+        self, client, enseignant, bunny_configure
+    ):
+        video = VideoAsset.objects.create(
+            titre="Vidéo à reprendre",
+            cle_stockage="guid-bunny-affichage",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.ERREUR,
+        )
+
+        client.force_login(enseignant)
+        contenu = client.get(reverse("elearning:enseignant_videos")).content.decode()
+
+        assert reverse("elearning:enseignant_video_relancer", args=[video.pk]) in contenu
+        assert "Réessayer l’envoi" in contenu
+
+
 class TestTacheDEnvoi:
     @pytest.fixture
     def video(self, enseignant):
@@ -356,6 +403,27 @@ class TestTacheDEnvoi:
         # Le fichier reste : il permet de relancer l'envoi sans le redemander.
         assert video.fichier_source
 
+    def test_le_repli_conserve_la_meme_video_et_la_rend_lisible(self, video):
+        from django.core.files.storage import default_storage
+
+        from apps.elearning.services.depot_video import basculer_bunny_en_iteag
+
+        identifiant = video.pk
+        basculer_bunny_en_iteag(video, raison="Bunny 500")
+
+        video.refresh_from_db()
+        assert video.pk == identifiant
+        assert video.fournisseur == "local"
+        assert video.statut_traitement == VideoAsset.StatutTraitement.PRET
+        assert not video.fichier_source
+        assert video.cle_stockage.startswith("videos/")
+        assert default_storage.exists(video.cle_stockage)
+
+    def test_la_tache_prevoit_deux_nouvelles_tentatives(self):
+        from apps.elearning.tasks import televerser_video_bunny
+
+        assert televerser_video_bunny.max_retries == 2
+
 
 class TestClesRefusees:
     """Un 401 de Bunny ne dit jamais laquelle des deux clés est en cause."""
@@ -390,8 +458,7 @@ class TestClesRefusees:
         # Le corps de Bunny part au journal, pas sous les yeux de l'utilisateur.
         assert "Authentication has been denied" not in message
 
-    def test_un_autre_code_garde_le_detail_de_bunny(self, bunny_configure, monkeypatch):
-        """Hors identifiants, le corps de Bunny nomme souvent la cause : on le garde."""
+    def test_un_429_est_temporaire_et_garde_le_detail(self, bunny_configure, monkeypatch):
         import io
         from urllib.error import HTTPError
 
@@ -406,8 +473,48 @@ class TestClesRefusees:
 
         monkeypatch.setattr(bunny, "urlopen", refuser)
 
-        with pytest.raises(bunny.TeleversementBunnyIndisponible, match="Quota depasse"):
+        with pytest.raises(bunny.TeleversementBunnyTemporairementIndisponible, match="Quota depasse"):
             bunny.creer_video("Prédication")
+
+    def test_un_500_est_temporaire_pour_le_televersement(self, bunny_configure, monkeypatch):
+        import io
+        from urllib.error import HTTPError
+
+        def refuser(*_args, **_kwargs):
+            raise HTTPError(
+                "https://video.bunnycdn.com/library/12345/videos/guid-bunny",
+                500,
+                "Internal Server Error",
+                {},
+                io.BytesIO(b'{"success":false,"message":"Internal Server Error","statusCode":500}'),
+            )
+
+        monkeypatch.setattr(bunny, "urlopen", refuser)
+
+        with pytest.raises(bunny.TeleversementBunnyTemporairementIndisponible) as refus:
+            bunny.envoyer_fichier("guid-bunny", io.BytesIO(b"video"), 5)
+
+        assert refus.value.code == 500
+
+    def test_un_code_non_temporaire_garde_le_detail_de_bunny(self, bunny_configure, monkeypatch):
+        import io
+        from urllib.error import HTTPError
+
+        def refuser(*_args, **_kwargs):
+            raise HTTPError(
+                "https://video.bunnycdn.com/library/12345/videos",
+                400,
+                "Bad Request",
+                {},
+                io.BytesIO(b'{"Message":"Format refuse"}'),
+            )
+
+        monkeypatch.setattr(bunny, "urlopen", refuser)
+
+        with pytest.raises(bunny.TeleversementBunnyIndisponible, match="Format refuse") as refus:
+            bunny.creer_video("Prédication")
+
+        assert not isinstance(refus.value, bunny.TeleversementBunnyTemporairementIndisponible)
 
 
 class TestFormeDesIdentifiants:

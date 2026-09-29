@@ -44,6 +44,12 @@ TIMEOUT_ENVOI_SECONDES = 30 * 60
 # écarte d'emblée le soupçon d'un problème de configuration Bunny.
 CODES_IDENTIFIANTS_REFUSES = (401, 403)
 
+# Ces réponses ne disent pas que le fichier ou la configuration sont faux :
+# elles décrivent une indisponibilité momentanée du service ou une saturation.
+# Les distinguer permet au worker de réessayer sans transformer immédiatement
+# un incident réseau de quelques secondes en erreur visible par l'enseignant.
+CODES_TEMPORAIRES = (408, 429, 500, 502, 503, 504)
+
 MESSAGE_CLE_REFUSEE = (
     "Bunny refuse la clé d'API du dépôt. La bibliothèque Stream porte deux clés "
     "distinctes : « API Key », qui autorise le dépôt, et la clé d'authentification "
@@ -71,6 +77,14 @@ ETAT_ECHEC = 5
 
 class TeleversementBunnyIndisponible(RuntimeError):
     """Bunny n'est pas joignable, ou la plateforme n'est pas configurée pour lui."""
+
+
+class TeleversementBunnyTemporairementIndisponible(TeleversementBunnyIndisponible):
+    """Incident transitoire : l'appel peut être retenté sans intervention humaine."""
+
+    def __init__(self, message: str, *, code: int | None = None):
+        super().__init__(message)
+        self.code = code
 
 
 def televersement_disponible() -> bool:
@@ -132,10 +146,19 @@ def _appeler(url: str, *, cle: str, methode: str, corps=None, entetes=None, time
             logger.error("Bunny a refusé les identifiants du dépôt (%s) : %s", erreur.code, detail)
             raise TeleversementBunnyIndisponible(MESSAGE_CLE_REFUSEE) from erreur
 
+        if erreur.code in CODES_TEMPORAIRES:
+            logger.warning("Bunny temporairement indisponible (%s) : %s", erreur.code, detail)
+            message = f"Bunny est temporairement indisponible ({erreur.code})."
+            if detail:
+                message = f"{message} {detail}"
+            raise TeleversementBunnyTemporairementIndisponible(message, code=erreur.code) from erreur
+
         logger.warning("Bunny a refusé l'appel (%s) : %s", erreur.code, detail)
         raise TeleversementBunnyIndisponible(f"Bunny a refusé l'appel ({erreur.code}). {detail}".strip()) from erreur
     except (URLError, TimeoutError) as erreur:
-        raise TeleversementBunnyIndisponible(f"Bunny est injoignable : {erreur}") from erreur
+        raise TeleversementBunnyTemporairementIndisponible(
+            f"Bunny est temporairement injoignable : {erreur}"
+        ) from erreur
 
     if not charge:
         return {}
