@@ -115,7 +115,7 @@ def _notifier_depositaire(video) -> None:
     )
 
 
-@shared_task(name="elearning.televerser_video_bunny", bind=True, max_retries=0)
+@shared_task(name="elearning.televerser_video_bunny", bind=True, max_retries=2)
 def televerser_video_bunny(self, video_id: str) -> str:
     """Pousse chez Bunny le fichier déposé, puis attend la fin de l'encodage.
 
@@ -145,6 +145,40 @@ def televerser_video_bunny(self, video_id: str) -> str:
             bunny.envoyer_fichier(video.cle_stockage, fichier, taille)
         video.taille_octets = taille
         _attendre_encodage(video, bunny)
+    except bunny.TeleversementBunnyTemporairementIndisponible as erreur:
+        # Un 500/502/503, un 429 ou une coupure réseau ne justifie pas de
+        # déclarer immédiatement la vidéo en erreur. Le fichier est toujours
+        # présent : le worker peut le rouvrir proprement à la tentative suivante.
+        if self.request.retries < self.max_retries:
+            delais = (30, 120)
+            delai = delais[min(self.request.retries, len(delais) - 1)]
+            logger.warning(
+                "Bunny temporairement indisponible pour la vidéo %s ; nouvelle tentative dans %ss (%s/%s)",
+                video_id,
+                delai,
+                self.request.retries + 1,
+                self.max_retries,
+            )
+            raise self.retry(exc=erreur, countdown=delai)
+
+        # Après trois passages au total, on privilégie la continuité du cours :
+        # le même fichier devient une vidéo ITEAG protégée, sans casser les
+        # rattachements de leçon vers cette fiche.
+        from apps.elearning.services.depot_video import basculer_bunny_en_iteag
+
+        try:
+            basculer_bunny_en_iteag(video, raison=str(erreur))
+        except Exception as erreur_repli:  # noqa: BLE001 — le défaut doit rester visible sur la fiche
+            logger.exception("Repli ITEAG impossible pour la vidéo %s", video_id)
+            video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
+            video.message_erreur = (
+                f"Bunny reste indisponible et le repli ITEAG a échoué : {erreur_repli}"
+            )[:500]
+            video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+            return "erreur"
+
+        _notifier_depositaire(video)
+        return "pret_local"
     except Exception as erreur:  # noqa: BLE001 — toute panne doit se lire sur la fiche
         logger.exception("Téléversement Bunny en échec pour la vidéo %s", video_id)
         video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
@@ -190,7 +224,14 @@ def _attendre_encodage(video, bunny, *, tentatives: int = 60, attente_secondes: 
     import time
 
     for _ in range(tentatives):
-        etat = bunny.etat_video(video.cle_stockage)
+        try:
+            etat = bunny.etat_video(video.cle_stockage)
+        except bunny.TeleversementBunnyTemporairementIndisponible as erreur:
+            # Une lecture d'état momentanément indisponible ne doit pas
+            # redéclencher l'envoi complet du fichier déjà accepté par Bunny.
+            logger.warning("État Bunny momentanément indisponible pour %s : %s", video.pk, erreur)
+            time.sleep(attente_secondes)
+            continue
         if etat in (bunny.ETAT_TERMINE, bunny.ETAT_RESOLUTION_TERMINEE):
             video.duree_secondes = bunny.duree_video(video.cle_stockage) or video.duree_secondes
             return
