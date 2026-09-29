@@ -86,11 +86,15 @@
                 <tr>
                     <td class="font-medium">{{ video.titre }}</td>
                     <td>{{ video.get_fournisseur_display }}</td>
-                    <td>{% if video.statut_traitement == "pret" %}<span class="badge badge-success">Prête</span>{% elif video.statut_traitement == "erreur" %}<span class="badge badge-danger">Erreur</span>{% else %}<span class="badge badge-warning">{{ video.get_statut_traitement_display }}</span>{% endif %}</td>
+                    <td>{% include "elearning/enseignant/partials/video_status_badge.html" with video=video %}</td>
                     <td class="num">{% if video.duree_secondes %}{% widthratio video.duree_secondes 60 1 %} min{% else %}—{% endif %}</td>
                     <td class="num">{{ video.lecons.count }} leçon(s)</td>
                     <td><span class="flex flex-wrap gap-3">
-                        {% if video.statut_traitement == "erreur" and video.fournisseur == "bunny" and video.fichier_source %}
+                        {% if video.fournisseur == "bunny" and video.statut_traitement == "en_cours" %}
+                        <form method="post" action="{% url 'elearning:enseignant_video_relancer' video.pk %}">
+                            {% csrf_token %}<button type="submit" class="text-sm link-reveal font-semibold">Vérifier maintenant</button>
+                        </form>
+                        {% elif video.statut_traitement == "erreur" and video.fournisseur == "bunny" and video.fichier_source %}
                         <form method="post" action="{% url 'elearning:enseignant_video_relancer' video.pk %}">
                             {% csrf_token %}<button type="submit" class="text-sm link-reveal font-semibold">Réessayer l’envoi</button>
                         </form>

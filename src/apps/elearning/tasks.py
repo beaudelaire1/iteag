@@ -117,12 +117,12 @@ def _notifier_depositaire(video) -> None:
 
 @shared_task(name="elearning.televerser_video_bunny", bind=True, max_retries=2)
 def televerser_video_bunny(self, video_id: str) -> str:
-    """Pousse chez Bunny le fichier déposé, puis attend la fin de l'encodage.
+    """Pousse le fichier chez Bunny, puis confie le suivi à une autre tâche.
 
-    La vidéo est déjà déclarée chez le fournisseur au moment où cette tâche
-    démarre : « cle_stockage » porte son identifiant. L'échec d'un envoi laisse
-    donc une vidéo vide chez Bunny plutôt qu'un enregistrement orphelin ici, ce
-    qui se répare en redéposant le fichier sur la même fiche.
+    L'envoi du fichier occupe réellement le worker et doit donc rester ici. En
+    revanche, l'encodage se déroule chez Bunny : attendre en boucle dans Celery
+    immobiliserait un processus pour ne rien faire. Une tâche courte de suivi
+    est planifiée après l'envoi et se reprogramme elle-même tant que nécessaire.
     """
     from apps.elearning import bunny_televersement as bunny
     from apps.elearning.models import VideoAsset
@@ -143,12 +143,7 @@ def televerser_video_bunny(self, video_id: str) -> str:
         taille = video.fichier_source.size
         with video.fichier_source.open("rb") as fichier:
             bunny.envoyer_fichier(video.cle_stockage, fichier, taille)
-        video.taille_octets = taille
-        _attendre_encodage(video, bunny)
     except bunny.TeleversementBunnyTemporairementIndisponible as erreur:
-        # Un 500/502/503, un 429 ou une coupure réseau ne justifie pas de
-        # déclarer immédiatement la vidéo en erreur. Le fichier est toujours
-        # présent : le worker peut le rouvrir proprement à la tentative suivante.
         if self.request.retries < self.max_retries:
             delais = (30, 120)
             delai = delais[min(self.request.retries, len(delais) - 1)]
@@ -161,14 +156,11 @@ def televerser_video_bunny(self, video_id: str) -> str:
             )
             raise self.retry(exc=erreur, countdown=delai)
 
-        # Après trois passages au total, on privilégie la continuité du cours :
-        # le même fichier devient une vidéo ITEAG protégée, sans casser les
-        # rattachements de leçon vers cette fiche.
         from apps.elearning.services.depot_video import basculer_bunny_en_iteag
 
         try:
             basculer_bunny_en_iteag(video, raison=str(erreur))
-        except Exception as erreur_repli:  # noqa: BLE001 — le défaut doit rester visible sur la fiche
+        except Exception as erreur_repli:  # noqa: BLE001
             logger.exception("Repli ITEAG impossible pour la vidéo %s", video_id)
             video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
             video.message_erreur = (
@@ -179,16 +171,110 @@ def televerser_video_bunny(self, video_id: str) -> str:
 
         _notifier_depositaire(video)
         return "pret_local"
-    except Exception as erreur:  # noqa: BLE001 — toute panne doit se lire sur la fiche
+    except Exception as erreur:  # noqa: BLE001
         logger.exception("Téléversement Bunny en échec pour la vidéo %s", video_id)
         video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
         video.message_erreur = str(erreur)[:500]
         video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
         return "erreur"
 
-    # Le fichier a fait son office. Le garder ferait payer deux fois le même
-    # octet — une fois chez Bunny, une fois sur R2 — sans que rien ne le lise.
-    video.fichier_source.delete(save=False)
+    # Persiste le fait que le fichier a bien quitté ITEAG avant de rendre le
+    # worker. Ce marqueur permet aussi de distinguer un dépôt déjà envoyé d'un
+    # dépôt qui doit réellement être retransmis après incident.
+    video.taille_octets = taille
+    video.save(update_fields=["taille_octets", "updated_at"])
+    verifier_encodage_bunny.apply_async(args=[video_id, 0], countdown=5)
+    return "envoyee"
+
+
+DELAI_VERIFICATION_BUNNY_SECONDES = 10
+MAX_VERIFICATIONS_BUNNY = 120  # 20 minutes sans immobiliser un worker
+
+
+@shared_task(name="elearning.verifier_encodage_bunny")
+def verifier_encodage_bunny(video_id: str, tentative: int = 0) -> str:
+    """Contrôle une fois l'encodage Bunny, puis rend immédiatement le worker."""
+
+    from apps.elearning import bunny_televersement as bunny
+    from apps.elearning.models import VideoAsset
+
+    video = VideoAsset.objects.filter(pk=video_id).first()
+    if video is None:
+        return "introuvable"
+    if video.fournisseur != "bunny":
+        return "autre_fournisseur"
+    if video.statut_traitement == VideoAsset.StatutTraitement.PRET:
+        return "pret"
+
+    try:
+        etat = bunny.etat_video(video.cle_stockage)
+    except bunny.TeleversementBunnyTemporairementIndisponible as erreur:
+        logger.warning("État Bunny momentanément indisponible pour %s : %s", video.pk, erreur)
+        return _reprogrammer_verification_bunny(video, tentative)
+    except Exception as erreur:  # noqa: BLE001
+        logger.exception("Lecture de l'état Bunny impossible pour la vidéo %s", video_id)
+        video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
+        video.message_erreur = str(erreur)[:500]
+        video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+        return "erreur"
+
+    if etat in (bunny.ETAT_TERMINE, bunny.ETAT_RESOLUTION_TERMINEE):
+        try:
+            video.duree_secondes = bunny.duree_video(video.cle_stockage) or video.duree_secondes
+        except bunny.TeleversementBunnyTemporairementIndisponible:
+            # La vidéo est déjà lisible. Une durée temporairement indisponible
+            # ne doit pas retarder sa publication.
+            logger.warning("Durée Bunny momentanément indisponible pour %s", video.pk)
+        _finaliser_video_bunny(video)
+        return "pret"
+
+    if etat in bunny.ETATS_ECHEC:
+        video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
+        video.message_erreur = "Bunny a rejeté la vidéo : format illisible ou transfert interrompu."
+        video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+        return "erreur"
+
+    return _reprogrammer_verification_bunny(video, tentative)
+
+
+def _reprogrammer_verification_bunny(video, tentative: int) -> str:
+    """Planifie le prochain contrôle sans dormir dans un processus Celery."""
+    from django.conf import settings
+
+    from apps.elearning.models import VideoAsset
+
+    if tentative + 1 >= MAX_VERIFICATIONS_BUNNY:
+        video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
+        video.message_erreur = (
+            "Bunny n'a pas terminé l'encodage dans le délai prévu. "
+            "Le fichier source est conservé et l'envoi peut être relancé."
+        )
+        video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
+        return "delai_depasse"
+
+    # Sert aussi de heartbeat : la tâche de récupération ne doit relancer que
+    # les vidéos dont le suivi s'est réellement interrompu.
+    video.save(update_fields=["updated_at"])
+
+    # En test et en développement eager, Celery ignore le countdown et exécute
+    # immédiatement la tâche suivante. Se reprogrammer créerait alors une
+    # récursion de 120 appels. La production n'utilise jamais ce mode.
+    if settings.CELERY_TASK_ALWAYS_EAGER:
+        return "en_attente"
+
+    verifier_encodage_bunny.apply_async(
+        args=[str(video.pk), tentative + 1],
+        countdown=DELAI_VERIFICATION_BUNNY_SECONDES,
+    )
+    return "en_attente"
+
+
+def _finaliser_video_bunny(video) -> None:
+    """Marque prête une vidéo Bunny devenue lisible et libère le dépôt source."""
+    from apps.elearning.models import VideoAsset
+
+    if video.fichier_source:
+        video.fichier_source.delete(save=False)
     video.statut_traitement = VideoAsset.StatutTraitement.PRET
     video.message_erreur = ""
     video.save(
@@ -209,37 +295,38 @@ def televerser_video_bunny(self, video_id: str) -> str:
         lecon.chapitre.module.recalculer_duree()
 
     _notifier_depositaire(video)
-    return "pret"
 
 
-def _attendre_encodage(video, bunny, *, tentatives: int = 60, attente_secondes: int = 20) -> None:
-    """Attend que Bunny déclare la vidéo lisible.
+@shared_task(name="elearning.recuperer_videos_bunny_en_cours")
+def recuperer_videos_bunny_en_cours(age_secondes: int = 45) -> int:
+    """Relance le suivi des vidéos abandonnées par un redémarrage du worker.
 
-    Sans cette attente, la fiche annoncerait « prête » une vidéo encore en file
-    d'attente : l'enseignant publierait son module et les étudiants tomberaient
-    sur un lecteur vide. Vingt minutes de patience couvrent l'encodage d'une
-    séquence longue ; au-delà, l'état reste « en préparation » et se rattrape
-    en rouvrant la fiche.
+    Une tâche de suivi normale rafraîchit updated_at à chaque passage. Une
+    vidéo en_cours dont ce timestamp est ancien n’est donc pas simplement
+    lente : plus personne ne la surveille. Beat remet uniquement ces fiches en
+    file, ce qui rend un redéploiement sans conséquence pour un encodage Bunny.
     """
-    import time
+    from apps.elearning.models import VideoAsset
 
-    for _ in range(tentatives):
-        try:
-            etat = bunny.etat_video(video.cle_stockage)
-        except bunny.TeleversementBunnyTemporairementIndisponible as erreur:
-            # Une lecture d'état momentanément indisponible ne doit pas
-            # redéclencher l'envoi complet du fichier déjà accepté par Bunny.
-            logger.warning("État Bunny momentanément indisponible pour %s : %s", video.pk, erreur)
-            time.sleep(attente_secondes)
-            continue
-        if etat in (bunny.ETAT_TERMINE, bunny.ETAT_RESOLUTION_TERMINEE):
-            video.duree_secondes = bunny.duree_video(video.cle_stockage) or video.duree_secondes
-            return
-        if etat == bunny.ETAT_ECHEC:
-            raise RuntimeError("Bunny a rejeté la vidéo : format illisible ou transfert interrompu.")
-        time.sleep(attente_secondes)
+    limite = timezone.now() - timedelta(seconds=age_secondes)
+    identifiants = list(
+        VideoAsset.objects.filter(
+            fournisseur="bunny",
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+            updated_at__lt=limite,
+        )
+        .order_by("updated_at")
+        .values_list("pk", flat=True)[:50]
+    )
+    if not identifiants:
+        return 0
 
-    raise TimeoutError("Bunny n'a pas fini d'encoder la vidéo dans le délai prévu.")
+    # Réserve ces fiches avant de publier les tâches : le prochain passage de
+    # Beat ne doit pas les remettre une seconde fois en file.
+    VideoAsset.objects.filter(pk__in=identifiants).update(updated_at=timezone.now())
+    for identifiant in identifiants:
+        verifier_encodage_bunny.delay(str(identifiant))
+    return len(identifiants)
 
 
 @shared_task(name="elearning.expirer_acces")

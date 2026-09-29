@@ -361,6 +361,52 @@ class TestRelanceDepuisLaBibliotheque:
         assert reverse("elearning:enseignant_video_relancer", args=[video.pk]) in contenu
         assert "Réessayer l’envoi" in contenu
 
+    def test_une_video_en_preparation_peut_forcer_une_verification(
+        self, client, enseignant, monkeypatch
+    ):
+        appels = {}
+        video = VideoAsset.objects.create(
+            titre="Vidéo déjà envoyée",
+            cle_stockage="guid-bunny-suivi",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+        )
+        monkeypatch.setattr(
+            "apps.elearning.tasks.verifier_encodage_bunny.delay",
+            lambda video_id: appels.setdefault("video_id", video_id),
+        )
+
+        client.force_login(enseignant)
+        reponse = client.post(reverse("elearning:enseignant_video_relancer", args=[video.pk]))
+
+        assert reponse.status_code == 302
+        assert appels["video_id"] == str(video.pk)
+
+    def test_le_badge_en_preparation_s_actualise_toutes_les_dix_secondes(self, client, enseignant):
+        video = VideoAsset.objects.create(
+            titre="Vidéo suivie",
+            cle_stockage="guid-bunny-badge",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+        )
+
+        client.force_login(enseignant)
+        contenu = client.get(reverse("elearning:enseignant_video_etat", args=[video.pk])).content.decode()
+
+        assert "En préparation" in contenu
+        assert 'hx-trigger="every 10s"' in contenu
+
+        video.statut_traitement = VideoAsset.StatutTraitement.PRET
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        contenu = client.get(reverse("elearning:enseignant_video_etat", args=[video.pk])).content.decode()
+
+        assert "Prête" in contenu
+        assert "hx-trigger" not in contenu
+
 
 class TestTacheDEnvoi:
     @pytest.fixture
@@ -374,34 +420,141 @@ class TestTacheDEnvoi:
             statut_traitement=VideoAsset.StatutTraitement.EN_ATTENTE,
         )
 
-    def test_l_envoi_reussi_efface_le_fichier_et_marque_prete(self, video, bunny_configure, monkeypatch):
-        """La plateforme convoie la vidéo, elle ne l'héberge pas."""
+    def test_l_envoi_libere_le_worker_et_programme_le_suivi(
+        self, video, bunny_configure, monkeypatch
+    ):
+        """Après le PUT, Celery ne doit plus dormir en attendant Bunny."""
         from apps.elearning.tasks import televerser_video_bunny
 
+        appels = {}
         monkeypatch.setattr(bunny, "envoyer_fichier", lambda *args: None)
-        monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_TERMINE)
+        monkeypatch.setattr(
+            "apps.elearning.tasks.verifier_encodage_bunny.apply_async",
+            lambda *, args, countdown: appels.update(args=args, countdown=countdown),
+        )
+        def suivi_interdit(_identifiant):
+            raise AssertionError("Le suivi ne doit pas se faire dans la tâche d'envoi")
+
+        monkeypatch.setattr(bunny, "etat_video", suivi_interdit)
+
+        assert televerser_video_bunny(str(video.pk)) == "envoyee"
+
+        video.refresh_from_db()
+        assert video.statut_traitement == VideoAsset.StatutTraitement.EN_COURS
+        assert video.fichier_source
+        assert video.taille_octets == len(MP4)
+        assert appels["args"] == [str(video.pk), 0]
+        assert appels["countdown"] == 5
+
+    def test_le_suivi_marque_prete_des_qu_une_resolution_est_disponible(
+        self, video, bunny_configure, monkeypatch
+    ):
+        from apps.elearning.tasks import verifier_encodage_bunny
+
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.taille_octets = len(MP4)
+        video.save(update_fields=["statut_traitement", "taille_octets", "updated_at"])
+        monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_RESOLUTION_TERMINEE)
         monkeypatch.setattr(bunny, "duree_video", lambda _id: 1234)
 
-        assert televerser_video_bunny(str(video.pk)) == "pret"
+        assert verifier_encodage_bunny(str(video.pk)) == "pret"
 
         video.refresh_from_db()
         assert video.statut_traitement == VideoAsset.StatutTraitement.PRET
         assert video.duree_secondes == 1234
         assert not video.fichier_source
 
-    def test_un_echec_bunny_laisse_la_raison_sur_la_fiche(self, video, bunny_configure, monkeypatch):
-        from apps.elearning.tasks import televerser_video_bunny
+    def test_le_suivi_se_reprogramme_sans_bloquer_le_worker(
+        self, video, bunny_configure, monkeypatch
+    ):
+        from apps.elearning.tasks import DELAI_VERIFICATION_BUNNY_SECONDES, verifier_encodage_bunny
 
-        monkeypatch.setattr(bunny, "envoyer_fichier", lambda *args: None)
+        appels = {}
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_ENCODAGE)
+        monkeypatch.setattr(
+            "apps.elearning.tasks.verifier_encodage_bunny.apply_async",
+            lambda *, args, countdown: appels.update(args=args, countdown=countdown),
+        )
+
+        assert verifier_encodage_bunny(str(video.pk), tentative=7) == "en_attente"
+
+        assert appels["args"] == [str(video.pk), 8]
+        assert appels["countdown"] == DELAI_VERIFICATION_BUNNY_SECONDES
+        video.refresh_from_db()
+        assert video.statut_traitement == VideoAsset.StatutTraitement.EN_COURS
+        assert video.fichier_source
+
+    def test_le_mode_eager_ne_boucle_pas_sur_les_verifications(
+        self, video, bunny_configure, monkeypatch, settings
+    ):
+        from apps.elearning.tasks import verifier_encodage_bunny
+
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_ENCODAGE)
+
+        assert verifier_encodage_bunny(str(video.pk), tentative=1) == "en_attente"
+
+    def test_la_recuperation_relance_uniquement_un_suivi_devenu_stale(
+        self, video, enseignant, monkeypatch
+    ):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.elearning.tasks import recuperer_videos_bunny_en_cours
+
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        VideoAsset.objects.filter(pk=video.pk).update(updated_at=timezone.now() - timedelta(minutes=2))
+
+        recente = VideoAsset.objects.create(
+            titre="Vidéo encore suivie",
+            cle_stockage="guid-bunny-recente",
+            fournisseur="bunny",
+            fichier_source=fichier(),
+            uploade_par=enseignant,
+            statut_traitement=VideoAsset.StatutTraitement.EN_COURS,
+        )
+        appels = []
+        monkeypatch.setattr(
+            "apps.elearning.tasks.verifier_encodage_bunny.delay",
+            lambda video_id: appels.append(video_id),
+        )
+
+        assert recuperer_videos_bunny_en_cours(age_secondes=45) == 1
+        assert appels == [str(video.pk)]
+        assert str(recente.pk) not in appels
+
+    def test_un_echec_bunny_laisse_la_raison_sur_la_fiche(
+        self, video, bunny_configure, monkeypatch
+    ):
+        from apps.elearning.tasks import verifier_encodage_bunny
+
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
         monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_ECHEC)
 
-        assert televerser_video_bunny(str(video.pk)) == "erreur"
+        assert verifier_encodage_bunny(str(video.pk)) == "erreur"
 
         video.refresh_from_db()
         assert video.statut_traitement == VideoAsset.StatutTraitement.ERREUR
         assert "rejeté" in video.message_erreur
-        # Le fichier reste : il permet de relancer l'envoi sans le redemander.
         assert video.fichier_source
+
+    def test_un_echec_de_televersement_presigne_est_aussi_un_echec(
+        self, video, bunny_configure, monkeypatch
+    ):
+        from apps.elearning.tasks import verifier_encodage_bunny
+
+        video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
+        video.save(update_fields=["statut_traitement", "updated_at"])
+        monkeypatch.setattr(bunny, "etat_video", lambda _id: bunny.ETAT_TELEVERSEMENT_PRESIGNE_ECHEC)
+
+        assert verifier_encodage_bunny(str(video.pk)) == "erreur"
 
     def test_le_repli_conserve_la_meme_video_et_la_rend_lisible(self, video):
         from django.core.files.storage import default_storage
