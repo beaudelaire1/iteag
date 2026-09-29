@@ -76,7 +76,9 @@ def site_context(request):
 
     fichiers_statiques = (
         Path(settings.BASE_DIR) / "static" / "css" / "main.css",
+        Path(settings.BASE_DIR) / "static" / "css" / "indicateur-defilement.css",
         Path(settings.BASE_DIR) / "static" / "js" / "iteag.js",
+        Path(settings.BASE_DIR) / "static" / "js" / "indicateur-defilement.js",
     )
     asset_version = max((fichier.stat().st_mtime_ns for fichier in fichiers_statiques if fichier.exists()), default=1)
     return {
