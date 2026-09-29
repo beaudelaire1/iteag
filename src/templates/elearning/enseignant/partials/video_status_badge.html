@@ -1,0 +1,12 @@
+{% if video.statut_traitement == "pret" %}
+<span class="badge badge-success shrink-0">Prête</span>
+{% elif video.statut_traitement == "erreur" %}
+<span class="badge badge-danger shrink-0">Erreur</span>
+{% else %}
+<span class="badge badge-warning shrink-0"
+      hx-get="{% url 'elearning:enseignant_video_etat' video.pk %}"
+      hx-trigger="every 10s"
+      hx-swap="outerHTML">
+    {{ video.get_statut_traitement_display }}
+</span>
+{% endif %}
