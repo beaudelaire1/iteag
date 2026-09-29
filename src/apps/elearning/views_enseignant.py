@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, Max, Q
 from django.http import Http404, JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.text import slugify
 from django.views import View
@@ -653,7 +653,14 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         # Sans clé d'API, le dépôt échouerait à l'envoi : mieux vaut ne pas le
         # proposer que laisser remplir un formulaire condamné.
         contexte["depot_possible"] = televersement_disponible()
-        contexte["videos"] = VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")[:30]
+        videos = VideoAsset.objects.filter(uploade_par=self.request.user).order_by("-created_at")
+        contexte["videos"] = videos[:30]
+        contexte["videos_en_preparation"] = videos.filter(
+            statut_traitement__in=[
+                VideoAsset.StatutTraitement.EN_ATTENTE,
+                VideoAsset.StatutTraitement.EN_COURS,
+            ]
+        ).exists()
         return contexte
 
     def post(self, request, *args, **kwargs):
@@ -717,6 +724,23 @@ class VideoUploadView(ProfesseurMixin, TemplateView):
         return redirect(reverse("elearning:enseignant_videos"))
 
 
+class VideoStatusView(ProfesseurMixin, View):
+    """Petit fragment HTMX : l'état d'une vidéo sans recharger toute la page."""
+
+    http_method_names = ["get"]
+
+    def get(self, request, video_pk):
+        accessibles = VideoAsset.objects.filter(
+            Q(uploade_par=request.user) | Q(lecons__chapitre__module__in=self.mes_modules())
+        ).distinct()
+        video = get_object_or_404(accessibles, pk=video_pk)
+        return render(
+            request,
+            "elearning/enseignant/partials/video_status_badge.html",
+            {"video": video},
+        )
+
+
 class VideoRetryUploadView(ProfesseurMixin, View):
     """Relance un dépôt Bunny échoué sans redemander le fichier à l'enseignant."""
 
@@ -727,15 +751,20 @@ class VideoRetryUploadView(ProfesseurMixin, View):
             VideoAsset.objects.filter(uploade_par=request.user),
             pk=video_pk,
         )
-        if (
-            video.fournisseur != "bunny"
-            or video.statut_traitement != VideoAsset.StatutTraitement.ERREUR
-            or not video.fichier_source
-        ):
-            messages.warning(request, "Cette vidéo n'a pas d'envoi Bunny à relancer.")
+        if video.fournisseur != "bunny":
+            messages.warning(request, "Cette vidéo n'utilise pas Bunny Stream.")
             return redirect(reverse("elearning:enseignant_videos"))
 
-        from apps.elearning.tasks import televerser_video_bunny
+        from apps.elearning.tasks import televerser_video_bunny, verifier_encodage_bunny
+
+        if video.statut_traitement == VideoAsset.StatutTraitement.EN_COURS:
+            verifier_encodage_bunny.delay(str(video.pk))
+            messages.success(request, "Vérification Bunny relancée.")
+            return redirect(reverse("elearning:enseignant_videos"))
+
+        if video.statut_traitement != VideoAsset.StatutTraitement.ERREUR or not video.fichier_source:
+            messages.warning(request, "Cette vidéo n'a pas d'envoi Bunny à relancer.")
+            return redirect(reverse("elearning:enseignant_videos"))
 
         video.statut_traitement = VideoAsset.StatutTraitement.EN_ATTENTE
         video.message_erreur = ""
