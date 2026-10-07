@@ -15,6 +15,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import TemplateView
 from django_otp import login as otp_login
+from django_otp import verify_token as verifier_otp
 from django_otp.oath import TOTP
 
 from apps.core.mixins import StaffRoleRequiredMixin
@@ -320,10 +321,11 @@ class OTPActivationView(_BaseOTPView):
             )
             return self.render_to_response(self.get_context_data(**kwargs))
 
-        if appareil.verify_token(code):
-            appareil.confirmed = True
-            appareil.save(update_fields=["confirmed"])
-            otp_login(request, appareil)
+        appareil_verifie = verifier_otp(request.user, appareil.persistent_id, code)
+        if appareil_verifie is not None:
+            appareil_verifie.confirmed = True
+            appareil_verifie.save(update_fields=["confirmed"])
+            otp_login(request, appareil_verifie)
             journaliser("modification", request=request, objet_libelle="Activation du second facteur")
             messages.success(request, "Double authentification activée.")
             return redirect(self.suivant())
@@ -377,8 +379,9 @@ class OTPVerificationView(_BaseOTPView):
             )
             return self.render_to_response(self.get_context_data(**kwargs))
 
-        if appareil.verify_token(code):
-            otp_login(request, appareil)
+        appareil_verifie = verifier_otp(request.user, appareil.persistent_id, code)
+        if appareil_verifie is not None:
+            otp_login(request, appareil_verifie)
             return redirect(self.suivant())
 
         journaliser("connexion_echec", request=request, objet_libelle="Second facteur invalide")
