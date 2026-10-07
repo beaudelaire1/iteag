@@ -520,13 +520,13 @@ class PaiementForm(FormulaireModeleITEAG):
             "mode": "Moyen de paiement",
             "session": "Session réglée",
             "statut": "Où en est ce paiement ?",
-            "reference": "Référence du virement",
+            "reference": "Référence du paiement",
             "recu_pdf": "Reçu (fichier PDF)",
         }
         help_texts = {
             "session": "Permet de rattacher le paiement aux inscriptions de cette session.",
             "statut": "« Confirmé » quand l'argent est bien arrivé sur le compte de l'institut.",
-            "reference": "Telle qu'elle apparaît sur le relevé bancaire. Facultatif.",
+            "reference": "Référence du virement, numéro du chèque ou autre référence utile. Facultatif.",
         }
         widgets = {
             "montant": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
