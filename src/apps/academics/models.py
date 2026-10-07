@@ -499,6 +499,7 @@ class Paiement(TimeStampedModel):
     class ModePaiement(models.TextChoices):
         VIREMENT = "virement", "Virement"
         ESPECES = "especes", "Espèces sur place"
+        CHEQUE = "cheque", "Chèque"
 
     class StatutPaiement(models.TextChoices):
         EN_ATTENTE = "en_attente", "En attente"
