@@ -157,6 +157,36 @@ class TestVerification:
         assert reponse.status_code == 302
         assert client.get(reverse("secretariat:dashboard")).status_code == 200
 
+    def test_un_code_valide_sur_un_autre_appareil_confirme_est_accepte(self, client, secretaire):
+        appareil_valide = TOTPDevice.objects.create(user=secretaire, name="Téléphone actuel", confirmed=True)
+        TOTPDevice.objects.create(user=secretaire, name="Ancien appareil", confirmed=True)
+        client.force_login(secretaire)
+
+        reponse = client.post(
+            reverse("accounts:otp_verification"),
+            {"code": code_valide(appareil_valide)},
+        )
+
+        assert reponse.status_code == 302
+
+    def test_un_appareil_obsolete_bloque_n_empeche_pas_le_bon_code(self, client, secretaire):
+        appareil_valide = TOTPDevice.objects.create(user=secretaire, name="Téléphone actuel", confirmed=True)
+        TOTPDevice.objects.create(
+            user=secretaire,
+            name="Ancien appareil",
+            confirmed=True,
+            throttling_failure_count=4,
+            throttling_failure_timestamp=timezone.now(),
+        )
+        client.force_login(secretaire)
+
+        reponse = client.post(
+            reverse("accounts:otp_verification"),
+            {"code": code_valide(appareil_valide)},
+        )
+
+        assert reponse.status_code == 302
+
     def test_un_code_faux_est_refuse_et_journalise(self, client, secretaire):
         from apps.core.models import JournalAudit
 
