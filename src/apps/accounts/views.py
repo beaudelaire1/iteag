@@ -23,7 +23,7 @@ from apps.core.services.audit import journaliser
 from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
 from .forms import EmailOrUsernameAuthenticationForm, MotDePasseForm, ProfilForm, SignatureForm
-from .otp import appareil_confirme, appareil_en_attente, deux_facteurs_requis
+from .otp import appareil_confirme, appareil_en_attente, appareils_confirmes, deux_facteurs_requis
 from .services.securite import alerter_du_changement, alerter_du_mot_de_passe, etat_sensible
 
 
@@ -273,8 +273,8 @@ class _BaseOTPView(LoginRequiredMixin, TemplateView):
         totp.time = time.time()
         return totp.verify(jeton, appareil.tolerance)
 
-    def _message_echec_code(self, appareil, code: str) -> None:
-        if self._correspond_a_un_code_totp(appareil, code):
+    def _message_echec_code(self, appareils, code: str) -> None:
+        if any(self._correspond_a_un_code_totp(appareil, code) for appareil in appareils):
             messages.error(
                 self.request,
                 "Ce code a déjà été utilisé. Attendez le prochain code affiché par votre application, puis réessayez.",
@@ -330,7 +330,7 @@ class OTPActivationView(_BaseOTPView):
             messages.success(request, "Double authentification activée.")
             return redirect(self.suivant())
 
-        self._message_echec_code(appareil, code)
+        self._message_echec_code([appareil], code)
         return self.render_to_response(self.get_context_data(**kwargs))
 
     @staticmethod
@@ -364,14 +364,33 @@ class OTPVerificationView(_BaseOTPView):
         return {**super().get_context_data(**kwargs), "suivant": self.suivant()}
 
     def post(self, request, *args, **kwargs):
-        appareil = appareil_confirme(request.user)
         code = request.POST.get("code", "").strip().replace(" ", "")
+        appareils = list(appareils_confirmes(request.user))
 
-        if appareil is None:
+        if not appareils:
             return redirect(reverse("accounts:otp_activation"))
 
-        attente = self._attente_avant_nouvel_essai(appareil)
-        if attente:
+        attentes = []
+        essai_effectue = False
+
+        # Un compte peut avoir plusieurs appareils confirmés après un ancien
+        # enrôlement. Le code doit être accepté s'il correspond à l'un d'eux :
+        # bloquer sur le premier appareil rendrait un code parfaitement valide
+        # inutilisable dès qu'un appareil obsolète subsiste en base.
+        for appareil in appareils:
+            attente = self._attente_avant_nouvel_essai(appareil)
+            if attente:
+                attentes.append(attente)
+                continue
+
+            essai_effectue = True
+            appareil_verifie = verifier_otp(request.user, appareil.persistent_id, code)
+            if appareil_verifie is not None:
+                otp_login(request, appareil_verifie)
+                return redirect(self.suivant())
+
+        if not essai_effectue and attentes:
+            attente = min(attentes)
             journaliser("connexion_echec", request=request, objet_libelle="Second facteur temporairement limité")
             messages.warning(
                 request,
@@ -379,13 +398,8 @@ class OTPVerificationView(_BaseOTPView):
             )
             return self.render_to_response(self.get_context_data(**kwargs))
 
-        appareil_verifie = verifier_otp(request.user, appareil.persistent_id, code)
-        if appareil_verifie is not None:
-            otp_login(request, appareil_verifie)
-            return redirect(self.suivant())
-
         journaliser("connexion_echec", request=request, objet_libelle="Second facteur invalide")
-        self._message_echec_code(appareil, code)
+        self._message_echec_code(appareils, code)
         return self.render_to_response(self.get_context_data(**kwargs))
 
 
