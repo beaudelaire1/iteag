@@ -20,11 +20,16 @@ def deux_facteurs_requis(utilisateur) -> bool:
     return utilisateur.is_superuser or utilisateur.is_staff or utilisateur.role in roles
 
 
-def appareil_confirme(utilisateur) -> TOTPDevice | None:
-    """Appareil TOTP déjà enrôlé, le cas échéant."""
+def appareils_confirmes(utilisateur):
+    """Tous les appareils TOTP confirmés, du plus récent au plus ancien."""
     if utilisateur is None or not getattr(utilisateur, "is_authenticated", False):
-        return None
-    return TOTPDevice.objects.filter(user=utilisateur, confirmed=True).first()
+        return TOTPDevice.objects.none()
+    return TOTPDevice.objects.filter(user=utilisateur, confirmed=True).order_by("-id")
+
+
+def appareil_confirme(utilisateur) -> TOTPDevice | None:
+    """Appareil TOTP confirmé le plus récent, s'il existe."""
+    return appareils_confirmes(utilisateur).first()
 
 
 def appareil_en_attente(utilisateur) -> TOTPDevice:
