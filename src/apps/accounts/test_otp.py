@@ -3,6 +3,7 @@
 import time
 
 import pytest
+from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 from django_otp.oath import TOTP
@@ -64,6 +65,18 @@ class TestRegleDuSecondFacteur:
     def test_l_interrupteur_desactive_la_regle(self, secretaire, settings):
         settings.OTP_ENFORCE = False
         assert deux_facteurs_requis(secretaire) is False
+
+
+@pytest.mark.django_db
+def test_commande_reinitialiser_2fa_supprime_appareils_sans_toucher_mot_de_passe(secretaire):
+    TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
+    ancien_hash = secretaire.password
+
+    call_command("reinitialiser_2fa", secretaire.email)
+
+    assert not TOTPDevice.objects.filter(user=secretaire).exists()
+    secretaire.refresh_from_db()
+    assert secretaire.password == ancien_hash
 
 
 @pytest.mark.django_db
