@@ -34,6 +34,10 @@
             <li class="card">
                 <p class="overline mb-3">Étape 2</p>
                 <h2 class="text-lg font-semibold text-navy-900 mb-4">Scannez ce code</h2>
+                <p class="text-sm text-warm-600 mb-4">
+                    Après une réinitialisation, remplacez l'ancienne entrée ITEAG dans votre application
+                    par ce QR code et utilisez le code de cette nouvelle entrée.
+                </p>
                 <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
                     <img src="data:image/png;base64,{{ qr_code_base64 }}"
                          alt="Code QR d'enrôlement du second facteur"
@@ -56,11 +60,12 @@
                 <form method="post" class="flex flex-col sm:flex-row gap-3 sm:items-end">
                     {% csrf_token %}
                     <input type="hidden" name="suivant" value="{{ suivant }}">
+                    <input type="hidden" name="appareil" value="{{ appareil_enrolement }}">
                     <div class="flex-1">
-                        <label for="code" class="form-label">Code à 6 chiffres</label>
+                        <label for="code" class="form-label">Code à {{ chiffres }} chiffres</label>
                         <input type="text" name="code" id="code" required
-                               inputmode="numeric" pattern="[0-9 ]{6,9}" autocomplete="one-time-code"
-                               maxlength="9" placeholder="123 456" class="form-input">
+                               inputmode="numeric" pattern="{{ motif_code }}" autocomplete="one-time-code"
+                               maxlength="{{ longueur_code }}" class="form-input">
                     </div>
                     <button type="submit" class="btn-primary justify-center">Activer</button>
                 </form>

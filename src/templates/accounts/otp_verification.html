@@ -20,10 +20,10 @@
             {% csrf_token %}
             <input type="hidden" name="suivant" value="{{ suivant }}">
             <div>
-                <label for="code" class="form-label">Code à 6 chiffres</label>
+                <label for="code" class="form-label">Code à {{ chiffres }} chiffres</label>
                 <input type="text" name="code" id="code" required autofocus
-                       inputmode="numeric" pattern="[0-9 ]{6,9}" autocomplete="one-time-code"
-                       maxlength="9" placeholder="123 456" class="form-input">
+                       inputmode="numeric" pattern="{{ motif_code }}" autocomplete="one-time-code"
+                       maxlength="{{ longueur_code }}" class="form-input">
             </div>
             <button type="submit" class="btn-primary w-full justify-center">Vérifier</button>
         </form>

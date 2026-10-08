@@ -7,23 +7,27 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import TemplateView
 from django_otp import login as otp_login
 from django_otp import verify_token as verifier_otp
 from django_otp.oath import TOTP
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.core.mixins import StaffRoleRequiredMixin
 from apps.core.services.audit import journaliser
 from apps.core.services.turnstile import MESSAGE_ECHEC, valider_requete
 
 from .forms import EmailOrUsernameAuthenticationForm, MotDePasseForm, ProfilForm, SignatureForm
-from .otp import appareil_confirme, appareil_en_attente, appareils_confirmes, deux_facteurs_requis
+from .models import User
+from .otp import appareil_confirme, appareil_en_attente, appareils_confirmes, deux_facteurs_requis, empreinte_appareil
 from .services.securite import alerter_du_changement, alerter_du_mot_de_passe, etat_sensible
 
 
@@ -243,6 +247,11 @@ class SignatureView(StaffRoleRequiredMixin, TemplateView):
 
 
 class _BaseOTPView(LoginRequiredMixin, TemplateView):
+    @staticmethod
+    def code_saisi(request) -> str:
+        # Les applications copient aussi des espaces insécables et fines.
+        return "".join(request.POST.get("code", "").split())
+
     def suivant(self) -> str:
         propose = self.request.GET.get("suivant") or self.request.POST.get("suivant") or ""
         # Une redirection ouverte transformerait cette page en tremplin.
@@ -290,6 +299,7 @@ class OTPActivationView(_BaseOTPView):
     """Enrôlement d'un appareil TOTP : QR code, secret, puis vérification."""
 
     template_name = "accounts/otp_activation.html"
+    CLE_ENROLEMENT = "otp_enrolement"
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and appareil_confirme(request.user):
@@ -299,19 +309,47 @@ class OTPActivationView(_BaseOTPView):
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)
         appareil = appareil_en_attente(self.request.user)
+        empreinte = empreinte_appareil(appareil)
+        self.request.session[self.CLE_ENROLEMENT] = {"id": appareil.pk, "empreinte": empreinte}
         contexte.update(
             {
                 "qr_code_base64": self._qr_code(appareil.config_url),
+                "appareil_enrolement": f"{appareil.pk}:{empreinte}",
                 "secret_manuel": self._secret_lisible(appareil),
                 "obligatoire": deux_facteurs_requis(self.request.user),
                 "suivant": self.suivant(),
+                "chiffres": appareil.digits,
+                "longueur_code": appareil.digits + 3,
+                "motif_code": rf"[0-9\s]{{{appareil.digits},{appareil.digits + 3}}}",
             }
         )
         return contexte
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
-        appareil = appareil_en_attente(request.user)
-        code = request.POST.get("code", "").strip().replace(" ", "")
+        User.objects.select_for_update().get(pk=request.user.pk)
+        if appareil_confirme(request.user) is not None:
+            return redirect(reverse("accounts:otp_verification"))
+        enrolement = request.session.get(self.CLE_ENROLEMENT, {})
+        appareil = (
+            TOTPDevice.objects.select_for_update()
+            .filter(user=request.user, confirmed=False, pk=enrolement.get("id"))
+            .first()
+        )
+        if (
+            appareil is None
+            or not constant_time_compare(
+                request.POST.get("appareil", ""), f"{enrolement.get('id')}:{enrolement.get('empreinte')}"
+            )
+            or not constant_time_compare(enrolement.get("empreinte", ""), empreinte_appareil(appareil))
+        ):
+            messages.warning(
+                request,
+                "La configuration du second facteur a changé. Scannez le QR code affiché ci-dessous, "
+                "puis saisissez le nouveau code de votre application.",
+            )
+            return self.render_to_response(self.get_context_data(**kwargs))
+        code = self.code_saisi(request)
 
         attente = self._attente_avant_nouvel_essai(appareil)
         if attente:
@@ -325,6 +363,7 @@ class OTPActivationView(_BaseOTPView):
         if appareil_verifie is not None:
             appareil_verifie.confirmed = True
             appareil_verifie.save(update_fields=["confirmed"])
+            request.session.pop(self.CLE_ENROLEMENT, None)
             otp_login(request, appareil_verifie)
             journaliser("modification", request=request, objet_libelle="Activation du second facteur")
             messages.success(request, "Double authentification activée.")
@@ -361,10 +400,18 @@ class OTPVerificationView(_BaseOTPView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        return {**super().get_context_data(**kwargs), "suivant": self.suivant()}
+        chiffres_disponibles = sorted({appareil.digits for appareil in appareils_confirmes(self.request.user)}) or [6]
+        minimum, maximum = chiffres_disponibles[0], chiffres_disponibles[-1]
+        return {
+            **super().get_context_data(**kwargs),
+            "suivant": self.suivant(),
+            "chiffres": " ou ".join(str(chiffres) for chiffres in chiffres_disponibles),
+            "longueur_code": maximum + 3,
+            "motif_code": rf"[0-9\s]{{{minimum},{maximum + 3}}}",
+        }
 
     def post(self, request, *args, **kwargs):
-        code = request.POST.get("code", "").strip().replace(" ", "")
+        code = self.code_saisi(request)
         appareils = list(appareils_confirmes(request.user))
 
         if not appareils:

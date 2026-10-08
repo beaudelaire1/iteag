@@ -37,7 +37,8 @@ class Force2FAStaffMiddleware:
             and not request.path.startswith(PREFIXES_EXEMPTS)
         ):
             verifie = getattr(utilisateur, "is_verified", None)
-            if verifie is None or not verifie():
+            appareil_session = getattr(utilisateur, "otp_device", None)
+            if verifie is None or not verifie() or not getattr(appareil_session, "confirmed", False):
                 cible = "accounts:otp_verification" if appareil_confirme(utilisateur) else "accounts:otp_activation"
                 return redirect(f"{reverse(cible)}?suivant={request.path}")
 

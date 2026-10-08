@@ -1,9 +1,8 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django_otp.plugins.otp_static.models import StaticDevice
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.accounts.models import User
+from apps.accounts.otp import reinitialiser_second_facteur
 
 
 class Command(BaseCommand):
@@ -26,8 +25,7 @@ class Command(BaseCommand):
         if utilisateur is None:
             raise CommandError(f"Aucun compte trouvé pour « {identifiant} ».")
 
-        nb_totp, _ = TOTPDevice.objects.filter(user=utilisateur).delete()
-        nb_static, _ = StaticDevice.objects.filter(user=utilisateur).delete()
+        nb_totp, nb_static = reinitialiser_second_facteur(utilisateur)
 
         self.stdout.write(
             self.style.SUCCESS(
