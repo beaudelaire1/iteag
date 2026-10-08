@@ -154,7 +154,7 @@ def televerser_video_bunny(self, video_id: str) -> str:
                 self.request.retries + 1,
                 self.max_retries,
             )
-            raise self.retry(exc=erreur, countdown=delai)
+            raise self.retry(exc=erreur, countdown=delai) from erreur
 
         from apps.elearning.services.depot_video import basculer_bunny_en_iteag
 
@@ -163,9 +163,7 @@ def televerser_video_bunny(self, video_id: str) -> str:
         except Exception as erreur_repli:  # noqa: BLE001
             logger.exception("Repli ITEAG impossible pour la vidéo %s", video_id)
             video.statut_traitement = VideoAsset.StatutTraitement.ERREUR
-            video.message_erreur = (
-                f"Bunny reste indisponible et le repli ITEAG a échoué : {erreur_repli}"
-            )[:500]
+            video.message_erreur = (f"Bunny reste indisponible et le repli ITEAG a échoué : {erreur_repli}")[:500]
             video.save(update_fields=["statut_traitement", "message_erreur", "updated_at"])
             return "erreur"
 

@@ -316,9 +316,7 @@ class TestDepuisLaLecon:
 
 
 class TestRelanceDepuisLaBibliotheque:
-    def test_une_video_bunny_en_erreur_peut_etre_relancee(
-        self, client, enseignant, bunny_configure, monkeypatch
-    ):
+    def test_une_video_bunny_en_erreur_peut_etre_relancee(self, client, enseignant, bunny_configure, monkeypatch):
         appels = {}
         video = VideoAsset.objects.create(
             titre="Prédication — séquence interrompue",
@@ -361,9 +359,7 @@ class TestRelanceDepuisLaBibliotheque:
         assert reverse("elearning:enseignant_video_relancer", args=[video.pk]) in contenu
         assert "Réessayer l’envoi" in contenu
 
-    def test_une_video_en_preparation_peut_forcer_une_verification(
-        self, client, enseignant, monkeypatch
-    ):
+    def test_une_video_en_preparation_peut_forcer_une_verification(self, client, enseignant, monkeypatch):
         appels = {}
         video = VideoAsset.objects.create(
             titre="Vidéo déjà envoyée",
@@ -420,9 +416,7 @@ class TestTacheDEnvoi:
             statut_traitement=VideoAsset.StatutTraitement.EN_ATTENTE,
         )
 
-    def test_l_envoi_libere_le_worker_et_programme_le_suivi(
-        self, video, bunny_configure, monkeypatch
-    ):
+    def test_l_envoi_libere_le_worker_et_programme_le_suivi(self, video, bunny_configure, monkeypatch):
         """Après le PUT, Celery ne doit plus dormir en attendant Bunny."""
         from apps.elearning.tasks import televerser_video_bunny
 
@@ -432,6 +426,7 @@ class TestTacheDEnvoi:
             "apps.elearning.tasks.verifier_encodage_bunny.apply_async",
             lambda *, args, countdown: appels.update(args=args, countdown=countdown),
         )
+
         def suivi_interdit(_identifiant):
             raise AssertionError("Le suivi ne doit pas se faire dans la tâche d'envoi")
 
@@ -446,9 +441,7 @@ class TestTacheDEnvoi:
         assert appels["args"] == [str(video.pk), 0]
         assert appels["countdown"] == 5
 
-    def test_le_suivi_marque_prete_des_qu_une_resolution_est_disponible(
-        self, video, bunny_configure, monkeypatch
-    ):
+    def test_le_suivi_marque_prete_des_qu_une_resolution_est_disponible(self, video, bunny_configure, monkeypatch):
         from apps.elearning.tasks import verifier_encodage_bunny
 
         video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
@@ -464,11 +457,10 @@ class TestTacheDEnvoi:
         assert video.duree_secondes == 1234
         assert not video.fichier_source
 
-    def test_le_suivi_se_reprogramme_sans_bloquer_le_worker(
-        self, video, bunny_configure, monkeypatch
-    ):
+    def test_le_suivi_se_reprogramme_sans_bloquer_le_worker(self, video, bunny_configure, monkeypatch, settings):
         from apps.elearning.tasks import DELAI_VERIFICATION_BUNNY_SECONDES, verifier_encodage_bunny
 
+        settings.CELERY_TASK_ALWAYS_EAGER = False
         appels = {}
         video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
         video.save(update_fields=["statut_traitement", "updated_at"])
@@ -486,9 +478,7 @@ class TestTacheDEnvoi:
         assert video.statut_traitement == VideoAsset.StatutTraitement.EN_COURS
         assert video.fichier_source
 
-    def test_le_mode_eager_ne_boucle_pas_sur_les_verifications(
-        self, video, bunny_configure, monkeypatch, settings
-    ):
+    def test_le_mode_eager_ne_boucle_pas_sur_les_verifications(self, video, bunny_configure, monkeypatch, settings):
         from apps.elearning.tasks import verifier_encodage_bunny
 
         settings.CELERY_TASK_ALWAYS_EAGER = True
@@ -498,9 +488,7 @@ class TestTacheDEnvoi:
 
         assert verifier_encodage_bunny(str(video.pk), tentative=1) == "en_attente"
 
-    def test_la_recuperation_relance_uniquement_un_suivi_devenu_stale(
-        self, video, enseignant, monkeypatch
-    ):
+    def test_la_recuperation_relance_uniquement_un_suivi_devenu_stale(self, video, enseignant, monkeypatch):
         from datetime import timedelta
 
         from django.utils import timezone
@@ -529,9 +517,7 @@ class TestTacheDEnvoi:
         assert appels == [str(video.pk)]
         assert str(recente.pk) not in appels
 
-    def test_un_echec_bunny_laisse_la_raison_sur_la_fiche(
-        self, video, bunny_configure, monkeypatch
-    ):
+    def test_un_echec_bunny_laisse_la_raison_sur_la_fiche(self, video, bunny_configure, monkeypatch):
         from apps.elearning.tasks import verifier_encodage_bunny
 
         video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
@@ -545,9 +531,7 @@ class TestTacheDEnvoi:
         assert "rejeté" in video.message_erreur
         assert video.fichier_source
 
-    def test_un_echec_de_televersement_presigne_est_aussi_un_echec(
-        self, video, bunny_configure, monkeypatch
-    ):
+    def test_un_echec_de_televersement_presigne_est_aussi_un_echec(self, video, bunny_configure, monkeypatch):
         from apps.elearning.tasks import verifier_encodage_bunny
 
         video.statut_traitement = VideoAsset.StatutTraitement.EN_COURS
