@@ -196,6 +196,11 @@ LOGOUT_REDIRECT_URL = "/"
 # ──────────────────────────────────────────────
 
 OTP_TOTP_ISSUER = "ITEAG"
+# Sans cela, django-otp recentre la fenêtre sur chaque code accepté : deux
+# saisies tardives (code expiré depuis 30 à 60 s) suffisent à faire refuser
+# ensuite le code affiché à l'instant. Serveur et téléphones sont à l'heure
+# réseau : la tolérance fixe d'une période de part et d'autre suffit.
+OTP_TOTP_SYNC = False
 OTP_ENFORCE = env.bool("DJANGO_OTP_ENFORCE", default=True)
 # Rôles pour lesquels le second facteur est obligatoire (audit du CDC v1 §5).
 ROLES_2FA_OBLIGATOIRE = ["admin", "secretariat"]

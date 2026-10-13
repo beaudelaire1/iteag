@@ -376,6 +376,32 @@ class TestVerification:
         assert reponse.status_code == 302
         assert client.get(reverse("secretariat:dashboard")).status_code == 200
 
+    def test_des_saisies_tardives_ne_font_pas_refuser_le_code_courant(self, client, secretaire, monkeypatch):
+        """Un code tapé juste après son expiration ne doit pas décaler la fenêtre suivante."""
+        appareil = TOTPDevice.objects.create(user=secretaire, name="ITEAG", confirmed=True)
+        debut = time.time()
+        for jour in (1, 2):
+            maintenant = debut + jour * 86400
+            # Le second jour, la saisie arrive une période plus tard encore.
+            monkeypatch.setattr(time, "time", lambda instant=maintenant - 30 * jour: instant)
+            code_expire = code_valide(appareil)
+            monkeypatch.setattr(time, "time", lambda instant=maintenant: instant)
+            client.force_login(secretaire)
+            client.post(reverse("accounts:otp_verification"), {"code": code_expire})
+            client.post(reverse("accounts:logout"))
+
+        # Le throttling suit l'horloge réelle, pas le temps simulé : le jour 3
+        # ne doit pas être bloqué par le refus éventuel du jour 2.
+        appareil.refresh_from_db()
+        appareil.throttle_reset()
+        monkeypatch.setattr(time, "time", lambda: debut + 3 * 86400)
+        client.force_login(secretaire)
+        reponse = client.post(reverse("accounts:otp_verification"), {"code": code_valide(appareil)})
+
+        assert reponse.status_code == 302
+        appareil.refresh_from_db()
+        assert appareil.drift == 0
+
     def test_un_code_valide_sur_un_autre_appareil_confirme_est_accepte(self, client, secretaire):
         appareil_valide = TOTPDevice.objects.create(user=secretaire, name="Téléphone actuel", confirmed=True)
         TOTPDevice.objects.create(user=secretaire, name="Ancien appareil", confirmed=True)
