@@ -495,7 +495,9 @@ class AdminEtudiantDetailView(StaffRoleRequiredMixin, DetailView):
                 "credits": profil.credits_ects.select_related("cours", "session", "stage", "vae").order_by(
                     "-date_validation"
                 ),
-                "paiements": profil.paiements.select_related("session", "cours_session__cours").order_by("-date_paiement"),
+                "paiements": profil.paiements.select_related("session", "cours_session__cours").order_by(
+                    "-date_paiement"
+                ),
                 "acces_modules": (
                     InscriptionModule.objects.filter(etudiant=profil).select_related("module").order_by("-created_at")
                 ),
