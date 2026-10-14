@@ -96,7 +96,16 @@ def test_une_session_permet_de_voir_ses_cours_et_leurs_details(client, exemple):
     reponse = client.get(reverse("administration:sessions"))
     assert reponse.status_code == 200
     contenu = reponse.content.decode()
-    assert "Voir les cours programmés (2)" in contenu
+    assert "Cours programmés (2)" in contenu
+    assert "Voir les détails de la session" in contenu
+    # Un clic sur l'en-tête de la carte ouvre directement les détails natifs.
+    assert '<details class="group">' in contenu
+    assert '<summary class="cursor-pointer' in contenu
+    assert contenu.index('<summary class="cursor-pointer') < contenu.index(session.nom) < contenu.index("</summary>")
+    # Les commandes de modification restent distinctes de la zone activable.
+    assert contenu.index("</details>") < contenu.index(
+        reverse("administration:session_update", args=[session.pk])
+    )
     assert offres[0].cours.titre in contenu
     assert offres[1].cours.titre in contenu
     assert "Salle de formation" in contenu
