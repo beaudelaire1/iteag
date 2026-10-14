@@ -583,6 +583,23 @@ class PaiementForm(FormulaireModeleITEAG):
                 # Conserver la colonne « session » utilisée par les anciens
                 # règlements et les demandes d'inscription.
                 donnees["session"] = cours_session.session
+
+        if self.instance.pk:
+            # Les inscriptions déjà validées ne doivent pas devenir incohérentes
+            # lorsque l'on modifie l'affectation d'un paiement historique.
+            inscriptions = DemandeInscriptionCours.objects.filter(paiement=self.instance)
+            etudiant = donnees.get("etudiant")
+            if etudiant and inscriptions.exclude(etudiant=etudiant).exists():
+                self.add_error("etudiant", "Ce paiement est déjà utilisé pour un autre étudiant.")
+            session_finale = donnees.get("session")
+            if inscriptions.exists():
+                if session_finale is None or inscriptions.exclude(cours_session__session=session_finale).exists():
+                    self.add_error("session", "Ce paiement justifie déjà une inscription dans une autre session.")
+                if cours_session and inscriptions.exclude(cours_session=cours_session).exists():
+                    self.add_error(
+                        "cours_session",
+                        "Ce paiement justifie déjà une inscription à un autre cours.",
+                    )
         return donnees
 
     def clean_recu_pdf(self):
