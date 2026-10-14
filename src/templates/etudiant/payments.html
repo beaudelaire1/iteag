@@ -75,7 +75,7 @@
                 {% for paiement in paiements %}
                 <tr>
                     <td class="py-4 pr-4">{{ paiement.date_paiement|date:"d/m/Y" }}</td>
-                    <td class="py-4 pr-4 font-semibold text-navy-900">{{ paiement.session|default:"Dossier général" }}</td>
+                    <td class="py-4 pr-4 font-semibold text-navy-900">{{ paiement.session|default:"Dossier général" }}{% if paiement.cours_session_id %}<p class="text-xs font-normal text-warm-600">{{ paiement.cours_session.cours.titre }}</p>{% endif %}</td>
                     <td class="py-4 pr-4 text-warm-500">{{ paiement.reference|default:"—" }}</td>
                     <td class="py-4 pr-4">{{ paiement.get_mode_display }}</td>
                     <td class="py-4 pr-4"><span class="badge {% if paiement.statut == 'confirme' %}badge-success{% else %}badge-warning{% endif %}">{{ paiement.get_statut_display }}</span></td>
