@@ -83,3 +83,45 @@ def test_liste_et_fiche_montrent_l_atelier(client, exemple):
     assert paiement in liste.context["paiements"]
     fiche = client.get(reverse("administration:etudiant_detail", args=[profil.pk]))
     assert offres[0].cours.titre in fiche.content.decode()
+
+
+@pytest.mark.django_db
+def test_une_session_permet_de_voir_ses_cours_et_leurs_details(client, exemple):
+    agent, profil, session, offres, annonce = exemple
+    offres[0].horaires = "Le samedi de 9 h à 12 h"
+    offres[0].salle = "Salle de formation"
+    offres[0].save(update_fields=["horaires", "salle", "updated_at"])
+    client.force_login(agent)
+
+    reponse = client.get(reverse("administration:sessions"))
+    assert reponse.status_code == 200
+    contenu = reponse.content.decode()
+    assert "Voir les cours programmés (2)" in contenu
+    assert offres[0].cours.titre in contenu
+    assert offres[1].cours.titre in contenu
+    assert "Salle de formation" in contenu
+    assert "Le samedi de 9 h à 12 h" in contenu
+    assert "Présentiel" in contenu
+    assert reverse("administration:course_offering_update", args=[offres[0].pk]) in contenu
+    assert f"?session={session.pk}" in contenu
+    assert annonce.titre not in contenu
+
+
+@pytest.mark.django_db
+def test_une_session_sans_cours_l_indique(client, exemple):
+    agent, _, _, _, _ = exemple
+    nouvelle_session = SessionAcademique.objects.create(
+        nom="Cycle sans cours",
+        periode="formation",
+        annee_academique="2032-2033",
+        date_debut=date(2033, 1, 11),
+        date_fin=date(2033, 1, 12),
+    )
+    client.force_login(agent)
+
+    reponse = client.get(reverse("administration:sessions"))
+    assert reponse.status_code == 200
+    contenu = reponse.content.decode()
+    assert "Cycle sans cours" in contenu
+    assert "Aucun cours ou atelier n’a encore été programmé pour cette session." in contenu
+    assert f"?session={nouvelle_session.pk}" in contenu
