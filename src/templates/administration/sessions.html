@@ -50,80 +50,92 @@
 {% if sessions %}
 <div class="space-y-4">
     {% for s in sessions %}
-    <article class="card-elevated space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <div class="h-12 w-12 rounded-lg flex items-center justify-center shrink-0 text-lg bg-warm-100 text-navy-700">
-                    {% if s.periode == 'carnaval' %}🎭
-                    {% elif s.periode == 'paques' %}✝️
-                    {% elif s.periode == 'juillet' %}☀️
-                    {% elif s.periode == 'ateliers' %}📚
-                    {% elif s.periode == 'formation' %}🎓
-                    {% else %}🍂{% endif %}
-                </div>
-                <div>
-                    <h2 class="font-semibold text-navy-900">{{ s.nom }}</h2>
-                    <p class="text-xs mt-0.5 text-warm-500">{{ s.get_periode_display }} — {{ s.annee_academique }}</p>
-                    <p class="text-xs mt-1 font-medium text-navy-700">{{ s.nombre_cours }} cours programmé{{ s.nombre_cours|pluralize }}</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-4 text-sm">
-                <div class="text-right">
-                    <span class="block text-xs text-warm-400">Début</span>
-                    <span class="font-medium text-navy-800">{{ s.date_debut|date:"d/m/Y" }}</span>
-                </div>
-                <div class="text-right">
-                    <span class="block text-xs text-warm-400">Fin</span>
-                    <span class="font-medium text-navy-800">{{ s.date_fin|date:"d/m/Y" }}</span>
-                </div>
-                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                    {% if s.statut == 'en_cours' %}bg-emerald-50 text-emerald-700
-                    {% elif s.statut == 'planifiee' %}badge-info
-                    {% else %}badge-neutral{% endif %}">
-                    {{ s.get_statut_display }}
-                </span>
-                <a href="{% url 'administration:session_update' s.pk %}" class="text-xs font-medium text-navy-600">Modifier</a>
-                {% if user.is_admin %}
-                <a href="{% url 'administration:session_delete' s.pk %}" class="lien-danger">Supprimer</a>
-                {% endif %}
-            </div>
-        </div>
-
-        <details class="border-t border-warm-200 pt-3">
-            <summary class="cursor-pointer font-semibold text-sm text-navy-700">
-                Voir les cours programmés ({{ s.nombre_cours }})
-            </summary>
-            <div class="mt-4 space-y-3">
-                {% for offre in s.cours_programmes %}
-                <div class="rounded-lg border border-warm-200 p-4">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <h3 class="font-semibold text-navy-900">{{ offre.cours.titre }}</h3>
-                            <p class="mt-1 text-sm text-warm-600">
-                                {{ offre.enseignant }} · {{ offre.get_modalite_display }} · {{ offre.get_statut_display }}
-                            </p>
-                            {% if offre.horaires %}
-                            <p class="mt-1 text-sm text-warm-500">{{ offre.horaires|truncatechars:160 }}</p>
-                            {% endif %}
-                            {% if offre.salle %}
-                            <p class="mt-1 text-xs text-warm-500">Lieu : {{ offre.salle }}</p>
-                            {% endif %}
+    <article class="card-elevated">
+        <details class="group">
+            {# Toute la présentation de la session est activable, sans JavaScript et au clavier. #}
+            <summary class="cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-navy-700">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="h-12 w-12 rounded-lg flex items-center justify-center shrink-0 text-lg bg-warm-100 text-navy-700">
+                            {% if s.periode == 'carnaval' %}🎭
+                            {% elif s.periode == 'paques' %}✝️
+                            {% elif s.periode == 'juillet' %}☀️
+                            {% elif s.periode == 'ateliers' %}📚
+                            {% elif s.periode == 'formation' %}🎓
+                            {% else %}🍂{% endif %}
                         </div>
-                        <a class="font-medium text-sm text-navy-600"
-                           href="{% url 'administration:course_offering_update' offre.pk %}">Voir / modifier</a>
+                        <div class="min-w-0">
+                            <h2 class="font-semibold text-navy-900">{{ s.nom }}</h2>
+                            <p class="text-xs mt-0.5 text-warm-500">{{ s.get_periode_display }} — {{ s.annee_academique }}</p>
+                            <p class="text-xs mt-1 font-medium text-navy-700">{{ s.nombre_cours }} cours programmé{{ s.nombre_cours|pluralize }}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-sm">
+                        <div>
+                            <span class="block text-xs text-warm-400">Début</span>
+                            <span class="font-medium text-navy-800">{{ s.date_debut|date:"d/m/Y" }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs text-warm-400">Fin</span>
+                            <span class="font-medium text-navy-800">{{ s.date_fin|date:"d/m/Y" }}</span>
+                        </div>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                            {% if s.statut == 'en_cours' %}bg-emerald-50 text-emerald-700
+                            {% elif s.statut == 'planifiee' %}badge-info
+                            {% else %}badge-neutral{% endif %}">
+                            {{ s.get_statut_display }}
+                        </span>
                     </div>
                 </div>
-                {% empty %}
-                <p class="text-sm text-warm-500">Aucun cours ou atelier n’a encore été programmé pour cette session.</p>
-                {% endfor %}
-                <div class="flex flex-wrap items-center gap-3 pt-2">
-                    <a class="btn-secondary text-sm"
-                       href="{% url 'administration:course_offering_create' %}?session={{ s.pk }}">+ Programmer un cours</a>
-                    <a class="font-medium text-sm text-navy-600"
-                       href="{% url 'administration:course_offerings' %}?session={{ s.pk }}">Ouvrir la programmation</a>
+                <div class="mt-4 flex items-center justify-between gap-3 border-t border-warm-200 pt-3 text-sm font-semibold text-navy-700">
+                    <span class="group-open:hidden">Voir les détails de la session</span>
+                    <span class="hidden group-open:inline">Masquer les détails de la session</span>
+                    <svg aria-hidden="true" class="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                    </svg>
+                </div>
+            </summary>
+            <div class="mt-4 border-t border-warm-200 pt-4">
+                <h3 class="mb-3 font-semibold text-navy-900">Cours programmés ({{ s.nombre_cours }})</h3>
+                <div class="space-y-3">
+                    {% for offre in s.cours_programmes %}
+                    <div class="rounded-lg border border-warm-200 p-4">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h4 class="font-semibold text-navy-900">{{ offre.cours.titre }}</h4>
+                                <p class="mt-1 text-sm text-warm-600">
+                                    {{ offre.enseignant }} · {{ offre.get_modalite_display }} · {{ offre.get_statut_display }}
+                                </p>
+                                {% if offre.horaires %}
+                                <p class="mt-1 text-sm text-warm-500">{{ offre.horaires|truncatechars:160 }}</p>
+                                {% endif %}
+                                {% if offre.salle %}
+                                <p class="mt-1 text-xs text-warm-500">Lieu : {{ offre.salle }}</p>
+                                {% endif %}
+                            </div>
+                            <a class="font-medium text-sm text-navy-600"
+                               href="{% url 'administration:course_offering_update' offre.pk %}">Voir / modifier</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-warm-500">Aucun cours ou atelier n’a encore été programmé pour cette session.</p>
+                    {% endfor %}
+                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                        <a class="btn-secondary text-sm"
+                           href="{% url 'administration:course_offering_create' %}?session={{ s.pk }}">+ Programmer un cours</a>
+                        <a class="font-medium text-sm text-navy-600"
+                           href="{% url 'administration:course_offerings' %}?session={{ s.pk }}">Ouvrir la programmation</a>
+                    </div>
                 </div>
             </div>
         </details>
+        {# Ces actions restent accessibles sans ouvrir les détails et ne déclenchent pas la carte. #}
+        <div class="mt-4 flex flex-wrap items-center gap-4 border-t border-warm-200 pt-3 text-sm">
+            <a href="{% url 'administration:session_update' s.pk %}" class="font-medium text-navy-600">Modifier</a>
+            {% if user.is_admin %}
+            <a href="{% url 'administration:session_delete' s.pk %}" class="lien-danger">Supprimer</a>
+            {% endif %}
+        </div>
     </article>
     {% endfor %}
 </div>
