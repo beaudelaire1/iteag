@@ -515,7 +515,17 @@ class PaiementForm(FormulaireModeleITEAG):
 
     class Meta:
         model = Paiement
-        fields = ["etudiant", "montant", "date_paiement", "mode", "session", "cours_session", "statut", "reference", "recu_pdf"]
+        fields = [
+            "etudiant",
+            "montant",
+            "date_paiement",
+            "mode",
+            "cours_session",
+            "session",
+            "statut",
+            "reference",
+            "recu_pdf",
+        ]
         labels = {
             "etudiant": "Étudiant qui a payé",
             "montant": "Montant reçu (€)",
@@ -528,8 +538,14 @@ class PaiementForm(FormulaireModeleITEAG):
             "recu_pdf": "Reçu (fichier PDF)",
         }
         help_texts = {
-            "session": "Pour un paiement global de session. Si vous choisissez un cours ou atelier, la session est renseignée automatiquement.",
-            "cours_session": "Seuls les cours et ateliers déjà programmés sont proposés. S’il manque une activité, créez d’abord le cours puis programmez-le dans une session.",
+            "session": (
+                "Pour un paiement global de session. Si vous choisissez un cours ou atelier, "
+                "la session est renseignée automatiquement."
+            ),
+            "cours_session": (
+                "Seuls les cours et ateliers déjà programmés sont proposés. "
+                "S’il manque une activité, créez d’abord le cours puis programmez-le dans une session."
+            ),
             "statut": "« Confirmé » quand l'argent est bien arrivé sur le compte de l'institut.",
             "reference": "Référence du virement, numéro du chèque ou autre référence utile. Facultatif.",
         }
