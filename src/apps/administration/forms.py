@@ -180,7 +180,11 @@ class AdminSessionForm(FormulaireModeleITEAG):
             annee = debut.year if debut.month >= 8 else debut.year - 1
             donnees["annee_academique"] = f"{annee}-{annee + 1}"
         if debut and periode and not donnees.get("nom"):
-            donnees["nom"] = f"Session de {self.NOMS_PERIODE.get(periode, periode)} {debut.year}"
+            libelle = self.NOMS_PERIODE.get(periode, periode)
+            if periode in {SessionAcademique.Periode.ATELIERS, SessionAcademique.Periode.FORMATION}:
+                donnees["nom"] = f"{libelle} {debut.year}"
+            else:
+                donnees["nom"] = f"Session de {libelle} {debut.year}"
         return donnees
 
 
