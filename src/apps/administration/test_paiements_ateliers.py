@@ -5,9 +5,15 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 
-from apps.accounts.models import User
-from apps.academics.models import CoursDeSession, DemandeInscriptionCours, Paiement, ProfilEtudiant, SessionAcademique
+from apps.academics.models import (
+    CoursDeSession,
+    DemandeInscriptionCours,
+    Paiement,
+    ProfilEtudiant,
+    SessionAcademique,
+)
 from apps.academics.services.inscriptions import _paiement_confirme_compatible
+from apps.accounts.models import User
 from apps.administration.forms import EnrollmentDecisionForm, PaiementForm
 from apps.formations.models import Cours, Discipline, Professeur
 
@@ -20,8 +26,11 @@ def exemple(db):
     discipline = Discipline.objects.create(nom="Théologie des ateliers", slug="test-theologie-ateliers")
     enseignant = Professeur.objects.create(nom="Enseignant", prenom="Test", slug="test-enseignant-ateliers")
     session = SessionAcademique.objects.create(
-        nom="Ateliers 2026-2027", periode="ateliers", annee_academique="2026-2027",
-        date_debut=date(2026, 9, 26), date_fin=date(2027, 6, 19),
+        nom="Ateliers 2032-2033",
+        periode="ateliers",
+        annee_academique="2032-2033",
+        date_debut=date(2032, 9, 26),
+        date_fin=date(2033, 6, 19),
     )
     cours = [
         Cours.objects.create(titre=t, slug=f"test-atelier-{i}", discipline=discipline)
@@ -35,7 +44,7 @@ def exemple(db):
 def test_paiement_affecte_et_activite_non_programmee(exemple):
     agent, profil, session, offres, annonce = exemple
     form = PaiementForm(data={
-        "etudiant": profil.pk, "montant": "200", "date_paiement": "2026-10-14",
+        "etudiant": profil.pk, "montant": "200", "date_paiement": "2032-10-14",
         "mode": "virement", "statut": "confirme", "cours_session": offres[0].pk,
     })
     assert form.is_valid(), form.errors
@@ -50,7 +59,7 @@ def test_paiement_atelier_non_reutilisable_pour_un_autre(exemple):
     agent, profil, session, offres, annonce = exemple
     paiement = Paiement.objects.create(
         etudiant=profil, session=session, cours_session=offres[0],
-        date_paiement=date(2026, 10, 14), montant=Decimal("200"),
+        date_paiement=date(2032, 10, 14), montant=Decimal("200"),
         mode="virement", statut="confirme",
     )
     demande = DemandeInscriptionCours.objects.create(
@@ -65,7 +74,7 @@ def test_liste_et_fiche_montrent_l_atelier(client, exemple):
     agent, profil, session, offres, annonce = exemple
     paiement = Paiement.objects.create(
         etudiant=profil, session=session, cours_session=offres[0],
-        date_paiement=date(2026, 10, 14), montant=Decimal("200"),
+        date_paiement=date(2032, 10, 14), montant=Decimal("200"),
         mode="virement", statut="confirme",
     )
     client.force_login(agent)
