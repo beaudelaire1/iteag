@@ -2,6 +2,7 @@
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
@@ -288,6 +289,13 @@ def _confirmer_inscription(demande, *, par, paiement, exonere_paiement, commenta
         raise ValidationError("Ce cours est complet : aucune place ne peut être attribuée.")
 
     paiement_valide = paiement or _paiement_confirme_compatible(demande)
+    if paiement_valide is not None and (
+        paiement_valide.etudiant_id != demande.etudiant_id
+        or paiement_valide.session_id != cours_session.session_id
+        or paiement_valide.statut != Paiement.StatutPaiement.CONFIRME
+        or (paiement_valide.cours_session_id is not None and paiement_valide.cours_session_id != cours_session.pk)
+    ):
+        raise ValidationError("Ce paiement ne correspond pas à l'étudiant et au cours concernés.")
     if demande.montant_du > 0 and not exonere_paiement:
         if paiement_valide is None:
             raise ValidationError("Un paiement confirmé couvrant cette session est requis.")
@@ -327,6 +335,7 @@ def _confirmer_inscription(demande, *, par, paiement, exonere_paiement, commenta
 def _paiement_confirme_compatible(demande):
     return (
         Paiement.objects.filter(
+            Q(cours_session__isnull=True) | Q(cours_session=demande.cours_session),
             etudiant=demande.etudiant,
             session=demande.cours_session.session,
             statut=Paiement.StatutPaiement.CONFIRME,

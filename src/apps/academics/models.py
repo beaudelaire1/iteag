@@ -131,6 +131,8 @@ class SessionAcademique(TimeStampedModel):
         PAQUES = "paques", "Pâques"
         JUILLET = "juillet", "Grandes vacances"
         TOUSSAINT = "toussaint", "Toussaint"
+        ATELIERS = "ateliers", "Cycle d’ateliers"
+        FORMATION = "formation", "Formation ponctuelle"
 
     class StatutSession(models.TextChoices):
         PLANIFIEE = "planifiee", "Planifiée"
@@ -508,6 +510,16 @@ class Paiement(TimeStampedModel):
 
     etudiant = models.ForeignKey(ProfilEtudiant, on_delete=models.CASCADE, related_name="paiements")
     session = models.ForeignKey(SessionAcademique, on_delete=models.SET_NULL, null=True, blank=True)
+    # Une session peut contenir plusieurs cours ; un paiement dédié ne doit
+    # pas être réutilisé pour un autre cours de la même période.
+    cours_session = models.ForeignKey(
+        CoursDeSession,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="paiements_affectes",
+        verbose_name="Cours ou atelier réglé",
+    )
     montant = models.DecimalField(max_digits=8, decimal_places=2)
     date_paiement = models.DateField()
     mode = models.CharField(max_length=20, choices=ModePaiement.choices)

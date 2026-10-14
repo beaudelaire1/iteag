@@ -17,6 +17,7 @@
 {% endblock %}
 
 {% block portal_content %}
+<p class="mb-4 text-sm text-warm-600">Un cours ou atelier doit d’abord être créé dans <a class="font-semibold text-navy-700 underline" href="{% url 'administration:formations' %}">Parcours et cours</a>, puis programmé ici dans une session. Une simple annonce dans les actualités ne crée pas de cours et ne permet pas de lui affecter un règlement.</p>
 <form method="get" class="card-elevated mb-6 grid gap-4 lg:grid-cols-[2fr_1fr_1fr_auto]">
     <div><label class="form-label" for="offering-q">Cours ou enseignant</label><input id="offering-q" class="form-input" name="q" value="{{ query }}" type="search"></div>
     <div><label class="form-label" for="offering-session">Session</label><select id="offering-session" class="form-input" name="session"><option value="">Toutes</option>{% for session in sessions %}<option value="{{ session.pk }}"{% if current_session == session.pk|stringformat:"s" %} selected{% endif %}>{{ session.nom }}</option>{% endfor %}</select></div>
@@ -45,7 +46,7 @@
             {% if user.is_admin %}<a href="{% url 'administration:course_offering_delete' offre.pk %}" class="text-sm font-semibold text-rose-700">Supprimer</a>{% endif %}
         </div>
     </article>
-    {% empty %}<div class="card-elevated py-12 text-center text-warm-400">Aucun cours programmé.</div>{% endfor %}
+    {% empty %}<div class="card-elevated py-12 text-center text-warm-500">Aucun cours ou atelier programmé ne correspond à votre recherche. <a class="font-semibold underline" href="{% url 'administration:formations' %}">Vérifier le référentiel des cours</a> ou <a class="font-semibold underline" href="{% url 'administration:course_offering_create' %}">programmer une activité existante</a>.</div>{% endfor %}
 </div>
 
 {% include "partials/pagination.html" %}

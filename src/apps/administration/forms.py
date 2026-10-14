@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django import forms
 from django.contrib.auth.password_validation import validate_password
+from django.db.models import Q
 from django.utils.text import slugify
 
 from apps.academics.models import (
@@ -142,6 +143,8 @@ class AdminSessionForm(FormulaireModeleITEAG):
         SessionAcademique.Periode.PAQUES: "Pâques",
         SessionAcademique.Periode.JUILLET: "Juillet",
         SessionAcademique.Periode.TOUSSAINT: "Toussaint",
+        SessionAcademique.Periode.ATELIERS: "Cycle d’ateliers",
+        SessionAcademique.Periode.FORMATION: "Formation ponctuelle",
     }
 
     class Meta:
@@ -177,7 +180,11 @@ class AdminSessionForm(FormulaireModeleITEAG):
             annee = debut.year if debut.month >= 8 else debut.year - 1
             donnees["annee_academique"] = f"{annee}-{annee + 1}"
         if debut and periode and not donnees.get("nom"):
-            donnees["nom"] = f"Session de {self.NOMS_PERIODE.get(periode, periode)} {debut.year}"
+            libelle = self.NOMS_PERIODE.get(periode, periode)
+            if periode in {SessionAcademique.Periode.ATELIERS, SessionAcademique.Periode.FORMATION}:
+                donnees["nom"] = f"{libelle} {debut.year}"
+            else:
+                donnees["nom"] = f"Session de {libelle} {debut.year}"
         return donnees
 
 
@@ -512,19 +519,37 @@ class PaiementForm(FormulaireModeleITEAG):
 
     class Meta:
         model = Paiement
-        fields = ["etudiant", "montant", "date_paiement", "mode", "session", "statut", "reference", "recu_pdf"]
+        fields = [
+            "etudiant",
+            "montant",
+            "date_paiement",
+            "mode",
+            "cours_session",
+            "session",
+            "statut",
+            "reference",
+            "recu_pdf",
+        ]
         labels = {
             "etudiant": "Étudiant qui a payé",
             "montant": "Montant reçu (€)",
             "date_paiement": "Date du paiement",
             "mode": "Moyen de paiement",
-            "session": "Session réglée",
+            "session": "Session réglée (si applicable)",
+            "cours_session": "Cours ou atelier réglé",
             "statut": "Où en est ce paiement ?",
             "reference": "Référence du paiement",
             "recu_pdf": "Reçu (fichier PDF)",
         }
         help_texts = {
-            "session": "Permet de rattacher le paiement aux inscriptions de cette session.",
+            "session": (
+                "Pour un paiement global de session. Si vous choisissez un cours ou atelier, "
+                "la session est renseignée automatiquement."
+            ),
+            "cours_session": (
+                "Seuls les cours et ateliers déjà programmés sont proposés. "
+                "S’il manque une activité, créez d’abord le cours puis programmez-le dans une session."
+            ),
             "statut": "« Confirmé » quand l'argent est bien arrivé sur le compte de l'institut.",
             "reference": "Référence du virement, numéro du chèque ou autre référence utile. Facultatif.",
         }
@@ -540,10 +565,46 @@ class PaiementForm(FormulaireModeleITEAG):
             "utilisateur__last_name", "utilisateur__first_name"
         )
         self.fields["session"].queryset = SessionAcademique.objects.order_by("-date_debut")
+        self.fields["cours_session"].queryset = CoursDeSession.objects.select_related("cours", "session").order_by(
+            "-session__date_debut", "cours__titre"
+        )
         if not self.instance.pk and not self.initial.get("date_paiement"):
             from django.utils import timezone
 
             self.initial["date_paiement"] = timezone.localdate()
+
+    def clean(self):
+        donnees = super().clean()
+        cours_session = donnees.get("cours_session")
+        session = donnees.get("session")
+        if cours_session:
+            if session and session.pk != cours_session.session_id:
+                self.add_error(
+                    "session",
+                    "La session choisie ne correspond pas à celle du cours ou de l’atelier.",
+                )
+            else:
+                # Conserver la colonne « session » utilisée par les anciens
+                # règlements et les demandes d'inscription.
+                donnees["session"] = cours_session.session
+
+        if self.instance.pk:
+            # Les inscriptions déjà validées ne doivent pas devenir incohérentes
+            # lorsque l'on modifie l'affectation d'un paiement historique.
+            inscriptions = DemandeInscriptionCours.objects.filter(paiement=self.instance)
+            etudiant = donnees.get("etudiant")
+            if etudiant and inscriptions.exclude(etudiant=etudiant).exists():
+                self.add_error("etudiant", "Ce paiement est déjà utilisé pour un autre étudiant.")
+            session_finale = donnees.get("session")
+            if inscriptions.exists():
+                if session_finale is None or inscriptions.exclude(cours_session__session=session_finale).exists():
+                    self.add_error("session", "Ce paiement justifie déjà une inscription dans une autre session.")
+                if cours_session and inscriptions.exclude(cours_session=cours_session).exists():
+                    self.add_error(
+                        "cours_session",
+                        "Ce paiement justifie déjà une inscription à un autre cours.",
+                    )
+        return donnees
 
     def clean_recu_pdf(self):
         uploaded = self.cleaned_data.get("recu_pdf")
@@ -632,6 +693,7 @@ class EnrollmentDecisionForm(FormulaireITEAG):
             (valeur, libelle) for valeur, libelle in self.ACTIONS if valeur in actions_autorisees
         ]
         self.fields["paiement"].queryset = Paiement.objects.filter(
+            Q(cours_session__isnull=True) | Q(cours_session=demande.cours_session),
             etudiant=demande.etudiant,
             session=demande.cours_session.session,
             statut=Paiement.StatutPaiement.CONFIRME,

@@ -363,10 +363,14 @@ class CourseOfferingDeleteView(StaffRoleRequiredMixin, DeleteView):
     success_url = reverse_lazy("administration:course_offerings")
 
     def form_valid(self, form):
-        if self.object.inscriptions.exists() or self.object.demandes_inscription.exists():
+        if (
+            self.object.inscriptions.exists()
+            or self.object.demandes_inscription.exists()
+            or self.object.paiements_affectes.exists()
+        ):
             messages.error(
                 self.request,
-                "Ce cours possède des inscriptions ou des demandes : fermez-le au lieu de le supprimer.",
+                "Ce cours possède des inscriptions, des demandes ou des paiements : fermez-le au lieu de le supprimer.",
             )
             return redirect("administration:course_offerings")
         messages.success(self.request, "La programmation du cours a été supprimée.")
@@ -380,7 +384,7 @@ class PaymentListView(StaffRoleRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        queryset = Paiement.objects.select_related("etudiant__utilisateur", "session")
+        queryset = Paiement.objects.select_related("etudiant__utilisateur", "session", "cours_session__cours")
         statut = self.request.GET.get("statut", "")
         session = self.request.GET.get("session", "")
         recherche = self.request.GET.get("q", "").strip()
@@ -394,6 +398,7 @@ class PaymentListView(StaffRoleRequiredMixin, ListView):
                 | Q(etudiant__utilisateur__first_name__icontains=recherche)
                 | Q(etudiant__numero_etudiant__icontains=recherche)
                 | Q(reference__icontains=recherche)
+                | Q(cours_session__cours__titre__icontains=recherche)
             )
         return queryset
 
@@ -424,6 +429,7 @@ class PaymentCreateView(StaffRoleRequiredMixin, CreateView):
             {
                 "etudiant": self.request.GET.get("etudiant"),
                 "session": self.request.GET.get("session"),
+                "cours_session": self.request.GET.get("cours_session"),
                 "montant": self.request.GET.get("montant"),
                 "reference": self.request.GET.get("reference", ""),
             }

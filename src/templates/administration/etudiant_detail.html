@@ -221,12 +221,12 @@
             {% if paiements %}
             <div class="tw overflow-x-auto">
                 <table class="table-premium">
-                    <thead><tr><th>Date</th><th>Session</th><th>Mode</th><th>État</th><th class="num">Montant</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Session / cours ou atelier</th><th>Mode</th><th>État</th><th class="num">Montant</th></tr></thead>
                     <tbody>
                         {% for paiement in paiements %}
                         <tr>
                             <td class="num">{{ paiement.date_paiement|date:"d/m/Y" }}</td>
-                            <td>{{ paiement.session|default:"—" }}</td>
+                            <td>{{ paiement.session|default:"—" }}{% if paiement.cours_session_id %}<span class="block text-xs">{{ paiement.cours_session.cours.titre }}</span>{% endif %}</td>
                             <td>{{ paiement.get_mode_display }}</td>
                             <td>
                                 {% if paiement.statut == 'confirme' %}<span class="badge badge-success">Confirmé</span>
