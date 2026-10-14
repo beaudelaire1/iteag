@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Prefetch, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -572,7 +572,19 @@ class AdminSessionListView(StaffRoleRequiredMixin, ListView):
         # commence la semaine prochaine.
         # L'ordre est réaffirmé après l'annotation : sans lui, la pagination
         # rendrait des pages qui se recouvrent.
-        qs = SessionAcademique.objects.annotate(nombre_cours=Count("cours_de_session")).order_by("-date_debut")
+        qs = (
+            SessionAcademique.objects.annotate(nombre_cours=Count("cours_de_session"))
+            .prefetch_related(
+                Prefetch(
+                    "cours_de_session",
+                    queryset=CoursDeSession.objects.select_related("cours", "enseignant").order_by(
+                        "cours__titre", "pk"
+                    ),
+                    to_attr="cours_programmes",
+                )
+            )
+            .order_by("-date_debut")
+        )
         q = self.request.GET.get("q", "").strip()
         statut = self.request.GET.get("statut", "")
         annee = self.request.GET.get("annee", "")
