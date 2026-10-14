@@ -521,6 +521,8 @@ FABRIQUES = {
     "elearning:enseignant_ressource_creer": (ENSEIGNANT, lambda m: {"lecon_pk": m["lecon"].pk}),
     "elearning:enseignant_ressource_supprimer": (ENSEIGNANT, lambda m: {"pk": m["ressource_lecon"].pk}),
     "elearning:enseignant_soustitre": (ENSEIGNANT, lambda m: {"video_pk": m["video"].pk}),
+    "elearning:enseignant_video_etat": (ENSEIGNANT, lambda m: {"video_pk": m["video"].pk}),
+    "elearning:enseignant_video_relancer": (ENSEIGNANT, lambda m: {"video_pk": m["video"].pk}),
     "elearning:enseignant_video_modifier": (ENSEIGNANT, lambda m: {"pk": m["video"].pk}),
     "elearning:enseignant_video_supprimer": (ENSEIGNANT, lambda m: {"pk": m["video"].pk}),
     # ── Portail enseignant ──
