@@ -25,7 +25,7 @@ l'exploitant trouve dans le journal la raison exacte du refus de Bunny.
 
 import logging
 
-from apps.elearning.diffusion import LocalStockageVideo, nouvelle_cle
+from apps.elearning.diffusion import LocalStockageVideo, fournisseur, nouvelle_cle
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,34 @@ def deposer(fichier, titre: str, enseignant) -> tuple[object, str]:
     )
     televerser_video_bunny.delay(str(video.pk))
     return video, BUNNY
+
+
+def retirer_video_remplacee(video_id) -> bool:
+    """Efface la vidéo qu'une leçon vient de remplacer, si plus rien ne s'en sert.
+
+    Remplacer la vidéo d'une leçon doit écraser l'ancienne : la garder laissait
+    dans la bibliothèque une fiche que rien ne lisait plus et qu'on finissait
+    par rattacher par erreur. Une vidéo encore utilisée par une autre leçon
+    reste en place, puisque l'effacer viderait cette autre leçon.
+
+    Le fournisseur décide de ce que « supprimer » veut dire : le fichier part
+    pour un hébergement ITEAG ; chez Bunny, la copie reste dans la console.
+    """
+    from apps.elearning.models import VideoAsset
+
+    video = VideoAsset.objects.filter(pk=video_id).first()
+    if video is None or video.lecons.exists():
+        return False
+    try:
+        fournisseur(video.fournisseur).supprimer(video.cle_stockage)
+    except Exception:
+        # La leçon porte déjà la nouvelle vidéo : un fichier resté chez
+        # l'hébergeur ne doit pas faire échouer ce qui a réussi.
+        logger.exception("Vidéo remplacée %s : suppression chez l'hébergeur impossible", video.pk)
+    if video.fichier_source:
+        video.fichier_source.delete(save=False)
+    video.delete()
+    return True
 
 
 def _heberger_ici(fichier, titre: str, enseignant):

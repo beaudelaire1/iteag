@@ -5,6 +5,8 @@ from urllib.parse import parse_qs, urlparse
 
 from django import forms
 from django.conf import settings
+from django.db import transaction
+from django.db.models import Q
 from django.utils.text import slugify
 
 from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
@@ -317,9 +319,23 @@ class LeconForm(FormulaireModeleITEAG):
         # Conservé : c'est lui qui portera la vidéo déposée depuis cet écran.
         self.enseignant = enseignant
         self.fields["duree_secondes"].required = False
-        # Un enseignant ne rattache que ses propres vidéos.
+        # La vidéo que la leçon porte en arrivant sur l'écran : celle qu'un
+        # nouveau dépôt remplace, et que l'enregistrement efface ensuite.
+        self.video_actuelle = self.instance.video if self.instance.pk and self.instance.video_id else None
+        self.video_remplacee_id = None
+        # Un enseignant ne rattache que ses propres vidéos — plus celle que la
+        # leçon porte déjà, même déposée par un collègue ou par le secrétariat :
+        # absente de la liste, elle ferait refuser une simple correction de titre.
         if enseignant is not None:
-            self.fields["video"].queryset = VideoAsset.objects.filter(uploade_par=enseignant).order_by("-created_at")
+            videos = Q(uploade_par=enseignant)
+            if self.video_actuelle is not None:
+                videos |= Q(pk=self.video_actuelle.pk)
+            self.fields["video"].queryset = VideoAsset.objects.filter(videos).order_by("-created_at")
+        if self.video_actuelle is not None:
+            self.fields["video_fichier"].help_text = (
+                f"Vidéo actuelle : « {self.video_actuelle.titre} ». Un nouveau fichier la remplace, "
+                "et l'ancienne est supprimée. 2 Go au plus."
+            )
 
     def clean_ordre(self):
         ordre = self.cleaned_data["ordre"]
@@ -360,6 +376,12 @@ class LeconForm(FormulaireModeleITEAG):
         existante = donnees.get("video")
         fichier = donnees.get("video_fichier")
         lien = (donnees.get("video_lien") or "").strip()
+
+        # En modification, la liste arrive positionnée sur la vidéo actuelle :
+        # c'est l'état de la leçon, pas un choix. Un nouveau fichier ou un
+        # nouveau lien la remplace, au lieu d'entrer en conflit avec elle.
+        if (fichier or lien) and self.video_actuelle is not None and existante == self.video_actuelle:
+            existante = donnees["video"] = None
 
         sources = [source for source in (existante, fichier, lien) if source]
         if not sources:
@@ -438,9 +460,21 @@ class LeconForm(FormulaireModeleITEAG):
         lecon = super().save(commit=False)
         if not lecon.slug:
             lecon.slug = slugify(lecon.titre)[:240] or "lecon"
+        if self.video_actuelle is not None and lecon.video_id != self.video_actuelle.pk:
+            self.video_remplacee_id = self.video_actuelle.pk
         if commit:
             lecon.save()
+            self.retirer_video_remplacee()
         return lecon
+
+    def retirer_video_remplacee(self) -> None:
+        """Efface l'ancienne vidéo une fois la leçon enregistrée avec la nouvelle."""
+        if self.video_remplacee_id is None:
+            return
+        from apps.elearning.services import depot_video
+
+        video_id = self.video_remplacee_id
+        transaction.on_commit(lambda: depot_video.retirer_video_remplacee(video_id))
 
 
 class RessourceLeconForm(FormulaireModeleITEAG):
