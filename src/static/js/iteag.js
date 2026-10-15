@@ -530,9 +530,84 @@
     });
   }
 
+  /* ── Recherche d'un étudiant lors de l'enregistrement d'un paiement ──
+     Le <select> Django reste le seul champ soumis et validé côté serveur.
+     Sans JavaScript, sa liste complète reste utilisable. Avec JavaScript,
+     le secrétariat peut filtrer par prénom, nom ou numéro (sans accents,
+     et même si les mots sont saisis dans un autre ordre).
+     Les <option> sont réellement retirées puis replacées : contrairement
+     à l'attribut hidden sur une option, cela fonctionne aussi sur mobile. */
+  function initRechercheEtudiantPaiement() {
+    document.querySelectorAll("select[data-recherche-etudiant-paiement]").forEach((select) => {
+      if (select.dataset.rechercheInitialisee === "1" || !select.id) return;
+      select.dataset.rechercheInitialisee = "1";
+
+      const normaliser = (texte) =>
+        texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+      const options = Array.from(select.options);
+      const optionVide = options.find((option) => !option.value) || new Option("— Choisir —", "");
+      const etudiants = options
+        .filter((option) => option.value)
+        .map((option) => ({ option, texte: normaliser(option.textContent) }));
+
+      const bloc = document.createElement("div");
+      bloc.className = "mb-3";
+
+      const etiquette = document.createElement("label");
+      etiquette.className = "form-label";
+      etiquette.htmlFor = select.id + "_recherche";
+      etiquette.textContent = "Rechercher un étudiant";
+
+      const recherche = document.createElement("input");
+      recherche.id = etiquette.htmlFor;
+      recherche.type = "search";
+      recherche.className = "form-input";
+      recherche.placeholder = "Nom, prénom ou numéro étudiant…";
+      recherche.autocomplete = "off";
+      recherche.setAttribute("aria-controls", select.id);
+
+      const aide = document.createElement("p");
+      aide.className = "form-aide";
+      aide.textContent = "Saisissez un nom, puis choisissez l’étudiant dans la liste ci-dessous.";
+
+      const resultat = document.createElement("p");
+      resultat.className = "form-aide";
+      resultat.setAttribute("role", "status");
+
+      bloc.append(etiquette, recherche, aide, resultat);
+      select.before(bloc);
+
+      recherche.addEventListener("input", () => {
+        const mots = normaliser(recherche.value.trim()).split(/\s+/).filter(Boolean);
+        const correspondances = etudiants.filter(({ texte }) =>
+          mots.every((mot) => texte.includes(mot))
+        );
+        const valeurChoisie = select.value;
+
+        // Garder le choix seulement s'il figure dans les résultats.
+        // Ne jamais sélectionner automatiquement le premier étudiant.
+        const nouvellesOptions = document.createDocumentFragment();
+        nouvellesOptions.appendChild(optionVide);
+        correspondances.forEach(({ option }) => nouvellesOptions.appendChild(option));
+        select.replaceChildren(nouvellesOptions);
+        select.value = correspondances.some(({ option }) => option.value === valeurChoisie)
+          ? valeurChoisie
+          : "";
+
+        const nombre = correspondances.length;
+        resultat.textContent = mots.length
+          ? nombre
+            ? `${nombre} étudiant${nombre > 1 ? "s" : ""} trouvé${nombre > 1 ? "s" : ""}.`
+            : "Aucun étudiant trouvé. Modifiez votre recherche."
+          : "";
+      });
+    });
+  }
+
   /* ── Boot ── */
   function boot() {
     initConfirmations();
+    initRechercheEtudiantPaiement();
     initNavScroll();
     initTextReveal();
     initReveals();
