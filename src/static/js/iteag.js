@@ -586,7 +586,10 @@
 
         // Garder le choix seulement s'il figure dans les résultats.
         // Ne jamais sélectionner automatiquement le premier étudiant.
-        select.replaceChildren(optionVide, ...correspondances.map(({ option }) => option));
+        const nouvellesOptions = document.createDocumentFragment();
+        nouvellesOptions.appendChild(optionVide);
+        correspondances.forEach(({ option }) => nouvellesOptions.appendChild(option));
+        select.replaceChildren(nouvellesOptions);
         select.value = correspondances.some(({ option }) => option.value === valeurChoisie)
           ? valeurChoisie
           : "";
