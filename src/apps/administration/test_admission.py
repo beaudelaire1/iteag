@@ -159,6 +159,58 @@ class TestVueAcceptation:
         assert dossier.statut == DossierCandidature.Statut.EN_EXAMEN
         assert dossier.utilisateur_cree is None
 
+    @pytest.mark.parametrize("valeur", ["", " ", "abc", "999999"])
+    def test_l_acceptation_avec_identifiant_invalide_ne_plante_pas(
+        self, client, secretaire, dossier, valeur
+    ):
+        """Un champ vide, mal formé ou inconnu ne déclenche pas d'erreur 500."""
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
+            {"statut": DossierCandidature.Statut.ACCEPTE, "promotion": valeur},
+        )
+
+        assert reponse.status_code == 302
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.EN_EXAMEN
+        assert dossier.utilisateur_cree is None
+        assert User.objects.filter(email=dossier.email).count() == 0
+
+    def test_l_acceptation_refuse_une_promotion_inactive(self, client, secretaire, dossier, promotion):
+        promotion.actif = False
+        promotion.save(update_fields=["actif"])
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
+            {"statut": DossierCandidature.Statut.ACCEPTE, "promotion": promotion.pk},
+        )
+        assert reponse.status_code == 302
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.EN_EXAMEN
+        assert dossier.utilisateur_cree is None
+
+    def test_l_acceptation_refuse_une_promotion_d_un_autre_parcours(self, client, secretaire, dossier, parcours):
+        autre_parcours = Parcours.objects.create(
+            nom="Autre parcours",
+            slug="autre-parcours",
+            type_parcours=Parcours.TypeParcours.DIPLOMANT_ITEAG,
+        )
+        autre_promotion = Promotion.objects.create(
+            nom="Promotion autre parcours",
+            parcours=autre_parcours,
+            annee_debut=2026,
+            annee_fin=2032,
+        )
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("administration:candidature_detail", kwargs={"pk": dossier.pk}),
+            {"statut": DossierCandidature.Statut.ACCEPTE, "promotion": autre_promotion.pk},
+        )
+        assert reponse.status_code == 302
+        dossier.refresh_from_db()
+        assert dossier.statut == DossierCandidature.Statut.EN_EXAMEN
+        assert dossier.utilisateur_cree is None
+
     def test_l_acceptation_avec_promotion_ouvre_tout(self, client, secretaire, dossier, promotion, module_obligatoire):
         client.force_login(secretaire)
         client.post(
