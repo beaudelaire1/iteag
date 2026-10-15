@@ -564,6 +564,10 @@ class PaiementForm(FormulaireModeleITEAG):
         self.fields["etudiant"].queryset = ProfilEtudiant.objects.select_related("utilisateur").order_by(
             "utilisateur__last_name", "utilisateur__first_name"
         )
+        # Conserve le ModelChoiceField Django : le script ne change que
+        # l'affichage des options. La clé primaire est toujours validée
+        # côté serveur avant l'enregistrement du paiement.
+        self.fields["etudiant"].widget.attrs["data-recherche-etudiant-paiement"] = "1"
         self.fields["session"].queryset = SessionAcademique.objects.order_by("-date_debut")
         self.fields["cours_session"].queryset = CoursDeSession.objects.select_related("cours", "session").order_by(
             "-session__date_debut", "cours__titre"
