@@ -55,6 +55,48 @@ def test_paiement_affecte_et_activite_non_programmee(exemple):
 
 
 @pytest.mark.django_db
+def test_selection_etudiant_recherchable_dans_le_formulaire_de_paiement(client, exemple):
+    """Le formulaire de création ET celui de modification exposent le bon sélecteur."""
+    agent, profil, session, offres, _ = exemple
+    profil.utilisateur.first_name = "Élodie"
+    profil.utilisateur.last_name = "Durand"
+    profil.utilisateur.save(update_fields=["first_name", "last_name"])
+
+    client.force_login(agent)
+    creation = client.get(reverse("administration:payment_create"))
+    assert creation.status_code == 200
+    contenu = creation.content.decode()
+    assert 'data-recherche-etudiant-paiement="1"' in contenu
+    assert "Élodie Durand" in contenu
+    assert profil.numero_etudiant in contenu
+
+    paiement = Paiement.objects.create(
+        etudiant=profil, session=session, cours_session=offres[0],
+        date_paiement=date(2032, 10, 14), montant=Decimal("200"),
+        mode="virement", statut="confirme",
+    )
+    modification = client.get(reverse("administration:payment_update", args=[paiement.pk]))
+    assert modification.status_code == 200
+    assert 'data-recherche-etudiant-paiement="1"' in modification.content.decode()
+    assert modification.context["form"]["etudiant"].value() == profil.pk
+
+
+@pytest.mark.django_db
+def test_recherche_ne_remplace_pas_la_validation_du_choix_etudiant(exemple):
+    """Seul l'identifiant d'un étudiant existant est accepté par Django."""
+    agent, profil, _, _, _ = exemple
+    donnees = {
+        "montant": "200", "date_paiement": "2032-10-14",
+        "mode": "virement", "statut": "confirme",
+    }
+    valide = PaiementForm(data={**donnees, "etudiant": profil.pk})
+    invalide = PaiementForm(data={**donnees, "etudiant": "999999"})
+    assert valide.is_valid(), valide.errors
+    assert not invalide.is_valid()
+    assert "etudiant" in invalide.errors
+
+
+@pytest.mark.django_db
 def test_paiement_atelier_non_reutilisable_pour_un_autre(exemple):
     agent, profil, session, offres, annonce = exemple
     paiement = Paiement.objects.create(
