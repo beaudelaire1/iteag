@@ -383,14 +383,25 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
 
     def _accepter(self, request, commentaire):
         """L'acceptation crée le compte, le profil et ouvre les accès aux modules."""
+        from django import forms
+
         from apps.academics.models import Promotion
         from apps.administration.services.admission import accepter_dossier
 
-        promotion = Promotion.objects.filter(pk=request.POST.get("promotion"), actif=True).first()
-        if promotion is None:
+        # Un identifiant vide ou mal formé ne doit jamais atteindre le filtre
+        # sur la clé primaire. Seule une promotion active du parcours demandé
+        # est admissible, même si la requête POST a été fabriquée à la main.
+        try:
+            promotion = forms.ModelChoiceField(
+                queryset=Promotion.objects.filter(
+                    actif=True, parcours=self.object.parcours_souhaite
+                ),
+                required=True,
+            ).clean(request.POST.get("promotion"))
+        except ValidationError:
             messages.error(
                 request,
-                "Choisissez la promotion d'affectation : elle est nécessaire pour créer le dossier étudiant.",
+                "Choisissez une promotion active correspondant au parcours de la candidature.",
             )
             return redirect("administration:candidature_detail", pk=self.object.pk)
 
