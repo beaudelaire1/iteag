@@ -28,12 +28,18 @@ logger = logging.getLogger(__name__)
 
 
 class ErreurSMTPTemporaire(RuntimeError):
-    """Signale au worker qu'un relais SMTP a demandé de réessayer plus tard."""
+    """Signale au worker un incident SMTP transitoire nécessitant une nouvelle tentative."""
 
 
 def _est_erreur_smtp_temporaire(exc: BaseException) -> bool:
-    """Les réponses SMTP 4xx sont temporaires et peuvent être rejouées sans délai humain."""
-    return isinstance(exc, smtplib.SMTPResponseException) and 400 <= int(exc.smtp_code) < 500
+    """Rejouer les réponses 4xx et les interruptions de transport, pas les refus 5xx.
+
+    smtplib convertit notamment un délai de lecture de la réponse SMTP en
+    SMTPServerDisconnected : ne traiter que les codes 4xx perd ces emails.
+    """
+    if isinstance(exc, smtplib.SMTPResponseException):
+        return 400 <= int(exc.smtp_code) < 500
+    return isinstance(exc, (TimeoutError, ConnectionError, smtplib.SMTPServerDisconnected))
 
 
 LOGO_CID = "logo-iteag"
@@ -293,8 +299,9 @@ def envoyer_maintenant(
     except Exception as exc:  # noqa: BLE001
         if _est_erreur_smtp_temporaire(exc):
             logger.warning(
-                "SMTP temporairement indisponible (code %s) pour « %s » ; "
+                "SMTP temporairement indisponible (%s, code %s) pour « %s » ; "
                 "une nouvelle tentative sera planifiée si l'envoi est asynchrone.",
+                type(exc).__name__,
                 getattr(exc, "smtp_code", "?"),
                 sujet,
             )
