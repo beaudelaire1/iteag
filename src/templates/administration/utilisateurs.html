@@ -56,6 +56,31 @@
     </form>
 </div>
 
+<div class="card-elevated mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-base font-semibold text-navy-900">Relance des premières connexions</h2>
+            <p class="text-sm text-warm-500 mt-1">
+                {{ nombre_relances }} compte{{ nombre_relances|pluralize }} actif{{ nombre_relances|pluralize }},
+                jamais connecté{{ nombre_relances|pluralize }}, avec une adresse valide dans votre périmètre.
+                La sélection respecte les filtres ci-dessus, sur toutes les pages.
+            </p>
+        </div>
+        <form method="post" action="{% url 'administration:user_relance_group' %}"
+              data-confirmer="Programmer {{ nombre_relances }} invitation{{ nombre_relances|pluralize }} personnelle{{ nombre_relances|pluralize }} pour les comptes jamais connectés de cette sélection ? Les courriels seront mis en file et envoyés progressivement.">
+            {% csrf_token %}
+            <input type="hidden" name="q" value="{{ query }}">
+            <input type="hidden" name="role" value="{{ current_role }}">
+            <input type="hidden" name="statut" value="{{ current_statut }}">
+            <input type="hidden" name="connexion" value="{{ current_connexion }}">
+            <button type="submit" class="btn-secondary text-sm whitespace-nowrap"
+                    {% if not nombre_relances %}disabled aria-disabled="true"{% endif %}>
+                Renvoyer les invitations ({{ nombre_relances }})
+            </button>
+        </form>
+    </div>
+</div>
+
 {# ── Table ── #}
 <div class="card-elevated overflow-hidden">
     {% if users %}

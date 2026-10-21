@@ -1,5 +1,9 @@
 import csv
 import logging
+
+from celery import current_app
+from django.conf import settings
+from django.core.cache import cache
 from datetime import timedelta
 from decimal import Decimal
 
@@ -629,6 +633,33 @@ class AdminSessionListView(StaffRoleRequiredMixin, ListView):
 # ──────────────────────────────────────────────
 
 
+def filtrer_liste_utilisateurs(parametres):
+    """Une sélection commune à l'écran et aux actions administratives."""
+    qs = User.objects.all()
+    q = parametres.get("q", "").strip()
+    role = parametres.get("role", "")
+    statut = parametres.get("statut", "")
+    connexion = parametres.get("connexion", "")
+
+    if q:
+        qs = qs.filter(Q(username__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
+    if role:
+        qs = qs.filter(role=role)
+    if statut in ("actif", "inactif"):
+        qs = qs.filter(is_active=(statut == "actif"))
+
+    if connexion == "jamais":
+        qs = qs.filter(last_login__isnull=True)
+    elif connexion == "deja":
+        qs = qs.filter(last_login__isnull=False)
+    elif connexion in ("7j", "30j"):
+        jours = 7 if connexion == "7j" else 30
+        qs = qs.filter(last_login__gte=timezone.now() - timedelta(days=jours))
+    elif connexion == "plus_30j":
+        qs = qs.filter(last_login__lt=timezone.now() - timedelta(days=30))
+    return qs
+
+
 class AdminUserListView(StaffRoleRequiredMixin, ListView):
     model = User
     template_name = "administration/utilisateurs.html"
@@ -636,31 +667,11 @@ class AdminUserListView(StaffRoleRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        qs = User.objects.all()
-        q = self.request.GET.get("q", "").strip()
-        role = self.request.GET.get("role")
-        statut = self.request.GET.get("statut", "")
-        connexion = self.request.GET.get("connexion", "")
-
-        if q:
-            qs = qs.filter(Q(username__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
-        if role:
-            qs = qs.filter(role=role)
-        if statut in ("actif", "inactif"):
-            qs = qs.filter(is_active=(statut == "actif"))
-
-        if connexion == "jamais":
-            qs = qs.filter(last_login__isnull=True)
-        elif connexion == "deja":
-            qs = qs.filter(last_login__isnull=False)
-        elif connexion in ("7j", "30j"):
-            jours = 7 if connexion == "7j" else 30
-            qs = qs.filter(last_login__gte=timezone.now() - timedelta(days=jours))
-        elif connexion == "plus_30j":
-            qs = qs.filter(last_login__lt=timezone.now() - timedelta(days=30))
-        return qs
+        return filtrer_liste_utilisateurs(self.request.GET)
 
     def get_context_data(self, **kwargs):
+        from apps.administration.services.comptes import identifiants_relance_premiere_connexion
+
         ctx = super().get_context_data(**kwargs)
         ctx["role_choices"] = User.Role.choices
         ctx["current_role"] = self.request.GET.get("role", "")
@@ -669,7 +680,75 @@ class AdminUserListView(StaffRoleRequiredMixin, ListView):
         ctx["current_statut"] = statut if statut in ("actif", "inactif") else ""
         ctx["current_connexion"] = connexion if connexion in ("jamais", "deja", "7j", "30j", "plus_30j") else ""
         ctx["query"] = self.request.GET.get("q", "")
+        ctx["nombre_relances"] = len(identifiants_relance_premiere_connexion(self.get_queryset(), self.request.user))
         return ctx
+
+
+class AdminUserRelanceView(StaffRoleRequiredMixin, View):
+    """Relance confirmée, hors requête HTTP, des comptes jamais connectés."""
+
+    http_method_names = ["post"]
+    CLE_ANTIDOUBLON = "administration:relance_premiere_connexion"
+    DELAI_ANTIDOUBLON = 3600
+
+    def post(self, request):
+        from apps.administration.services.comptes import identifiants_relance_premiere_connexion
+        from apps.administration.tasks import relancer_invitations_premiere_connexion
+
+        # Tous les résultats filtrés, pas seulement la page actuellement affichée.
+        filtres = {cle: request.POST.get(cle, "") for cle in ("q", "role", "statut", "connexion")}
+        comptes = filtrer_liste_utilisateurs(filtres)
+        identifiants = identifiants_relance_premiere_connexion(comptes, request.user)
+        if not identifiants:
+            messages.warning(request, "Aucun compte éligible à une relance dans cette sélection.")
+            return redirect("administration:utilisateurs")
+
+        try:
+            verrou_obtenu = cache.add(self.CLE_ANTIDOUBLON, True, timeout=self.DELAI_ANTIDOUBLON)
+        except Exception:  # noqa: BLE001 — cache indisponible : ne pas lancer une campagne sans protection
+            logger.exception("Verrou des relances impossible à obtenir")
+            messages.error(request, "Relance indisponible : impossible de vérifier les envois déjà programmés.")
+            return redirect("administration:utilisateurs")
+
+        if not verrou_obtenu:
+            messages.warning(request, "Une relance groupée a déjà été lancée récemment. Réessayez après une heure.")
+            return redirect("administration:utilisateurs")
+
+        try:
+            if settings.CELERY_TASK_ALWAYS_EAGER:
+                relancer_invitations_premiere_connexion.apply_async(args=[identifiants, request.user.pk])
+            else:
+                # Aucun SMTP dans la requête : si Redis est indisponible, on
+                # informe l'administrateur plutôt que de bloquer le navigateur.
+                with current_app.connection_for_write() as connexion:
+                    connexion.ensure_connection(
+                        max_retries=0,
+                        timeout=getattr(settings, "CELERY_BROKER_CONNECTION_TIMEOUT", 0.5),
+                    )
+                    relancer_invitations_premiere_connexion.apply_async(
+                        args=[identifiants, request.user.pk], connection=connexion, retry=False
+                    )
+        except Exception:  # noqa: BLE001 — échec de publication explicite, aucun résultat présenté comme envoyé
+            cache.delete(self.CLE_ANTIDOUBLON)
+            logger.exception("Programmation de la relance groupée impossible")
+            messages.error(request, "Relance non programmée : le service de tâches est indisponible.")
+            return redirect("administration:utilisateurs")
+
+        journaliser(
+            "modification",
+            request=request,
+            objet_type="Utilisateurs",
+            objet_libelle="Relance groupée des premières connexions",
+            operation="relance_invitations_programmee",
+            nombre_cibles=len(identifiants),
+            filtres=filtres,
+        )
+        messages.success(
+            request,
+            f"Relance programmée pour {len(identifiants)} compte(s). "
+            "Les courriels seront traités progressivement ; ceci ne confirme pas leur livraison.",
+        )
+        return redirect("administration:utilisateurs")
 
 
 # ══════════════════════════════════════════════

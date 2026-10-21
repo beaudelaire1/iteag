@@ -6,12 +6,14 @@ invitation ou une réinitialisation envoie un lien personnel au titulaire.
 
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from apps.accounts.models import User
-from apps.core.services.emails import envoyer_email
+from apps.core.services.emails import envoyer_email, filtrer_destinataires
 
 ESPACES = {
     User.Role.ADMIN: "l'espace d'administration",
@@ -29,6 +31,35 @@ def _lien_mot_de_passe(compte: User) -> str:
         kwargs={"uidb64": identifiant, "token": jeton},
     )
     return f"{settings.SITE_URL.rstrip('/')}{chemin}"
+
+
+def identifiants_relance_premiere_connexion(comptes, auteur: User) -> list[int]:
+    """Comptes joignables, actifs et jamais connectés, dans le périmètre de l'auteur.
+
+    Le filtre est appliqué une seconde fois par le worker avant chaque envoi :
+    un utilisateur réactivé, désactivé ou connecté entre-temps ne doit pas
+    recevoir une relance inadéquate.
+    """
+    if not auteur.is_active or (auteur.role not in (User.Role.ADMIN, User.Role.SECRETARIAT) and not auteur.is_superuser):
+        return []
+
+    candidats = comptes.filter(is_active=True, last_login__isnull=True).exclude(email="")
+    if not auteur.is_superuser:
+        candidats = candidats.filter(is_superuser=False)
+        if auteur.role == User.Role.SECRETARIAT:
+            candidats = candidats.exclude(role=User.Role.ADMIN)
+
+    resultat = []
+    for compte in candidats.only("pk", "email", "role", "is_superuser").iterator(chunk_size=200):
+        adresse = (compte.email or "").strip()
+        if not filtrer_destinataires([adresse]):
+            continue
+        try:
+            validate_email(adresse)
+        except ValidationError:
+            continue
+        resultat.append(compte.pk)
+    return resultat
 
 
 def renvoyer_invitation_utilisateur(compte: User) -> bool:

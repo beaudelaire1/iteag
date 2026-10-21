@@ -191,6 +191,7 @@ urlpatterns = [
     path("paiements/<int:pk>/supprimer/", views_academics.PaymentDeleteView.as_view(), name="payment_delete"),
     # Utilisateurs
     path("utilisateurs/", views.AdminUserListView.as_view(), name="utilisateurs"),
+    path("utilisateurs/relancer-jamais-connectes/", views.AdminUserRelanceView.as_view(), name="user_relance_group"),
     path("utilisateurs/ajouter/", views.AdminUserCreateView.as_view(), name="user_create"),
     path("utilisateurs/<int:pk>/modifier/", views.AdminUserUpdateView.as_view(), name="user_update"),
     path("utilisateurs/<int:pk>/action/", views.AdminUserActionView.as_view(), name="user_action"),
