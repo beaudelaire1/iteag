@@ -1,5 +1,6 @@
 import csv
 import logging
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -638,16 +639,35 @@ class AdminUserListView(StaffRoleRequiredMixin, ListView):
         qs = User.objects.all()
         q = self.request.GET.get("q", "").strip()
         role = self.request.GET.get("role")
+        statut = self.request.GET.get("statut", "")
+        connexion = self.request.GET.get("connexion", "")
+
         if q:
             qs = qs.filter(Q(username__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
         if role:
             qs = qs.filter(role=role)
+        if statut in ("actif", "inactif"):
+            qs = qs.filter(is_active=(statut == "actif"))
+
+        if connexion == "jamais":
+            qs = qs.filter(last_login__isnull=True)
+        elif connexion == "deja":
+            qs = qs.filter(last_login__isnull=False)
+        elif connexion in ("7j", "30j"):
+            jours = 7 if connexion == "7j" else 30
+            qs = qs.filter(last_login__gte=timezone.now() - timedelta(days=jours))
+        elif connexion == "plus_30j":
+            qs = qs.filter(last_login__lt=timezone.now() - timedelta(days=30))
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["role_choices"] = User.Role.choices
         ctx["current_role"] = self.request.GET.get("role", "")
+        statut = self.request.GET.get("statut", "")
+        connexion = self.request.GET.get("connexion", "")
+        ctx["current_statut"] = statut if statut in ("actif", "inactif") else ""
+        ctx["current_connexion"] = connexion if connexion in ("jamais", "deja", "7j", "30j", "plus_30j") else ""
         ctx["query"] = self.request.GET.get("q", "")
         return ctx
 

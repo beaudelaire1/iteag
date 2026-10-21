@@ -22,7 +22,7 @@
 {% block portal_content %}
 {# ── Filtres ── #}
 <div class="card-elevated mb-6">
-    <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <form method="get" class="flex flex-col lg:flex-row lg:flex-wrap items-stretch lg:items-center gap-3">
         <label for="recherche-utilisateurs" class="sr-only">Rechercher un compte</label>
         <input type="text" id="recherche-utilisateurs" name="q" value="{{ query }}"
             placeholder="Rechercher (nom, email, username)…"
@@ -34,8 +34,23 @@
             <option value="{{ value }}" {% if value == current_role %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
+        <label for="filtre-statut" class="sr-only">Filtrer par statut du compte</label>
+        <select id="filtre-statut" name="statut" class="form-input text-sm lg:w-40">
+            <option value="">— Tous les statuts —</option>
+            <option value="actif" {% if current_statut == 'actif' %}selected{% endif %}>Actifs</option>
+            <option value="inactif" {% if current_statut == 'inactif' %}selected{% endif %}>Inactifs</option>
+        </select>
+        <label for="filtre-connexion" class="sr-only">Filtrer par dernière connexion</label>
+        <select id="filtre-connexion" name="connexion" class="form-input text-sm lg:w-48">
+            <option value="">— Dernière connexion —</option>
+            <option value="jamais" {% if current_connexion == 'jamais' %}selected{% endif %}>Jamais connecté</option>
+            <option value="deja" {% if current_connexion == 'deja' %}selected{% endif %}>Déjà connecté</option>
+            <option value="7j" {% if current_connexion == '7j' %}selected{% endif %}>7 derniers jours</option>
+            <option value="30j" {% if current_connexion == '30j' %}selected{% endif %}>30 derniers jours</option>
+            <option value="plus_30j" {% if current_connexion == 'plus_30j' %}selected{% endif %}>Il y a plus de 30 jours</option>
+        </select>
         <button type="submit" class="btn-primary text-sm">Filtrer</button>
-        {% if query or current_role %}
+        {% if query or current_role or current_statut or current_connexion %}
         <a href="{% url 'administration:utilisateurs' %}" class="text-sm font-medium text-navy-600">Réinitialiser</a>
         {% endif %}
     </form>
@@ -148,16 +163,16 @@
 {% if users.has_other_pages %}
 <nav class="flex justify-center mt-8 gap-1">
     {% if users.has_previous %}
-    <a href="?page={{ users.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
+    <a href="?page={{ users.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if current_role %}&role={{ current_role|urlencode }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if current_connexion %}&connexion={{ current_connexion }}{% endif %}"
        class="px-3 py-1.5 rounded text-sm font-medium text-navy-600 bg-warm-100">‹</a>
     {% endif %}
     {% for num in users.paginator.page_range %}
-    <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
+    <a href="?page={{ num }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if current_role %}&role={{ current_role|urlencode }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if current_connexion %}&connexion={{ current_connexion }}{% endif %}"
        class="px-3 py-1.5 rounded text-sm font-medium {% if users.number == num %}text-white{% endif %}"
        data-pagination-state="{% if users.number == num %}current{% else %}available{% endif %}">{{ num }}</a>
     {% endfor %}
     {% if users.has_next %}
-    <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}"
+    <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if current_role %}&role={{ current_role|urlencode }}{% endif %}{% if current_statut %}&statut={{ current_statut }}{% endif %}{% if current_connexion %}&connexion={{ current_connexion }}{% endif %}"
        class="px-3 py-1.5 rounded text-sm font-medium text-navy-600 bg-warm-100">›</a>
     {% endif %}
 </nav>
