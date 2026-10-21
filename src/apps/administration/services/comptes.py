@@ -13,7 +13,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from apps.accounts.models import User
-from apps.core.services.emails import envoyer_email, filtrer_destinataires
+from apps.core.services.emails import DOMAINE_EMAIL_SANS_MX, envoyer_email
 
 ESPACES = {
     User.Role.ADMIN: "l'espace d'administration",
@@ -40,7 +40,9 @@ def identifiants_relance_premiere_connexion(comptes, auteur: User) -> list[int]:
     un utilisateur réactivé, désactivé ou connecté entre-temps ne doit pas
     recevoir une relance inadéquate.
     """
-    if not auteur.is_active or (auteur.role not in (User.Role.ADMIN, User.Role.SECRETARIAT) and not auteur.is_superuser):
+    if not auteur.is_active or (
+        auteur.role not in (User.Role.ADMIN, User.Role.SECRETARIAT) and not auteur.is_superuser
+    ):
         return []
 
     candidats = comptes.filter(is_active=True, last_login__isnull=True).exclude(email="")
@@ -52,7 +54,7 @@ def identifiants_relance_premiere_connexion(comptes, auteur: User) -> list[int]:
     resultat = []
     for compte in candidats.only("pk", "email", "role", "is_superuser").iterator(chunk_size=200):
         adresse = (compte.email or "").strip()
-        if not filtrer_destinataires([adresse]):
+        if not adresse or adresse.casefold().endswith(DOMAINE_EMAIL_SANS_MX):
             continue
         try:
             validate_email(adresse)

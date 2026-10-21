@@ -2,8 +2,8 @@
 from unittest.mock import patch
 
 import pytest
-from django.contrib.messages import get_messages
 from django.core import mail
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -13,6 +13,15 @@ from apps.administration.tasks import relancer_invitations_premiere_connexion
 from apps.core.models import JournalAudit
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def reinitialiser_protection_relances():
+    from apps.administration.views import AdminUserRelanceView
+
+    cache.delete(AdminUserRelanceView.CLE_ANTIDOUBLON)
+    yield
+    cache.delete(AdminUserRelanceView.CLE_ANTIDOUBLON)
 
 
 @pytest.fixture
@@ -134,3 +143,23 @@ def test_broker_indisponible_ne_declenche_pas_de_smtp_http(client, personnel, co
     assert reponse.status_code == 302
     assert mail.outbox == []
     assert not JournalAudit.objects.filter(metadonnees__operation="relance_invitations_programmee").exists()
+
+
+def test_la_relance_refuse_une_requete_get(client, personnel):
+    assert client.get(reverse("administration:user_relance_group")).status_code == 405
+
+
+def test_le_filtre_sans_destinataires_desactive_le_bouton(client, personnel, comptes):
+    reponse = client.get(reverse("administration:utilisateurs"), {"statut": "inactif"})
+    assert reponse.context["nombre_relances"] == 0
+    assert 'disabled aria-disabled="true"' in reponse.content.decode()
+
+
+def test_un_echec_de_publication_libere_la_protection_antidoublon(client, personnel, comptes):
+    url = reverse("administration:user_relance_group")
+    with override_settings(CELERY_TASK_ALWAYS_EAGER=False):
+        with patch("apps.administration.views.current_app.connection_for_write", side_effect=RuntimeError("redis down")):
+            assert client.post(url).status_code == 302
+
+    assert client.post(url).status_code == 302
+    assert {email.to[0] for email in mail.outbox} == {"a@example.org", "b@example.org"}
