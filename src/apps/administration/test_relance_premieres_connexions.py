@@ -157,9 +157,14 @@ def test_le_filtre_sans_destinataires_desactive_le_bouton(client, personnel, com
 
 def test_un_echec_de_publication_libere_la_protection_antidoublon(client, personnel, comptes):
     url = reverse("administration:user_relance_group")
-    with override_settings(CELERY_TASK_ALWAYS_EAGER=False):
-        with patch("apps.administration.views.current_app.connection_for_write", side_effect=RuntimeError("redis down")):
-            assert client.post(url).status_code == 302
+    with (
+        override_settings(CELERY_TASK_ALWAYS_EAGER=False),
+        patch(
+            "apps.administration.views.current_app.connection_for_write",
+            side_effect=RuntimeError("redis down"),
+        ),
+    ):
+        assert client.post(url).status_code == 302
 
     assert client.post(url).status_code == 302
     assert {email.to[0] for email in mail.outbox} == {"a@example.org", "b@example.org"}
