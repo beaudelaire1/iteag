@@ -285,8 +285,6 @@ def _confirmer_inscription(demande, *, par, paiement, exonere_paiement, commenta
     # Ces valeurs peuvent légitimement évoluer pendant l'instruction.
     if deja_inscrit:
         raise ValidationError("Cet étudiant est déjà inscrit à ce cours.")
-    if cours_session.places_restantes <= 0:
-        raise ValidationError("Ce cours est complet : aucune place ne peut être attribuée.")
 
     paiement_valide = paiement or _paiement_confirme_compatible(demande)
     if paiement_valide is not None and (

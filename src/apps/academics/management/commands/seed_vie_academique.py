@@ -217,7 +217,6 @@ class Command(BaseCommand):
                         "salle": salles[rang % len(salles)],
                         "horaires": "Lundi au vendredi, 8 h 00 – 12 h 00",
                         "statut": statut,
-                        "capacite": 25,
                         "inscriptions_ouvertes": session.statut == SessionAcademique.StatutSession.PLANIFIEE,
                         "date_limite_inscription": session.date_debut - timedelta(days=15),
                         "frais_inscription": Decimal("120.00"),

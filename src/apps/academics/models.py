@@ -181,7 +181,6 @@ class CoursDeSession(TimeStampedModel):
     salle = models.CharField(max_length=100, blank=True)
     horaires = models.TextField(blank=True, verbose_name="Horaires indicatifs")
     statut = models.CharField(max_length=20, choices=StatutCours.choices, default=StatutCours.PROGRAMME)
-    capacite = models.PositiveSmallIntegerField(default=30, verbose_name="Capacité")
     inscriptions_ouvertes = models.BooleanField(default=True, verbose_name="Inscriptions ouvertes")
     date_limite_inscription = models.DateField(null=True, blank=True, verbose_name="Date limite d'inscription")
     frais_inscription = models.DecimalField(
@@ -234,7 +233,6 @@ class CoursDeSession(TimeStampedModel):
         unique_together = ["session", "cours"]
         ordering = ["session__date_debut", "cours__titre"]
         constraints = [
-            models.CheckConstraint(condition=models.Q(capacite__gt=0), name="cours_session_capacite_positive"),
             models.CheckConstraint(
                 condition=models.Q(frais_inscription__isnull=True) | models.Q(frais_inscription__gte=0),
                 name="cours_session_frais_positifs",
@@ -291,15 +289,6 @@ class CoursDeSession(TimeStampedModel):
             )
 
     @property
-    def places_occupees(self):
-        nombre_annote = getattr(self, "nombre_inscrits", None)
-        return nombre_annote if nombre_annote is not None else self.inscriptions.count()
-
-    @property
-    def places_restantes(self):
-        return max(self.capacite - self.places_occupees, 0)
-
-    @property
     def est_inscriptible(self):
         aujourd_hui = timezone.localdate()
         return (
@@ -307,7 +296,6 @@ class CoursDeSession(TimeStampedModel):
             and self.statut == self.StatutCours.PROGRAMME
             and self.session.date_fin >= aujourd_hui
             and (self.date_limite_inscription is None or self.date_limite_inscription >= aujourd_hui)
-            and self.places_restantes > 0
         )
 
     def motif_indisponibilite(self, etudiant=None):
@@ -319,8 +307,6 @@ class CoursDeSession(TimeStampedModel):
             return "Cette session est terminée."
         if self.date_limite_inscription and self.date_limite_inscription < timezone.localdate():
             return "La date limite d'inscription est dépassée."
-        if self.places_restantes <= 0:
-            return "Ce cours est complet."
         if (
             etudiant
             and self.cours.parcours.exists()

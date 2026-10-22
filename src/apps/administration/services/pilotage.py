@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
@@ -127,7 +127,7 @@ def echeances(horizon_jours: int = 60, limite: int = 6) -> list[Echeance]:
             Echeance(
                 libelle=f"Clôture des inscriptions — {offre.cours.titre}",
                 date=offre.date_limite_inscription,
-                detail=f"{offre.inscrits} inscrit{'s' if offre.inscrits > 1 else ''} sur {offre.capacite} places",
+                detail=f"{offre.inscrits} inscrit{'s' if offre.inscrits > 1 else ''}",
                 url=reverse("administration:course_offering_update", args=[offre.pk]),
             )
         )
@@ -271,19 +271,6 @@ def alertes(
     acces_echus = InscriptionModule.objects.filter(
         statut=InscriptionModule.StatutAcces.ACTIF, date_fin_acces__lt=aujourd_hui
     ).count()
-    # Un cours affiché comme ouvert alors qu'il est plein renvoie l'étudiant sur
-    # un refus : c'est au secrétariat de clore ou d'augmenter la capacité.
-    complets = (
-        CoursDeSession.objects.filter(
-            inscriptions_ouvertes=True,
-            statut=CoursDeSession.StatutCours.PROGRAMME,
-            session__date_fin__gte=aujourd_hui,
-        )
-        .annotate(inscrits=Count("inscriptions"))
-        .filter(inscrits__gte=F("capacite"))
-        .count()
-    )
-
     candidates = [
         Alerte("candidature(s) à instruire", candidatures, reverse("administration:candidatures"), urgent=True),
         Alerte(
@@ -306,6 +293,5 @@ def alertes(
             acces_echus,
             f"{reverse('administration:acces')}?statut={InscriptionModule.StatutAcces.ACTIF}",
         ),
-        Alerte("cours complet(s) encore ouverts", complets, reverse("administration:course_offerings")),
     ]
     return [alerte for alerte in candidates if alerte.nombre]

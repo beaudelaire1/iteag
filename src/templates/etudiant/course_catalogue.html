@@ -14,7 +14,7 @@
     <div>
         <p class="overline mb-2">Choisir sa formation</p>
         <h1 class="text-[clamp(1.5rem,_3vw,_2rem)]">Catalogue des formations</h1>
-        <p class="mt-2 max-w-2xl text-sm text-warm-500">Consultez le programme, les modalités, les places et le tarif qui s’applique à votre dossier avant de demander votre inscription.</p>
+        <p class="mt-2 max-w-2xl text-sm text-warm-500">Consultez le programme, les modalités et le tarif qui s’applique à votre dossier avant de demander votre inscription.</p>
     </div>
     <a href="{% url 'etudiant:enrollment_requests' %}" class="btn-secondary">Suivre mes demandes</a>
 </div>
@@ -77,7 +77,6 @@
             <div><dt class="text-xs text-warm-500">Session</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.session.nom }}</dd></div>
             <div><dt class="text-xs text-warm-500">Enseignant</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.enseignant|default:"À confirmer" }}</dd></div>
             <div><dt class="text-xs text-warm-500">Modalité</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.get_modalite_display }}</dd></div>
-            <div><dt class="text-xs text-warm-500">Places</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.places_restantes }} / {{ offre.capacite }}</dd></div>
             <div><dt class="text-xs text-warm-500">Dates</dt><dd class="mt-1 font-semibold text-navy-900">{{ offre.session.date_debut|date:"d/m/Y" }}–{{ offre.session.date_fin|date:"d/m/Y" }}</dd></div>
             <div><dt class="text-xs text-warm-500">Votre tarif</dt><dd class="mt-1 font-semibold text-navy-900">{% if offre.montant_etudiant %}{{ offre.montant_etudiant }} €{% else %}Sans frais{% endif %}</dd></div>
         </dl>

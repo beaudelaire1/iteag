@@ -45,7 +45,6 @@
                 <div class="flex justify-between gap-4"><dt class="text-warm-500">Enseignant</dt><dd class="text-right font-semibold text-navy-900">{{ offre.enseignant|default:"À confirmer" }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-warm-500">Dates</dt><dd class="text-right font-semibold text-navy-900">{{ offre.session.date_debut|date:"d/m/Y" }}–{{ offre.session.date_fin|date:"d/m/Y" }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-warm-500">Lieu</dt><dd class="text-right font-semibold text-navy-900">{{ offre.salle|default:offre.get_modalite_display }}</dd></div>
-                <div class="flex justify-between gap-4"><dt class="text-warm-500">Places restantes</dt><dd class="text-right font-semibold text-navy-900">{{ offre.places_restantes }} / {{ offre.capacite }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-warm-500">Date limite</dt><dd class="text-right font-semibold text-navy-900">{{ offre.date_limite_inscription|date:"d/m/Y"|default:"Non fixée" }}</dd></div>
                 <div class="flex justify-between gap-4 border-t border-warm-100 pt-3"><dt class="text-warm-500">Montant dû</dt><dd class="text-right text-lg font-bold text-navy-900">{% if montant %}{{ montant }} €{% else %}Sans frais{% endif %}</dd></div>
             </dl>

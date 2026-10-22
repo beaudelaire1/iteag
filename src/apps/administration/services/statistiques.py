@@ -225,29 +225,24 @@ def admissions() -> Domaine:
 
 
 def scolarite() -> Domaine:
-    """L'effectif étudiant, sa structure et le remplissage de l'offre."""
+    """L'effectif étudiant, sa structure et les inscriptions aux cours."""
     etudiants = ProfilEtudiant.objects.all()
     compte = etudiants.aggregate(
         total=Count("id"),
         actifs=Count("id", filter=Q(statut_inscription=ProfilEtudiant.StatutInscription.ACTIF)),
         diplomes=Count("id", filter=Q(statut_inscription=ProfilEtudiant.StatutInscription.DIPLOME)),
     )
-    places = CoursDeSession.objects.aggregate(total=Sum("capacite", default=0))["total"] or 0
-    occupees = InscriptionSession.objects.count()
+    inscriptions_cours = InscriptionSession.objects.count()
     ects = CreditECTS.objects.aggregate(total=Sum("ects_obtenus", default=ZERO))["total"] or ZERO
     return Domaine(
         cle="scolarite",
         titre="Scolarité",
-        explication="Effectif inscrit, crédits validés et occupation des cours ouverts.",
+        explication="Effectif inscrit, crédits validés et volume d’inscriptions aux cours.",
         indicateurs=[
             Indicateur("Étudiants", _nombre(compte["total"]), f"dont {_nombre(compte['actifs'])} actif(s)"),
             Indicateur("Diplômés", _nombre(compte["diplomes"])),
             Indicateur("ECTS validés", _nombre(ects), "toutes sources confondues"),
-            Indicateur(
-                "Remplissage des cours",
-                _pourcent(occupees, places),
-                f"{_nombre(occupees)} inscription(s) pour {_nombre(places)} place(s)",
-            ),
+            Indicateur("Inscriptions aux cours", _nombre(inscriptions_cours), "toutes sessions confondues"),
         ],
         repartition_titre="Étudiants par parcours",
         repartition=_repartition(etudiants, "parcours__nom", limite=8),

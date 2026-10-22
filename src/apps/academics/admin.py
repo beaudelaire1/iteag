@@ -57,7 +57,7 @@ class CoursDeSessionInline(admin.TabularInline):
 
 @admin.register(CoursDeSession)
 class CoursDeSessionAdmin(admin.ModelAdmin):
-    list_display = ["cours", "session", "enseignant", "modalite", "statut", "inscriptions_ouvertes", "capacite"]
+    list_display = ["cours", "session", "enseignant", "modalite", "statut", "inscriptions_ouvertes"]
     list_filter = ["statut", "modalite", "inscriptions_ouvertes", "session"]
 
 

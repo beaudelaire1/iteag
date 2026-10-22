@@ -33,10 +33,9 @@
             <h2 class="truncate text-lg font-semibold text-navy-900">{{ offre.cours.titre }}</h2>
             <p class="mt-1 text-sm text-warm-500">{{ offre.session }} · {{ offre.enseignant }} · {{ offre.get_modalite_display }}</p>
         </div>
-        <div class="grid grid-cols-3 gap-5 text-center text-sm">
+        <div class="grid grid-cols-2 gap-5 text-center text-sm">
             <div><p class="text-xl font-bold text-navy-900">{{ offre.nombre_inscrits }}</p><p class="text-xs text-warm-500">inscrits</p></div>
             <div><p class="text-xl font-bold text-navy-900">{{ offre.nombre_demandes }}</p><p class="text-xs text-warm-500">demandes</p></div>
-            <div><p class="text-xl font-bold text-navy-900">{{ offre.capacite }}</p><p class="text-xs text-warm-500">places</p></div>
         </div>
         <div class="flex flex-wrap gap-3">
             <a href="{% url 'administration:enrollment_requests' %}?session={{ offre.session_id }}&q={{ offre.cours.titre|urlencode }}" class="btn-secondary text-sm">Demandes</a>

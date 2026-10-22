@@ -54,7 +54,7 @@ def enrollment_context(db):
         titre="Lecture de l'Évangile",
         slug="lecture-evangile-demandes",
         discipline=discipline,
-        description="Cours complet pour tester le catalogue.",
+        description="Cours de session pour tester le catalogue.",
     )
     cours.parcours.add(parcours)
     professeur = Professeur.objects.create(nom="Martin", prenom="Jeanne", slug="jeanne-martin-demandes")
@@ -69,7 +69,6 @@ def enrollment_context(db):
         session=session,
         cours=cours,
         enseignant=professeur,
-        capacite=2,
         frais_inscription=Decimal("120.00"),
         date_limite_inscription=timezone.localdate() + timedelta(days=8),
     )
@@ -190,32 +189,37 @@ class TestEnrollmentDecisionWorkflow:
             demande=demande,
         ).exists()
 
-    def test_capacity_is_checked_inside_confirmation(self, enrollment_context):
+    def test_inscriptions_illimitees_lors_de_la_confirmation(self, enrollment_context):
+        """Plus de 30 inscrits n'empêchent pas une nouvelle confirmation."""
         offre = enrollment_context["offre"]
-        offre.capacite = 1
-        offre.save(update_fields=["capacite"])
-        autre_user = User.objects.create_user(username="autre-capacite", role=User.Role.ETUDIANT)
-        autre = ProfilEtudiant.objects.create(
-            utilisateur=autre_user,
-            parcours=enrollment_context["etudiant"].parcours,
-            promotion=enrollment_context["etudiant"].promotion,
-            numero_etudiant="ETU-CAPACITE",
-            statut_inscription=ProfilEtudiant.StatutInscription.ACTIF,
-        )
-        InscriptionSession.objects.create(etudiant=autre, cours_session=offre)
+        for rang in range(31):
+            utilisateur = User.objects.create_user(
+                username=f"autre-inscrit-{rang}", role=User.Role.ETUDIANT
+            )
+            etudiant = ProfilEtudiant.objects.create(
+                utilisateur=utilisateur,
+                parcours=enrollment_context["etudiant"].parcours,
+                promotion=enrollment_context["etudiant"].promotion,
+                numero_etudiant=f"ETU-ILLIMITE-{rang}",
+                statut_inscription=ProfilEtudiant.StatutInscription.ACTIF,
+            )
+            InscriptionSession.objects.create(etudiant=etudiant, cours_session=offre)
+
         demande = DemandeInscriptionCours.objects.create(
             etudiant=enrollment_context["etudiant"],
             cours_session=offre,
             montant_du=0,
         )
-        with pytest.raises(ValidationError, match="complet"):
-            traiter_demande(
-                demande=demande,
-                action="confirmer",
-                par=enrollment_context["secretariat"],
-                exonere_paiement=True,
-                commentaire="Test de capacité.",
-            )
+        traiter_demande(
+            demande=demande,
+            action="confirmer",
+            par=enrollment_context["secretariat"],
+            exonere_paiement=True,
+            commentaire="Validation administrative.",
+        )
+        demande.refresh_from_db()
+        assert demande.statut == DemandeInscriptionCours.Statut.CONFIRMEE
+        assert InscriptionSession.objects.filter(cours_session=offre).count() == 32
 
     def test_secretariat_can_process_but_student_cannot_open_staff_queue(self, client, enrollment_context):
         demande = soumettre_demande(
@@ -259,7 +263,6 @@ class TestEnrollmentDecisionWorkflow:
                 "salle": "",
                 "horaires": "",
                 "statut": CoursDeSession.StatutCours.PROGRAMME,
-                "capacite": 30,
                 "inscriptions_ouvertes": "on",
                 "date_limite_inscription": "",
                 "frais_inscription": "0",

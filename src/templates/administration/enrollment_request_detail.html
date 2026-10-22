@@ -39,7 +39,6 @@
                 <div><dt class="text-xs text-warm-500">Session</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.session }}</dd><p class="mt-1 text-xs text-warm-500">Du {{ demande.cours_session.session.date_debut|date:"d/m/Y" }} au {{ demande.cours_session.session.date_fin|date:"d/m/Y" }}</p></div>
                 <div><dt class="text-xs text-warm-500">Enseignant</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.enseignant }}</dd></div>
                 <div><dt class="text-xs text-warm-500">Modalité</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.get_modalite_display }}</dd></div>
-                <div><dt class="text-xs text-warm-500">Places disponibles</dt><dd class="mt-1 font-semibold text-navy-900">{{ demande.cours_session.places_restantes }} / {{ demande.cours_session.capacite }}</dd></div>
             </dl>
         </section>
 

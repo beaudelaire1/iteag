@@ -262,12 +262,9 @@ class TestAlertes:
         assert alertes[0].nombre == 1
         assert alertes[0].urgent is True
 
-    def test_un_cours_complet_encore_ouvert_est_signale(self, univers):
-        """Il renvoie l'étudiant sur un refus : quelqu'un doit trancher."""
-        univers["offre"].capacite = 1
-        univers["offre"].save(update_fields=["capacite"])
+    def test_inscriptions_sans_plafond_ni_alerte_de_complet(self, univers):
         InscriptionSession.objects.create(etudiant=univers["etudiant"], cours_session=univers["offre"])
-        assert any("complet" in alerte.libelle for alerte in pilotage.alertes())
+        assert not any("complet" in alerte.libelle for alerte in pilotage.alertes())
 
 
 # ══════════════════════════════════════════════

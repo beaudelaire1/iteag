@@ -425,7 +425,6 @@ class CoursDeSessionForm(FormulaireModeleITEAG):
     """
 
     champs_avances = (
-        "capacite",
         "inscriptions_ouvertes",
         "date_limite_inscription",
         "frais_inscription",
@@ -459,7 +458,6 @@ class CoursDeSessionForm(FormulaireModeleITEAG):
             "modalite",
             "horaires",
             "salle",
-            "capacite",
             "inscriptions_ouvertes",
             "date_limite_inscription",
             "frais_inscription",
@@ -477,7 +475,6 @@ class CoursDeSessionForm(FormulaireModeleITEAG):
             "modalite": "Comment le cours a-t-il lieu ?",
             "horaires": "Jours et horaires",
             "salle": "Salle ou lieu",
-            "capacite": "Nombre de places",
             "inscriptions_ouvertes": "Les étudiants peuvent s'inscrire",
             "frais_inscription": "Frais particuliers (€)",
             "statut": "État du cours",
@@ -488,7 +485,6 @@ class CoursDeSessionForm(FormulaireModeleITEAG):
         }
         widgets = {
             "horaires": forms.Textarea(attrs={"rows": 2}),
-            "capacite": forms.NumberInput(attrs={"min": 1}),
             "date_limite_inscription": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "frais_inscription": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
             "informations_pratiques": forms.Textarea(attrs={"rows": 4}),

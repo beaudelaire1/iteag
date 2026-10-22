@@ -92,7 +92,7 @@ class TestLesTauxNeMententPas:
         # Un accepté sur deux dossiers tranchés, et non un sur quatre.
         assert indicateurs["Taux d'acceptation"] == "50\u00a0%"
 
-    def test_le_remplissage_rapporte_les_inscrits_aux_places_ouvertes(self, db, parcours, promotion):
+    def test_le_nombre_d_inscriptions_aux_cours(self, db, parcours, promotion):
         aujourd_hui = timezone.localdate()
         session = SessionAcademique.objects.create(
             nom="Session test",
@@ -106,13 +106,13 @@ class TestLesTauxNeMententPas:
             discipline=Discipline.objects.create(nom="Exégèse", slug="exegese-stats"),
         )
         enseignant = Professeur.objects.create(nom="Kuen", prenom="Alfred", slug="kuen-stats")
-        offre = CoursDeSession.objects.create(cours=cours, session=session, enseignant=enseignant, capacite=10)
+        offre = CoursDeSession.objects.create(cours=cours, session=session, enseignant=enseignant)
         for rang in range(2):
             InscriptionSession.objects.create(etudiant=_etudiant(parcours, promotion, rang), cours_session=offre)
 
         indicateurs = {i.libelle: i for i in statistiques.scolarite().indicateurs}
-        assert indicateurs["Remplissage des cours"].valeur == "20\u00a0%"
-        assert "10" in indicateurs["Remplissage des cours"].precision
+        assert indicateurs["Inscriptions aux cours"].valeur == "2"
+        assert "toutes sessions" in indicateurs["Inscriptions aux cours"].precision
 
 
 class TestLaSerieCouvreDouzeMoisPleins:
