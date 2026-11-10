@@ -50,9 +50,11 @@
 
         {% if form_intro %}<p class="text-sm text-warm-600">{{ form_intro }}</p>{% endif %}
 
+        {% block form_fields %}
         {% for field in form.champs_principaux|default:form %}
         {% include "administration/partials/champ_formulaire.html" %}
         {% endfor %}
+        {% endblock %}
 
         {% with optionnels=form.champs_optionnels %}
         {% if optionnels %}

@@ -1,0 +1,29 @@
+{% extends "administration/form.html" %}
+{% load static %}
+
+{% block form_fields %}
+{% for field in form.champs_principaux %}
+    {% if field.name == 'expertises' %}
+    <section aria-labelledby="parcours-titre" data-parcours-academique>
+        <h2 id="parcours-titre" class="text-lg font-semibold text-navy-900">Parcours académique</h2>
+        <p class="form-aide mb-4">Modifiez les années et les descriptions. La position détermine l'ordre d'affichage sur le site. Pour supprimer une étape, cochez « Retirer cette étape ».</p>
+        {{ form.parcours.management_form }}
+        {% for erreur in form.parcours.non_form_errors %}
+        <p class="form-erreur" role="alert">{{ erreur }}</p>
+        {% endfor %}
+        <div class="space-y-4" data-parcours-etapes>
+            {% for etape in form.parcours %}
+            {% include "administration/partials/etape_parcours.html" %}
+            {% endfor %}
+        </div>
+        <template data-parcours-modele>
+            {% include "administration/partials/etape_parcours.html" with etape=form.parcours.empty_form %}
+        </template>
+        <button type="button" class="btn-ghost mt-4" data-parcours-ajouter hidden>Ajouter une étape</button>
+        <p class="form-aide" data-parcours-annonce role="status" aria-live="polite"></p>
+    </section>
+    {% endif %}
+    {% include "administration/partials/champ_formulaire.html" %}
+{% endfor %}
+<script src="{% static 'js/parcours-academique.js' %}?v={{ ASSET_VERSION }}" defer></script>
+{% endblock %}

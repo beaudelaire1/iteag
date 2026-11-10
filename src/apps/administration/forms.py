@@ -17,7 +17,7 @@ from apps.academics.models import (
     Stage,
 )
 from apps.accounts.models import User
-from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG
+from apps.core.formulaires import FormulaireITEAG, FormulaireModeleITEAG, habiller
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 
 
@@ -188,6 +188,50 @@ class AdminSessionForm(FormulaireModeleITEAG):
         return donnees
 
 
+class ListeParLigne(forms.CharField):
+    """Une liste publique se rédige sans exposer son stockage JSON."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("required", False)
+        kwargs.setdefault("widget", forms.Textarea(attrs={"rows": 4}))
+        super().__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        if isinstance(value, list):
+            return "\n".join(value)
+        return super().prepare_value(value)
+
+    def clean(self, value):
+        texte = super().clean(value)
+        return [ligne.strip() for ligne in texte.splitlines() if ligne.strip()]
+
+
+class EtapeParcoursForm(FormulaireITEAG):
+    annee = forms.CharField(
+        label="Année ou période",
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Depuis 2022, 2006 – 2018…"}),
+    )
+    description = forms.CharField(label="Description", widget=forms.Textarea(attrs={"rows": 3}))
+
+
+class BaseParcoursAcademiqueFormSet(forms.BaseFormSet):
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        form.fields["ORDER"].label = "Position dans le parcours"
+        form.fields["DELETE"].label = "Retirer cette étape"
+        habiller(form)
+
+
+ParcoursAcademiqueFormSet = forms.formset_factory(
+    EtapeParcoursForm,
+    formset=BaseParcoursAcademiqueFormSet,
+    extra=1,
+    can_order=True,
+    can_delete=True,
+)
+
+
 class AdminProfesseurForm(SlugDeriveDuNom, FormulaireModeleITEAG):
     """Fiche publique d'un enseignant.
 
@@ -198,9 +242,31 @@ class AdminProfesseurForm(SlugDeriveDuNom, FormulaireModeleITEAG):
     champ_source = ("prenom", "nom")
     champs_avances = ("user", "actif", "ordre", "slug")
 
+    expertises = ListeParLigne(label="Expertises académiques", help_text="Une expertise par ligne.")
+    cours_enseignes = ListeParLigne(
+        label="Cours enseignés à l'ITEAG",
+        help_text="Un intitulé par ligne. Cette liste présente l'enseignant sur le site.",
+    )
+
     class Meta:
         model = Professeur
-        fields = ["prenom", "nom", "specialite", "biographie", "photo", "disciplines", "user", "actif", "ordre", "slug"]
+        fields = [
+            "prenom",
+            "nom",
+            "specialite",
+            "biographie",
+            "photo",
+            "disciplines",
+            "expertises",
+            "autres_engagements",
+            "publications_ouvrages",
+            "publications_articles",
+            "cours_enseignes",
+            "user",
+            "actif",
+            "ordre",
+            "slug",
+        ]
         labels = {
             "specialite": "Spécialité",
             "biographie": "Présentation",
@@ -213,10 +279,16 @@ class AdminProfesseurForm(SlugDeriveDuNom, FormulaireModeleITEAG):
             "specialite": "Par exemple « Ancien Testament ».",
             "user": "Relie la fiche au compte avec lequel l'enseignant se connecte.",
             "ordre": "0 place l'enseignant en tête ; les rangs égaux se classent par nom.",
+            "autres_engagements": "Un engagement par ligne.",
+            "publications_ouvrages": "Une référence bibliographique par ligne.",
+            "publications_articles": "Une référence bibliographique par ligne.",
         }
         widgets = {
             "biographie": forms.Textarea(attrs={"rows": 5}),
             "disciplines": forms.CheckboxSelectMultiple(),
+            "autres_engagements": forms.Textarea(attrs={"rows": 4}),
+            "publications_ouvrages": forms.Textarea(attrs={"rows": 5}),
+            "publications_articles": forms.Textarea(attrs={"rows": 5}),
             "ordre": forms.NumberInput(attrs={"min": 0}),
         }
 
@@ -224,6 +296,28 @@ class AdminProfesseurForm(SlugDeriveDuNom, FormulaireModeleITEAG):
         super().__init__(*args, **kwargs)
         self.fields["user"].queryset = User.objects.filter(role=User.Role.ENSEIGNANT)
         self.fields["user"].required = False
+        self.parcours = ParcoursAcademiqueFormSet(
+            data=self.data if self.is_bound else None,
+            initial=self.instance.parcours_academique or [],
+            prefix=self.add_prefix("parcours"),
+        )
+
+    def clean(self):
+        donnees = super().clean()
+        if not self.parcours.is_valid():
+            raise forms.ValidationError("Corrigez les étapes du parcours académique avant d'enregistrer la fiche.")
+        return donnees
+
+    def save(self, commit=True):
+        professeur = super().save(commit=False)
+        professeur.parcours_academique = [
+            {"annee": etape.cleaned_data["annee"], "description": etape.cleaned_data["description"]}
+            for etape in self.parcours.ordered_forms
+        ]
+        if commit:
+            professeur.save()
+            self.save_m2m()
+        return professeur
 
 
 class AdminEtudiantForm(FormulaireModeleITEAG):

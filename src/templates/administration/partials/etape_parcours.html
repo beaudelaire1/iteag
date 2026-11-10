@@ -1,0 +1,8 @@
+<fieldset class="rounded border border-warm-200 p-4 space-y-4">
+    <legend class="px-2 text-sm font-semibold text-navy-800">Étape du parcours</legend>
+    {% include "partials/erreurs_formulaire.html" with form=etape %}
+    {% include "administration/partials/champ_formulaire.html" with field=etape.annee %}
+    {% include "administration/partials/champ_formulaire.html" with field=etape.description %}
+    {% include "administration/partials/champ_formulaire.html" with field=etape.ORDER %}
+    {% include "administration/partials/champ_formulaire.html" with field=etape.DELETE %}
+</fieldset>
