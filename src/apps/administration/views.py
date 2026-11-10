@@ -3,7 +3,6 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
-from celery import current_app
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
@@ -42,6 +41,7 @@ from apps.core.services.audit import journaliser
 from apps.core.services.pdf import contexte_marque, rendre_pdf
 from apps.formations.models import Cours, Discipline, Parcours, Professeur, Tarif
 from apps.library.models import Emprunt, NoticeBibliographique
+from celery import current_app
 
 from .forms import (
     AdminEtudiantForm,
@@ -397,9 +397,7 @@ class AdminCandidatureDetailView(StaffRoleRequiredMixin, DetailView):
         # est admissible, même si la requête POST a été fabriquée à la main.
         try:
             promotion = forms.ModelChoiceField(
-                queryset=Promotion.objects.filter(
-                    actif=True, parcours=self.object.parcours_souhaite
-                ),
+                queryset=Promotion.objects.filter(actif=True, parcours=self.object.parcours_souhaite),
                 required=True,
             ).clean(request.POST.get("promotion"))
         except ValidationError:
@@ -1026,7 +1024,7 @@ class AdminSessionDeleteView(SuppressionProtegee, StaffRoleRequiredMixin, Delete
 class AdminProfesseurCreateView(StaffRoleRequiredMixin, CreateView):
     model = Professeur
     form_class = AdminProfesseurForm
-    template_name = "administration/form.html"
+    template_name = "administration/professeur_form.html"
     success_url = reverse_lazy("administration:professeurs")
 
     def get_context_data(self, **kwargs):
@@ -1044,7 +1042,7 @@ class AdminProfesseurCreateView(StaffRoleRequiredMixin, CreateView):
 class AdminProfesseurUpdateView(StaffRoleRequiredMixin, UpdateView):
     model = Professeur
     form_class = AdminProfesseurForm
-    template_name = "administration/form.html"
+    template_name = "administration/professeur_form.html"
     success_url = reverse_lazy("administration:professeurs")
 
     def get_context_data(self, **kwargs):
