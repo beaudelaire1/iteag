@@ -40,9 +40,9 @@
         </header>
 
         {% if page.image %}
-        <figure class="mb-10 -mx-4 sm:mx-0 img-kenburns reveal">
+        <figure class="mb-10 -mx-4 sm:mx-0 reveal">
             {% image page.image width-960 as hero_img %}
-            <img src="{{ hero_img.url }}" alt="{{ page.title }}" class="w-full rounded-lg shadow-sm" width="{{ hero_img.width }}" height="{{ hero_img.height }}" loading="eager">
+            <img src="{{ hero_img.url }}" alt="{{ page.title }}" class="block w-full h-auto rounded-lg shadow-sm" width="{{ hero_img.width }}" height="{{ hero_img.height }}" loading="eager">
         </figure>
         {% endif %}
 
