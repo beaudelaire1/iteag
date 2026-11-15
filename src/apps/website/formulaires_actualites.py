@@ -26,6 +26,20 @@ REGLE_BROCHURE = RegleFichier(
 )
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        nettoyer = super().clean
+        if isinstance(data, (list, tuple)):
+            return [nettoyer(fichier, initial) for fichier in data]
+        return [nettoyer(data, initial)] if data else []
+
+
 class ActualiteForm(FormulaireITEAG):
     titre = forms.CharField(
         max_length=250,
