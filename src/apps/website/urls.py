@@ -11,6 +11,7 @@ urlpatterns = [
     path("mentions-legales/", views.mentions_legales, name="mentions_legales"),
     # ── Brochures — lecture publique ──
     path("brochures/", vues_brochures.BrochuresPubliquesView.as_view(), name="brochures"),
+    path("brochures/<slug:slug>/", vues_brochures.BrochureVisionneuseView.as_view(), name="brochure_visionner"),
     path(
         "brochures/<slug:slug>/telecharger/",
         vues_brochures.BrochureTelechargementView.as_view(),
