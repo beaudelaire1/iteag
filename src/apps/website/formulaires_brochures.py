@@ -42,7 +42,7 @@ class BrochureForm(FormulaireModeleITEAG):
             ),
             "couverture": (
                 "Facultative. Elle illustre la vignette sur la page publique. "
-                "Inutile pour une affiche déposée en JPG ou PNG : elle s'illustre elle-même."
+                "Inutile pour une affiche déposée en JPG, PNG ou WebP : elle s'illustre elle-même."
             ),
         }
 
