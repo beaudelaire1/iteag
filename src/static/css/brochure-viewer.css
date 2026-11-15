@@ -51,9 +51,9 @@
 .brochure-pdf-toolbar button:hover:not(:disabled),.brochure-pdf-toolbar a:hover { background:#eef2ff; }
 .brochure-pdf-toolbar button:disabled { cursor:not-allowed; opacity:.4; }
 .brochure-pdf-page-count { min-width:8.5rem; color:#334155; text-align:center; font-size:.85rem; font-variant-numeric:tabular-nums; }
-.brochure-pdf-stage { display:flex; align-items:center; justify-content:center; min-height:65vh; max-height:82vh; overflow:auto; padding:1.5rem; background:#343a40; }
-.brochure-pdf-spread { display:flex; align-items:center; justify-content:center; gap:1rem; width:max-content; max-width:100%; margin:auto; }
-.brochure-pdf-spread canvas { display:block; max-width:none; background:#fff; box-shadow:0 3px 16px rgb(0 0 0 / .28); }
+.brochure-pdf-stage { display:flex; align-items:center; justify-content:flex-start; flex-direction:column; min-height:65vh; max-height:82vh; overflow:auto; padding:1.5rem; background:#343a40; scroll-behavior:smooth; }
+.brochure-pdf-spread { display:flex; align-items:center; flex-direction:column; gap:1.25rem; width:max-content; max-width:100%; margin:0 auto; }
+.brochure-pdf-spread canvas { display:block; max-width:none; background:#fff; box-shadow:0 3px 16px rgb(0 0 0 / .28); scroll-margin:1rem; }
 .brochure-pdf-spread.is-single-page { justify-content:center; }
 .brochure-pdf-error { max-width:32rem; padding:1.5rem; border-radius:.75rem; background:#fff; color:#334155; text-align:center; }
 .brochure-pdf-stage:fullscreen { width:100vw; height:100vh; max-height:none; padding:1rem; }
@@ -63,7 +63,7 @@
  .brochure-pdf-controls { gap:.4rem; }
  .brochure-pdf-toolbar button,.brochure-pdf-toolbar a { flex:1 1 auto; }
  .brochure-pdf-stage { min-height:62vh; max-height:78vh; padding:.65rem; }
- .brochure-pdf-spread { gap:0; }
+ .brochure-pdf-spread { gap:.75rem; }
 }
 @media print {
  .brochure-pdf-toolbar { display:none !important; }
