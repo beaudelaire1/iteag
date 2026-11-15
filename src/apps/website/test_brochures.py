@@ -366,7 +366,7 @@ class TestPagePublique:
         reponse = client.get(affiche.get_visionneuse_url())
         assert reponse.status_code == 200
         assert b"data-brochure-image" in reponse.content
-        assert b"image/webp" not in reponse.content
+        assert affiche.get_absolute_url().encode() in reponse.content
 
     def test_un_brouillon_ne_peut_pas_etre_ouvert_dans_la_visionneuse(self, client, brochure):
         reponse = client.get(brochure.get_visionneuse_url())
