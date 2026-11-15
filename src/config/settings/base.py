@@ -344,7 +344,7 @@ WAGTAILIMAGES_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 Mo
 # passait déjà le formulaire sans figurer ici : le dépôt par le portail ne
 # valide pas le modèle, mais l'administration Wagtail, elle, refusait le même
 # fichier.
-WAGTAILDOCS_EXTENSIONS = ["pdf", "docx", "doc", "odt", "pptx", "xlsx", "csv", "txt", "jpg", "jpeg", "png"]
+WAGTAILDOCS_EXTENSIONS = ["pdf", "docx", "doc", "odt", "pptx", "xlsx", "csv", "txt", "jpg", "jpeg", "png", "webp"]
 # Une affiche jointe à une actualité s'affiche dans la page. Servie en pièce
 # jointe — le comportement par défaut de Wagtail hors PDF — elle se serait
 # téléchargée au lieu de se montrer.
