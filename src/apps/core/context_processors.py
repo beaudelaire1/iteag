@@ -79,6 +79,12 @@ def site_context(request):
         Path(settings.BASE_DIR) / "static" / "css" / "indicateur-defilement.css",
         Path(settings.BASE_DIR) / "static" / "js" / "iteag.js",
         Path(settings.BASE_DIR) / "static" / "js" / "indicateur-defilement.js",
+        # Le lecteur de brochures charge ces deux ressources séparément. Elles
+        # doivent participer à la version, sinon le navigateur peut conserver
+        # une ancienne mise en page ou un ancien script après déploiement.
+        Path(settings.BASE_DIR) / "static" / "css" / "brochure-viewer.css",
+        Path(settings.BASE_DIR) / "static" / "js" / "brochure-pdf-viewer.js",
+        Path(settings.BASE_DIR) / "static" / "js" / "brochure-viewer.js",
     )
     asset_version = max((fichier.stat().st_mtime_ns for fichier in fichiers_statiques if fichier.exists()), default=1)
     return {
