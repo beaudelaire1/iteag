@@ -14,7 +14,7 @@
 .brochure-image-toolbar button:hover,.brochure-image-toolbar a:hover { background:#eef2ff; }
 .brochure-image-toolbar [data-image-zoom-label] { min-width:3.5rem; text-align:center; color:#334155; font-variant-numeric:tabular-nums; }
 .brochure-image-stage { display:flex; align-items:center; justify-content:center; min-height:55vh; max-height:78vh; overflow:auto; padding:1.25rem; }
-.brochure-image { display:block; width:auto; max-width:100%; max-height:72vh; object-fit:contain; transform-origin:center center; transition:transform .15s ease; }
+.brochure-image { display:block; width:100%; height:72vh; max-width:100%; max-height:72vh; object-fit:contain; transform-origin:center center; transition:transform .15s ease; }
 .brochure-image-stage[data-zoom="50"] .brochure-image { transform:scale(.5); }
 .brochure-image-stage[data-zoom="75"] .brochure-image { transform:scale(.75); }
 .brochure-image-stage[data-zoom="100"] .brochure-image { transform:scale(1); }
@@ -34,7 +34,7 @@
  .brochure-viewer-actions > * { flex:1 1 auto; text-align:center; }
  .brochure-pdf-frame { height:76vh; min-height:440px; }
  .brochure-image-stage { min-height:48vh; padding:.5rem; }
- .brochure-image { max-height:68vh; }
+ .brochure-image { height:68vh; max-height:68vh; }
 }
 @media print {
  body * { visibility:hidden !important; }
