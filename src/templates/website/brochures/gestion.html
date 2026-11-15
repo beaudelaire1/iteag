@@ -40,7 +40,7 @@ cinq secondes, sans jamais montrer où. Le panneau reste, et porte l'adresse.
     </p>
     <p class="mt-4 flex flex-wrap items-center gap-3">
         <a href="{{ vient_de_paraitre.url_sur_le_site }}" class="btn-primary">Voir la brochure sur le site</a>
-        <a href="{{ vient_de_paraitre.get_absolute_url }}" class="btn-ghost">Ouvrir le fichier</a>
+        <a href="{{ vient_de_paraitre.get_visionneuse_url }}" class="btn-ghost">Ouvrir le fichier</a>
     </p>
 </section>
 {% endif %}
@@ -113,7 +113,7 @@ pour personne, et c'est le seul état qui attend une décision.
         </span>
         <span class="flex flex-wrap items-center gap-2">
             <a href="{{ brochure.url_sur_le_site }}" class="btn-ghost">Voir sur le site</a>
-            <a href="{{ brochure.get_absolute_url }}" class="btn-ghost">Ouvrir le fichier</a>
+            <a href="{{ brochure.get_visionneuse_url }}" class="btn-ghost">Ouvrir le fichier</a>
             <a href="{% url 'website:brochure_edition' brochure.pk %}" class="btn-ghost">Modifier</a>
             <form method="post" action="{% url 'website:brochure_decision' brochure.pk %}">
                 {% csrf_token %}
