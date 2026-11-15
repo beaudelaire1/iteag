@@ -338,7 +338,7 @@ class TestPagePublique:
         assert reponse.status_code == 200
         assert b"data-pdf-viewer" in reponse.content
         assert b"data-pdf-canvas" in reponse.content
-        assert b"data-pdf-viewer" not in reponse.content
+        assert b"brochure-pdf-frame" not in reponse.content
         assert brochure.get_absolute_url().encode() in reponse.content
 
     def test_la_visionneuse_image_affiche_l_image_et_ses_commandes(self, client, secretaire):
