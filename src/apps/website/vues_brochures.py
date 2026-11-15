@@ -90,6 +90,11 @@ class BrochureEditionView(StaffRoleRequiredMixin, TemplateView):
             return self.render_to_response(self.get_context_data(form=formulaire))
 
         enregistree = formulaire.save(commit=False)
+        pdf_images = formulaire.pdf_depuis_images()
+        if pdf_images:
+            if brochure and brochure.fichier:
+                brochure.fichier.delete(save=False)
+            enregistree.fichier = pdf_images
         if brochure is None:
             enregistree.deposee_par = request.user
         enregistree.save()
