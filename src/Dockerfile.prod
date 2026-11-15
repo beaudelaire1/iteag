@@ -28,9 +28,9 @@ RUN npm run build \
     && test -s static/js/vendor/hls.min.js \
     && test -s static/js/vendor/pdf.min.mjs \
     && test -s static/js/vendor/pdf.worker.min.mjs \
-    && test -s static/js/vendor/pdfjs-LICENSE.txt
-    && test -d static/js/vendor/pdfjs-standard-fonts
-    && test -d static/js/vendor/pdfjs-cmaps
+    && test -s static/js/vendor/pdfjs-LICENSE.txt \
+    && test -d static/js/vendor/pdfjs-standard-fonts \
+    && test -d static/js/vendor/pdfjs-cmaps \
     && test -d static/js/vendor/pdfjs-wasm
 
 # ── Étape 2 : dépendances Python ──
@@ -97,9 +97,9 @@ RUN test -s static/css/main.css \
     && test -s static/js/vendor/hls.min.js \
     && test -s static/js/vendor/pdf.min.mjs \
     && test -s static/js/vendor/pdf.worker.min.mjs \
-    && test -s static/js/vendor/pdfjs-LICENSE.txt
-    && test -d static/js/vendor/pdfjs-standard-fonts
-    && test -d static/js/vendor/pdfjs-cmaps
+    && test -s static/js/vendor/pdfjs-LICENSE.txt \
+    && test -d static/js/vendor/pdfjs-standard-fonts \
+    && test -d static/js/vendor/pdfjs-cmaps \
     && test -d static/js/vendor/pdfjs-wasm
 
 # Collecte des statiques — sans masquage d'erreur : un échec ici doit arrêter
