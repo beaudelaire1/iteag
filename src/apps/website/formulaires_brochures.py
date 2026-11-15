@@ -48,7 +48,7 @@ class BrochureForm(FormulaireModeleITEAG):
 
     class Meta:
         model = Brochure
-        fields = ["titre", "categorie", "description", "fichier", "couverture", "ordre"]
+        fields = ["titre", "categorie", "description", "fichier", "images", "couverture", "ordre"]
         widgets = {
             "titre": forms.TextInput(attrs={"class": INPUT, "placeholder": "Brochure de présentation de l'ITEAG 2026"}),
             "categorie": forms.Select(attrs={"class": SELECT}),
