@@ -9,7 +9,7 @@
  * lecteur vaut mieux découverte à la construction qu'en production.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, cpSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,6 +17,12 @@ const racine = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const FICHIERS = [
   ["node_modules/hls.js/dist/hls.light.min.js", "static/js/vendor/hls.min.js"],
+  ["node_modules/pdfjs-dist/build/pdf.min.mjs", "static/js/vendor/pdf.min.mjs"],
+  ["node_modules/pdfjs-dist/build/pdf.worker.min.mjs", "static/js/vendor/pdf.worker.min.mjs"],
+  ["node_modules/pdfjs-dist/LICENSE", "static/js/vendor/pdfjs-LICENSE.txt"],
+  ["node_modules/pdfjs-dist/standard_fonts", "static/js/vendor/pdfjs-standard-fonts"],
+  ["node_modules/pdfjs-dist/cmaps", "static/js/vendor/pdfjs-cmaps"],
+  ["node_modules/pdfjs-dist/wasm", "static/js/vendor/pdfjs-wasm"],
 ];
 
 mkdirSync(resolve(racine, "static/js/vendor"), { recursive: true });
@@ -29,6 +35,13 @@ for (const [source, cible] of FICHIERS) {
     erreurs += 1;
     continue;
   }
+  const destination = resolve(racine, cible);
+  if (statSync(chemin).isDirectory()) {
+    cpSync(chemin, destination, { recursive: true });
+    console.log(`✓ ${cible}/`);
+    continue;
+  }
+
   // La référence à la source map est retirée. Elle pointe vers un fichier que
   // nous ne livrons pas — le manifeste de production refuse alors la collecte,
   // et l'image ne se construit plus. Livrer la map à la place exposerait le
@@ -40,7 +53,7 @@ for (const [source, cible] of FICHIERS) {
   const contenu = readFileSync(chemin, "utf8")
     .replace(/\n?\/\/# sourceMappingURL=.*$/m, "\n")
     .replace(/\n?\/\*# sourceMappingURL=.*?\*\/\s*$/m, "\n");
-  writeFileSync(resolve(racine, cible), contenu);
+  writeFileSync(destination, contenu);
   console.log(`✓ ${cible}`);
 }
 

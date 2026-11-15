@@ -1,0 +1,71 @@
+.brochure-viewer-page { padding-block: 2.5rem 4rem; }
+.brochure-viewer-breadcrumb { display:flex; flex-wrap:wrap; gap:.55rem; margin-bottom:1.5rem; color:#64748b; font-size:.875rem; }
+.brochure-viewer-breadcrumb a { color:#17366d; text-decoration:underline; text-underline-offset:3px; }
+.brochure-viewer-header { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; margin-bottom:1.5rem; }
+.brochure-viewer-header h1 { font-size:clamp(1.5rem,3vw,2.25rem); line-height:1.15; }
+.brochure-viewer-description { max-width:48rem; margin-top:.75rem; color:#64748b; }
+.brochure-viewer-actions { display:flex; flex-wrap:wrap; gap:.65rem; }
+.brochure-viewer-shell { overflow:hidden; border:1px solid #d8dee9; border-radius:1rem; background:#e9edf3; box-shadow:0 12px 36px rgb(15 23 42 / .08); }
+.brochure-pdf-notice { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem 1rem; padding:.75rem 1rem; background:#f8fafc; color:#475569; font-size:.8rem; }
+.brochure-pdf-notice span:first-child { color:#17366d; font-weight:700; }
+.brochure-pdf-frame { display:block; width:100%; height:min(82vh,1050px); min-height:560px; border:0; background:#343434; }
+.brochure-image-toolbar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:.65rem; padding:.75rem; background:#f8fafc; border-bottom:1px solid #d8dee9; }
+.brochure-image-toolbar button,.brochure-image-toolbar a { min-height:2.5rem; padding:.45rem .8rem; border:1px solid #cbd5e1; border-radius:.5rem; background:white; color:#17366d; font-size:.875rem; font-weight:600; }
+.brochure-image-toolbar button:hover,.brochure-image-toolbar a:hover { background:#eef2ff; }
+.brochure-image-toolbar [data-image-zoom-label] { min-width:3.5rem; text-align:center; color:#334155; font-variant-numeric:tabular-nums; }
+.brochure-image-stage { display:flex; align-items:center; justify-content:center; min-height:55vh; max-height:78vh; overflow:auto; padding:1.25rem; }
+.brochure-image { display:block; width:100%; height:72vh; max-width:100%; max-height:72vh; object-fit:contain; transform-origin:center center; transition:transform .15s ease; }
+.brochure-image-stage[data-zoom="50"] .brochure-image { transform:scale(.5); }
+.brochure-image-stage[data-zoom="75"] .brochure-image { transform:scale(.75); }
+.brochure-image-stage[data-zoom="100"] .brochure-image { transform:scale(1); }
+.brochure-image-stage[data-zoom="125"] .brochure-image { transform:scale(1.25); }
+.brochure-image-stage[data-zoom="150"] .brochure-image { transform:scale(1.5); }
+.brochure-image-stage[data-zoom="175"] .brochure-image { transform:scale(1.75); }
+.brochure-image-stage[data-zoom="200"] .brochure-image { transform:scale(2); }
+.brochure-image-stage[data-zoom="225"] .brochure-image { transform:scale(2.25); }
+.brochure-image-stage[data-zoom="250"] .brochure-image { transform:scale(2.5); }
+.brochure-image-stage[data-zoom="275"] .brochure-image { transform:scale(2.75); }
+.brochure-image-stage[data-zoom="300"] .brochure-image { transform:scale(3); }
+.brochure-viewer-fallback { padding:3rem 1.5rem; text-align:center; }
+.brochure-viewer-footnote { margin-top:.8rem; color:#64748b; font-size:.8rem; }
+@media (max-width: 700px) {
+ .brochure-viewer-header { align-items:stretch; flex-direction:column; }
+ .brochure-viewer-actions { width:100%; }
+ .brochure-viewer-actions > * { flex:1 1 auto; text-align:center; }
+ .brochure-pdf-frame { height:76vh; min-height:440px; }
+ .brochure-image-stage { min-height:48vh; padding:.5rem; }
+ .brochure-image { height:68vh; max-height:68vh; }
+}
+@media print {
+ body * { visibility:hidden !important; }
+ .brochure-image-stage,.brochure-image-stage * { visibility:visible !important; }
+ .brochure-image-stage { position:absolute; inset:0; display:block; width:100%; height:100%; max-height:none; overflow:visible; padding:0; background:white; }
+ .brochure-image { max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; transform:none !important; }
+ @page { size:auto; margin:10mm; }
+}
+
+
+.brochure-pdf-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; padding:.8rem 1rem; background:#f8fafc; border-bottom:1px solid #d8dee9; }
+.brochure-pdf-navigation,.brochure-pdf-controls { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:.5rem; }
+.brochure-pdf-toolbar button,.brochure-pdf-toolbar a { display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; min-width:2.35rem; padding:.4rem .7rem; border:1px solid #cbd5e1; border-radius:.5rem; background:#fff; color:#17366d; font-size:.85rem; font-weight:600; text-decoration:none; }
+.brochure-pdf-toolbar button:hover:not(:disabled),.brochure-pdf-toolbar a:hover { background:#eef2ff; }
+.brochure-pdf-toolbar button:disabled { cursor:not-allowed; opacity:.4; }
+.brochure-pdf-page-count { min-width:8.5rem; color:#334155; text-align:center; font-size:.85rem; font-variant-numeric:tabular-nums; }
+.brochure-pdf-stage { display:flex; align-items:center; justify-content:center; min-height:65vh; max-height:82vh; overflow:auto; padding:1.5rem; background:#343a40; }
+.brochure-pdf-spread { display:flex; align-items:center; justify-content:center; gap:1rem; width:max-content; max-width:100%; margin:auto; }
+.brochure-pdf-spread canvas { display:block; max-width:none; background:#fff; box-shadow:0 3px 16px rgb(0 0 0 / .28); }
+.brochure-pdf-spread.is-single-page { justify-content:center; }
+.brochure-pdf-error { max-width:32rem; padding:1.5rem; border-radius:.75rem; background:#fff; color:#334155; text-align:center; }
+.brochure-pdf-stage:fullscreen { width:100vw; height:100vh; max-height:none; padding:1rem; }
+.brochure-pdf-stage:fullscreen .brochure-pdf-spread { max-width:none; }
+@media (max-width:760px) {
+ .brochure-pdf-toolbar { align-items:stretch; flex-direction:column; }
+ .brochure-pdf-controls { gap:.4rem; }
+ .brochure-pdf-toolbar button,.brochure-pdf-toolbar a { flex:1 1 auto; }
+ .brochure-pdf-stage { min-height:62vh; max-height:78vh; padding:.65rem; }
+ .brochure-pdf-spread { gap:0; }
+}
+@media print {
+ .brochure-pdf-toolbar { display:none !important; }
+ .brochure-pdf-stage { display:none !important; }
+}

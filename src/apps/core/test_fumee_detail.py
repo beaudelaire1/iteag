@@ -597,6 +597,7 @@ FABRIQUES = {
     "website:actualite_decision": (SECRETARIAT, lambda m: {"pk": m["actualite"].pk}),
     "website:temoignage_public": (PUBLIC, lambda m: {"pk": m["temoignage"].pk}),
     # ── Brochures ──
+    "website:brochure_visionner": (PUBLIC, lambda m: {"slug": m["brochure"].slug}),
     "website:brochure_telecharger": (PUBLIC, lambda m: {"slug": m["brochure"].slug}),
     "website:brochure_edition": (SECRETARIAT, lambda m: {"pk": m["brochure"].pk}),
     "website:brochure_decision": (SECRETARIAT, lambda m: {"pk": m["brochure"].pk}),

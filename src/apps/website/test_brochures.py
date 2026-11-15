@@ -57,6 +57,14 @@ def _png_minimal() -> bytes:
     return tampon.getvalue()
 
 
+def _fichier_webp(nom="affiche.webp") -> SimpleUploadedFile:
+    from PIL import Image
+
+    tampon = io.BytesIO()
+    Image.new("RGB", (8, 12), "white").save(tampon, format="WEBP")
+    return SimpleUploadedFile(nom, tampon.getvalue(), content_type="image/webp")
+
+
 def _fichier_jpg(nom="affiche.jpg") -> SimpleUploadedFile:
     """Une affiche telle qu'elle arrive au secrétariat : une image, pas un PDF."""
     from PIL import Image
@@ -188,6 +196,23 @@ class TestDepot:
         assert deposee.est_image
         assert deposee.format_lisible == "JPG"
 
+    def test_une_affiche_webp_est_acceptee_et_previsualisable(self, client, secretaire):
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("website:brochure_creation"),
+            {
+                "titre": "Affiche WebP",
+                "categorie": Brochure.Categorie.EVENEMENT,
+                "fichier": _fichier_webp(),
+                "ordre": 0,
+            },
+        )
+        assert reponse.status_code == 302
+        affiche = Brochure.objects.get(titre="Affiche WebP")
+        assert affiche.est_image
+        assert affiche.format_lisible == "WEBP"
+
+
     def test_une_image_deguisee_reste_refusee(self, client, secretaire):
         """Accepter l'image n'ouvre pas la porte : la signature tranche toujours."""
         client.force_login(secretaire)
@@ -307,6 +332,46 @@ class TestDepot:
 
 
 class TestPagePublique:
+    def test_la_visionneuse_pdf_affiche_un_lecteur_adapte(self, client, brochure):
+        brochure.publier()
+        reponse = client.get(brochure.get_visionneuse_url())
+        assert reponse.status_code == 200
+        assert b"data-pdf-viewer" in reponse.content
+        assert b"data-pdf-canvas" in reponse.content
+        assert b"brochure-pdf-viewer.js" in reponse.content
+        assert b"brochure-pdf-frame" not in reponse.content
+        assert brochure.get_absolute_url().encode() in reponse.content
+
+    def test_la_visionneuse_image_affiche_l_image_et_ses_commandes(self, client, secretaire):
+        affiche = Brochure.objects.create(
+            titre="Affiche de la formation biblique",
+            fichier=_fichier_jpg(),
+            deposee_par=secretaire,
+        )
+        affiche.publier()
+        reponse = client.get(affiche.get_visionneuse_url())
+        assert reponse.status_code == 200
+        assert b"data-brochure-image" in reponse.content
+        assert b"data-image-zoom" in reponse.content
+        assert affiche.get_absolute_url().encode() in reponse.content
+        assert b"brochure-pdf-frame" not in reponse.content
+
+    def test_une_affiche_webp_est_affichee_dans_la_visionneuse(self, client, secretaire):
+        affiche = Brochure.objects.create(
+            titre="Affiche WebP",
+            fichier=_fichier_webp(),
+            deposee_par=secretaire,
+        )
+        affiche.publier()
+        reponse = client.get(affiche.get_visionneuse_url())
+        assert reponse.status_code == 200
+        assert b"data-brochure-image" in reponse.content
+        assert affiche.get_absolute_url().encode() in reponse.content
+
+    def test_un_brouillon_ne_peut_pas_etre_ouvert_dans_la_visionneuse(self, client, brochure):
+        reponse = client.get(brochure.get_visionneuse_url())
+        assert reponse.status_code == 404
+
     def test_seules_les_brochures_publiees_paraissent(self, client, brochure):
         # Le gabarit échappe l'apostrophe du titre : on compare donc sur la
         # forme échappée, sans quoi l'essai échouerait pour la mauvaise raison.
@@ -335,13 +400,20 @@ class TestPagePublique:
 
     def test_telechargement_d_une_brochure_publiee(self, client, brochure):
         brochure.publier()
-        reponse = client.get(brochure.get_absolute_url())
+        reponse = client.get(brochure.get_telechargement_url())
         assert reponse.status_code == 200
         assert reponse["Content-Type"] == "application/pdf"
         assert b"".join(reponse.streaming_content).startswith(b"%PDF-")
 
         brochure.refresh_from_db()
         assert brochure.nombre_telechargements == 1
+
+    def test_ouvrir_la_visionneuse_ne_compte_pas_comme_un_telechargement(self, client, brochure):
+        brochure.publier()
+        reponse = client.get(brochure.get_visionneuse_url())
+        assert reponse.status_code == 200
+        brochure.refresh_from_db()
+        assert brochure.nombre_telechargements == 0
 
     def test_une_affiche_se_montre_au_lieu_de_se_telecharger(self, client, secretaire):
         """Une affiche est faite pour être vue : la cacher derrière un bouton

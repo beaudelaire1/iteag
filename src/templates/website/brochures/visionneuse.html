@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ brochure.titre }} — Brochures — {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ brochure.description|default:brochure.titre }}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/brochure-viewer.css' %}?v={{ ASSET_VERSION }}">
+{% endblock %}
+
+{% block content %}
+<section class="section brochure-viewer-page">
+    <div class="container-wide">
+        <nav class="brochure-viewer-breadcrumb" aria-label="Fil d'Ariane">
+            <a href="{% url 'website:brochures' %}">Toutes les brochures</a>
+            <span aria-hidden="true">/</span>
+            <span>{{ brochure.titre }}</span>
+        </nav>
+
+        <header class="brochure-viewer-header">
+            <div>
+                <p class="overline mb-2">{{ brochure.get_categorie_display }} · {{ brochure.format_lisible }}</p>
+                <h1>{{ brochure.titre }}</h1>
+                {% if brochure.description %}<p class="brochure-viewer-description">{{ brochure.description }}</p>{% endif %}
+            </div>
+            <div class="brochure-viewer-actions">
+                {% if est_pdf %}
+            <div class="brochure-pdf-toolbar" role="toolbar" aria-label="Commandes du lecteur PDF" data-pdf-viewer
+                 data-pdf-url="{{ brochure.get_absolute_url }}">
+                <div class="brochure-pdf-navigation">
+                    <button type="button" data-pdf-prev disabled aria-label="Pages précédentes">←</button>
+                    <span class="brochure-pdf-page-count" data-pdf-page-count>Chargement…</span>
+                    <button type="button" data-pdf-next disabled aria-label="Pages suivantes">→</button>
+                </div>
+                <div class="brochure-pdf-controls">
+                    <button type="button" data-pdf-zoom-out aria-label="Réduire le zoom">−</button>
+                    <span data-pdf-zoom-label>Adapter</span>
+                    <button type="button" data-pdf-zoom-in aria-label="Augmenter le zoom">+</button>
+                    <button type="button" data-pdf-fit>Adapter à la largeur</button>
+                    <button type="button" data-pdf-fullscreen>Plein écran</button>
+                    <a href="{{ brochure.get_absolute_url }}" target="_blank" rel="noopener">Imprimer</a>
+                </div>
+            </div>
+            <div class="brochure-pdf-stage" data-pdf-stage>
+                <div class="brochure-pdf-spread" data-pdf-spread>
+                    <canvas data-pdf-canvas="left" aria-label="Page PDF gauche"></canvas>
+                    <canvas data-pdf-canvas="right" aria-label="Page PDF droite"></canvas>
+                </div>
+                <p class="brochure-pdf-error" data-pdf-error hidden>Impossible d'afficher ce PDF. Vous pouvez ouvrir ou télécharger le fichier original.</p>
+            </div>
+            <noscript><p><a href="{{ brochure.get_absolute_url }}">Ouvrir le PDF</a></p></noscript>
+            {% elif est_image %}
+            <div class="brochure-image-toolbar" role="toolbar" aria-label="Commandes de l'image">
+                <button type="button" data-image-zoom="out" aria-label="Réduire le zoom">−</button>
+                <span data-image-zoom-label>100 %</span>
+                <button type="button" data-image-zoom="in" aria-label="Augmenter le zoom">+</button>
+                <button type="button" data-image-zoom="reset">Ajuster à l'écran</button>
+                <a href="{{ brochure.get_absolute_url }}" target="_blank" rel="noopener">Ouvrir l'image seule</a>
+            </div>
+            <div class="brochure-image-stage" data-image-stage>
+                <img src="{{ brochure.get_absolute_url }}"
+                     alt="{{ brochure.titre }}"
+                     class="brochure-image"
+                     data-brochure-image>
+            </div>
+            {% else %}
+            <div class="brochure-viewer-fallback">
+                <p>Ce format ne peut pas être prévisualisé directement dans le navigateur.</p>
+                <a class="btn-primary" href="{{ brochure.get_absolute_url }}" download>Télécharger le document</a>
+            </div>
+            {% endif %}
+        </div>
+        <p class="brochure-viewer-footnote">Le fichier original est conservé : la consultation ne modifie ni sa mise en page ni sa qualité.</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if est_pdf %}<script type="module" src="{% static 'js/brochure-pdf-viewer.js' %}?v={{ ASSET_VERSION }}"></script>{% elif est_image %}<script src="{% static 'js/brochure-viewer.js' %}?v={{ ASSET_VERSION }}" defer></script>{% endif %}
+{% endblock %}

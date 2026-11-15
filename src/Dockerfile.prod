@@ -25,7 +25,13 @@ COPY scripts/ scripts/
 # construction plutôt que provoquer une erreur au premier rendu en production.
 RUN npm run build \
     && test -s static/css/main.css \
-    && test -s static/js/vendor/hls.min.js
+    && test -s static/js/vendor/hls.min.js \
+    && test -s static/js/vendor/pdf.min.mjs \
+    && test -s static/js/vendor/pdf.worker.min.mjs \
+    && test -s static/js/vendor/pdfjs-LICENSE.txt \
+    && test -d static/js/vendor/pdfjs-standard-fonts \
+    && test -d static/js/vendor/pdfjs-cmaps \
+    && test -d static/js/vendor/pdfjs-wasm
 
 # ── Étape 2 : dépendances Python ──
 FROM python:3.12-slim AS deps
@@ -88,7 +94,13 @@ COPY --from=assets /app/static/js/vendor/ static/js/vendor/
 # et la page ne tomberait qu'au rendu, chez l'utilisateur. On échoue donc à la
 # construction, seul moment où la correction ne coûte rien.
 RUN test -s static/css/main.css \
-    && test -s static/js/vendor/hls.min.js
+    && test -s static/js/vendor/hls.min.js \
+    && test -s static/js/vendor/pdf.min.mjs \
+    && test -s static/js/vendor/pdf.worker.min.mjs \
+    && test -s static/js/vendor/pdfjs-LICENSE.txt \
+    && test -d static/js/vendor/pdfjs-standard-fonts \
+    && test -d static/js/vendor/pdfjs-cmaps \
+    && test -d static/js/vendor/pdfjs-wasm
 
 # Collecte des statiques — sans masquage d'erreur : un échec ici doit arrêter
 # le build, pas produire une image qui servira un site sans style.

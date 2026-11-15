@@ -29,6 +29,7 @@ MIMES_CONNUS = {
     ".jpg": {"image/jpeg"},
     ".jpeg": {"image/jpeg"},
     ".png": {"image/png"},
+    ".webp": {"image/webp"},
     ".doc": {"application/msword", "application/vnd.ms-office"},
     ".docx": {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -140,6 +141,8 @@ def _signature_valide(fichier, extension: str) -> bool:
         return entete.startswith(b"\xff\xd8\xff")
     if extension == ".png":
         return entete.startswith(b"\x89PNG\r\n\x1a\n")
+    if extension == ".webp":
+        return entete.startswith(b"RIFF") and entete[8:12] == b"WEBP"
     if extension == ".doc":
         return entete.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
     if extension in {".docx", ".odt"}:

@@ -20,9 +20,9 @@ CHAMP_CONTENU = ContenuActualite._meta.get_field("contenu")
 # par le graphiste. Exiger un PDF revenait à demander une conversion à qui n'a
 # pas l'outil pour la faire — et l'affiche restait alors hors du site.
 REGLE_BROCHURE = RegleFichier(
-    extensions=frozenset({".pdf", ".docx", ".odt", ".jpg", ".jpeg", ".png"}),
+    extensions=frozenset({".pdf", ".jpg", ".jpeg", ".png", ".webp", ".docx", ".odt"}),
     taille_max=20 * 1024 * 1024,
-    message_formats="Formats acceptés : PDF, image (JPG, PNG) ou bureautique (DOCX, ODT).",
+    message_formats="Formats acceptés : PDF, images (JPG, PNG, WebP) ou bureautique (DOCX, ODT).",
 )
 
 
