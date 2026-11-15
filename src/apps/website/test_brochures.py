@@ -386,13 +386,20 @@ class TestPagePublique:
 
     def test_telechargement_d_une_brochure_publiee(self, client, brochure):
         brochure.publier()
-        reponse = client.get(brochure.get_absolute_url())
+        reponse = client.get(brochure.get_telechargement_url())
         assert reponse.status_code == 200
         assert reponse["Content-Type"] == "application/pdf"
         assert b"".join(reponse.streaming_content).startswith(b"%PDF-")
 
         brochure.refresh_from_db()
         assert brochure.nombre_telechargements == 1
+
+    def test_ouvrir_la_visionneuse_ne_compte_pas_comme_un_telechargement(self, client, brochure):
+        brochure.publier()
+        reponse = client.get(brochure.get_visionneuse_url())
+        assert reponse.status_code == 200
+        brochure.refresh_from_db()
+        assert brochure.nombre_telechargements == 0
 
     def test_une_affiche_se_montre_au_lieu_de_se_telecharger(self, client, secretaire):
         """Une affiche est faite pour être vue : la cacher derrière un bouton
