@@ -45,7 +45,12 @@
         </p>
         {% endif %}
         {% include "partials/champ.html" with field=form.fichier %}
-        <p class="text-xs text-warm-500">Formats acceptés : PDF, JPG, JPEG, PNG, WebP, DOCX et ODT. Les PDF s'ouvrent dans le lecteur intégré ; les images disposent d'un zoom et d'une impression adaptés.</p>
+        <div class="border-t border-warm-200 pt-4 space-y-2">
+            <p class="text-sm font-semibold text-navy-800">Ou composer un document à partir de plusieurs PNG</p>
+            {% include "partials/champ.html" with field=form.images %}
+            <p class="text-xs text-warm-500">Chaque image importée devient une page du même PDF. Le nombre de pages dépend du nombre d'images sélectionnées : 3 images = 3 pages, 5 images = 5 pages. Vous pouvez en sélectionner autant que nécessaire. L'ordre des pages suit l'ordre de sélection.</p>
+        </div>
+        <p class="text-xs text-warm-500">Formats acceptés pour un fichier unique : PDF, JPG, JPEG, PNG, WebP, DOCX et ODT. Pour composer plusieurs pages, utilisez l'import PNG ci-dessus.</p>
         {% include "partials/champ.html" with field=form.couverture %}
     </div>
 
