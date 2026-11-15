@@ -17,13 +17,15 @@
         </nav>
 
         <header class="brochure-viewer-header">
-            <div>
+            <div class="brochure-viewer-heading">
                 <p class="overline mb-2">{{ brochure.get_categorie_display }} · {{ brochure.format_lisible }}</p>
                 <h1>{{ brochure.titre }}</h1>
                 {% if brochure.description %}<p class="brochure-viewer-description">{{ brochure.description }}</p>{% endif %}
             </div>
-            <div class="brochure-viewer-actions">
-                {% if est_pdf %}
+        </header>
+
+        {% if est_pdf %}
+        <section class="brochure-document" aria-label="Consultation de la brochure">
             <div class="brochure-pdf-toolbar" role="toolbar" aria-label="Commandes du lecteur PDF" data-pdf-viewer
                  data-pdf-url="{{ brochure.get_absolute_url }}">
                 <div class="brochure-pdf-navigation">
@@ -37,18 +39,17 @@
                     <button type="button" data-pdf-zoom-in aria-label="Augmenter le zoom">+</button>
                     <button type="button" data-pdf-fit>Adapter à la largeur</button>
                     <button type="button" data-pdf-fullscreen>Plein écran</button>
-                    <a href="{{ brochure.get_absolute_url }}" target="_blank" rel="noopener">Imprimer</a>
+                    <a href="{{ brochure.get_absolute_url }}" target="_blank" rel="noopener">Ouvrir le PDF</a>
                 </div>
             </div>
             <div class="brochure-pdf-stage" data-pdf-stage>
-                <div class="brochure-pdf-spread" data-pdf-spread>
-                    <canvas data-pdf-canvas="left" aria-label="Page PDF gauche"></canvas>
-                    <canvas data-pdf-canvas="right" aria-label="Page PDF droite"></canvas>
-                </div>
+                <div class="brochure-pdf-spread" data-pdf-spread></div>
                 <p class="brochure-pdf-error" data-pdf-error hidden>Impossible d'afficher ce PDF. Vous pouvez ouvrir ou télécharger le fichier original.</p>
             </div>
             <noscript><p><a href="{{ brochure.get_absolute_url }}">Ouvrir le PDF</a></p></noscript>
-            {% elif est_image %}
+        </section>
+        {% elif est_image %}
+        <section class="brochure-document" aria-label="Consultation de l'image">
             <div class="brochure-image-toolbar" role="toolbar" aria-label="Commandes de l'image">
                 <button type="button" data-image-zoom="out" aria-label="Réduire le zoom">−</button>
                 <span data-image-zoom-label>100 %</span>
@@ -62,13 +63,14 @@
                      class="brochure-image"
                      data-brochure-image>
             </div>
-            {% else %}
-            <div class="brochure-viewer-fallback">
-                <p>Ce format ne peut pas être prévisualisé directement dans le navigateur.</p>
-                <a class="btn-primary" href="{{ brochure.get_absolute_url }}" download>Télécharger le document</a>
-            </div>
-            {% endif %}
+        </section>
+        {% else %}
+        <div class="brochure-viewer-fallback">
+            <p>Ce format ne peut pas être prévisualisé directement dans le navigateur.</p>
+            <a class="btn-primary" href="{{ brochure.get_absolute_url }}" download>Télécharger le document</a>
         </div>
+        {% endif %}
+
         <p class="brochure-viewer-footnote">Le fichier original est conservé : la consultation ne modifie ni sa mise en page ni sa qualité.</p>
     </div>
 </section>
