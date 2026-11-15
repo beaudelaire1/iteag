@@ -7,6 +7,7 @@ refuser tout de suite ce qui ne s'ouvrirait pas chez le visiteur.
 """
 
 from django import forms
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.core.formulaires import FormulaireModeleITEAG
 from apps.core.validation_fichiers import valider_fichier
@@ -23,7 +24,28 @@ SELECT = "form-select"
 FICHIER = "form-file"
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        nettoyer = super().clean
+        if isinstance(data, (list, tuple)):
+            return [nettoyer(fichier, initial) for fichier in data]
+        return [nettoyer(data, initial)] if data else []
+
+
 class BrochureForm(FormulaireModeleITEAG):
+    images = MultipleFileField(
+        required=False,
+        label="Images PNG — une image par page",
+        help_text="Sélectionnez autant de PNG que nécessaire. Chaque image deviendra une page du PDF, dans l'ordre de sélection.",
+        widget=MultipleFileInput(attrs={"class": FICHIER, "accept": ".png,image/png"}),
+    )
+
     class Meta:
         model = Brochure
         fields = ["titre", "categorie", "description", "fichier", "couverture", "ordre"]
@@ -51,8 +73,7 @@ class BrochureForm(FormulaireModeleITEAG):
         # À la modification, le fichier déjà en place suffit : réclamer un
         # nouveau dépôt pour corriger une faute de frappe dans le titre serait
         # absurde, et pousserait à re-téléverser vingt mégaoctets pour rien.
-        if self.instance.pk and self.instance.fichier:
-            self.fields["fichier"].required = False
+        self.fields["fichier"].required = False
 
     def clean_fichier(self):
         depose = self.cleaned_data.get("fichier")
@@ -60,13 +81,61 @@ class BrochureForm(FormulaireModeleITEAG):
             # Champ laissé vide à la modification : on garde le fichier en place.
             if self.instance.pk and self.instance.fichier:
                 return self.instance.fichier
-            raise forms.ValidationError("Choisissez le fichier de la brochure.")
+            return None
         # Un fichier inchangé revient sous la forme du champ enregistré, qui
         # n'a ni « content_type » ni curseur à repositionner : le contrôle ne
         # s'applique qu'à un dépôt réel.
         if not hasattr(depose, "content_type"):
             return depose
         return valider_fichier(depose, REGLE_BROCHURE)
+
+    def clean_images(self):
+        images = self.cleaned_data.get("images") or []
+        valides = []
+        for image in images:
+            if image.size > REGLE_BROCHURE.taille_max:
+                raise forms.ValidationError(
+                    f"« {image.name} » dépasse la limite de {REGLE_BROCHURE.taille_max_lisible}."
+                )
+            if not image.name.lower().endswith(".png"):
+                raise forms.ValidationError(f"« {image.name} » n'est pas un fichier PNG.")
+            valides.append(valider_fichier(image, REGLE_BROCHURE))
+        return valides
+
+    def clean(self):
+        donnees = super().clean()
+        images = donnees.get("images") or []
+        fichier = donnees.get("fichier")
+        nouveau_fichier = fichier is not None and hasattr(fichier, "content_type")
+        if images and nouveau_fichier:
+            self.add_error("images", "Choisissez soit un fichier, soit plusieurs images PNG, pas les deux.")
+        if not images and not fichier and not (self.instance.pk and self.instance.fichier):
+            self.add_error("fichier", "Choisissez un document ou importez une ou plusieurs images PNG.")
+        return donnees
+
+    def pdf_depuis_images(self):
+        """Assemble chaque PNG en une page du PDF de la brochure."""
+        images = self.cleaned_data.get("images") or []
+        if not images:
+            return None
+
+        import io
+        from PIL import Image, ImageOps
+
+        pages = []
+        for fichier in images:
+            fichier.seek(0)
+            with Image.open(fichier) as source:
+                page = ImageOps.exif_transpose(source).convert("RGB")
+                page.load()
+                pages.append(page.copy())
+
+        sortie = io.BytesIO()
+        premiere, *suivantes = pages
+        premiere.save(sortie, format="PDF", save_all=True, append_images=suivantes, resolution=150.0)
+        for page in pages:
+            page.close()
+        return SimpleUploadedFile("brochure-images.pdf", sortie.getvalue(), content_type="application/pdf")
 
     def clean_couverture(self):
         image = self.cleaned_data.get("couverture")
