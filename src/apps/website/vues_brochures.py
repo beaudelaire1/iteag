@@ -90,15 +90,13 @@ class BrochureEditionView(StaffRoleRequiredMixin, TemplateView):
             return self.render_to_response(self.get_context_data(form=formulaire))
 
         enregistree = formulaire.save(commit=False)
-        ancien_fichier = brochure.fichier.name if brochure and brochure.fichier else None
-        ancien_stockage = brochure.fichier.storage if brochure and brochure.fichier else None
-        pdf_images = formulaire.pdf_depuis_images()
-        if pdf_images:
-            enregistree.fichier = pdf_images
+        remplace_par_images = bool(formulaire.cleaned_data.get("images"))
+        ancien_fichier = brochure.fichier.name if remplace_par_images and brochure and brochure.fichier else None
+        ancien_stockage = brochure.fichier.storage if ancien_fichier else None
         if brochure is None:
             enregistree.deposee_par = request.user
         enregistree.save()
-        if pdf_images and ancien_fichier and ancien_stockage:
+        if remplace_par_images and ancien_fichier and ancien_stockage:
             ancien_stockage.delete(ancien_fichier)
 
         journaliser(
