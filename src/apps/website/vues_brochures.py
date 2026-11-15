@@ -210,7 +210,7 @@ class BrochureVisionneuseView(TemplateView):
 
 
 class BrochureTelechargementView(View):
-    """Sert le PDF d'une brochure publiée, et compte le téléchargement.
+    """Sert le fichier original d'une brochure publiée, et compte le téléchargement.
 
     Le fichier passe par cette vue plutôt que par son adresse de média : c'est
     le seul moyen de garantir qu'un brouillon reste invisible même si son
@@ -224,7 +224,7 @@ class BrochureTelechargementView(View):
         if not brochure.fichier:
             raise Http404("Le fichier de cette brochure est introuvable.")
 
-        # La prévisualisation (iframe ou image) n'est pas un téléchargement.
+        # La prévisualisation (lecteur PDF ou visionneuse d'image) n'est pas un téléchargement.
         # Le compteur ne progresse que lorsque le visiteur demande explicitement
         # le fichier original.
         telecharger = request.GET.get("telecharger") == "1"
