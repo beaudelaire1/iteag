@@ -66,6 +66,11 @@
         {% endif %}
         {% include "partials/champ.html" with field=form.image %}
         {% include "partials/champ.html" with field=form.brochure %}
+        <div class="rounded-lg border border-warm-200 p-4 space-y-2">
+            <p class="text-sm font-semibold text-navy-800">Ou composer un document à partir de plusieurs PNG</p>
+            {% include "partials/champ.html" with field=form.brochure_images %}
+            <p class="text-xs text-warm-500">Chaque image constituera une page du PDF final. Vous pouvez en sélectionner autant que nécessaire ; leur ordre sera conservé.</p>
+        </div>
         {% include "partials/champ.html" with field=form.brochure_libelle %}
     </div>
 
