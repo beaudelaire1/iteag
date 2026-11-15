@@ -307,6 +307,32 @@ class TestDepot:
 
 
 class TestPagePublique:
+    def test_la_visionneuse_pdf_affiche_un_lecteur_adapte(self, client, brochure):
+        brochure.publier()
+        reponse = client.get(brochure.get_visionneuse_url())
+        assert reponse.status_code == 200
+        assert b"brochure-pdf-frame" in reponse.content
+        assert b"view=TwoPageRight" in reponse.content
+        assert brochure.get_absolute_url().encode() in reponse.content
+
+    def test_la_visionneuse_image_affiche_l_image_et_ses_commandes(self, client, secretaire):
+        affiche = Brochure.objects.create(
+            titre="Affiche de la formation biblique",
+            fichier=_fichier_jpg(),
+            deposee_par=secretaire,
+        )
+        affiche.publier()
+        reponse = client.get(affiche.get_visionneuse_url())
+        assert reponse.status_code == 200
+        assert b"data-brochure-image" in reponse.content
+        assert b"data-image-zoom" in reponse.content
+        assert affiche.get_absolute_url().encode() in reponse.content
+        assert b"brochure-pdf-frame" not in reponse.content
+
+    def test_un_brouillon_ne_peut_pas_etre_ouvert_dans_la_visionneuse(self, client, brochure):
+        reponse = client.get(brochure.get_visionneuse_url())
+        assert reponse.status_code == 404
+
     def test_seules_les_brochures_publiees_paraissent(self, client, brochure):
         # Le gabarit échappe l'apostrophe du titre : on compare donc sur la
         # forme échappée, sans quoi l'essai échouerait pour la mauvaise raison.
