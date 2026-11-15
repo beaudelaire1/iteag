@@ -212,6 +212,29 @@ class TestDepot:
         assert affiche.est_image
         assert affiche.format_lisible == "WEBP"
 
+    def test_plusieurs_png_deviennent_un_pdf_avec_une_page_par_image(self, client, secretaire):
+        client.force_login(secretaire)
+        pages = [
+            SimpleUploadedFile(f"page-{numero}.png", _png_minimal(), content_type="image/png")
+            for numero in range(1, 6)
+        ]
+        reponse = client.post(
+            reverse("website:brochure_creation"),
+            {
+                "titre": "Programme en cinq pages",
+                "categorie": Brochure.Categorie.FORMATION,
+                "images": pages,
+                "ordre": 0,
+            },
+        )
+        assert reponse.status_code == 302
+        brochure = Brochure.objects.get(titre="Programme en cinq pages")
+        assert brochure.extension == ".pdf"
+        with brochure.fichier.open("rb") as fichier:
+            contenu = fichier.read()
+        assert contenu.startswith(b"%PDF-")
+        assert contenu.count(b"/Type /Page") == 5
+
 
     def test_une_image_deguisee_reste_refusee(self, client, secretaire):
         """Accepter l'image n'ouvre pas la porte : la signature tranche toujours."""
