@@ -22,7 +22,6 @@ const FICHIERS = [
   ["node_modules/pdfjs-dist/LICENSE", "static/js/vendor/pdfjs-LICENSE.txt"],
   ["node_modules/pdfjs-dist/standard_fonts", "static/js/vendor/pdfjs-standard-fonts"],
   ["node_modules/pdfjs-dist/cmaps", "static/js/vendor/pdfjs-cmaps"],
-  ["node_modules/pdfjs-dist/wasm", "static/js/vendor/pdfjs-wasm"],
 ];
 
 mkdirSync(resolve(racine, "static/js/vendor"), { recursive: true });
