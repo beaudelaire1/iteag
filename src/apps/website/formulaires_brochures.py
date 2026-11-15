@@ -1,9 +1,8 @@
 """Dépôt d'une brochure au catalogue, depuis le portail de gestion.
 
-Le secrétariat ne compose pas la brochure ici : elle arrive mise en page. Le
-formulaire n'a donc qu'un travail, mais il doit le faire sérieusement —
-vérifier que le contenu du fichier correspond bien à ce que son nom annonce, et
-refuser tout de suite ce qui ne s'ouvrirait pas chez le visiteur.
+Le secrétariat peut déposer un document déjà composé ou assembler une brochure
+à partir d'une série de PNG. Dans les deux cas, le formulaire vérifie les
+fichiers reçus et refuse ce qui ne pourrait pas être lu par le visiteur.
 """
 
 from django import forms
@@ -105,7 +104,7 @@ class BrochureForm(FormulaireModeleITEAG):
                 with Image.open(image) as controle:
                     controle.verify()
                 image.seek(0)
-            except (OSError, ValueError) as erreur:
+            except (OSError, ValueError, Image.DecompressionBombError) as erreur:
                 raise forms.ValidationError(f"« {image.name} » est un PNG illisible ou endommagé.") from erreur
             valides.append(image)
         return valides
