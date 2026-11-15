@@ -27,7 +27,8 @@ RUN npm run build \
     && test -s static/css/main.css \
     && test -s static/js/vendor/hls.min.js \
     && test -s static/js/vendor/pdf.min.mjs \
-    && test -s static/js/vendor/pdf.worker.min.mjs
+    && test -s static/js/vendor/pdf.worker.min.mjs \\
+    && test -s static/js/vendor/pdfjs-LICENSE.txt
 
 # ── Étape 2 : dépendances Python ──
 FROM python:3.12-slim AS deps
