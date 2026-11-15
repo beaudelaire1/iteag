@@ -455,6 +455,10 @@ class Brochure(TimeStampedModel):
         """Page de consultation adaptée au format du fichier."""
         return reverse("website:brochure_visionner", kwargs={"slug": self.slug})
 
+    def get_telechargement_url(self) -> str:
+        """URL de téléchargement explicite, distincte de la simple consultation."""
+        return f"{self.get_absolute_url()}?telecharger=1"
+
     @property
     def url_sur_le_site(self) -> str:
         """La page où le visiteur la trouve, et l'endroit exact où elle s'y trouve.
