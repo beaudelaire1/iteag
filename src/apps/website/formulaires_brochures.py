@@ -99,7 +99,15 @@ class BrochureForm(FormulaireModeleITEAG):
                 )
             if not image.name.lower().endswith(".png"):
                 raise forms.ValidationError(f"« {image.name} » n'est pas un fichier PNG.")
-            valides.append(valider_fichier(image, REGLE_BROCHURE))
+            image = valider_fichier(image, REGLE_BROCHURE)
+            try:
+                from PIL import Image
+                with Image.open(image) as controle:
+                    controle.verify()
+                image.seek(0)
+            except (OSError, ValueError) as erreur:
+                raise forms.ValidationError(f"« {image.name} » est un PNG illisible ou endommagé.") from erreur
+            valides.append(image)
         return valides
 
     def clean(self):
