@@ -338,6 +338,7 @@ class TestPagePublique:
         assert reponse.status_code == 200
         assert b"data-pdf-viewer" in reponse.content
         assert b"data-pdf-canvas" in reponse.content
+        assert b"brochure-pdf-viewer.js" in reponse.content
         assert b"brochure-pdf-frame" not in reponse.content
         assert brochure.get_absolute_url().encode() in reponse.content
 
@@ -354,6 +355,18 @@ class TestPagePublique:
         assert b"data-image-zoom" in reponse.content
         assert affiche.get_absolute_url().encode() in reponse.content
         assert b"brochure-pdf-frame" not in reponse.content
+
+    def test_une_affiche_webp_est_affichee_dans_la_visionneuse(self, client, secretaire):
+        affiche = Brochure.objects.create(
+            titre="Affiche WebP",
+            fichier=_fichier_webp(),
+            deposee_par=secretaire,
+        )
+        affiche.publier()
+        reponse = client.get(affiche.get_visionneuse_url())
+        assert reponse.status_code == 200
+        assert b"data-brochure-image" in reponse.content
+        assert b"image/webp" not in reponse.content
 
     def test_un_brouillon_ne_peut_pas_etre_ouvert_dans_la_visionneuse(self, client, brochure):
         reponse = client.get(brochure.get_visionneuse_url())
