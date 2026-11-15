@@ -17,7 +17,7 @@
             {% if brochure.est_publiee %}En ligne{% else %}Hors ligne{% endif %}
         </span>
         {% if brochure.est_publiee %}
-        · <a href="{{ brochure.get_absolute_url }}" class="link-reveal">ouvrir le document publié</a>
+        · <a href="{{ brochure.get_visionneuse_url }}" class="link-reveal">ouvrir le document publié</a>
         {% endif %}
     </p>
     {% endif %}
@@ -45,6 +45,7 @@
         </p>
         {% endif %}
         {% include "partials/champ.html" with field=form.fichier %}
+        <p class="text-xs text-warm-500">Formats acceptés : PDF, JPG, JPEG, PNG, WebP, DOCX et ODT. Les PDF s'ouvrent dans le lecteur intégré ; les images disposent d'un zoom et d'une impression adaptés.</p>
         {% include "partials/champ.html" with field=form.couverture %}
     </div>
 
