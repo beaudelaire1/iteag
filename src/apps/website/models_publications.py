@@ -451,6 +451,10 @@ class Brochure(TimeStampedModel):
     def get_absolute_url(self) -> str:
         return reverse("website:brochure_telecharger", kwargs={"slug": self.slug})
 
+    def get_visionneuse_url(self) -> str:
+        """Page de consultation adaptée au format du fichier."""
+        return reverse("website:brochure_visionner", kwargs={"slug": self.slug})
+
     @property
     def url_sur_le_site(self) -> str:
         """La page où le visiteur la trouve, et l'endroit exact où elle s'y trouve.
@@ -483,7 +487,7 @@ class Brochure(TimeStampedModel):
         Une affiche arrive souvent en photo. Le site n'a alors rien à faire
         télécharger : l'image *est* la brochure, et elle se montre.
         """
-        return self.extension in {".jpg", ".jpeg", ".png"}
+        return self.extension in {".jpg", ".jpeg", ".png", ".webp"}
 
     @property
     def apercu_url(self) -> str:
