@@ -29,6 +29,7 @@ MIMES_CONNUS = {
     ".jpg": {"image/jpeg"},
     ".jpeg": {"image/jpeg"},
     ".png": {"image/png"},
+    ".webp": {"image/webp"},
     ".doc": {"application/msword", "application/vnd.ms-office"},
     ".docx": {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
