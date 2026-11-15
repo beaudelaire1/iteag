@@ -8,29 +8,22 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
   const spread = document.querySelector("[data-pdf-spread]");
   if (!root || !stage || !spread) return;
 
-  const canvases = {
-    left: spread.querySelector('[data-pdf-canvas="left"]'),
-    right: spread.querySelector('[data-pdf-canvas="right"]'),
-  };
   const previous = root.querySelector("[data-pdf-prev]");
   const next = root.querySelector("[data-pdf-next]");
   const pageLabel = root.querySelector("[data-pdf-page-count]");
   const zoomLabel = root.querySelector("[data-pdf-zoom-label]");
   const errorMessage = stage.querySelector("[data-pdf-error]");
-  const mobileQuery = window.matchMedia("(max-width: 760px)");
 
   GlobalWorkerOptions.workerSrc = new URL("./vendor/pdf.worker.min.mjs", import.meta.url).href;
 
   let documentPdf = null;
-  let firstPage = 1;
+  let currentPage = 1;
   let zoomFactor = 1;
-  let fitScale = 1;
   let renderTasks = [];
   let renderSequence = 0;
   let resizeTimer = null;
-
-  const isMobile = () => mobileQuery.matches;
-  const pagesPerView = () => (isMobile() ? 1 : 2);
+  let pageObserver = null;
+  let canvases = [];
 
   function cancelRendering() {
     renderTasks.forEach((task) => {
@@ -40,13 +33,18 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
   }
 
   function updateControls() {
-    const lastPage = Math.min(documentPdf.numPages, firstPage + pagesPerView() - 1);
-    pageLabel.textContent = lastPage === firstPage
-      ? `Page ${firstPage} / ${documentPdf.numPages}`
-      : `Pages ${firstPage}–${lastPage} / ${documentPdf.numPages}`;
-    previous.disabled = firstPage <= 1;
-    next.disabled = firstPage + pagesPerView() > documentPdf.numPages;
+    if (!documentPdf) return;
+    pageLabel.textContent = `Page ${currentPage} / ${documentPdf.numPages}`;
+    previous.disabled = currentPage <= 1;
+    next.disabled = currentPage >= documentPdf.numPages;
     zoomLabel.textContent = `${Math.round(zoomFactor * 100)} %`;
+  }
+
+  function goToPage(pageNumber) {
+    if (!documentPdf) return;
+    currentPage = Math.max(1, Math.min(documentPdf.numPages, pageNumber));
+    canvases[currentPage - 1]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    updateControls();
   }
 
   async function renderPage(pageNumber, canvas, scale, sequence) {
@@ -75,45 +73,58 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
     }
   }
 
-  async function renderSpread() {
+  async function renderDocument() {
     if (!documentPdf) return;
     const sequence = ++renderSequence;
     cancelRendering();
     errorMessage.hidden = true;
     spread.hidden = false;
 
-    const count = pagesPerView();
-    const pageNumbers = Array.from(
-      { length: count },
-      (_, index) => firstPage + index,
-    ).filter((number) => number <= documentPdf.numPages);
-
-    const pages = await Promise.all(pageNumbers.map((number) => documentPdf.getPage(number)));
-    if (sequence !== renderSequence) return;
-
-    const widths = pages.map((page) => page.getViewport({ scale: 1 }).width);
-    const heights = pages.map((page) => page.getViewport({ scale: 1 }).height);
-    const availableWidth = Math.max(240, stage.clientWidth - (count === 2 ? 64 : 32));
-    const availableHeight = Math.max(300, stage.clientHeight - 40);
-    const totalPageWidth = widths.reduce((sum, width) => sum + width, 0);
-    const maxPageHeight = Math.max(...heights);
-    fitScale = Math.min(
-      availableWidth / totalPageWidth,
-      availableHeight / maxPageHeight,
-      1.8,
-    );
-    const scale = fitScale * zoomFactor;
-
-    canvases.left.hidden = false;
-    canvases.right.hidden = count === 1 || pageNumbers.length < 2;
-    spread.classList.toggle("is-single-page", count === 1);
-
     try {
-      await renderPage(pageNumbers[0], canvases.left, scale, sequence);
-      if (pageNumbers[1] && sequence === renderSequence) {
-        await renderPage(pageNumbers[1], canvases.right, scale, sequence);
+      const pages = await Promise.all(
+        Array.from({ length: documentPdf.numPages }, (_, index) => documentPdf.getPage(index + 1)),
+      );
+      if (sequence !== renderSequence) return;
+
+      const maxPageWidth = Math.max(...pages.map((page) => page.getViewport({ scale: 1 }).width));
+      const availableWidth = Math.max(240, stage.clientWidth - 48);
+      const fitScale = Math.min(availableWidth / maxPageWidth, 1.8);
+      const scale = fitScale * zoomFactor;
+
+      if (pageObserver) pageObserver.disconnect();
+      spread.replaceChildren();
+      canvases = pages.map((_, index) => {
+        const canvas = document.createElement("canvas");
+        canvas.className = "brochure-pdf-page";
+        canvas.setAttribute("aria-label", `Page PDF ${index + 1}`);
+        spread.appendChild(canvas);
+        return canvas;
+      });
+
+      pageObserver = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) {
+          currentPage = Number(visible.target.dataset.pageNumber);
+          updateControls();
+        }
+      }, { root: stage, threshold: [0.25, 0.5, 0.75] });
+
+      canvases.forEach((canvas, index) => {
+        canvas.dataset.pageNumber = String(index + 1);
+        pageObserver.observe(canvas);
+      });
+
+      for (let index = 0; index < canvases.length; index += 1) {
+        if (sequence !== renderSequence) return;
+        await renderPage(index + 1, canvases[index], scale, sequence);
       }
-      if (sequence === renderSequence) updateControls();
+
+      if (sequence === renderSequence) {
+        currentPage = Math.min(currentPage, documentPdf.numPages);
+        updateControls();
+      }
     } catch (error) {
       if (sequence !== renderSequence) return;
       console.error("Erreur de lecture PDF :", error);
@@ -122,30 +133,20 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
     }
   }
 
-  function movePage(direction) {
-    const step = pagesPerView();
-    firstPage = Math.max(
-      1,
-      Math.min(documentPdf.numPages, firstPage + direction * step),
-    );
-    if (step === 2 && firstPage > 1) firstPage = Math.min(firstPage, Math.max(1, documentPdf.numPages - 1));
-    renderSpread();
-  }
-
-  previous.addEventListener("click", () => movePage(-1));
-  next.addEventListener("click", () => movePage(1));
+  previous.addEventListener("click", () => goToPage(currentPage - 1));
+  next.addEventListener("click", () => goToPage(currentPage + 1));
 
   root.querySelector("[data-pdf-zoom-in]").addEventListener("click", () => {
     zoomFactor = Math.min(2.5, Math.round((zoomFactor + 0.15) * 100) / 100);
-    renderSpread();
+    renderDocument();
   });
   root.querySelector("[data-pdf-zoom-out]").addEventListener("click", () => {
     zoomFactor = Math.max(0.5, Math.round((zoomFactor - 0.15) * 100) / 100);
-    renderSpread();
+    renderDocument();
   });
   root.querySelector("[data-pdf-fit]").addEventListener("click", () => {
     zoomFactor = 1;
-    renderSpread();
+    renderDocument();
   });
   root.querySelector("[data-pdf-fullscreen]").addEventListener("click", async () => {
     try {
@@ -158,19 +159,15 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
 
   document.addEventListener("keydown", (event) => {
     if (!documentPdf || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (event.key === "ArrowRight") movePage(1);
-    if (event.key === "ArrowLeft") movePage(-1);
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") goToPage(currentPage + 1);
+    if (event.key === "ArrowUp" || event.key === "ArrowLeft") goToPage(currentPage - 1);
   });
 
   const observer = new ResizeObserver(() => {
     window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(renderSpread, 120);
+    resizeTimer = window.setTimeout(renderDocument, 180);
   });
   observer.observe(stage);
-  mobileQuery.addEventListener("change", () => {
-    firstPage = Math.max(1, firstPage);
-    renderSpread();
-  });
 
   getDocument({
     url: root.dataset.pdfUrl,
@@ -180,9 +177,9 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
     standardFontDataUrl: new URL("./vendor/pdfjs-standard-fonts/", import.meta.url).href,
   }).promise.then((pdf) => {
     documentPdf = pdf;
-    firstPage = 1;
+    currentPage = 1;
     updateControls();
-    return renderSpread();
+    return renderDocument();
   }).catch((error) => {
     console.error("Impossible de charger la brochure PDF :", error);
     spread.hidden = true;
@@ -193,6 +190,7 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
   window.addEventListener("pagehide", () => {
     cancelRendering();
     observer.disconnect();
+    if (pageObserver) pageObserver.disconnect();
     if (documentPdf) documentPdf.destroy();
   }, { once: true });
 })();
