@@ -175,6 +175,10 @@ import { getDocument, GlobalWorkerOptions } from "./vendor/pdf.min.mjs";
   getDocument({
     url: root.dataset.pdfUrl,
     withCredentials: true,
+    cMapUrl: new URL("./vendor/pdfjs-cmaps/", import.meta.url).href,
+    cMapPacked: true,
+    standardFontDataUrl: new URL("./vendor/pdfjs-standard-fonts/", import.meta.url).href,
+    wasmUrl: new URL("./vendor/pdfjs-wasm/", import.meta.url).href,
   }).promise.then((pdf) => {
     documentPdf = pdf;
     firstPage = 1;
