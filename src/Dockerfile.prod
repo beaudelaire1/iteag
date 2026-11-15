@@ -91,8 +91,8 @@ COPY --from=assets /app/static/js/vendor/ static/js/vendor/
 # et la page ne tomberait qu'au rendu, chez l'utilisateur. On échoue donc à la
 # construction, seul moment où la correction ne coûte rien.
 RUN test -s static/css/main.css \
-    && test -s static/js/vendor/hls.min.js \\
-    && test -s static/js/vendor/pdf.min.mjs \\
+    && test -s static/js/vendor/hls.min.js \
+    && test -s static/js/vendor/pdf.min.mjs \
     && test -s static/js/vendor/pdf.worker.min.mjs \
     && test -s static/js/vendor/pdfjs-LICENSE.txt
 
