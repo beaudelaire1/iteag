@@ -224,9 +224,14 @@ class BrochureTelechargementView(View):
         if not brochure.fichier:
             raise Http404("Le fichier de cette brochure est introuvable.")
 
-        # Une écriture atomique plutôt qu'un « save » : deux visiteurs
-        # simultanés perdraient sinon l'un des deux passages.
-        Brochure.objects.filter(pk=brochure.pk).update(nombre_telechargements=F("nombre_telechargements") + 1)
+        # La prévisualisation (iframe ou image) n'est pas un téléchargement.
+        # Le compteur ne progresse que lorsque le visiteur demande explicitement
+        # le fichier original.
+        telecharger = request.GET.get("telecharger") == "1"
+        if telecharger:
+            Brochure.objects.filter(pk=brochure.pk).update(
+                nombre_telechargements=F("nombre_telechargements") + 1
+            )
 
         try:
             fichier = brochure.fichier.open("rb")
@@ -238,4 +243,4 @@ class BrochureTelechargementView(View):
         # téléchargements, et « brochure-institutionnelle-2026.pdf » s'y relit
         # mieux qu'un nom horodaté.
         nom = f"{brochure.slug}{brochure.extension}"
-        return FileResponse(fichier, content_type=brochure.type_mime, as_attachment=False, filename=nom)
+        return FileResponse(fichier, content_type=brochure.type_mime, as_attachment=telecharger, filename=nom)
