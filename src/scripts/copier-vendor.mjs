@@ -17,6 +17,8 @@ const racine = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const FICHIERS = [
   ["node_modules/hls.js/dist/hls.light.min.js", "static/js/vendor/hls.min.js"],
+  ["node_modules/pdfjs-dist/build/pdf.min.mjs", "static/js/vendor/pdf.min.mjs"],
+  ["node_modules/pdfjs-dist/build/pdf.worker.min.mjs", "static/js/vendor/pdf.worker.min.mjs"],
 ];
 
 mkdirSync(resolve(racine, "static/js/vendor"), { recursive: true });
