@@ -57,6 +57,14 @@ def _png_minimal() -> bytes:
     return tampon.getvalue()
 
 
+def _fichier_webp(nom="affiche.webp") -> SimpleUploadedFile:
+    from PIL import Image
+
+    tampon = io.BytesIO()
+    Image.new("RGB", (8, 12), "white").save(tampon, format="WEBP")
+    return SimpleUploadedFile(nom, tampon.getvalue(), content_type="image/webp")
+
+
 def _fichier_jpg(nom="affiche.jpg") -> SimpleUploadedFile:
     """Une affiche telle qu'elle arrive au secrétariat : une image, pas un PDF."""
     from PIL import Image
@@ -187,6 +195,23 @@ class TestDepot:
         deposee = Brochure.objects.get(titre="Affiche des ateliers de prédication")
         assert deposee.est_image
         assert deposee.format_lisible == "JPG"
+
+    def test_une_affiche_webp_est_acceptee_et_previsualisable(self, client, secretaire):
+        client.force_login(secretaire)
+        reponse = client.post(
+            reverse("website:brochure_creation"),
+            {
+                "titre": "Affiche WebP",
+                "categorie": Brochure.Categorie.EVENEMENT,
+                "fichier": _fichier_webp(),
+                "ordre": 0,
+            },
+        )
+        assert reponse.status_code == 302
+        affiche = Brochure.objects.get(titre="Affiche WebP")
+        assert affiche.est_image
+        assert affiche.format_lisible == "WEBP"
+
 
     def test_une_image_deguisee_reste_refusee(self, client, secretaire):
         """Accepter l'image n'ouvre pas la porte : la signature tranche toujours."""
