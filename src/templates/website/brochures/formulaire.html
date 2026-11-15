@@ -39,7 +39,7 @@
         <h2 class="text-sm font-bold uppercase tracking-wider text-navy-800">Le document</h2>
         {% if brochure.fichier %}
         <p class="text-sm text-warm-500">
-            Fichier actuel : <a href="{{ brochure.get_absolute_url }}" class="link-reveal">{{ brochure.titre }}</a>
+            Fichier actuel : <a href="{{ brochure.get_visionneuse_url }}" class="link-reveal">{{ brochure.titre }}</a>
             {% if brochure.taille_lisible %} ({{ brochure.taille_lisible }}){% endif %}.
             En déposer un nouveau le remplacera ; laissez vide pour le conserver.
         </p>
