@@ -111,6 +111,10 @@ class BrochureForm(FormulaireModeleITEAG):
             self.add_error("images", "Choisissez soit un fichier, soit plusieurs images PNG, pas les deux.")
         if not images and not fichier and not (self.instance.pk and self.instance.fichier):
             self.add_error("fichier", "Choisissez un document ou importez une ou plusieurs images PNG.")
+        elif images and not nouveau_fichier:
+            pdf = self.pdf_depuis_images()
+            donnees["fichier"] = pdf
+            self.instance.fichier = pdf
         return donnees
 
     def pdf_depuis_images(self):
