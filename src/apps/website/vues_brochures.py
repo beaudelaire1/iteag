@@ -191,6 +191,24 @@ class BrochuresPubliquesView(ListView):
         }
 
 
+class BrochureVisionneuseView(TemplateView):
+    """Page de lecture publique, séparée du fichier original téléchargeable."""
+
+    template_name = "website/brochures/visionneuse.html"
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        brochure = get_object_or_404(
+            Brochure,
+            slug=self.kwargs["slug"],
+            statut=Brochure.Statut.PUBLIEE,
+        )
+        contexte["brochure"] = brochure
+        contexte["est_pdf"] = brochure.extension == ".pdf"
+        contexte["est_image"] = brochure.est_image
+        return contexte
+
+
 class BrochureTelechargementView(View):
     """Sert le PDF d'une brochure publiée, et compte le téléchargement.
 
