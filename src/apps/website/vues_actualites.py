@@ -158,22 +158,6 @@ class ActualiteEditionView(StaffRoleRequiredMixin, TemplateView):
         actualite = self._actualite()
         formulaire = ActualiteForm(request.POST, request.FILES)
 
-        # Le widget StreamField de Wagtail est hydraté par Telepath côté
-        # navigateur. Son contrôleur crée le champ caché "-count" qui décrit
-        # les blocs transmis. Si les scripts du widget ne se sont pas initialisés
-        # (cache ancien, JS bloqué ou soumission trop précoce), Wagtail lève un
-        # KeyError dans value_from_datadict au lieu de produire une erreur de
-        # formulaire. Ne jamais laisser cette requête devenir une 500 ni
-        # enregistrer silencieusement un contenu incomplet.
-        if "contenu-count" not in request.POST and "corps" not in request.POST:
-            formulaire.add_error(
-                "contenu",
-                "L’éditeur de contenu ne s’est pas initialisé correctement. "
-                "Rechargez la page, attendez l’apparition des blocs, puis réessayez. "
-                "Si le problème persiste, contactez le support.",
-            )
-            return self.render_to_response(self.get_context_data(form=formulaire))
-
         if not formulaire.is_valid():
             return self.render_to_response(self.get_context_data(form=formulaire))
 
