@@ -26,6 +26,12 @@ SOCLE = (
     "wagtailadmin/js/vendor/bootstrap-modal.js",
     "wagtailadmin/js/core.js",
     "wagtailadmin/js/vendor.js",
+    # Le runtime Wagtail enregistre notamment les contrôleurs Stimulus
+    # utilisés par BlockWidget (w-block). Sans lui, le HTML StreamField
+    # reste visible mais n'est jamais hydraté : aucun champ "-count" n'est
+    # généré à la soumission.
+    "wagtailadmin/js/wagtailadmin.js",
+    "wagtailadmin/js/sidebar.js",
     "wagtailadmin/js/modal-workflow.js",
 )
 
